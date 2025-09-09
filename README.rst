@@ -232,3 +232,12 @@ Contributors
 ------------
 
 * Sylvain LE GAL (https://www.twitter.com/legalsylvain)
+
+Notes EASI
+=======
+
+Build and Install from source
+-----------------------------
+
+python setup.py sdist
+pip install ./dist/my_module-1.0.0.tar.gz
