@@ -5,6 +5,7 @@
 import subprocess
 import re
 import pathlib
+import os
 
 from .config import _AVAILABLE_MIGRATION_STEPS
 from .log import logger
@@ -28,7 +29,12 @@ def _get_latest_version_code():
 
 def _execute_shell(shell_command, path=False, raise_error=True):
     if path:
-        shell_command = "cd '%s' && %s" % (str(path.resolve()), shell_command)
+        # Handle Windows path syntax properly
+        path_str = str(path.resolve())
+        if os.name == 'nt':  # Windows
+            shell_command = 'cd /d "%s" && %s' % (path_str, shell_command)
+        else:  # Unix/Linux/macOS
+            shell_command = "cd '%s' && %s" % (path_str, shell_command)
     logger.debug("Execute Shell:\n%s" % (shell_command))
     if raise_error:
         return subprocess.check_output(shell_command, shell=True)
@@ -37,14 +43,14 @@ def _execute_shell(shell_command, path=False, raise_error=True):
 
 
 def _read_content(file_path):
-    f = open(file_path, "r")
+    f = open(file_path, "r", encoding="utf-8")
     text = f.read()
     f.close()
     return text
 
 
 def _write_content(file_path, content):
-    f = open(file_path, "w")
+    f = open(file_path, "w", encoding="utf-8")
     f.write(content)
     f.close()
 

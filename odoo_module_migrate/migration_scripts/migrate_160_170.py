@@ -214,7 +214,7 @@ Steps_visitor: list[AbstractVisitor] = [
 
 
 def replace_read_group_signature(logger, filename):
-    with open(filename, mode="rt") as file:
+    with open(filename, mode="rt", encoding="utf-8") as file:
         new_all = all_code = file.read()
         if ".read_group(" in all_code or "._read_group(" in all_code:
             for Step in Steps_visitor:
@@ -232,7 +232,7 @@ def replace_read_group_signature(logger, filename):
 
     if new_all != all_code:
         logger.info("Script read_group replace applied in file %s" % filename)
-        with open(filename, mode="wt") as file:
+        with open(filename, mode="wt", encoding="utf-8") as file:
             file.write(new_all)
 
 
@@ -249,7 +249,13 @@ def _check_open_form_view(logger, file_path: Path):
     """Check if the view has a button to open a form reg in a tree view `file_path`."""
     parser = et.XMLParser(remove_blank_text=True)
     tree = et.parse(str(file_path.resolve()), parser)
-    record_node = tree.getroot()[0]
+    root_node = tree.getroot()
+    
+    # Check if root has children
+    if len(root_node) == 0:
+        return
+        
+    record_node = root_node[0]
     f_arch = record_node.find('field[@name="arch"]')
     root = f_arch if f_arch is not None else record_node
     for button in root.findall(".//button[@name='get_formview_action']"):

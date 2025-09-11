@@ -1,0 +1,2 @@
+- ['stock.move', 'quantity_done', 'quantity', 'Field renamed in v18.0 migration']
+- ['stock.move.line', 'reserved_qty', 'quantity_product_uom', 'Field renamed in v18.0 migration']

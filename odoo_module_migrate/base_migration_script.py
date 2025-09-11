@@ -26,9 +26,9 @@ class BaseMigrationScript(object):
     _module_path = ""
 
     def parse_rules(self):
-        script_parts = inspect.getfile(self.__class__).split("/")
-        migrate_from_to = script_parts[-1].split(".")[0]
-        migration_scripts_dir = "/".join(script_parts[:-1])
+        script_file = inspect.getfile(self.__class__)
+        migrate_from_to = os.path.basename(script_file).split(".")[0]
+        migration_scripts_dir = os.path.dirname(script_file)
 
         TYPE_ARRAY = "TYPE_ARRAY"
         TYPE_DICT = "TYPE_DICT"
@@ -83,11 +83,7 @@ class BaseMigrationScript(object):
         # read
         for rule in rules.keys():
             rule_folder = rule[1:].lower()
-            file_pattern = "%s/%s/%s/*.yaml" % (
-                migration_scripts_dir,
-                rule_folder,
-                migrate_from_to,
-            )
+            file_pattern = os.path.join(migration_scripts_dir, rule_folder, migrate_from_to, "*.yaml")
             for filename in glob.glob(file_pattern):
                 with open(filename) as f:
                     new_rules = yaml.safe_load(f)
@@ -118,12 +114,9 @@ class BaseMigrationScript(object):
                     rvalues.setdefault(filetype, {})
                     rvalues[filetype].update(values or {})
 
-        file_pattern = "%s/python_scripts/%s/*.py" % (
-            migration_scripts_dir,
-            migrate_from_to,
-        )
+        file_pattern = os.path.join(migration_scripts_dir, "python_scripts", migrate_from_to, "*.py")
         for path in glob.glob(file_pattern):
-            module_name = path.split("/")[-1].split(".")[0]
+            module_name = os.path.basename(path).split(".")[0]
             module_name = ".".join(
                 [
                     "odoo_module_migrate.migration_scripts.python_scripts",
@@ -146,7 +139,7 @@ class BaseMigrationScript(object):
         commit_enabled,
     ):
         logger.debug(
-            "Running %s script" % inspect.getfile(self.__class__).split("/")[-1]
+            "Running %s script" % os.path.basename(inspect.getfile(self.__class__))
         )
         self.parse_rules()
         manifest_path = self._get_correct_manifest_path(
@@ -424,7 +417,7 @@ class BaseMigrationScript(object):
         return res
 
     def _get_correct_manifest_path(self, manifest_path, file_renames):
-        current_manifest_file_name = manifest_path.as_posix().split("/")[-1]
+        current_manifest_file_name = os.path.basename(manifest_path.as_posix())
         if current_manifest_file_name in file_renames:
             new_manifest_file_name = manifest_path.as_posix().replace(
                 current_manifest_file_name, file_renames[current_manifest_file_name]

@@ -1,0 +1,23 @@
+# Removed imports in migration from 16.0 to 17.0
+# Format: old_import and optional replacement
+
+# Full import lines (use full syntax)
+- old_import: "import warnings"
+  replacement: ""
+
+- old_import: "from warnings import warn"
+  replacement: ""
+
+# Specific imports to remove from import lists (just the name)
+- old_import: "Warning"
+  replacement: ""
+
+- old_import: "UserWarning"
+  replacement: ""
+
+- old_import: "DeprecationWarning"
+  replacement: ""
+
+# Usage replacements
+- old_import: "warnings.warn"
+  replacement: "_logger.warning"

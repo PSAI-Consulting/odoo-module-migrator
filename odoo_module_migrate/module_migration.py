@@ -69,11 +69,11 @@ class ModuleMigration:
         )
         if self._migration._commit_enabled:
             _execute_shell(
-                "git mv %s %s" % (old_file_path, new_file_path), path=module_path
+                'git mv "%s" "%s"' % (old_file_path, new_file_path), path=module_path
             )
         else:
             _execute_shell(
-                "mv %s %s" % (old_file_path, new_file_path), path=module_path
+                'mv "%s" "%s"' % (old_file_path, new_file_path), path=module_path
             )
 
     def _commit_changes(self, commit_name):
@@ -87,6 +87,6 @@ class ModuleMigration:
             )
 
             _execute_shell(
-                " git add . --all && git commit --no-verify -m '%s'" % (commit_name),
+                ' git add . --all && git commit --no-verify -m "%s"' % (commit_name),
                 path=self._migration._directory_path,
             )

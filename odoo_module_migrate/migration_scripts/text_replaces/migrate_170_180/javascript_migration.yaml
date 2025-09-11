@@ -1,0 +1,109 @@
+# Migration from Odoo 17.0 to 18.0 - JavaScript/OWL Changes
+
+.js:
+  # Legacy import paths to new @web paths  
+  'from "web\.utils"': 'from "@web/core/utils/patch"'
+  'from "web\.core"': 'from "@web/core/l10n/translation"'
+  'from "web\.searchUtils"': 'from "@web/search/utils/search_utils"'
+  'import.*from "web\.CustomFilterItem"': 'import {CustomFilterItem} from "@web/search/filter_menu/custom_filter_item"'
+  'import.*Domain from "web\.Domain"': 'import {Domain} from "@web/core/domain"'
+  'import.*from "web\.Domain"': 'import {Domain} from "@web/core/domain"'
+  'import.*from "web\.DomainSelector"': 'import {DomainSelector} from "@web/core/domain_selector/domain_selector"'
+  'import.*DomainSelectorDialog from "web\.DomainSelectorDialog"': 'import {DomainSelectorDialog} from "@web/core/domain_selector_dialog/domain_selector_dialog"'
+  'import.*from "web\.DomainSelectorDialog"': 'import {DomainSelectorDialog} from "@web/core/domain_selector_dialog/domain_selector_dialog"'
+  'import.*config from "web\.config"': 'import {device} from "@web/core/browser/feature_detection"'
+  'import.*from "web\.config"': 'import {device} from "@web/core/browser/feature_detection"'
+  'import.*from "web\.FilterMenu"': 'import {FilterMenu} from "@web/search/filter_menu/filter_menu"'
+  'import.*from "web\.Model"': 'import {useModel} from "@web/core/model/model"'
+  'import.*from "web\.basic_fields"': 'import {standardFieldProps} from "@web/views/fields/standard_field_props"'
+  'import.*BasicModel from "web\.BasicModel"': 'import {Model} from "@web/core/model/model"'
+  'import.*from "web\.BasicModel"': 'import {Model} from "@web/core/model/model"'
+  'import.*from "web\.OwlCompatibility"': 'import {ComponentAdapter} from "@web/legacy/js/component_adapter"'
+  'import.*standaloneAdapter.*from "web\.OwlCompatibility"': 'import {ComponentAdapter} from "@web/legacy/js/component_adapter"'
+  'import.*from "web\.FieldManagerMixin"': 'import {FieldManagerMixin} from "@web/views/fields/field_manager_mixin"'
+  'import.*from "web\.relational_fields"': 'import {Many2OneField} from "@web/views/fields/many2one/many2one_field"'
+  'import.*from "web\.view_dialogs"': 'import {SelectCreateDialog} from "@web/views/view_dialogs/select_create_dialog"'
+  'import.*\{FieldDomain\}.*from.*domain_field': 'import {DomainField} from "@web/views/fields/domain/domain_field"'
+
+  # Patch function syntax changes - Remove patch name parameter (second argument)
+  patch\(([^,]+),\s*["\'][^"\']*["\'],\s*\{: "patch(\\1, {"
+  
+  # OWL framework updates
+  'const.*{.*}.*=.*owl;': 'import {Component, xml} from "@odoo/owl";'
+  'const.*Component.*=.*owl\.Component': 'import {Component} from "@odoo/owl";'
+  'const.*xml.*=.*owl\.xml': 'import {xml} from "@odoo/owl";'
+  
+  # Super method calls - Replace this._super with super.methodName
+  'this\._super\(\.\.\.\s*arguments\)': 'super.setup(...arguments)'
+  'this\._super\.apply\(this,\s*arguments\)': 'super.apply(this, arguments)'
+  'this\._super\.apply\(this,\s*\[?arguments\]?\)': 'super.methodName(...arguments)'
+  'this\._super\(\)': 'super.methodName()'
+  'const\s+res\s*=\s*this\._super\.apply\(this,\s*arguments\)': 'const res = super.methodName(...arguments)'
+  
+  # Legacy component adapter updates
+  'standaloneAdapter\(\{Component\}\)': 'new ComponentAdapter(this.env, {Component})'
+  'config\.isDebug\(\)': 'device.isDebug()'
+  'this\.trigger_up\(': 'this.env.bus.trigger('
+  
+  # Field reference updates
+  'FieldMany2One': 'Many2OneField'
+  'BasicModel': 'Model'
+  
+  # Date/Time library updates
+  'import.*\{DateTime\}.*from.*luxon': '// Use native Date objects or @web/core/l10n/dates utilities'
+  'DateTime\.fromISO\(': 'new Date('
+  'moment\(': 'new Date('
+  'import.*moment': '// Use native Date objects instead'
+  
+  # Domain class updates  
+  'Domain\.prototype\.stringToArray\(([^)]+)\)': 'new Domain(\\1).toList({})'
+  'Domain\.prototype\.arrayToString\(': 'Domain.toString('
+  'new Domain\(([^)]+)\)\.toList\(\)': 'new Domain(\\1).toList({})'
+  
+  # Filter/Search updates
+  'FIELD_OPERATORS': 'this.OPERATORS'
+  'FIELD_TYPES': 'this.FIELD_TYPES'
+  'import.*\{FIELD_OPERATORS,\s*FIELD_TYPES\}.*from.*search_utils': '// FIELD_OPERATORS and FIELD_TYPES are now part of CustomFilterItem'
+  
+  # Common super method replacements for specific methods
+  const\s+props\s*=\s*this\._super\(\.\.\.\s*arguments\): "const props = super.getProps(...arguments)"
+  'super\.onWindowClicked\(ev\);': 'return super.onWindowClicked(ev);'
+  
+  # Replace deprecated odoo.ready and odoo.runtimeImport with ES6 imports
+  await\s+odoo\.ready\([^)]+\): "// odoo.ready deprecated in v18"
+  odoo\.runtimeImport\(: "import("
+  
+  # Widget registration conditional check
+  registry\.category\(["\']fields["\']\)\.add\(([^,]+),\s*([^)]+)\);: 'if (!registry.category("fields").contains(\\1)) {\n    registry.category("fields").add(\\1, \\2);\n}'
+
+.xml:
+  # Remove obsolete owl="1" attribute from templates
+  owl=["']1["']: ""
+  
+  # QWeb template directive updates (deprecated in v18)
+  '@t-esc=': '@t-out='
+  
+  # Template naming - avoid conflicts with core templates
+  't-name="web\.([^"]+)"': 't-name="module_name.\\1"'
+
+# Notes for manual review:
+# - All legacy web.* imports need to be updated to @web/* paths
+# - Check all patch() calls to ensure proper method name in super calls
+# - Replace template names starting with "web." to avoid conflicts
+# - Verify template inheritance still works after owl="1" removal
+# - Test component functionality after migration
+# - Update any custom widget registrations to use new syntax
+# - Replace odoo.ready/runtimeImport with proper ES6 dynamic imports
+# - Update trigger_up to use this.env.bus.trigger
+# - Replace standaloneAdapter with ComponentAdapter
+# - Import OWL components explicitly from @odoo/owl
+# - Update config.isDebug() to device.isDebug()
+# - Remove second parameter from patch() function calls
+# - Replace this._super with proper super method calls
+# - Replace moment with native Date objects or Odoo date utilities
+# - Update Domain.prototype methods to new Domain class with context parameter
+# - FIELD_OPERATORS/FIELD_TYPES are now component properties
+# - Some stock module imports may need conditional loading
+# - Use try/catch or module availability checks for optional dependencies
+# - FieldDomain class is now DomainField in Odoo 18.0
+# - Use onWillStart() instead of direct async calls in setup()
