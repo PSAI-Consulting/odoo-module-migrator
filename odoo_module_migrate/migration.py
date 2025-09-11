@@ -28,12 +28,14 @@ class Migration:
         commit_enabled=True,
         pre_commit=True,
         remove_migration_folder=True,
+        no_oca_modules=False,
     ):
         if not module_names:
             module_names = []
         self._commit_enabled = commit_enabled
         self._pre_commit = pre_commit
         self._remove_migration_folder = remove_migration_folder
+        self._no_oca_modules = no_oca_modules
         self._migration_steps = []
         self._migration_scripts = []
         self._module_migrations = []
@@ -85,16 +87,33 @@ class Migration:
             child_paths = [x for x in root_path.iterdir() if x.is_dir()]
             for child_path in child_paths:
                 if self._is_module_path(child_path):
+                    # Skip OCA modules if --no-oca-modules is set
+                    if self._no_oca_modules and self._is_oca_module(child_path):
+                        logger.info(
+                            "Skipping OCA module '%s' due to --no-oca-modules option"
+                            % child_path.name
+                        )
+                        continue
                     module_names.append(child_path.name)
         else:
             child_paths = [root_path / x for x in module_names]
+            modules_to_remove = []
             for child_path in child_paths:
                 if not self._is_module_path(child_path):
-                    module_names.remove(child_path.name)
+                    modules_to_remove.append(child_path.name)
                     logger.warning(
                         "No valid module found for '%s' in the directory '%s'"
                         % (child_path.name, root_path.resolve())
                     )
+                elif self._no_oca_modules and self._is_oca_module(child_path):
+                    modules_to_remove.append(child_path.name)
+                    logger.info(
+                        "Skipping OCA module '%s' due to --no-oca-modules option"
+                        % child_path.name
+                    )
+            # Remove modules after iteration to avoid modifying list during iteration
+            for module_to_remove in modules_to_remove:
+                module_names.remove(module_to_remove)
 
         if not module_names:
             raise ConfigException("No modules found to migrate. Exiting.")
@@ -125,6 +144,31 @@ class Migration:
 
     def _is_module_path(self, module_path):
         return any([(module_path / x).exists() for x in _MANIFEST_NAMES])
+
+    def _is_oca_module(self, module_path):
+        """Check if a module is an OCA module by looking at its manifest."""
+        for manifest_name in _MANIFEST_NAMES:
+            manifest_path = module_path / manifest_name
+            if manifest_path.exists():
+                try:
+                    with open(manifest_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    # Execute the manifest file to get its content as a dict
+                    manifest_dict = {}
+                    exec(content, manifest_dict)
+                    # Look for the actual manifest data (usually stored in a dict)
+                    for key, value in manifest_dict.items():
+                        if isinstance(value, dict) and 'author' in value:
+                            author = value.get('author', '')
+                            if 'Odoo Community Association (OCA)' in author:
+                                return True
+                    # Also check if the content directly contains OCA reference
+                    if 'Odoo Community Association (OCA)' in content:
+                        return True
+                except Exception:
+                    # If we can't read the manifest, assume it's not OCA
+                    pass
+        return False
 
     def _get_code_from_previous_branch(self, module_name, remote_name):
         init_version = self._migration_steps[0]["init_version_name"]

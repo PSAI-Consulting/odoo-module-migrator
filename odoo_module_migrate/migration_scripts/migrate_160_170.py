@@ -90,7 +90,12 @@ class VisitorInverseGroupbyFields(AbstractVisitor):
                         node.keywords[key_i_by_key["groupby"]],
                     )
                 else:
-                    raise ValueError(f"{key_i_by_key}, {keywords_by_key}, {node.args}")
+                    # Check if code is already migrated (has 'aggregates' instead of 'fields')
+                    if "aggregates" in key_i_by_key and "groupby" in key_i_by_key:
+                        # Code is already migrated, skip this transformation
+                        pass
+                    else:
+                        raise ValueError(f"{key_i_by_key}, {keywords_by_key}, {node.args}")
         self.generic_visit(node)
 
 

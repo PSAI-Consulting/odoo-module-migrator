@@ -117,6 +117,14 @@ def get_parser():
         help="Skip removing migration folder",
     )
 
+    main_parser.add_argument(
+        "--no-oca-modules",
+        action="store_true",
+        default=False,
+        help="Skip migration of OCA modules. OCA modules are identified by "
+        "'author': 'Odoo Community Association (OCA)' in their manifest.",
+    )
+
     return main_parser
 
 
@@ -150,6 +158,7 @@ def main(args=False):
             not args.no_commit,
             args.pre_commit,
             args.remove_migration_folder,
+            args.no_oca_modules,
         )
 
         # run Migration
