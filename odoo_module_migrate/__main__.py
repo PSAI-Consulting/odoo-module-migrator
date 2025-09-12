@@ -53,6 +53,10 @@ def get_parser():
     )
 
     main_parser.add_argument(
+        "-lpwo", "--log-path-warninglevelonly", default=False, type=str
+    )
+
+    main_parser.add_argument(
         "-nc", "--no-commit", action="store_true",
         help="Skip git commit of changes."
     )
@@ -87,7 +91,7 @@ def main(args=None):
     argcomplete.autocomplete(parser, always_complete_options=False)
     args = parser.parse_args(args)
     
-    setup_logger(args.log_level, args.log_path)
+    setup_logger(args.log_level, args.log_path, args.log_path_warninglevelonly)
     
     if args.oca_file_list:
         from .oca_generator import generate_oca_file_list

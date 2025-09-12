@@ -22,10 +22,16 @@ LEVEL_COLORS = {
 }
 
 
-def setup_logger(level, file_path=False):
+def setup_logger(level, file_path=False, warning_level_only_file_path=False):
     if not file_path:
         handler = logging.StreamHandler()
         handler.setFormatter(OdooMigrateFormatter())
+        if warning_level_only_file_path:
+            warning_handler = logging.FileHandler(warning_level_only_file_path)
+            warning_handler.setLevel(logging.WARNING)
+            warning_handler.setFormatter(MarkdownLogFormatter())
+            warning_handler.stream.reconfigure(encoding="utf-8")
+            logger.addHandler(warning_handler)
     else:
         handler = logging.FileHandler(file_path)
         handler.setFormatter(
@@ -36,6 +42,25 @@ def setup_logger(level, file_path=False):
     logger.addHandler(handler)
     logger.setLevel(getattr(logging, str(level)))
 
+class MarkdownLogFormatter(logging.Formatter):
+    COLOR_MAP = {
+        "DEBUG": "",
+        "INFO": "",
+        "WARNING": "⚠️ ",
+        "ERROR": "❌ ",
+        "CRITICAL": "🔥 ",
+    }
+
+    def format(self, record):
+        prefix = self.COLOR_MAP.get(record.levelname, "")
+        if record.levelname in ["ERROR", "CRITICAL"]:
+            level = f"<span style='color:red;'>**{record.levelname}**</span>"
+        elif record.levelname == "WARNING":
+            level = f"<span style='color:orange;'>*{record.levelname}*</span>"
+        else:
+            level = f"*{record.levelname}*"
+        asctime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(record.created))
+        return f"- [ ] {asctime},{int(record.msecs)} {prefix}{level} {record.getMessage()}"
 
 class OdooMigrateFormatter(logging.Formatter):
     def format(self, record):

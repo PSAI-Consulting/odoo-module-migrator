@@ -46,15 +46,18 @@ odoo-module-migrate --init-version-name 16.0 --oca-file-list
 
 ## ⚙️ Options principales
 
-| Option | Description |
-|--------|-------------|
-| `-i, --init-version-name` | Version source (ex: 16.0) |
-| `-t, --target-version-name` | Version cible (ex: 18.0) |
-| `-m, --modules` | Modules à migrer (séparés par virgule) |
-| `--no-commit` | Ne pas créer de commits git |
-| `--no-oca-modules` | Ignorer les modules OCA |
-| `--oca-file-list` | Générer OCA_MODULES.md |
-| `-d, --directory` | Répertoire cible (défaut: ./) |
+| Option                     | Description                                                               |
+|----------------------------|---------------------------------------------------------------------------|
+| `-i, --init-version-name`  | Version source (ex: 16.0)                                                 |
+| `-t, --target-version-name` | Version cible (ex: 18.0)                                                  |
+| `-m, --modules`            | Modules à migrer (séparés par virgule)                                    |
+| `--no-commit`              | Ne pas créer de commits git                                               |
+| `--no-oca-modules`         | Ignorer les modules OCA                                                   |
+| `--oca-file-list`          | Générer OCA_MODULES.md                                                    |
+| `-d, --directory`          | Répertoire cible (défaut: ./)                                             |
+| `-ll, --log-level`         | Niveau de Log (défaut: INFO)                                              |
+| `-lp, --log-path`          | Fichier de log (défaut: (vide))                                           |
+| `-lpwo, --log-path-warninglevelonly`          | Fichier de log pour stocker WARNING et ERROR en markdown (défaut: (vide)) |
 
 ## 🔍 Types de logs
 
