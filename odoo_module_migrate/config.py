@@ -1,12 +1,4 @@
-# Copyright (C) 2019 - Today: GRAP (http://www.grap.coop)
-# @author: Sylvain LE GAL (https://twitter.com/legalsylvain)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
-
-# List of migrations steps handled by this library
-# * init and target name are friendly name used by the user, when calling
-#   the lib.
-# * init and target code are technical code used to name the migration script
-#   files.
 
 _AVAILABLE_MIGRATION_STEPS = [
     {

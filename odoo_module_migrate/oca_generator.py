@@ -1,10 +1,6 @@
-# Copyright (C) 2019 - Today: GRAP (http://www.grap.coop)
-# @author: Sylvain LE GAL (https://twitter.com/legalsylvain)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-"""
-OCA modules list generator
-"""
+"""OCA modules list generator."""
 
 import os
 import pathlib
@@ -29,14 +25,11 @@ def generate_oca_file_list(directory_path):
                 try:
                     with open(manifest_path, 'r', encoding='utf-8') as f:
                         content = f.read()
-                    # Execute the manifest file to get its content as a dict
-                    # The manifest file contains a Python dictionary directly
                     manifest_data = eval(content)
                     if isinstance(manifest_data, dict):
                         author = manifest_data.get('author', '')
                         if 'Odoo Community Association (OCA)' in author:
                             return True, manifest_data
-                    # Fallback: check if content contains OCA reference
                     if 'Odoo Community Association (OCA)' in content:
                         return True, {}
                 except Exception:

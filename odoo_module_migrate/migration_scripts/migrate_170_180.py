@@ -1,6 +1,4 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
-# This script is based on the original code from:
-# https://github.com/odoo/odoo/blob/master/odoo/upgrade_code/17.5-00-tree-to-list.py
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 import re
@@ -8,9 +6,7 @@ import ast
 from pathlib import Path
 
 
-def replace_tree_with_list_in_views(
-    logger, module_path, module_name, manifest_path, migration_steps, tools
-):
+def replace_tree_with_list_in_views(logger, module_path, module_name, manifest_path, migration_steps, tools):
     files_to_process = tools.get_files(module_path, (".xml", ".js", ".py"))
 
     reg_tree_to_list_xml_mode = re.compile(
@@ -49,7 +45,6 @@ def replace_tree_with_list_in_views(
             content = reg_tree_to_list_String.sub(r"\1List\2", content)
             content = reg_tree_to_list_env_ref.sub(r"\1list\2", content)
 
-            # Only write if content actually changed
             if content != original_content:
                 tools._write_content(file, content)
                 logger.info(f"Updated tree->list in: {file}")
@@ -59,26 +54,13 @@ def replace_tree_with_list_in_views(
 
 
 def replace_attrs_and_states(logger, module_path, module_name, manifest_path, migration_steps, tools):
-    """
-    Replace deprecated 'attrs' and 'states' attributes with individual attributes.
+    """Replace deprecated 'attrs' and 'states' attributes with individual attributes."""
     
-    This function handles:
-    1. attrs="{'invisible': [('field', '=', 'value')]}" -> invisible="field == 'value'"
-    2. states="draft,done" -> invisible="state not in ('draft','done')"  
-    3. invisible -> column_invisible in tree/list views (for field elements)
-    4. <attribute name="attrs">...</attribute> in xpath elements
-    """
-    
-    # Find all XML files that might need migration
     xml_files = []
-    
-    # Search in common directories
     for subdir in ['views', 'data', 'demo', 'security', 'wizard']:
         xml_dir = Path(module_path) / subdir
         if xml_dir.exists():
             xml_files.extend(xml_dir.glob('**/*.xml'))
-    
-    # Also check root directory
     xml_files.extend(Path(module_path).glob('*.xml'))
     
     if not xml_files:
@@ -88,14 +70,12 @@ def replace_attrs_and_states(logger, module_path, module_name, manifest_path, mi
     logger.info(f"Processing {len(xml_files)} XML files for attrs/states migration in {module_name}")
     
     def convert_domain_to_expression(domain):
-        """Convert Odoo domain list to Python expression."""
         if not domain or not isinstance(domain, list):
             return "True"
         
         def convert_condition(condition):
             if not isinstance(condition, (list, tuple)) or len(condition) != 3:
                 return "True"
-            
             field, operator, value = condition
             
             if operator == '=':
@@ -300,9 +280,7 @@ def replace_attrs_and_states(logger, module_path, module_name, manifest_path, mi
         logger.debug(f"No files required attrs/states migration in {module_name}")
 
 
-def replace_chatter_blocks(
-    logger, module_path, module_name, manifest_path, migration_steps, tools
-):
+def replace_chatter_blocks(logger, module_path, module_name, manifest_path, migration_steps, tools):
     files_to_process = tools.get_files(module_path, (".xml",))
 
     reg_chatter_block = r"""<div class=["']oe_chatter["'](?![^>]*position=["'][^"']+["'])[^>]*>[\s\S]*?</div>"""
@@ -333,9 +311,7 @@ def replace_chatter_blocks(
             logger.error(f"Error processing file {file}: {str(e)}")
 
 
-def replace_deprecated_kanban_box_card_menu(
-    logger, module_path, module_name, manifest_path, migration_steps, tools
-):
+def replace_deprecated_kanban_box_card_menu(logger, module_path, module_name, manifest_path, migration_steps, tools):
     files_to_process = tools.get_files(module_path, (".xml", ".js", ".py"))
     replaces = {
         "kanban-card": "card",
@@ -353,9 +329,7 @@ def replace_deprecated_kanban_box_card_menu(
             logger.error(f"Error processing file {file}: {str(e)}")
 
 
-def replace_user_has_groups(
-    logger, module_path, module_name, manifest_path, migration_steps, tools
-):
+def replace_user_has_groups(logger, module_path, module_name, manifest_path, migration_steps, tools):
     files_to_process = tools.get_files(module_path, (".py",))
     replaces = {
         r"self\.user_has_groups\(\s*(['\"])([\w\.]+)\1\s*\)": r"self.env.user.has_group(\1\2\1)",
@@ -369,9 +343,7 @@ def replace_user_has_groups(
             logger.error(f"Error processing file {file}: {str(e)}")
 
 
-def replace_unaccent_parameter(
-    logger, module_path, module_name, manifest_path, migration_steps, tools
-):
+def replace_unaccent_parameter(logger, module_path, module_name, manifest_path, migration_steps, tools):
     files_to_process = tools.get_files(module_path, (".py",))
     replaces = {
         # Handle multiline with unaccent=False or unaccent=True
@@ -387,17 +359,13 @@ def replace_unaccent_parameter(
     for file in files_to_process:
         try:
             tools._replace_in_file(
-                file,
-                replaces,
-                log_message=f"[18.0] Removed deprecated unaccent=False parameter in file: {file}",
+                file, replaces, log_message=f"[18.0] Removed deprecated unaccent parameter in: {file}"
             )
         except Exception as e:
             logger.error(f"Error processing file {file}: {str(e)}")
 
 
-def replace_ustr(
-    logger, module_path, module_name, manifest_path, migration_steps, tools
-):
+def replace_ustr(logger, module_path, module_name, manifest_path, migration_steps, tools):
     files_to_process = tools.get_files(module_path, (".py",))
     replaces = {
         r"from\s+odoo\.tools\s+import\s+ustr\s*\n": "",
@@ -411,9 +379,7 @@ def replace_ustr(
     }
     for file in files_to_process:
         try:
-            tools._replace_in_file(
-                file, replaces, log_message=f"Deprecate ustr in: {file}"
-            )
+            tools._replace_in_file(file, replaces, log_message=f"Deprecate ustr in: {file}")
         except Exception as e:
             logger.error(f"Error processing file {file}: {str(e)}")
 

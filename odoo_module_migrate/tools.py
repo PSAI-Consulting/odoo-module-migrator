@@ -1,5 +1,3 @@
-# Copyright (C) 2019 - Today: GRAP (http://www.grap.coop)
-# @author: Sylvain LE GAL (https://twitter.com/legalsylvain)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 import subprocess
@@ -27,15 +25,14 @@ def _get_latest_version_code():
     return _AVAILABLE_MIGRATION_STEPS[-1]["target_version_code"]
 
 
-def _execute_shell(shell_command, path=False, raise_error=True):
+def _execute_shell(shell_command, path=None, raise_error=True):
     if path:
-        # Handle Windows path syntax properly
         path_str = str(path.resolve())
-        if os.name == 'nt':  # Windows
-            shell_command = 'cd /d "%s" && %s' % (path_str, shell_command)
-        else:  # Unix/Linux/macOS
-            shell_command = "cd '%s' && %s" % (path_str, shell_command)
-    logger.debug("Execute Shell:\n%s" % (shell_command))
+        if os.name == 'nt':
+            shell_command = f'cd /d "{path_str}" && {shell_command}'
+        else:
+            shell_command = f"cd '{path_str}' && {shell_command}"
+    logger.debug(f"Execute Shell:\n{shell_command}")
     if raise_error:
         return subprocess.check_output(shell_command, shell=True)
     else:
@@ -43,45 +40,37 @@ def _execute_shell(shell_command, path=False, raise_error=True):
 
 
 def _read_content(file_path):
-    f = open(file_path, "r", encoding="utf-8")
-    text = f.read()
-    f.close()
-    return text
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def _write_content(file_path, content):
-    f = open(file_path, "w", encoding="utf-8")
-    f.write(content)
-    f.close()
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
 
 
-def _replace_in_file(file_path, replaces, log_message=False):
+def _replace_in_file(file_path, replaces, log_message=None):
     current_text = _read_content(file_path)
     new_text = current_text
 
     for old_term, new_term in replaces.items():
         new_text = re.sub(old_term, new_term or "", new_text)
 
-    # Write file if changed
     if new_text != current_text:
         if not log_message:
-            log_message = "Changing content of file: %s" % file_path.name
+            log_message = f"Changing content of file: {file_path.name}"
         logger.info(log_message)
         _write_content(file_path, new_text)
     return new_text
 
 
 def get_files(module_path, extensions):
-    """
-    Returns a list of files with the specified extensions within the module_path.
-    """
-    file_paths = []
+    """Returns files with specified extensions in module_path."""
     module_dir = pathlib.Path(module_path)
-
     if not module_dir.is_dir():
-        raise Exception(f"'{module_path}' is not a valid directory.")
-
+        raise ValueError(f"'{module_path}' is not a valid directory")
+    
+    file_paths = []
     for ext in extensions:
         file_paths.extend(module_dir.rglob(f"*{ext}"))
-
     return file_paths

@@ -1,5 +1,3 @@
-# Copyright (C) 2019 - Today: GRAP (http://www.grap.coop)
-# @author: Sylvain LE GAL (https://twitter.com/legalsylvain)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 import importlib
@@ -41,58 +39,39 @@ class Migration:
         self._module_migrations = []
         self._directory_path = False
 
-        # Get migration steps that will be runned
+        # Get migration steps
         found = False
         for item in _AVAILABLE_MIGRATION_STEPS:
             if not found and item["init_version_name"] != init_version_name:
                 continue
-            else:
-                found = True
+            found = True
             self._migration_steps.append(item)
             if item["target_version_name"] == target_version_name:
-                # This is the last step, exiting
                 break
 
-        # Check consistency between format patch and module_names args
         if format_patch and len(module_names) != 1:
-            raise ConfigException(
-                "Format patch option can only be used for a single module"
-            )
-        logger.debug("Module list: %s" % module_names)
-        logger.debug("format patch option : %s" % format_patch)
+            raise ConfigException("Format patch option requires exactly one module")
+        logger.debug(f"Module list: {module_names}")
+        logger.debug(f"Format patch option: {format_patch}")
 
-        # convert relative or absolute directory into Path Object
         if not os.path.exists(relative_directory_path):
-            raise ConfigException(
-                "Unable to find directory: %s" % relative_directory_path
-            )
+            raise ConfigException(f"Directory not found: {relative_directory_path}")
 
         root_path = pathlib.Path(relative_directory_path)
         self._directory_path = pathlib.Path(root_path.resolve(strict=True))
 
-        # format-patch, if required
         if format_patch:
             if not (root_path / module_names[0]).is_dir():
                 self._get_code_from_previous_branch(module_names[0], remote_name)
             else:
-                logger.warning(
-                    "Ignoring format-patch argument, as the module %s"
-                    " is still present in the repository" % (module_names[0])
-                )
+                logger.warning(f"Ignoring format-patch, module {module_names[0]} already exists")
 
-        # Guess modules if not provided, and check validity
         if not module_names:
-            module_names = []
-            # Recover all submodules, if no modules list is provided
             child_paths = [x for x in root_path.iterdir() if x.is_dir()]
             for child_path in child_paths:
                 if self._is_module_path(child_path):
-                    # Skip OCA modules if --no-oca-modules is set
                     if self._no_oca_modules and self._is_oca_module(child_path):
-                        logger.info(
-                            "Skipping OCA module '%s' due to --no-oca-modules option"
-                            % child_path.name
-                        )
+                        logger.info(f"Skipping OCA module '{child_path.name}' due to --no-oca-modules option")
                         continue
                     module_names.append(child_path.name)
         else:
@@ -101,17 +80,10 @@ class Migration:
             for child_path in child_paths:
                 if not self._is_module_path(child_path):
                     modules_to_remove.append(child_path.name)
-                    logger.warning(
-                        "No valid module found for '%s' in the directory '%s'"
-                        % (child_path.name, root_path.resolve())
-                    )
+                    logger.warning(f"No valid module found for '{child_path.name}' in '{root_path.resolve()}'")
                 elif self._no_oca_modules and self._is_oca_module(child_path):
                     modules_to_remove.append(child_path.name)
-                    logger.info(
-                        "Skipping OCA module '%s' due to --no-oca-modules option"
-                        % child_path.name
-                    )
-            # Remove modules after iteration to avoid modifying list during iteration
+                    logger.info(f"Skipping OCA module '{child_path.name}' due to --no-oca-modules option")
             for module_to_remove in modules_to_remove:
                 module_names.remove(module_to_remove)
 
@@ -146,71 +118,44 @@ class Migration:
         return any([(module_path / x).exists() for x in _MANIFEST_NAMES])
 
     def _is_oca_module(self, module_path):
-        """Check if a module is an OCA module by looking at its manifest."""
+        """Check if a module is an OCA module."""
         for manifest_name in _MANIFEST_NAMES:
             manifest_path = module_path / manifest_name
             if manifest_path.exists():
                 try:
                     with open(manifest_path, 'r', encoding='utf-8') as f:
                         content = f.read()
-                    # Execute the manifest file to get its content as a dict
-                    manifest_dict = {}
-                    exec(content, manifest_dict)
-                    # Look for the actual manifest data (usually stored in a dict)
-                    for key, value in manifest_dict.items():
-                        if isinstance(value, dict) and 'author' in value:
-                            author = value.get('author', '')
-                            if 'Odoo Community Association (OCA)' in author:
-                                return True
-                    # Also check if the content directly contains OCA reference
+                    manifest_data = eval(content)
+                    if isinstance(manifest_data, dict):
+                        author = manifest_data.get('author', '')
+                        if 'Odoo Community Association (OCA)' in author:
+                            return True
                     if 'Odoo Community Association (OCA)' in content:
                         return True
                 except Exception:
-                    # If we can't read the manifest, assume it's not OCA
                     pass
         return False
 
     def _get_code_from_previous_branch(self, module_name, remote_name):
         init_version = self._migration_steps[0]["init_version_name"]
         target_version = self._migration_steps[-1]["target_version_name"]
-        branch_name = "%(version)s-mig-%(module_name)s" % {
-            "version": target_version,
-            "module_name": module_name,
-        }
+        branch_name = f"{target_version}-mig-{module_name}"
 
-        logger.info("Creating new branch '%s' ..." % (branch_name))
+        logger.info(f"Creating new branch '{branch_name}' ...")
         _execute_shell(
-            "git checkout --no-track -b %(branch)s %(remote)s/%(version)s"
-            % {
-                "branch": branch_name,
-                "remote": remote_name,
-                "version": target_version,
-            },
-            path=self._directory_path,
+            f"git checkout --no-track -b {branch_name} {remote_name}/{target_version}",
+            path=self._directory_path
         )
 
         logger.info("Getting latest changes from old branch")
-        # Depth is added just in case you had a shallow git history
         _execute_shell(
-            "git fetch --depth 9999999 %(remote)s %(init)s"
-            % {
-                "remote": remote_name,
-                "init": init_version,
-            },
-            path=self._directory_path,
+            f"git fetch --depth 9999999 {remote_name} {init_version}",
+            path=self._directory_path
         )
 
         _execute_shell(
-            "git format-patch --keep-subject "
-            "--stdout %(remote)s/%(target)s..%(remote)s/%(init)s "
-            "-- %(module)s | git am -3 --keep"
-            % {
-                "remote": remote_name,
-                "init": init_version,
-                "target": target_version,
-                "module": module_name,
-            },
-            path=self._directory_path,
+            f"git format-patch --keep-subject --stdout {remote_name}/{target_version}..{remote_name}/{init_version} -- {module_name} | git am -3 --keep",
+            path=self._directory_path
         )
 
     def _load_migration_script(self, full_name):
@@ -223,67 +168,38 @@ class Migration:
         return result
 
     def _get_migration_scripts(self):
-        # Add the script that will be allways executed
         self._migration_scripts.extend(
-            self._load_migration_script(
-                "odoo_module_migrate.migration_scripts.migrate_allways"
-            )
+            self._load_migration_script("odoo_module_migrate.migration_scripts.migrate_allways")
         )
         if self._remove_migration_folder:
             self._migration_scripts.extend(
-                self._load_migration_script(
-                    "odoo_module_migrate.migration_scripts."
-                    "migrate_remove_migration_folder"
-                )
+                self._load_migration_script("odoo_module_migrate.migration_scripts.migrate_remove_migration_folder")
             )
+        
         all_packages = importlib.import_module("odoo_module_migrate.migration_scripts")
-
         migration_start = float(self._migration_steps[0]["init_version_code"])
         migration_end = float(self._migration_steps[-1]["target_version_code"])
 
         for loader, name, is_pkg in pkgutil.walk_packages(all_packages.__path__):
-            # Ignore script that will be allways executed.
-            # this script will be added at the end.
             if name in ("migrate_allways", "migrate_remove_migration_folder"):
                 continue
 
-            # Filter migration scripts, depending of the configuration
-            full_name = all_packages.__name__ + "." + name
-            if "allways" in name:
-                # replace allways by the most recent version
-                real_name = name.replace("allways", _get_latest_version_code())
-            else:
-                real_name = name
+            full_name = f"{all_packages.__name__}.{name}"
+            real_name = name.replace("allways", _get_latest_version_code()) if "allways" in name else name
             splitted_name = real_name.split("_")
 
             script_start = float(splitted_name[1])
             script_end = float(splitted_name[2])
 
-            # Exclude scripts
-            if script_start >= migration_end or script_end <= migration_start:
-                continue
+            if not (script_start >= migration_end or script_end <= migration_start):
+                self._migration_scripts.extend(self._load_migration_script(full_name))
 
-            self._migration_scripts.extend(self._load_migration_script(full_name))
-
-        logger.debug(
-            "The following migration script will be"
-            " executed:\n- %s"
-            % "\n- ".join(
-                [
-                    inspect.getfile(x.__class__).split("/")[-1]
-                    for x in self._migration_scripts
-                ]
-            )
-        )
+        scripts = [inspect.getfile(x.__class__).split("/")[-1] for x in self._migration_scripts]
+        logger.debug(f"Migration scripts to execute:\n- " + "\n- ".join(scripts))
 
     def run(self):
-        logger.debug(
-            "Running migration from: %s to: %s in '%s'"
-            % (
-                self._migration_steps[0]["init_version_name"],
-                self._migration_steps[-1]["target_version_name"],
-                self._directory_path.resolve(),
-            )
-        )
+        init_version = self._migration_steps[0]["init_version_name"]
+        target_version = self._migration_steps[-1]["target_version_name"]
+        logger.debug(f"Running migration from {init_version} to {target_version} in '{self._directory_path.resolve()}'")
         for module_migration in self._module_migrations:
             module_migration.run()
