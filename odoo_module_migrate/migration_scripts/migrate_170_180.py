@@ -188,7 +188,7 @@ def replace_attrs_and_states(logger, module_path, module_name, manifest_path, mi
                     if isinstance(attrs_dict, dict):
                         replacements = []
                         for modifier, conditions in attrs_dict.items():
-                            if modifier in ['invisible', 'readonly', 'required']:
+                            if modifier in ['invisible', 'readonly', 'required', 'column_invisible']:
                                 expression = convert_domain_to_expression(conditions)
                                 replacements.append(f'<attribute name="{modifier}">{expression}</attribute>')
                         
@@ -214,7 +214,7 @@ def replace_attrs_and_states(logger, module_path, module_name, manifest_path, mi
                     if isinstance(attrs_dict, dict):
                         replacements = []
                         for modifier, conditions in attrs_dict.items():
-                            if modifier in ['invisible', 'readonly', 'required']:
+                            if modifier in ['invisible', 'readonly', 'required', 'column_invisible']:
                                 expression = convert_domain_to_expression(conditions)
                                 replacements.append(f'{modifier}="{expression}"')
                         

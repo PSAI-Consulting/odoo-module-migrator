@@ -125,6 +125,13 @@ def get_parser():
         "'author': 'Odoo Community Association (OCA)' in their manifest.",
     )
 
+    main_parser.add_argument(
+        "--oca-file-list",
+        action="store_true",
+        default=False,
+        help="Generate OCA_MODULES.md file listing all OCA modules found in the project.",
+    )
+
     return main_parser
 
 
@@ -139,6 +146,12 @@ def main(args=False):
 
     # Set log level
     setup_logger(args.log_level, args.log_path)
+
+    # Handle OCA file list generation
+    if args.oca_file_list:
+        from .oca_generator import generate_oca_file_list
+        generate_oca_file_list(args.directory)
+        return
 
     try:
         # Create a new Migration Object
