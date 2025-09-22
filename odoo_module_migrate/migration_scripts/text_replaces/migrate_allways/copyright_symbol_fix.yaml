@@ -1,0 +1,55 @@
+# Fix copyright symbol encoding issues
+# This replaces the problematic © character with "Copyright" to avoid XML parsing errors
+# during migration and in general file processing.
+
+.py:
+  # Python files - replace © with Copyright in comments and docstrings
+  '©': 'Copyright'
+
+.xml:
+  # XML files - replace © with Copyright in comments and attributes
+  '©': 'Copyright'
+
+.rst:
+  # RST files - replace © with Copyright
+  '©': 'Copyright'
+
+.md:
+  # Markdown files - replace © with Copyright
+  '©': 'Copyright'
+
+.txt:
+  # Text files - replace © with Copyright
+  '©': 'Copyright'
+
+.yml:
+  # YAML files - replace © with Copyright
+  '©': 'Copyright'
+
+.yaml:
+  # YAML files - replace © with Copyright
+  '©': 'Copyright'
+
+.json:
+  # JSON files - replace © with Copyright
+  '©': 'Copyright'
+
+.js:
+  # JavaScript files - replace © with Copyright
+  '©': 'Copyright'
+
+.css:
+  # CSS files - replace © with Copyright
+  '©': 'Copyright'
+
+.html:
+  # HTML files - replace © with Copyright
+  '©': 'Copyright'
+
+.po:
+  # Translation files - replace © with Copyright
+  '©': 'Copyright'
+
+.pot:
+  # Translation template files - replace © with Copyright
+  '©': 'Copyright'
