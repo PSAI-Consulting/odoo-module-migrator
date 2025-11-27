@@ -1,0 +1,2 @@
+- ['sale.order.line', 'product_uom', 'product_uom_id', 'champ Many2one renommé sur les lignes de vente pour respecter la convention']
+- ['sale.order.line', 'tax_id', 'tax_ids', 'champ renommé pour gérer plusieurs taxes par ligne de vente']

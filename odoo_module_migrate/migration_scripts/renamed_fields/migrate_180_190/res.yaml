@@ -1,0 +1,3 @@
+- ['res.groups', 'category_id', 'privilege_id', 'champ renommé : les groupes utilisent maintenant privilege_id pour définir leurs privilèges']
+- ['res.users', 'groups_id', 'group_ids', 'champ Many2many renommé pour les groupes associés à l’utilisateur']
+- ['res.groups', 'users', 'user_ids', 'le champ Many2many des utilisateurs d’un groupe est renommé en user_ids']

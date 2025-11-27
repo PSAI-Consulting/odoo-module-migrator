@@ -1,0 +1,3 @@
+- ['purchase.order.line', 'product_uom', 'product_uom_id', 'convention _id : champ Many2one renommé pour les lignes de commande d’achat']
+- ['purchase.order.line', 'taxes_id', 'tax_ids', 'champ renommé en Many2many pour supporter plusieurs taxes']
+- ['purchase.order', 'notes', 'note', 'le champ "notes" a été renommé en "note"']

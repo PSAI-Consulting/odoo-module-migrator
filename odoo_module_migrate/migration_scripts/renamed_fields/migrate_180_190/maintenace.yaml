@@ -1,0 +1,1 @@
+- ['maintenance.equipment', 'location', 'location_id', 'la localisation est désormais un Many2one vers stock.location']

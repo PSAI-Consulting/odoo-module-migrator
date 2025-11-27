@@ -1,0 +1,4 @@
+- ['ir.actions.server', 'groups_id', 'group_ids', 'les actions utilisent également group_ids au lieu de groups_id']
+- ['ir.actions.act_window', 'groups_id', 'group_ids', 'les actions utilisent également group_ids au lieu de groups_id']
+- ['ir.actions.report', 'groups_id', 'group_ids', 'les actions utilisent également group_ids au lieu de groups_id']
+- ['ir.actions.server', 'groups_id', 'group_ids', 'les actions utilisent également group_ids au lieu de groups_id']

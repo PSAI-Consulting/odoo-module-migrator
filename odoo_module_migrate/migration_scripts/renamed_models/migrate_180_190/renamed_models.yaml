@@ -1,0 +1,1 @@
+- ['procurement.group', 'stock.reference', 'le modèle d’agrégation des approvisionnements est remplacé par stock.reference pour améliorer le lien entre commandes et MRP']

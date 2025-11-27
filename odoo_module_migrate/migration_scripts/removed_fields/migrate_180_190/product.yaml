@@ -1,0 +1,2 @@
+- ['product.template', 'sale_line_warn', 'champ d’avertissement sur les lignes de vente supprimé']
+- ['product.template', 'uom_po_id', 'champ d’unité d’achat supprimé ; la gestion des UoM d’achat a été refondue']

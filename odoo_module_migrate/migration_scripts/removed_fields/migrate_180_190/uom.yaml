@@ -1,0 +1,1 @@
+- ['uom.uom', 'category_id', 'champ supprimé du modèle des unités de mesure ; l’unité de référence est désormais stockée dans relative_uom_id']

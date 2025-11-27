@@ -1,0 +1,5 @@
+- ['hr.candidate', 'modèle supprimé ; la gestion du recrutement est désormais intégrée à hr.employee']
+- ['hr.employee.base', 'modèle de base des employés supprimé – utiliser hr.employee ou hr.employee.public']
+- ['hr.expense.sheet', 'modèle d’état de dépenses supprimé ; les frais sont gérés directement via hr.expense']
+- ['stock.valuation.layer', 'modèle supprimé ; la valorisation est désormais stockée directement sur stock.move']
+- ['res.partner.title', 'modèle supprimé ; les titres honorifiques ne sont plus gérés séparément']

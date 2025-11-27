@@ -1,0 +1,3 @@
+- ['res.partner', 'mobile', 'champ supprimé ; le numéro de mobile est à présent saisi dans le champ phone']
+- ['res.partner', 'last_website_so_id', 'champ supprimé qui stockait le dernier bon de commande passé via le site web']
+- ['res.partner', 'picking_warn', 'champ d’avertissement logistique supprimé']

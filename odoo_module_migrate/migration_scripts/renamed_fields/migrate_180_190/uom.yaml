@@ -1,0 +1,2 @@
+- ['uom.uom', 'factor_inv', 'relative_factor', 'champ renommé pour exprimer le facteur relatif entre unités']
+- ['uom.uom', 'category_id', 'relative_uom_id', 'la catégorie d’unités est remplacée par une relation vers l’unité de référence']
