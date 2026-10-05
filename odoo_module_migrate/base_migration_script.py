@@ -110,7 +110,8 @@ class BaseMigrationScript:
         for rule_name, rule_data in rules.items():
             rule_folder = rule_name[1:].lower()
             file_pattern = os.path.join(migration_scripts_dir, rule_folder, migrate_from_to, "*.yaml")
-            for filename in glob.glob(file_pattern):
+            # sorted: same order on every OS (curated.yaml before generated.yaml)
+            for filename in sorted(glob.glob(file_pattern)):
                 with open(filename, encoding='utf-8') as f:
                     new_rules = yaml.safe_load(f)
                     if not new_rules:  # empty or comments only
@@ -286,16 +287,18 @@ class BaseMigrationScript:
     def handle_fields(self, module_path: pathlib.Path) -> None:
         """Renamed fields are renamed and removed fields reported, only where
         the model is known (see analysis/fields.py): no false positive."""
-        renames = {
-            (r[0], r[1]): r[2] for r in self._RENAMED_FIELDS
-            if len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or ""))
-        }
+        # First rule wins: curated.yaml (hand verified) is loaded before
+        # generated.yaml (alphabetical order of the rule files)
+        renames = {}
+        for r in self._RENAMED_FIELDS:
+            if len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or "")):
+                renames.setdefault((r[0], r[1]), r[2])
         sources = {(r[0], r[1]): (r[-1] if len(r) > 3 else "") for r in self._RENAMED_FIELDS}
         # a renamed field is not removed (e.g. curated.yaml vs generated.yaml)
-        removed = {
-            (r[0], r[1]): (r[2] if len(r) > 2 else "") for r in self._REMOVED_FIELDS
-            if (r[0], r[1]) not in renames
-        }
+        removed = {}
+        for r in self._REMOVED_FIELDS:
+            if (r[0], r[1]) not in renames:
+                removed.setdefault((r[0], r[1]), r[2] if len(r) > 2 else "")
         if not renames and not removed:
             return
         files = [
