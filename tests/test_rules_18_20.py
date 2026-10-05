@@ -103,6 +103,40 @@ def test_groups_category_to_privilege():
     assert gp._convert(new, "edi_worker", names) == (new, [], 0)
 
 
+def test_product_storable():
+    from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180 import (
+        product_storable as ps,
+    )
+
+    py = (
+        "moves = self.filtered(lambda m: m.product_id.type != 'product')\n"
+        "if line.product_id.detailed_type == \"product\":\n"
+        "domain = [('product_id.type', '=', 'product')]\n"
+        "if self.type == 'product':\n"
+    )
+    new = ps._apply(ps.PY_RULES, py)
+    assert new == (
+        "moves = self.filtered(lambda m: not m.product_id.is_storable)\n"
+        "if line.product_id.is_storable:\n"
+        "domain = [('product_id.is_storable', '=', True)]\n"
+        "if self.type == 'product':\n"          # model unknown: reported only
+    )
+    assert ps.LEFTOVER_RE.search(new)
+    xml = '''<record id="v" model="ir.ui.view">
+        <field name="model">product.product</field>
+        <field name="arch" type="xml">
+            <field name="virtual_free_qty" invisible="type != 'product'"/>
+        </field>
+    </record>
+    <record id="w" model="ir.ui.view">
+        <field name="model">stock.picking.type</field>
+        <field name="arch" type="xml"><field name="x" invisible="type != 'product'"/></field>
+    </record>'''
+    new = ps.PRODUCT_VIEW_RE.sub(lambda m: ps._apply(ps.VIEW_RULES, m.group(0)), xml)
+    assert 'invisible="not is_storable"' in new
+    assert new.count("type != 'product'") == 1  # other model untouched
+
+
 def test_cron_fields_removed():
     text = (
         '        <field name="numbercall">-1</field>\n'

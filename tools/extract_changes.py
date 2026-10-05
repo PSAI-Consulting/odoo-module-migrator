@@ -258,6 +258,18 @@ def extract_fields(args):
             )
         except SystemExit:
             pass
+        if removed_fields and args.repo:
+            # "DEL" in an analysis means "this module does not define the field
+            # anymore": keep it only if no module of the target defines it
+            target = ef.target_fields(
+                [pathlib.Path(spec.partition("@")[0]) for spec in args.repo],
+                lambda repo: resolve_ref(repo, args.to_version),
+            )
+            before = len(removed_fields)
+            removed_fields = [r for r in removed_fields if r[1] not in target.get(r[0], ())]
+            removed_models = [r for r in removed_models if r[0] not in target]
+            print(f"{before - len(removed_fields)} 'DEL' fields still defined in "
+                  f"{args.to_version}: skipped", file=sys.stderr)
     if not renamed_fields and not removed_fields:
         # No OpenUpgrade analysis for this version: compare the sources
         repos = [pathlib.Path(spec.partition("@")[0]) for spec in args.repo]

@@ -78,6 +78,16 @@ def parse_fields(files):
     return result
 
 
+def target_fields(repos, ref_of):
+    """{model: field names} defined anywhere in the Python files of `ref`."""
+    result = collections.defaultdict(set)
+    for repo in repos:
+        files = read_blobs(repo, ref_of(repo), re.compile(r"(^|/)(addons|models|wizards?|report)/.*\.py$"))
+        for model, fields in parse_fields(files).items():
+            result[model].update(fields)
+    return result
+
+
 def source_changes(repos, ref_from_of, ref_to_of, models_filter):
     """Removed fields and rename candidates by comparing the sources."""
     path_re = re.compile(r"/(models|wizards?|report)/[^/]+\.py$")

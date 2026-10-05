@@ -193,7 +193,6 @@ class BaseMigrationScript:
                 )
 
         self.handle_deprecated_modules(manifest_path, self._DEPRECATED_MODULES)
-        self.handle_fields(module_path)
 
         if self._GLOBAL_FUNCTIONS:
             for function in self._GLOBAL_FUNCTIONS:
@@ -205,6 +204,10 @@ class BaseMigrationScript:
                     migration_steps=migration_steps,
                     tools=tools,
                 )
+
+        # After the dedicated transformations (e.g. res.groups privileges):
+        # only what is left is renamed / reported
+        self.handle_fields(module_path)
 
     def process_file(
         self, 
