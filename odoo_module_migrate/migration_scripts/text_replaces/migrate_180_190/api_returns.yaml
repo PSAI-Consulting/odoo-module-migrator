@@ -1,0 +1,7 @@
+# @api.returns supprimé en 19.0
+# Source : odoo commit 76967686cc07 "[IMP] core: remove @api.returns and move
+# call_kw to odoo.service.model" ; Odoo a simplement retiré les décorateurs.
+# Décorateur sur une seule ligne uniquement ; les autres cas restent signalés
+# par text_errors/migrate_180_190/api_returns.yaml.
+.py:
+  '(?m)^[ \t]*@api\.returns\([^\n]*\)[ \t]*\n': ''

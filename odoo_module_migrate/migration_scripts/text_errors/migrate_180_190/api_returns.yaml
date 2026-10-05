@@ -1,0 +1,3 @@
+# Source : odoo commit 76967686cc07 (19.0) : api.returns n'existe plus
+.py:
+  '@api\.returns\b': "[19] @api.returns was removed (odoo 76967686cc07): remove the decorator"

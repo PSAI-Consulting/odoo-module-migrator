@@ -13,6 +13,7 @@ from .config import _ALLOWED_EXTENSIONS
 from .tools import _rename_path, _replace_in_file, _read_content, _write_content
 from .log import logger
 from . import manifest, tools
+from .analysis import fields as analysis_fields
 
 
 class BaseMigrationScript:
@@ -112,6 +113,8 @@ class BaseMigrationScript:
             for filename in glob.glob(file_pattern):
                 with open(filename, encoding='utf-8') as f:
                     new_rules = yaml.safe_load(f)
+                    if not new_rules:  # empty or comments only
+                        continue
                     if rule_data["type"] == TYPE_DICT_OF_DICT:
                         for f_type, data in new_rules.items():
                             if f_type not in rule_data["doc"]:
@@ -190,6 +193,7 @@ class BaseMigrationScript:
                 )
 
         self.handle_deprecated_modules(manifest_path, self._DEPRECATED_MODULES)
+        self.handle_fields(module_path)
 
         if self._GLOBAL_FUNCTIONS:
             for function in self._GLOBAL_FUNCTIONS:
@@ -227,65 +231,102 @@ class BaseMigrationScript:
             absolute_file_path = os.path.join(root, new_name)
             filename = new_name # ensure filename is updated for subsequent checks
 
-        removed_fields = self.handle_removed_fields(self._REMOVED_FIELDS)
-        renamed_fields = self.handle_renamed_fields(self._RENAMED_FIELDS)
-        renamed_models = self.handle_renamed_models(self._RENAMED_MODELS)
-        removed_models = self.handle_removed_models(self._REMOVED_MODELS)
-
-        # Operate changes in the file (replacements, removals)
-        # Always work on copies: the rule dicts are shared between files
-        replaces = dict(self._TEXT_REPLACES.get("*", {}))
-        replaces.update(self._TEXT_REPLACES.get(extension, {}))
-        replaces.update(renamed_models.get("replaces", {}))
-        replaces.update(removed_models.get("replaces", {}))
-
+        rules = self._file_rules(extension)
         new_text = _replace_in_file(
-            absolute_file_path, replaces, "Change file content of %s" % filename
+            absolute_file_path, rules["replaces"], "Change file content of %s" % filename
         )
 
-        # Display errors if the new content contains some obsolete pattern
-        errors = dict(self._TEXT_ERRORS.get("*", {}))
-        errors.update(self._TEXT_ERRORS.get(extension, {}))
-        errors.update(renamed_models.get("errors", {}))
-        errors.update(removed_models.get("errors", {}))
-        for pattern, error_message in errors.items():
-            if re.findall(pattern, new_text):
-                logger.error(error_message + "\nFile " + os.path.join(root, filename))
+        # Report obsolete patterns still present, with their first line
+        for level, patterns in (("error", rules["errors"]), ("warning", rules["warnings"])):
+            for pattern, message in patterns.items():
+                match = re.search(pattern, new_text)
+                if match:
+                    line = new_text.count("\n", 0, match.start()) + 1
+                    getattr(logger, level)(
+                        "%s. File %s:%s" % (message.rstrip(". "), absolute_file_path, line)
+                    )
 
-        warnings = dict(self._TEXT_WARNINGS.get("*", {}))
-        warnings.update(self._TEXT_WARNINGS.get(extension, {}))
-        warnings.update(removed_fields.get("warnings", {}))
-        warnings.update(renamed_fields.get("warnings", {}))
-        warnings.update(renamed_models.get("warnings", {}))
-        warnings.update(removed_models.get("warnings", {}))
-        for pattern, warning_message in warnings.items():
-            if re.findall(pattern, new_text):
-                logger.warning(warning_message + ". File " + root + os.sep + filename)
+    def _file_rules(self, extension: str) -> Dict[str, Dict[str, str]]:
+        """Replaces / errors / warnings for a file extension (computed once).
 
-    def handle_removed_fields(self, removed_fields: List[Tuple]) -> Dict[str, Any]:
-        """Give warnings if field_name is found on the code."""
-        res = {}
-        for model_name, field_name, more_info in removed_fields:
-            msg = "On the model %s, the field %s was deprecated.%s" % (
-                model_name,
-                field_name,
-                " %s" % more_info if more_info else "",
-            )
-            res[r"""(['"]{0}['"]|\.{0}[\s,=])""".format(field_name)] = msg
-        return {"warnings": res}
+        Fields are not here: see handle_fields(), which knows the models.
+        """
+        cache = self.__dict__.setdefault("_rules_cache", {})
+        if extension not in cache:
+            renamed_models = self.handle_renamed_models(self._RENAMED_MODELS)
+            removed_models = self.handle_removed_models(self._REMOVED_MODELS)
+            result = {}
+            for kind, own in (
+                ("replaces", self._TEXT_REPLACES),
+                ("errors", self._TEXT_ERRORS),
+                ("warnings", self._TEXT_WARNINGS),
+            ):
+                # Always work on copies: the rule dicts are shared between files
+                rules = dict(own.get("*", {}))
+                rules.update(own.get(extension, {}))
+                rules.update(renamed_models.get(kind, {}))
+                rules.update(removed_models.get(kind, {}))
+                result[kind] = rules
+            cache[extension] = result
+        return cache[extension]
 
-    def handle_renamed_fields(self, removed_fields: List[Tuple]) -> Dict[str, Any]:
-        """Give warnings if old_field_name is found on the code."""
-        res = {}
-        for model_name, old_field_name, new_field_name, more_info in removed_fields:
-            msg = "On the model %s, the field %s was renamed to %s.%s" % (
-                model_name,
-                old_field_name,
-                new_field_name,
-                " %s" % more_info if more_info else "",
-            )
-            res[r"""(['"]{0}['"]|\.{0}[\s,=])""".format(old_field_name)] = msg
-        return {"warnings": res}
+    def handle_fields(self, module_path: pathlib.Path) -> None:
+        """Renamed fields are renamed and removed fields reported, only where
+        the model is known (see analysis/fields.py): no false positive."""
+        renames = {
+            (r[0], r[1]): r[2] for r in self._RENAMED_FIELDS
+            if len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or ""))
+        }
+        sources = {(r[0], r[1]): (r[-1] if len(r) > 3 else "") for r in self._RENAMED_FIELDS}
+        removed = {(r[0], r[1]): (r[2] if len(r) > 2 else "") for r in self._REMOVED_FIELDS}
+        if not renames and not removed:
+            return
+        files = [
+            p for p in tools.get_files(module_path, (".py", ".xml"))
+            if not self._is_skipped_folder(module_path, str(p.parent))
+        ]
+        # Fields defined by the module itself on a model are its own
+        defined = set()
+        parsed = {}
+        for path in files:
+            text = _read_content(path)
+            if path.suffix == ".py":
+                usages, fields_by_model = analysis_fields.python_usages(text)
+                defined.update((m, f) for m, fs in fields_by_model.items() for f in fs)
+            else:
+                usages = analysis_fields.xml_usages(text)
+            parsed[path] = (text, usages)
+
+        for path, (text, usages) in parsed.items():
+            usages = [u for u in usages if (u.model, u.field) not in defined]
+            new_text, count = analysis_fields.apply_renames(text, usages, renames)
+            if count:
+                _write_content(path, new_text)
+                done = sorted({(u.model, u.field) for u in usages if (u.model, u.field) in renames})
+                logger.info(
+                    "Renamed fields %s in %s (%d place(s))" % (
+                        ", ".join("%s.%s -> %s" % (m, f, renames[(m, f)]) for m, f in done),
+                        path, count,
+                    )
+                )
+            for usage in usages:
+                key = (usage.model, usage.field)
+                if key in removed:
+                    level = "error" if path.suffix == ".xml" else "warning"
+                    getattr(logger, level)(
+                        "Field %s.%s was removed (%s)%s. File %s:%s" % (
+                            usage.model, usage.field, usage.context,
+                            " - %s" % removed[key] if removed[key] else "", path, usage.line,
+                        )
+                    )
+                elif key in sources and key not in renames:
+                    logger.warning(
+                        "Field %s.%s was renamed to %s: update it by hand (%s). File %s:%s" % (
+                            usage.model, usage.field,
+                            [r[2] for r in self._RENAMED_FIELDS if (r[0], r[1]) == key][0],
+                            usage.context, path, usage.line,
+                        )
+                    )
 
     def handle_deprecated_modules(self, manifest_path: pathlib.Path, deprecated_modules: List[Any]) -> None:
         """Rewrite the 'depends' of the manifest for removed / renamed /
@@ -357,12 +398,6 @@ class BaseMigrationScript:
                     r"model_%s\"" % table_name: msg,
                     r"model_%s\'" % table_name: msg,
                     r"model_%s," % table_name: msg,
-                }
-            )
-            res["warnings"].update(
-                {
-                    model_name_esc: msg,
-                    table_name: msg,
                 }
             )
         return res

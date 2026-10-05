@@ -240,10 +240,28 @@ class Migration:
                 module_migration.apply_scripts()
             if self._upgrade_code_options:
                 self._run_upgrade_code()
+                self._check_view_anchors()
             for module_migration in self._module_migrations:
                 module_migration.finalize()
         finally:
             tools.RUN_CONTEXT.clear()
+
+    def _check_view_anchors(self):
+        """Inherited views anchored on fields absent from the target views."""
+        from .analysis import views
+
+        options = self._upgrade_code_options
+        reference = list(options.addons_path)
+        logger.info("Checking the view anchors against the target Odoo views...")
+        index = views.ViewIndex.build(
+            reference + list(options.context_path) + [self._directory_path]
+        )
+        reference_modules = {m.name for m in views._module_dirs(reference)}
+        for module_migration in self._module_migrations:
+            for path, line, message in views.check_module(
+                module_migration._module_path, index, reference_modules
+            ):
+                logger.error("[view] %s. File %s:%s" % (message, path, line))
 
     def _run_upgrade_code(self):
         init_version = self._migration_steps[0]["init_version_name"]
