@@ -1,0 +1,17 @@
+# Modules OCA 17.0 -> 20.0 (branches 17.0 des dépôts OCA locaux, lues sans checkout)
+name: oca_17_20
+from: "17.0"
+to: "20.0"
+odoo_root: D:/Odoo/odoo/20.0
+odoo_python: D:/Odoo/local-addons/Stof/stof/venv/Scripts/python.exe
+db_config: D:/Odoo/local-addons/Stof/stof/odoo20.conf  # accès PostgreSQL uniquement
+blank_template: migrator_bench_blank_20
+sources:
+  - {git: D:/Odoo/local-addons/OdooOCA/sale-workflow, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/Odoo/local-addons/OdooOCA/purchase-workflow, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/Odoo/local-addons/OdooOCA/partner-contact, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/Odoo/local-addons/OdooOCA/stock-logistics-workflow, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/Odoo/local-addons/OdooOCA/account-invoicing, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/Odoo/local-addons/OdooOCA/server-ux, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/Odoo/local-addons/OdooOCA/web, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/Odoo/local-addons/OdooOCA/l10n-france, ref: origin/17.0, modules: auto, limit: 6}

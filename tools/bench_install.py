@@ -58,9 +58,64 @@ def pg_tool(options, name):
     return name
 
 
+def write_conf(options, addons_path, db, tmp):
+    conf = pathlib.Path(tmp) / f"{db}.conf"
+    bench = configparser.ConfigParser(interpolation=None)
+    bench["options"] = {
+        k: v for k, v in options.items()
+        if k.startswith("db_") and k != "db_name" or k == "pg_path"
+    }
+    bench["options"].update({
+        "addons_path": ",".join(addons_path),
+        "data_dir": str(pathlib.Path(tmp) / "data"),
+        "db_name": db,
+        "dbfilter": f"^{db}$",
+        "list_db": "False",
+        "max_cron_threads": "0",
+    })
+    with conf.open("w", encoding="utf-8") as f:
+        bench.write(f)
+    return conf
+
+
+def database_exists(options, env, name):
+    out = subprocess.run(
+        [pg_tool(options, "psql"), *pg_args(options), "-d", "postgres", "-tAc",
+         f"SELECT 1 FROM pg_database WHERE datname = '{name}'"],
+        env=env, capture_output=True, check=True,
+    ).stdout
+    return out.strip() == b"1"
+
+
+def ensure_blank_template(options, env, name, addons, odoo_root, odoo_python, tmp):
+    """A blank database (base only). Created by hand in C collation: Odoo must
+    never create the database itself (PostgreSQL 18 on Windows)."""
+    if database_exists(options, env, name):
+        return
+    print(f"Creating the blank database {name} (base only)...", flush=True)
+    subprocess.run(
+        [pg_tool(options, "createdb"), *pg_args(options), "-T", "template0", "-E", "UTF8",
+         "--lc-collate", "C", "--lc-ctype", "C", name],
+        env=env, check=True, capture_output=True,
+    )
+    conf = write_conf(options, addons, name, tmp)
+    proc = subprocess.run(
+        [odoo_python, str(odoo_root / "odoo-bin"), "-c", str(conf), "-d", name,
+         "-i", "base", "--stop-after-init", "--no-http", "--log-level=warn"],
+        capture_output=True, env=dict(env, PYTHONUTF8="1"),
+    )
+    if proc.returncode != 0:
+        subprocess.run([pg_tool(options, "dropdb"), *pg_args(options), "--if-exists", name],
+                       env=env, capture_output=True)
+        raise SystemExit(
+            "Blank database not initialized:\n"
+            + (proc.stdout + proc.stderr).decode("utf-8", "replace")[-3000:]
+        )
+
+
 def topological(directory, names):
     manifests = {
-        n: ast.literal_eval((directory / n / "__manifest__.py").read_text(encoding="utf-8"))
+        n: ast.literal_eval((directory / n / "__manifest__.py").read_text(encoding="utf-8").lstrip())
         for n in names
     }
     done, order = set(), []
@@ -103,7 +158,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("directory")
     parser.add_argument("--config", required=True, help="Odoo config of the target (db access)")
-    parser.add_argument("--template", required=True, help="blank database to copy")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--template", help="existing blank database to copy")
+    group.add_argument(
+        "--blank-template",
+        help=f"name of a blank database ({PREFIX}*) created if needed: C collation, "
+             "base module only, then copied for each run",
+    )
     parser.add_argument("--odoo-root", required=True)
     parser.add_argument("--odoo-python", required=True)
     parser.add_argument("--addons-path", default="", help="reference addons (default: from --odoo-root)")
@@ -130,30 +191,38 @@ def main(argv=None):
     order = topological(directory, names)
 
     with tempfile.TemporaryDirectory(prefix="odoo-bench-") as tmp:
-        conf = pathlib.Path(tmp) / "bench.conf"
-        bench = configparser.ConfigParser(interpolation=None)
-        bench["options"] = {
-            k: v for k, v in options.items()
-            if k.startswith("db_") and k != "db_name" or k == "pg_path"
-        }
-        bench["options"].update({
-            "addons_path": ",".join([*addons, str(directory)]),
-            "data_dir": str(pathlib.Path(tmp) / "data"),
-            "db_name": db,
-            "dbfilter": f"^{db}$",
-            "list_db": "False",
-            "max_cron_threads": "0",
-        })
-        with conf.open("w", encoding="utf-8") as f:
-            bench.write(f)
+        template = args.template
+        if args.blank_template:
+            template = args.blank_template
+            if not template.startswith(PREFIX):
+                raise SystemExit(f"--blank-template must start with {PREFIX}")
+            ensure_blank_template(options, env, template, addons, odoo_root, args.odoo_python, tmp)
+        conf = write_conf(options, [*addons, str(directory)], db, tmp)
 
         subprocess.run([pg_tool(options, "dropdb"), *pg_args(options), "--if-exists", db],
                        env=env, check=True, capture_output=True)
-        subprocess.run([pg_tool(options, "createdb"), *pg_args(options), "-T", args.template, db],
+        subprocess.run([pg_tool(options, "createdb"), *pg_args(options), "-T", template, db],
                        env=env, check=True, capture_output=True)
         results = []
+        depends = {
+            n: ast.literal_eval(
+                (directory / n / "__manifest__.py").read_text(encoding="utf-8").lstrip()
+            ).get("depends", [])
+            for n in order
+        }
+        failed_modules = set()
         try:
             for name in order:
+                blocking = [d for d in depends[name] if d in failed_modules]
+                if blocking:
+                    # not tried: a dependency of the set failed
+                    failed_modules.add(name)
+                    results.append({
+                        "module": name, "status": "BLOCKED", "seconds": 0,
+                        "error": "dependency failed: " + ", ".join(blocking), "tail": "",
+                    })
+                    print(f"{name:40} BLOCKED {results[-1]['error']}", flush=True)
+                    continue
                 start = time.time()
                 proc = subprocess.run(
                     [args.odoo_python, str(odoo_root / "odoo-bin"), "-c", str(conf),
@@ -167,6 +236,8 @@ def main(argv=None):
                     r"Some modules have inconsistent states|Traceback)|^Traceback",
                     output, re.M,
                 )
+                if failed:
+                    failed_modules.add(name)
                 results.append({
                     "module": name,
                     "status": "FAILED" if failed else "OK",
@@ -181,7 +252,8 @@ def main(argv=None):
                                env=env, capture_output=True)
 
     ok = sum(r["status"] == "OK" for r in results)
-    print(f"\n{ok}/{len(results)} module(s) installed")
+    blocked = sum(r["status"] == "BLOCKED" for r in results)
+    print(f"\n{ok}/{len(results)} module(s) installed ({blocked} blocked by a failed dependency)")
     if args.output:
         pathlib.Path(args.output).write_text(json.dumps(results, indent=1), encoding="utf-8")
     return 0 if ok == len(results) else 1

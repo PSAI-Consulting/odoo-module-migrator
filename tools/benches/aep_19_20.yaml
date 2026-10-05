@@ -1,0 +1,10 @@
+# Échantillon de modules du client (D:/Odoo/local-addons/AEP), 19.0 -> 20.0 : teste la partie 19.0 -> 20.0 de la chaîne.
+name: aep_19_20
+from: "19.0"
+to: "20.0"
+odoo_root: D:/Odoo/odoo/20.0
+odoo_python: D:/Odoo/local-addons/Stof/stof/venv/Scripts/python.exe
+db_config: D:/Odoo/local-addons/Stof/stof/odoo20.conf  # accès PostgreSQL uniquement
+blank_template: migrator_bench_blank_20
+sources:
+  - {path: D:/Odoo/local-addons/AEP, modules: auto, limit: 25}
