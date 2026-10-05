@@ -423,3 +423,14 @@ def test_curated_field_renames_180_190(tmp_path):
     assert "@api.depends('product_uom_id')" in py and "return self.product_uom_id" in py
     script.handle_fields(module)
     assert (module / "models.py").read_text() == py
+
+
+def test_js_and_view_rules_170_180_no_false_positive():
+    errors = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_170_180/js_modules.yaml", encoding="utf-8"))
+    views = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_170_180/views.yaml", encoding="utf-8"))
+    js = ('import { registry } from "@web/core/registry";\n'
+          'import { useService } from "@web/core/utils/hooks";\n'
+          'import { _t } from "@web/core/l10n/translation";\n')
+    assert not [p for p in errors[".js"] if re.search(p, js)]
+    xml = '<field name="inherit_id" ref="sale.view_order_form"/>\n'
+    assert not [p for p in views[".xml"] if re.search(p, xml)]
