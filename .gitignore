@@ -116,3 +116,7 @@ venv.bak/
 # Artefacts locaux
 validation_report.txt
 tests/data_tmp/
+.ruff_cache/
+# Sorties des outils de banc d'essai (tools/), si écrites dans le dépôt
+bench/
+*.bench.json

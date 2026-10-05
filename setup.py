@@ -13,7 +13,8 @@ setuptools.setup(
     long_description=open("README.md", encoding='utf-8').read(),
     long_description_content_type="text/markdown",
     url="https://github.com/OCA/odoo-module-migrator",
-    packages=["odoo_module_migrate", "odoo_module_migrate.migration_scripts"],
+    # tools/ and tests/ are development tools: not shipped in the package
+    packages=setuptools.find_packages(include=["odoo_module_migrate", "odoo_module_migrate.*"]),
     include_package_data=True,
     classifiers=[
         "Development Status :: 3 - Alpha",
