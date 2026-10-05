@@ -2,3 +2,127 @@
 # Do not edit: write corrections in another file of this folder.
 # Rename CANDIDATES found in the sources (field removed in the commit
 # that adds a field of the same type): check them, then uncomment.
+# - ["account.account.tag", "tax_negate", "balance_negate", "odoo b6bbc31f746 '[IMP] account: remove tax tag invert'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.batch.payment", "account_online_linked", "account_online_link_payments_enabled", "enterprise a89d1aed466 '[IMP] account_online_{synchronization,payment}: Better payment status management'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.financial.year.op", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["account.financial.year.op", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["account.financial.year.op", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["account.move", "l10n_in_transportation_doc_no", "l10n_in_ewaybill_name", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.move", "l10n_in_vehicle_no", "l10n_in_ewaybill_name", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.move", "stock_valuation_layer_ids", "stock_move_ids", "odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"]  # non : stock.valuation.layer supprimé
+# - ["account.move", "tax_closing_report_id", "closing_return_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # non : comodel différent (account.return)
+# - ["account.move.send.wizard", "mail_template_id", "template_id", "odoo 7ad7a1d9763 '[IMP] account: send wizard'"]  # non : nouveau champ absent du modèle en 19.0
+# - ["account.payment", "end_to_end_id", "end_to_end_uuid", "enterprise fa08eac1419 '[IMP] account_{*}: reconciliation using end to end ID'"]  # oui : curated.yaml
+# - ["account.reconcile.model", "allow_payment_tolerance", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "auto_reconcile", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "counterpart_type", "trigger", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "match_note", "trigger", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "match_partner", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "match_same_currency", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "match_text_location_label", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "match_text_location_note", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "match_text_location_reference", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "matching_order", "trigger", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "payment_tolerance_type", "trigger", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "rule_type", "trigger", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "show_decimal_separator", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model", "to_check", "can_be_proposed", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.reconcile.model.line", "journal_id", "partner_id", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.report", "filter_fiscal_position", "allow_foreign_vat", "odoo c49f3441acd '[IMP] account, l10n_*: Prepare Community for Accounting Returns'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["account.report.annotation", "report_id", "message_id", "enterprise 8fae6a058bc '[IMP] account_reports: Replace annotations by chatter'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["calendar.alarm", "sms_notify_responsible", "notify_responsible", "odoo 9d676f246ea '[IMP] calendar(_sms): make notify responsible field general'"]  # oui : curated.yaml
+# - ["calendar.event", "on_leave_resource_ids", "unavailable_resource_ids", "enterprise 0cd76b99761 '[IMP] appointment: warning on already booked resource'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["fleet.vehicle", "first_contract_date", "contract_date_start", "odoo 21f18b1a6fd '[REF] hr_contract: Merge contracts into versioned employee model'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.applicant", "candidate_id", "pool_applicant_id", "odoo 66856ad6a4d '[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool'"]  # non : comodel différent (hr.candidate supprimé)
+# - ["hr.applicant", "candidate_skill_ids", "applicant_skill_ids", "odoo 66856ad6a4d '[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool'"]  # non : comodel différent
+# - ["hr.attendance", "no_validated_overtime_hours", "is_manager", "odoo 6d7f4012cfa '[IMP] hr_attendance: Add overtime rulesets'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.contract.sign.document.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.department", "expense_sheets_to_approve_count", "expenses_to_approve_count", "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.departure.wizard", "cancel_appraisal", "delete_appraisal", "enterprise dee57c5a85e '[IMP] hr_appraisal: simplifiy UI'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.employee", "candidate_id", "applicant_ids", "odoo 66856ad6a4d '[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool'"]  # non : comodel différent (hr.candidate supprimé)
+# - ["hr.employee", "last_appraisal_date", "last_ongoing_appraisal_date", "enterprise 58fba3098f3 '[IMP] hr_appraisal{,_survey,_skills}: improve appraisal UX'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.expense", "approved_on", "approval_date", "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"]  # oui : curated.yaml
+# - ["hr.expense.refuse.wizard", "sheet_ids", "expense_ids", "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.job", "activities_overdue", "activity_count", "odoo 9d24acbec86 '[IMP] hr_recruitment: homepage (job position) UI/X'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.job", "activities_today", "activity_count", "odoo 9d24acbec86 '[IMP] hr_recruitment: homepage (job position) UI/X'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.job", "default_contract_id", "contract_template_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.leave.type", "show_on_dashboard", "hide_on_dashboard", "odoo 799ebc59aa6 '[IMP] * : Improve Time off type (UX and back)'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.payroll.edit.payslip.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]  # oui : curated.yaml
+# - ["hr.payroll.headcount.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]  # oui : curated.yaml
+# - ["hr.payroll.headcount.line", "contract_names", "version_names", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]  # oui : curated.yaml
+# - ["hr.payslip", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]  # oui : curated.yaml
+# - ["hr.payslip", "expense_sheet_ids", "expense_ids", "enterprise 02188680071 '[IMP] *expense*: Bye Bye reports'"]  # non : comodel différent (hr.expense.sheet -> hr.expense)
+# - ["hr.payslip.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]  # oui : curated.yaml
+# - ["hr.resume.line", "display_type", "course_type", "odoo ec3fe7bc26a '[IMP] hr_skills*: LMS and resume rework'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.salary.rule", "condition_range", "condition_domain", "enterprise bd2ee7546df '[ADD] hr_payroll: Add domain condition feature on salary rules'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.work.entry", "contract_id", "version_id", "odoo 21f18b1a6fd '[REF] hr_contract: Merge contracts into versioned employee model'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["hr.work.entry.export.employee.mixin", "contract_ids", "version_ids", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]  # oui : curated.yaml
+# - ["mail.message", "account_audit_log_activated", "account_audit_log_restricted", "odoo f280f762b64 '[IMP] account : Improve Audit Trail feature and make it default'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["mrp.production", "procurement_group_id", "production_group_id", "odoo 2713876dbc7 '[REF] stock, *: add reference'"]  # non : procurement.group -> stock.reference
+# - ["mrp.production.split", "counter", "num_splits", "odoo bf95d3c2cd9 '[IMP] mrp: improve MO splitting process'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["mrp.workcenter", "workorder_pending_count", "workorder_blocked_count", "odoo 5767cf0c0cb '[IMP] mrp: workorder revamp'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["pos.config", "module_pos_restaurant_appointment", "module_pos_appointment", "odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail'"]  # oui : curated.yaml
+# - ["pos.payment.method", "viva_wallet_latest_response", "viva_com_latest_response", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]  # oui : curated.yaml
+# - ["pos.payment.method", "viva_wallet_test_mode", "viva_com_test_mode", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]  # oui : curated.yaml
+# - ["product.pricelist", "product_subscription_pricing_ids", "subscription_item_ids", "enterprise 7e39d776f05 '[IMP] (website_)sale_subscription,*: unified price rules'"]  # non : comodel différent (sale.subscription.pricing -> product.pricelist.item)
+# - ["product.product", "packaging_ids", "product_uom_ids", "odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"]  # non : comodel différent (product.uom)
+# - ["product.tag", "visible_on_ecommerce", "visible_to_customers", "odoo c277a5987b1 '[REF] product: move tags fields from website_sale to product'"]  # oui : curated.yaml
+# - ["product.template", "property_account_creditor_price_difference", "property_price_difference_account_id", "odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"]  # non : nouvelle valorisation, sens différent
+# - ["project.project", "rating_active", "allow_recurring_tasks", "odoo 2fca445d07a '[IMP] project,sale_project,sale_timesheet,web: clean settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["purchase.order.line", "product_uom_category_id", "product_uom_id", "odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]  # non : catégories d'unités supprimées
+# - ["res.company", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["res.company", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["res.company", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["res.company", "documents_payroll_folder_id", "documents_employee_folder_id", "enterprise 63eea91b7ba \"[REF] documents_hr(_payroll): rework payroll and employee's document folders\""]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.company", "l10n_in_edi_ewaybill_auth_validity", "l10n_in_ewaybill_auth_validity", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]  # oui : curated.yaml
+# - ["res.company", "l10n_in_pan", "l10n_in_tan", "odoo f6d6659f8bf '[IMP] l10n_in: introduce PAN Entity Model to Manage GST Contacts with Same PAN'"]  # non : sens différent (PAN -> TAN)
+# - ["res.company", "l10n_sa_additional_identification_number", "l10n_sa_edi_additional_identification_number", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]  # oui : curated.yaml
+# - ["res.company", "l10n_sa_additional_identification_scheme", "l10n_sa_edi_additional_identification_scheme", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]  # oui : curated.yaml
+# - ["res.company", "stock_move_sms_validation", "stock_text_confirmation", "odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp'"]  # oui : curated.yaml
+# - ["res.config.settings", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["res.config.settings", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["res.config.settings", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]  # oui : curated.yaml
+# - ["res.config.settings", "documents_payroll_folder_id", "documents_employee_folder_id", "enterprise 63eea91b7ba \"[REF] documents_hr(_payroll): rework payroll and employee's document folders\""]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "enabled_buy_now_button", "has_enabled_provider", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "enabled_extra_checkout_step", "has_enabled_provider", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "group_show_purchase_receipts", "show_sale_receipts", "odoo 919c5515d60 '[IMP] account: Ease receipt UI/UX'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "group_show_sale_receipts", "show_sale_receipts", "odoo 919c5515d60 '[IMP] account: Ease receipt UI/UX'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "is_edi_proxy_active", "l10n_it_edi_show_purchase_journal_id", "odoo f48835581fe '[IMP] l10n_it_edi: simplify Fattura settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "module_account", "has_enabled_provider", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "module_delivery_mondialrelay", "has_enabled_provider", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "module_l10n_in_edi_ewaybill", "module_l10n_in_ewaybill", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_marketing_automation", "has_enabled_provider", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "module_pos_viva_wallet", "module_pos_viva_com", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_website_sale_comparison", "has_enabled_provider", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "module_website_sale_wishlist", "has_enabled_provider", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "pos_module_pos_restaurant_appointment", "pos_module_pos_appointment", "odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail'"]  # oui : curated.yaml
+# - ["res.config.settings", "pos_takeaway", "pos_use_presets", "odoo 4d22fbf9789 '[IMP] web, point_of_sale, pos_*: Add pos presets, quick selection taxes'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "pos_takeaway_fp_id", "pos_default_preset_id", "odoo 4d22fbf9789 '[IMP] web, point_of_sale, pos_*: Add pos presets, quick selection taxes'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "providers_state", "onboarding_payment_module", "odoo 5a8be1dfdef '[IMP] payment, _*: onboard user with stripe or razorpay'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.config.settings", "stock_move_sms_validation", "stock_text_confirmation", "odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp'"]  # oui : curated.yaml
+# - ["res.partner", "l10n_in_pan", "l10n_in_tan", "odoo f6d6659f8bf '[IMP] l10n_in: introduce PAN Entity Model to Manage GST Contacts with Same PAN'"]  # non : sens différent (PAN -> TAN)
+# - ["res.partner", "l10n_mx_edi_no_tax_breakdown", "l10n_mx_edi_ieps_breakdown", "enterprise dcf0b7c87c1 \"[IMP] l10n_mx_edi: Improve 'objetoImp' / tax objected on CFDI\""]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["res.partner", "l10n_sa_additional_identification_number", "l10n_sa_edi_additional_identification_number", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]  # oui : curated.yaml
+# - ["res.partner", "l10n_sa_additional_identification_scheme", "l10n_sa_edi_additional_identification_scheme", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]  # oui : curated.yaml
+# - ["res.partner", "siret", "company_registry_placeholder", "odoo 6730282b689 '[FIX] account,l10n_fr[_*]: remove siret field'"]  # non : remplacé par l'identifiant d'entreprise générique
+# - ["res.users", "vehicle", "phone", "odoo 21f18b1a6fd '[REF] hr_contract: Merge contracts into versioned employee model'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["sale.order", "available_product_document_ids", "available_quotation_document_ids", "odoo 8cbd8114244 '[FIX] sale_pdf_quote_builder: fix misnaming'"]  # oui : curated.yaml
+# - ["sale.order.line", "product_uom_category_id", "product_uom_id", "odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]  # non : catégories d'unités supprimées
+# - ["stock.location", "valuation_in_account_id", "valuation_account_id", "odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"]  # non : deux comptes regroupés (valuation_account_id)
+# - ["stock.location", "valuation_out_account_id", "valuation_account_id", "odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"]  # non : deux comptes regroupés (valuation_account_id)
+# - ["stock.move", "group_id", "production_group_id", "odoo 2713876dbc7 '[REF] stock, *: add reference'"]  # non : procurement.group -> stock.reference (reference_ids)
+# - ["stock.move", "l10n_in_ewaybill_id", "l10n_in_ewaybill_ids", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["stock.move", "picking_type_entire_packs", "has_lines_without_result_package", "odoo 6ea74b70d87 '[IMP] stock, *: allow multi-level packages'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["stock.move", "product_packaging_id", "packaging_uom_id", "odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"]  # non : comodel différent (product.packaging -> uom.uom)
+# - ["stock.move", "product_packaging_qty", "packaging_uom_qty", "odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["stock.move", "product_packaging_quantity", "packaging_uom_qty", "odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["stock.move.line", "picking_type_entire_packs", "is_entire_pack", "odoo 6ea74b70d87 '[IMP] stock, *: allow multi-level packages'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["stock.move.line", "product_packaging_id", "packaging_uom_id", "enterprise b4f285138ed '[IMP] stock_barcode,*: merge product packagins into units of measure'"]  # non : comodel différent (product.packaging -> uom.uom)
+# - ["stock.move.line", "product_packaging_uom_qty", "packaging_uom_qty", "enterprise b4f285138ed '[IMP] stock_barcode,*: merge product packagins into units of measure'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["stock.picking", "group_id", "production_group_id", "odoo 2713876dbc7 '[REF] stock, *: add reference'"]  # non : procurement.group -> stock.reference (reference_ids)
+# - ["stock.picking", "l10n_in_ewaybill_id", "l10n_in_ewaybill_ids", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["stock.replenishment.info", "json_replenishment_history", "json_replenishment_graph", "odoo ec2b1b42351 '[IMP] stock: replenishment forecast graph'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["stock.warehouse.orderpoint", "lead_days_date", "lead_horizon_date", "odoo 613e170853f '[REF] (purchase,sale)_stock, mrp: use horizon_days'"]  # non : non confirmé (sens ou présence en 19.0 différents)
+# - ["uom.uom", "category_id", "relative_uom_id", "odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]  # non : catégories d'unités supprimées
+# - ["uom.uom", "factor_inv", "relative_factor", "odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]  # non : catégories d'unités supprimées
+# - ["uom.uom", "ratio", "relative_factor", "odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]  # non : catégories d'unités supprimées

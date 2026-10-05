@@ -403,3 +403,23 @@ def test_js_and_view_rules_190_200_no_false_positive():
     for pattern, repl in replaces[".js"].items():
         again = re.sub(pattern, repl, again)
     assert again == new
+
+
+def test_curated_field_renames_180_190(tmp_path):
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    module.mkdir()
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['sale']}")
+    (module / "models.py").write_text(
+        "from odoo import api, models\n\n\nclass SaleReport(models.Model):\n"
+        "    _inherit = 'sale.report'\n\n    @api.depends('product_uom')\n"
+        "    def _x(self):\n        return self.product_uom\n"
+    )
+    script = MigrationScript()
+    script.parse_rules()
+    script.handle_fields(module)
+    py = (module / "models.py").read_text()
+    assert "@api.depends('product_uom_id')" in py and "return self.product_uom_id" in py
+    script.handle_fields(module)
+    assert (module / "models.py").read_text() == py
