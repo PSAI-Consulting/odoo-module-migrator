@@ -5,3 +5,23 @@
 # la validation hors ligne des n° de TVA passe dans base, la validation VIES
 # dans le nouveau module l10n_eu_account_vies (option vat_check_vies).
 - ["base_vat", "merged", "base"]
+#
+# Modules marqués « removed » dans modules.yaml alors que le commit les fusionne
+# (vérifié : git show --stat, manifests 19.0 / 20.0) :
+# odoo 19e434d655e6 '[MOV] website_sale_comparison(wishlist->{}): merge wishlist', puis
+# website_sale_comparison et website_sale_wishlist fusionnés dans website_sale
+# (odoo fd61df2687d7, 3c33c9696794)
+- ["website_sale_comparison_wishlist", "merged", "website_sale"]
+# odoo ef7b4e80a3b9 '[REM] pos_self_order_adyen: use pos_adyen in kiosk' : « pos_adyen
+# can work in the Kiosk directly » (19.0 : depends pos_adyen + pos_self_order, auto_install)
+- ["pos_self_order_adyen", "merged", "pos_adyen"]
+# odoo 44457bfd43e2 '[REM] pos_self_order_stripe: use pos_stripe in kiosk' (idem)
+- ["pos_self_order_stripe", "merged", "pos_stripe"]
+# odoo 3411f30f6f1b '[IMP] pos,pos_discount, ...: tip/discount support fixed or percent value' :
+# logique de pourboire déplacée dans point_of_sale / pos_stripe (pos_stripe/static/src/app/payment_stripe.js),
+# comme pos_restaurant_adyen -> pos_adyen
+- ["pos_restaurant_stripe", "merged", "pos_stripe"]
+# odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management' :
+# hr_work_entry_holidays (19.0 : depends hr_holidays + hr_work_entry, auto_install) disparaît,
+# hr_holidays 20.0 dépend de hr_work_entry et reprend les types (hr_leave_type -> hr_work_entry_type)
+- ["hr_work_entry_holidays", "merged", "hr_holidays"]

@@ -146,3 +146,34 @@ def test_cron_fields_removed():
     )
     new = _apply_yaml(f"{SCRIPTS}/text_replaces/migrate_170_180/ir_cron.yaml", ".xml", text)
     assert new == '        <field name="active">True</field>\n'
+
+
+def _module_rules(step):
+    import glob
+
+    rules = []
+    for path in sorted(glob.glob(f"{SCRIPTS}/deprecated_modules/{step}/*.yaml")):
+        rules += yaml.safe_load(open(path, encoding="utf-8")) or []
+    return rules
+
+
+def test_curated_module_rules():
+    from odoo_module_migrate import manifest
+
+    cases = {
+        "migrate_170_180": (
+            ["account_banking_fr_lcr", "stock_picking_batch_extended_account", "sale"],
+            ["account_payment_fr_lcr", "stock_picking_batch_account", "sale"],
+        ),
+        "migrate_190_200": (
+            ["website_sale_comparison_wishlist", "pos_self_order_adyen", "hr_work_entry_holidays"],
+            ["website_sale", "pos_adyen", "hr_holidays"],
+        ),
+    }
+    for step, (depends, expected) in cases.items():
+        rules = _module_rules(step)
+        new, messages = manifest.apply_module_rules(depends, rules)
+        assert new == expected, step
+        assert all(level == "info" for level, _msg in messages), messages
+        # idempotent
+        assert manifest.apply_module_rules(new, rules) == (new, [])
