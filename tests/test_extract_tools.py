@@ -181,3 +181,35 @@ def test_merge_changes():
     assert renamed == [("m", "a", "b", "ou"), ("m", "d", "e", "src")]
     assert candidates == [("m", "c", "c2", "src")]
     assert removed == [("m", "x", "ou"), ("m", "y", "src")]
+
+
+NEW_SYNTAX = '''from odoo import fields, models
+
+
+class MrpBom(models.Model):
+    _name = 'mrp.bom'
+    _inherit = ['mail.thread', 'product.catalog.mixin']
+    _inherits = {'product.template': 'product_tmpl_id'}
+
+    code = fields.Char()
+
+    def _check(self, errors):
+        return f"{', '.join(errors)}"
+
+
+class Partner(models.Model):
+    _inherit = "res.partner"
+'''
+
+
+def test_regex_fallback_for_newer_syntax():
+    """Files that the running Python cannot parse (Odoo 20 f-strings with
+    3.11) are still read: models and their parents are not lost."""
+    files = {"addons/mrp/models/mrp_bom.py": NEW_SYNTAX}
+    assert ef.defined_models(files) == {"mrp.bom": "addons/mrp/models/mrp_bom.py"}
+    assert ef._regex_classes(NEW_SYNTAX) == [
+        ("mrp.bom", ["mail.thread", "product.catalog.mixin", "product.template"]),
+        (None, ["res.partner"]),
+    ]
+    parents = ef.model_parents(files)
+    assert parents["mrp.bom"] == {"mail.thread", "product.catalog.mixin", "product.template"}

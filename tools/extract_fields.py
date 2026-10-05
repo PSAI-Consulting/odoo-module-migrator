@@ -110,6 +110,29 @@ def _parse_regex(text, path, result):
             result[model][match[1]] = (match[2], path)
 
 
+CLASS_ATTR_RE = re.compile(
+    r"^\s{4}(?P<attr>_name|_inherit|_inherits)\s*(?::[^=\n]+)?=\s*(?P<value>\{[^}]*\}|\[[^\]]*\]|\([^)]*\)|['\"][\w.]+['\"])",
+    re.M,
+)
+
+
+def _regex_classes(text):
+    """[(name, inherit)] of the classes of a file that ast cannot parse."""
+    result = []
+    for chunk in re.split(r"^class\s+\w+", text, flags=re.M)[1:]:
+        name, inherit = None, []
+        for match in CLASS_ATTR_RE.finditer(chunk):
+            values = re.findall(r"['\"]([\w.]+)['\"]", match["value"])
+            if match["attr"] == "_name":
+                name = values[0] if values else None
+            elif match["attr"] == "_inherits":
+                inherit += values[0::2]  # keys of {"model": "field_id"}
+            else:
+                inherit += values
+        result.append((name, inherit))
+    return result
+
+
 def parse_fields(files):
     """{model: {field: (type, path)}} from Python sources (ast; regex for the
     files the running Python cannot parse, e.g. newer syntax)."""
@@ -131,6 +154,10 @@ def model_parents(files):
         try:
             tree = ast.parse(text)
         except SyntaxError:
+            for name, inherit in _regex_classes(text):
+                model = name or (inherit[0] if inherit else None)
+                if model:
+                    parents[model].update(i for i in inherit if i != model)
             continue
         for cls in ast.walk(tree):
             if not isinstance(cls, ast.ClassDef):
@@ -292,6 +319,10 @@ def defined_models(files):
         try:
             tree = ast.parse(text)
         except SyntaxError:
+            # newer syntax than the running Python (e.g. Odoo 20 with 3.11)
+            for name, inherit in _regex_classes(text):
+                if name and name not in inherit:
+                    result.setdefault(name, path)
             continue
         for cls in ast.walk(tree):
             if not isinstance(cls, ast.ClassDef):
