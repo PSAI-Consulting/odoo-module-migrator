@@ -120,6 +120,24 @@ def test_xml_multiline_tags():
     assert new.count('name="user_ids"') == 2
 
 
+def test_label_for_renamed():
+    xml = '''<odoo>
+    <record id="v" model="ir.ui.view">
+        <field name="model">ir.ui.menu</field>
+        <field name="inherit_id" ref="base.edit_menu_access"/>
+        <field name="arch" type="xml">
+            <field name="groups_id" position="before">
+                <label for="groups_id" />
+            </field>
+        </field>
+    </record>
+</odoo>
+'''
+    new, count = apply_renames(xml, xml_usages(xml), {("ir.ui.menu", "groups_id"): "group_ids"})
+    assert count == 2
+    assert '<label for="group_ids" />' in new and 'name="group_ids" position' in new
+
+
 def test_xml_renames():
     new, count = apply_renames(XML, xml_usages(XML), {("res.groups", "users"): "user_ids"})
     assert count == 1

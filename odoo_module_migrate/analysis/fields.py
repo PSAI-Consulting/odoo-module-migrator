@@ -242,6 +242,19 @@ def python_usages(text):
 # XML
 # ---------------------------------------------------------------------------
 
+def _in_subview(node, arch):
+    """Whether `node` is in the sub-view of an x2many field (another model).
+
+    A <field position="..."> is an anchor of an inherited view, not a field
+    with a sub-view: what is inside belongs to the view model.
+    """
+    return any(
+        parent.tag == "field" and parent.get("position") is None
+        for parent in node.iterancestors()
+        if parent is not arch and not (parent.tag == "field" and parent.get("name") == "arch")
+    )
+
+
 XPATH_NAME_RE = re.compile(r"""@name\s*=\s*(["'])(\w+)\1""")
 
 
@@ -294,10 +307,16 @@ def xml_usages(text):
             continue
         for node in arch.iter("field"):
             # skip sub-views of x2many fields (they show another model)
-            if any(parent.tag == "field" for parent in node.iterancestors() if parent is not arch):
+            if _in_subview(node, arch):
                 continue
             if node.get("name"):
                 add(view_model.strip(), node.get("name"), node, "name", f"view of {view_model.strip()}")
+        # <label for="field"> refers to a field of the view model too
+        for node in arch.iter("label"):
+            if _in_subview(node, arch):
+                continue
+            if node.get("for") and re.fullmatch(r"\w+", node.get("for")):
+                add(view_model.strip(), node.get("for"), node, "for", f"label of a view of {view_model.strip()}")
         for node in arch.iter("xpath"):
             expr = node.get("expr") or ""
             if "field" not in expr:
