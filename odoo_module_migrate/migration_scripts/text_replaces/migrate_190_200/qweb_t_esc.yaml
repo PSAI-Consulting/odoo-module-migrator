@@ -1,0 +1,7 @@
+# Directive QWeb t-esc supprimée en 20.0 : remplacée par t-out (qui échappe
+# aussi le HTML). Source : odoo 2cdad8b831ec "[IMP] base,all: remove deprecated
+# 't-esc' ir.qweb directive" (155 fichiers : t-esc -> t-out) ; 20.0
+# ir_ui_view.py _validate_qweb_directive n'autorise plus que t-out
+# (« Forbidden owl directive used in arch (t-esc) »).
+.xml:
+  '\bt-esc=': 't-out='

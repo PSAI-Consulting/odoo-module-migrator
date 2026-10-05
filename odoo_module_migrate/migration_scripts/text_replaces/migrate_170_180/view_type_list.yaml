@@ -1,0 +1,6 @@
+# Type de vue « tree » renommé « list » en 18.0 (le script officiel
+# 17.5-01-tree-to-list.py convertit les balises, pas le champ type des records).
+# Source : 18.0 odoo/addons/base/models/ir_ui_view.py, type = Selection([('list', 'List'), ...])
+# (plus de 'tree') ; banc Stof : partner_identification refusé à l'installation.
+.xml:
+  '(<field\s+name=["'']type["'']\s*>)\s*tree\s*(</field>)': '\1list\2'

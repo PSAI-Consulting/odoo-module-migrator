@@ -8,3 +8,6 @@
   '@api\.model_create_single\b': "[19] @api.model_create_single was removed: use @api.model_create_multi and handle a list of values"
   '\b_transient_max_(?:count|hours)\b': "[19] _transient_max_count / _transient_max_hours were removed: transient records are vacuumed by the ORM settings"
   '\bfrom odoo\.tools\.translate import[^\n]*\btrans_load': "[19] trans_load() / trans_load_data() were removed"
+  # 18.0 odoo/modules/module.py : "Since 17.0: use tools.misc.file_path instead of
+  # get_resource_path(...)" ; absent de 19.0 (alias get_module_resource, check_resource_path)
+  '\b(?:get_resource_path|get_module_resource|check_resource_path)\b': "[19] get_resource_path / get_module_resource were removed (deprecated since 17.0): use odoo.tools.misc.file_path('module/path/to/file'), which raises FileNotFoundError instead of returning False"

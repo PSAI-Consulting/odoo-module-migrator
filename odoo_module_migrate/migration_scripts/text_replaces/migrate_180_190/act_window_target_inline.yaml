@@ -1,0 +1,7 @@
+# target « inline » des actions supprimé en 19.0.
+# Source : odoo ce16292d2f96 "[IMP] web: remove target inline" : la valeur est
+# retirée de la sélection et la ligne supprimée de toutes les actions (la valeur
+# par défaut « current » s'applique) ; OpenUpgrade 19.0 base upgrade_analysis :
+# ir.actions.act_window target selection_keys removed: [inline].
+.xml:
+  '(?m)^[ \t]*<field\s+name=["'']target["'']\s*>\s*inline\s*</field>[ \t]*\n': ''

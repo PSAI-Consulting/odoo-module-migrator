@@ -152,6 +152,53 @@ def test_odoo_models_imports():
     assert omi._rewrite(new)[0] == new
 
 
+def test_view_type_list_target_inline_t_esc():
+    view = '<record id="v" model="ir.ui.view">\n    <field name="type">tree</field>\n'
+    assert _apply_yaml(f"{SCRIPTS}/text_replaces/migrate_170_180/view_type_list.yaml", ".xml", view) == (
+        '<record id="v" model="ir.ui.view">\n    <field name="type">list</field>\n'
+    )
+    action = '        <field name="view_mode">form</field>\n        <field name="target">inline</field>\n'
+    assert _apply_yaml(f"{SCRIPTS}/text_replaces/migrate_180_190/act_window_target_inline.yaml", ".xml", action) == (
+        '        <field name="view_mode">form</field>\n'
+    )
+    kanban = '<span><t t-esc="record.name.value"/></span>'
+    once = _apply_yaml(f"{SCRIPTS}/text_replaces/migrate_190_200/qweb_t_esc.yaml", ".xml", kanban)
+    assert once == '<span><t t-out="record.name.value"/></span>'
+    assert _apply_yaml(f"{SCRIPTS}/text_replaces/migrate_190_200/qweb_t_esc.yaml", ".xml", once) == once
+
+
+def test_eval_xml_ids(tmp_path):
+    import logging
+
+    from odoo_module_migrate import tools
+    from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190 import (
+        xml_eval_idref as xe,
+    )
+
+    module = tmp_path / "m"
+    (module / "views").mkdir(parents=True)
+    path = module / "views" / "v.xml"
+    path.write_text(
+        '<odoo>\n<record id="my_tree" model="ir.ui.view"/>\n<record id="group_a" model="res.groups"/>\n'
+        '<record id="act" model="ir.actions.act_window">\n'
+        '  <field name="view_id" eval="my_tree"/>\n'
+        '  <field name="group_ids" eval="[(6, 0, [group_a, ref(\'base.group_user\')])]"/>\n'
+        '  <field name="active" eval="True"/>\n'
+        '  <field name="date" eval="(DateTime.today()).strftime(\'%Y-%m-%d\')"/>\n'
+        '</record>\n</odoo>\n',
+        encoding="utf-8",
+    )
+    xe.convert_eval_xml_ids(tools=tools, logger=logging.getLogger("t"), module_path=module)
+    text = path.read_text(encoding="utf-8")
+    assert '<field name="view_id" ref="my_tree"/>' in text
+    assert "eval=\"[(6, 0, [ref('group_a'), ref('base.group_user')])]\"" in text
+    assert '<field name="active" eval="True"/>' in text
+    assert "DateTime.today()" in text
+    before = text
+    xe.convert_eval_xml_ids(tools=tools, logger=logging.getLogger("t"), module_path=module)
+    assert path.read_text(encoding="utf-8") == before
+
+
 def test_cron_fields_removed():
     text = (
         '        <field name="numbercall">-1</field>\n'
