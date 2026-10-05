@@ -133,3 +133,14 @@
 - ["sale.order", "has_rented_products", "enterprise 7cdfe5bd154 '[IMP] sale_renting: switch between SO and RO'"]
 - ["sale.order", "task_id", "voir planning_slot_id (pas un renommage : comodel différent (project.task -> planning.slot)) - enterprise 0ce4912d2c7 '[REF] planning_field_service_sale_timesheet: migrate FSM sale in planning'"]
 - ["stock.put.in.pack", "iot_ip", "enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`'"]
+#
+# Champs supprimés des modèles courants avec un remplaçant clair (commit lu) :
+- ["account.move", "checked", "review_state (Selection) - odoo af368c872fcb '[IMP] account: add review state on journal entries'"]
+- ["res.partner", "company_type", "is_company (now computed and stored) - odoo f2965048f60f '[REM] base: company_type is dead for good'"]
+- ["res.partner", "company_name", "parent_name (« parent_name will replace company_name ») - odoo 18a59cf26f2d '[IMP] base: use parent_name instead of company_name'"]
+- ["res.partner", "company_registry", "additional_identifiers (JSON) / routing_scheme, routing_endpoint - odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]
+- ["res.company", "company_registry", "partner additional_identifiers (JSON) - odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]
+- ["sale.order", "require_payment", "prepayment_amount / prepayment_percent - odoo b9065ca1561c '[IMP] sale,*: allow fixed amount for prepayment'"]
+- ["stock.move.line", "scheduled_date", "move_id.date (« use the move's date ») - odoo 90654e4c74e6 '[REF] stock: remove date field on sml and use the move's date'"]
+- ["res.partner", "im_status", "res.users.im_status (« IM status belongs to the user model ») - odoo 851638ca3c4d '[IMP] mail, *: remove im_status from partner'"]
+- ["res.partner", "offline_since", "res.users (presence) - odoo 851638ca3c4d '[IMP] mail, *: remove im_status from partner'"]

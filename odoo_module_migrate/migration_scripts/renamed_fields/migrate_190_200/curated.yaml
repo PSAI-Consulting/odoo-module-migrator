@@ -139,3 +139,10 @@
 - ["res.partner", "ubo_birth_date", "birth_date", "enterprise ea597380a45 '[REF] equity: use birthday instead of ubo_birth_date'"]
 # enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`' : même related iot_device_id.identifier
 - ["stock.put.in.pack", "iot_device_identifier", "device_identifier", "enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`'"]
+#
+# Renommage sans commit retrouvé (historique) : vérifié dans les fichiers 19.0 / 20.0.
+# 19.0 addons/l10n_ph/models/res_partner.py  branch_code = fields.Char(..., compute='_compute_branch_code', store=True)
+# 20.0 addons/l10n_ph/models/res_partner.py  l10n_ph_branch_code = fields.Char(..., compute='_compute_branch_code') ;
+#      res_company.py  l10n_ph_branch_code = fields.Char(related='partner_id.l10n_ph_branch_code') ; branch_code absent
+- ["res.partner", "branch_code", "l10n_ph_branch_code", "odoo 20.0 addons/l10n_ph/models/res_partner.py"]
+- ["res.company", "branch_code", "l10n_ph_branch_code", "odoo 20.0 addons/l10n_ph/models/res_company.py"]
