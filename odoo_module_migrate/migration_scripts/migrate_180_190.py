@@ -71,6 +71,9 @@ def upgrade_sql_constraints(
     logger, module_path, module_name, manifest_path, migration_steps, tools
 ):
     # Odoo method in which we migrate all occurrences of _sql_constraints
+    if tools.RUN_CONTEXT.get("upgrade_code"):
+        # Odoo's official 18.1-00-sql-constraint.py (ast based) will do it
+        return
     files_to_process = tools.get_files(module_path, (".py",))
     # Regex pattern explanation:
     # (?m) - Multiline mode, ^ matches start of each line
@@ -89,7 +92,11 @@ def upgrade_sql_constraints(
     def build_sql_object(match):
         # Preserve the original indentation level (e.g., 2 spaces, 4 spaces, 8 spaces for nested classes)
         leading_indent = match.group(1)
-        constraints = ast.literal_eval("[" + match.group(2) + "]")
+        try:
+            constraints = ast.literal_eval("[" + match.group(2) + "]")
+        except (ValueError, SyntaxError):
+            # e.g. messages built with _("..."): left as is, reported below
+            return match.group(0)
         result = []
         for name, definition, *messages in constraints:
             message = messages[0] if messages else ""
@@ -112,7 +119,10 @@ def upgrade_sql_constraints(
         content = tools._read_content(file)
         content = sql_expression_re.sub(build_sql_object, content)
         if sql_expression_re.search(content):
-            logger.warning("Failed to replace sql_constraints")
+            logger.warning(
+                "[19] _sql_constraints not converted to models.Constraint (give --odoo-root"
+                " to use Odoo's 18.1-00-sql-constraint.py). File %s" % file
+            )
         tools._write_content(file, content)
 
 

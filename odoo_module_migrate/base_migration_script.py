@@ -196,14 +196,24 @@ class BaseMigrationScript:
 
         if self._GLOBAL_FUNCTIONS:
             for function in self._GLOBAL_FUNCTIONS:
-                function(
-                    logger=logger,
-                    module_path=module_path,
-                    module_name=module_name,
-                    manifest_path=manifest_path,
-                    migration_steps=migration_steps,
-                    tools=tools,
-                )
+                try:
+                    function(
+                        logger=logger,
+                        module_path=module_path,
+                        module_name=module_name,
+                        manifest_path=manifest_path,
+                        migration_steps=migration_steps,
+                        tools=tools,
+                    )
+                except Exception as e:  # noqa: BLE001 - one rule must not stop the migration
+                    logger.error(
+                        "Migration step %s.%s failed, it was skipped (%s: %s): check by hand."
+                        " File %s" % (
+                            os.path.basename(inspect.getfile(self.__class__)),
+                            function.__name__, type(e).__name__, e, module_path / "__manifest__.py",
+                        )
+                    )
+                    logger.debug(traceback.format_exc())
 
         # After the dedicated transformations (e.g. res.groups privileges):
         # only what is left is renamed / reported
