@@ -372,3 +372,34 @@ def test_curated_field_renames_170_180(tmp_path):
     assert '<field name="customer_display_bg_img"/>' in xml
     script.handle_fields(module)
     assert (module / "views" / "views.xml").read_text() == xml
+
+
+def test_js_and_view_rules_190_200_no_false_positive():
+    """Generated JS / view rules: imports and views still present in 20.0
+    are never reported, rewrites are idempotent."""
+    errors = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_190_200/js_modules.yaml", encoding="utf-8"))
+    replaces = yaml.safe_load(open(f"{SCRIPTS}/text_replaces/migrate_190_200/js_modules.yaml", encoding="utf-8"))
+    views = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_190_200/views.yaml", encoding="utf-8"))
+    js = (
+        'import { registry } from "@web/core/registry";\n'
+        "import { useService } from '@web/core/utils/hooks';\n"
+        'import { FormController } from "@web/views/form/form_controller";\n'
+        'import { _t } from "@web/core/l10n/translation";\n'
+        'import { rpc } from "@web/core/network/rpc";\n'
+    )
+    assert not [p for p in errors[".js"] if re.search(p, js)]
+    for pattern, repl in replaces[".js"].items():
+        assert re.sub(pattern, repl, js) == js
+    xml = '<field name="inherit_id" ref="sale.view_order_form"/>\n<template inherit_id="web.layout"/>\n'
+    assert not [p for p in views[".xml"] if re.search(p, xml)]
+    # a moved module is rewritten once
+    old = next(iter(replaces[".js"]))
+    sample = re.sub(r"\(\[\\\"'\]\)(.*)\\1", r'"\1"', old).replace("\\", "")
+    new = sample
+    for pattern, repl in replaces[".js"].items():
+        new = re.sub(pattern, repl, new)
+    assert new != sample
+    again = new
+    for pattern, repl in replaces[".js"].items():
+        again = re.sub(pattern, repl, again)
+    assert again == new
