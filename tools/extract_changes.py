@@ -418,18 +418,24 @@ def extract_js(args):
         return f"{module}/static/src/{rest}.js"
 
     replaces = {".js": [], ".py": []}
+    errors = {".js": [], ".py": []}
     for old, new, source in moved:
+        if old.split("/", 1)[0] != new.split("/", 1)[0]:
+            # moved to another module: the importing module may not depend on it
+            message = f"[{tag}] JS module {old} moved to {new} (another module: check the depends)"
+            errors[".js"].append((source, rf"[\"']{re.escape(old)}[\"']", message))
+            errors[".py"].append((source, rf"[\"']{re.escape(asset_path(old))}[\"']", message))
+            continue
         replaces[".js"].append((source, rf"([\"']){re.escape(old)}\1", rf"\g<1>{new}\g<1>"))
         replaces[".py"].append((source, rf"([\"']){re.escape(asset_path(old))}\1",
                                 rf"\g<1>{asset_path(new)}\g<1>"))
-    errors = {".js": [], ".py": []}
     for old, hint, source in removed:
         message = f"[{tag}] JS module {old} was removed" + (f" (moved to {hint}?)" if hint else "")
         errors[".js"].append((source, rf"[\"']{re.escape(old)}[\"']", message))
         errors[".py"].append((source, rf"[\"']{re.escape(asset_path(old))}[\"']", message))
     _write_text_rules(
         out / "text_replaces" / _step(args) / "js_modules.yaml",
-        header + ["JS modules moved: same file name and same exports in the new place."],
+        header + ["JS modules moved inside their module: same file name and same exports in the new place."],
         replaces,
     )
     _write_text_rules(

@@ -64,6 +64,8 @@ JS_V1 = {
     "addons/web/static/src/core/utils/dates.js":
         "export function parseDate() {}\nexport const FORMAT = 1;\n",
     "addons/web/static/src/core/gone.js": "export class Gone {}\n",
+    "addons/mail/__manifest__.py": "{}",
+    "addons/mail/static/src/utils/tools.js": "export function tool() {}\n",
 }
 
 VIEWS_V1 = '''<odoo>
@@ -91,11 +93,13 @@ def repo(tmp_path):
     _commit(repo, {
         "addons/web/static/src/core/l10n/dates.js":
             "export function parseDate() {}\nexport const FORMAT = 1;\nexport const NEW = 2;\n",
+        "addons/web/static/src/utils/tools.js": "export function tool() {}\n",
         "addons/base/views/views.xml": VIEWS_V1.replace(
             '    <record id="view_form" model="ir.ui.view"><field name="name">f</field></record>\n', ""
         ).replace('    <template id="tmpl_old"><div/></template>\n', ""),
     }, "[MOV] web: dates in l10n", delete=[
         "addons/web/static/src/core/utils/dates.js", "addons/web/static/src/core/gone.js",
+        "addons/mail/static/src/utils/tools.js",
     ])
     return repo
 
@@ -125,7 +129,9 @@ def test_extract_models_files(repo, tmp_path):
 
 def test_js_changes(repo):
     moved, removed = ea.js_changes([repo], _refs("19.0"), _refs("20.0"))
-    assert [(m[0], m[1]) for m in moved] == [("@web/core/utils/dates", "@web/core/l10n/dates")]
+    assert [(m[0], m[1]) for m in moved] == [
+        ("@mail/utils/tools", "@web/utils/tools"), ("@web/core/utils/dates", "@web/core/l10n/dates"),
+    ]
     assert [(r[0], r[1]) for r in removed] == [("@web/core/gone", "")]
 
 
@@ -148,6 +154,10 @@ def test_extract_js_rules_apply_once(repo, tmp_path):
     assert '"@web/core/utils/dates_extra"' in new  # other module untouched
     assert apply(new, ".js") == new  # idempotent
     assert any(re.search(p, new) for p in errors[".js"])
+    # moved to another module: reported, not rewritten (depends to check)
+    cross = 'import { tool } from "@mail/utils/tools";\n'
+    assert apply(cross, ".js") == cross
+    assert any(re.search(p, cross) and "@web/utils/tools" in m for p, m in errors[".js"].items())
     manifest = "'assets': {'web.assets_backend': ['web/static/src/core/utils/dates.js']}"
     assert "web/static/src/core/l10n/dates.js" in apply(manifest, ".py")
 
