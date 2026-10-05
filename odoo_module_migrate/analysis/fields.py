@@ -303,6 +303,37 @@ def xml_usages(text):
     return usages
 
 
+def remove_displayed_fields(text, usages, removed):
+    """Remove ``<field name="f" .../>`` of views when M.f does not exist anymore.
+
+    Only self-closing elements without ``position`` (a displayed field, not an
+    anchor) of the view of model M are removed. Returns (text, removed usages).
+    """
+    spans = []
+    for usage in usages:
+        if (usage.model, usage.field) not in removed or not usage.context.startswith("view of"):
+            continue
+        tag_start = text.rfind("<", 0, usage.start)
+        tag_end = text.find(">", usage.start)
+        if tag_start < 0 or tag_end < 0:
+            continue
+        tag = text[tag_start:tag_end + 1]
+        if not tag.startswith("<field") or not tag.endswith("/>") or re.search(r"\bposition\s*=", tag):
+            continue
+        line_start = text.rfind("\n", 0, tag_start) + 1
+        line_end = text.find("\n", tag_end)
+        line_end = len(text) if line_end < 0 else line_end
+        if not text[line_start:tag_start].strip() and not text[tag_end + 1:line_end].strip():
+            spans.append((line_start, min(line_end + 1, len(text)), usage))
+        else:
+            spans.append((tag_start, tag_end + 1, usage))
+    done = []
+    for start, end, usage in sorted(spans, key=lambda s: s[0], reverse=True):
+        text = text[:start] + text[end:]
+        done.append(usage)
+    return text, done
+
+
 def apply_renames(text, usages, renames):
     """Rename the usages found in `renames` {(model, old): new}."""
     edits = sorted(

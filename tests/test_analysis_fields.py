@@ -89,6 +89,18 @@ def test_xml_usages():
     assert ("res.partner", "mobile", 15) not in keys  # sub-view of child_ids
 
 
+def test_remove_displayed_fields():
+    from odoo_module_migrate.analysis.fields import remove_displayed_fields
+
+    new, done = remove_displayed_fields(XML, xml_usages(XML), {("res.partner", "mobile"): ""})
+    # the displayed field is removed, the xpath anchor and the sub-view are kept
+    assert [u.line for u in done] == [12]
+    assert '<field name="phone"/>\n' in new
+    assert "//field[@name='mobile']" in new
+    assert '<list><field name="mobile"/></list>' in new
+    assert remove_displayed_fields(new, xml_usages(new), {("res.partner", "mobile"): ""})[1] == []
+
+
 def test_xml_renames():
     new, count = apply_renames(XML, xml_usages(XML), {("res.groups", "users"): "user_ids"})
     assert count == 1

@@ -312,6 +312,30 @@ class BaseMigrationScript:
                         path, count,
                     )
                 )
+            if path.suffix == ".xml" and removed:
+                if count:  # positions changed with the renames
+                    text = new_text
+                    usages = [
+                        u for u in analysis_fields.xml_usages(text)
+                        if (u.model, u.field) not in defined
+                    ]
+                # displayed fields that do not exist anymore: removed from views
+                text_after, dropped = analysis_fields.remove_displayed_fields(
+                    text, usages, removed
+                )
+                if dropped:
+                    _write_content(path, text_after)
+                    for usage in dropped:
+                        logger.warning(
+                            "Field %s.%s was removed: its display was removed from the view,"
+                            " check what replaces it%s. File %s:%s" % (
+                                usage.model, usage.field,
+                                " - %s" % removed[(usage.model, usage.field)]
+                                if removed[(usage.model, usage.field)] else "",
+                                path, usage.line,
+                            )
+                        )
+                    usages = [u for u in usages if u not in dropped]
             for usage in usages:
                 key = (usage.model, usage.field)
                 if key in removed:
