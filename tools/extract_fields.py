@@ -55,26 +55,68 @@ def read_blobs(repo, ref, path_re):
     return result
 
 
+def _str_values(node):
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return [node.value]
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return [e.value for e in node.elts if isinstance(e, ast.Constant) and isinstance(e.value, str)]
+    return []
+
+
+def _parse_ast(tree, path, result):
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef):
+            continue
+        name, inherit, fields = None, [], {}
+        for stmt in cls.body:
+            if not (isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+                    and isinstance(stmt.targets[0], ast.Name)):
+                continue
+            target = stmt.targets[0].id
+            if target == "_name":
+                name = (_str_values(stmt.value) or [None])[0]
+            elif target == "_inherit":
+                inherit = _str_values(stmt.value)
+            elif (
+                isinstance(stmt.value, ast.Call) and isinstance(stmt.value.func, ast.Attribute)
+                and isinstance(stmt.value.func.value, ast.Name) and stmt.value.func.value.id == "fields"
+            ):
+                fields[target] = (stmt.value.func.attr, path)
+        # a class with _inherit = [a, b] and no _name adds its fields to a and b
+        for model in ([name] if name else inherit):
+            result[model].update(fields)
+
+
+def _parse_regex(text, path, result):
+    model = None
+    for line in text.splitlines():
+        if CLASS_RE.match(line):
+            model = None
+            continue
+        match = NAME_RE.match(line)
+        if match:
+            model = match[1]
+            continue
+        match = INHERIT_RE.match(line)
+        if match and model is None:
+            model = match[1]
+            continue
+        match = FIELD_RE.match(line)
+        if match and model:
+            result[model][match[1]] = (match[2], path)
+
+
 def parse_fields(files):
-    """{model: {field: (type, path)}} from Python sources (regex, best effort)."""
+    """{model: {field: (type, path)}} from Python sources (ast; regex for the
+    files the running Python cannot parse, e.g. newer syntax)."""
     result = collections.defaultdict(dict)
     for path, text in files.items():
-        model = None
-        for line in text.splitlines():
-            if CLASS_RE.match(line):
-                model = None
-                continue
-            match = NAME_RE.match(line)
-            if match:
-                model = match[1]
-                continue
-            match = INHERIT_RE.match(line)
-            if match and model is None:
-                model = match[1]
-                continue
-            match = FIELD_RE.match(line)
-            if match and model:
-                result[model][match[1]] = (match[2], path)
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            _parse_regex(text, path, result)
+        else:
+            _parse_ast(tree, path, result)
     return result
 
 
@@ -89,39 +131,43 @@ def target_fields(repos, ref_of):
 
 
 def source_changes(repos, ref_from_of, ref_to_of, models_filter):
-    """Removed fields and rename candidates by comparing the sources."""
-    path_re = re.compile(r"/(models|wizards?|report)/[^/]+\.py$")
-    removed, candidates = [], []
+    """Removed fields and rename candidates by comparing the sources of all
+    the repositories together (a field moved to enterprise is not removed)."""
+    path_re = re.compile(r"(^|/)(addons|models|wizards?|report)/.*\.py$")
+    before, after = collections.defaultdict(dict), collections.defaultdict(dict)
     for repo in repos:
-        before = parse_fields(read_blobs(repo, ref_from_of(repo), path_re))
-        after = parse_fields(read_blobs(repo, ref_to_of(repo), path_re))
-        for model, fields in sorted(before.items()):
-            if not models_filter(model) or model not in after:
+        for model, fields in parse_fields(read_blobs(repo, ref_from_of(repo), path_re)).items():
+            for name, (ftype, path) in fields.items():
+                before[model][name] = (ftype, path, repo)
+        for model, fields in parse_fields(read_blobs(repo, ref_to_of(repo), path_re)).items():
+            for name, (ftype, path) in fields.items():
+                after[model][name] = (ftype, path, repo)
+    removed, candidates = [], []
+    for model, fields in sorted(before.items()):
+        if not models_filter(model) or model not in after:
+            continue
+        new_fields = {n: info for n, info in after[model].items() if n not in fields}
+        for name, (ftype, path, repo) in sorted(fields.items()):
+            if name in after[model] or name.startswith("_"):
                 continue
-            new_fields = {
-                name: info for name, info in after[model].items() if name not in fields
-            }
-            for name, (ftype, path) in sorted(fields.items()):
-                if name in after[model] or name.startswith("_"):
-                    continue
-                commit = _git(
-                    repo, "log", "-1", "--format=%h%x09%s", f"-S{name} = fields.",
-                    f"{ref_from_of(repo)}..{ref_to_of(repo)}", "--", path,
-                ).decode("utf-8", "replace").strip()
-                sha, _, subject = commit.partition("\t")
-                source = f"{repo.name.removesuffix('.git')} {sha} {subject!r}" if sha else path
-                same_type = [n for n, (t, _p) in new_fields.items() if t == ftype]
-                added_in_commit = []
-                if sha and same_type:
-                    diff = _git(repo, "show", "--format=", sha, "--", path).decode("utf-8", "replace")
-                    added_in_commit = [
-                        n for n in same_type
-                        if re.search(rf"^\+\s+{re.escape(n)}\s*=\s*fields\.", diff, re.M)
-                    ]
-                if len(added_in_commit) == 1:
-                    candidates.append((model, name, added_in_commit[0], source))
-                else:
-                    removed.append((model, name, source))
+            commit = _git(
+                repo, "log", "-1", "--format=%h%x09%s", f"-S{name} = fields.",
+                f"{ref_from_of(repo)}..{ref_to_of(repo)}", "--", path,
+            ).decode("utf-8", "replace").strip()
+            sha, _, subject = commit.partition("	")
+            source = f"{repo.name.removesuffix('.git')} {sha} {subject!r}" if sha else path
+            same_type = [n for n, info in new_fields.items() if info[0] == ftype]
+            added_in_commit = []
+            if sha and same_type:
+                diff = _git(repo, "show", "--format=", sha).decode("utf-8", "replace")
+                added_in_commit = [
+                    n for n in same_type
+                    if re.search(rf"^\+\s+{re.escape(n)}\s*=\s*fields\.", diff, re.M)
+                ]
+            if len(added_in_commit) == 1:
+                candidates.append((model, name, added_in_commit[0], source))
+            else:
+                removed.append((model, name, source))
     return removed, candidates
 
 
