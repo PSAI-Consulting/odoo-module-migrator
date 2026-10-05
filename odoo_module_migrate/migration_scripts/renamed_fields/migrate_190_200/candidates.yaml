@@ -2,10 +2,10 @@
 # Do not edit: write corrections in another file of this folder.
 # Rename CANDIDATES found in the sources (field removed in the commit
 # that adds a field of the same type): check them, then uncomment.
-# - ["account.account", "group_id", "parent_id", "odoo c3313b336b9f '[IMP] account: Replace account groups with account parent'"]
+# - ["account.account", "group_id", "parent_id", "odoo c3313b336b9f '[IMP] account: Replace account groups with account parent'"]  # non : comodel différent (account.group -> account.account), account.group supprimé
 # - ["account.account", "multiple_assets_per_line", "display_asset_accounts", "enterprise 66db1d5654f '[IMP] account_{asset,asset_fleet,loans},*: vendor bill asset improvements'"]
-# - ["account.analytic.line", "timesheet_invoice_id", "reinvoice_move_id", "odoo cd6325d7476b '[IMP] sale, _*: add Services & Materials upselling view'"]
-# - ["account.analytic.line", "timesheet_invoice_type", "billable_type", "odoo 8e8b27382c93 '[ADD] sale_project_margin: project margins overview'"]
+# - ["account.analytic.line", "timesheet_invoice_id", "reinvoice_move_id", "odoo cd6325d7476b '[IMP] sale, _*: add Services & Materials upselling view'"]  # oui : curated.yaml
+# - ["account.analytic.line", "timesheet_invoice_type", "billable_type", "odoo 8e8b27382c93 '[ADD] sale_project_margin: project margins overview'"]  # non : valeurs de sélection changées (billable_fixed -> 01_revenues_fixed...)
 # - ["account.asset", "account_type", "main_variant_state", "enterprise 3f59a1c4c1c '[IMP] account_asset{_fleet},*: add asset variants with different ledgers'"]
 # - ["account.asset", "children_ids", "variant_ids", "enterprise 3f59a1c4c1c '[IMP] account_asset{_fleet},*: add asset variants with different ledgers'"]
 # - ["account.asset", "display_account_asset_id", "is_vehicle", "enterprise 66db1d5654f '[IMP] account_{asset,asset_fleet,loans},*: vendor bill asset improvements'"]
@@ -16,33 +16,33 @@
 # - ["account.move", "l10n_co_dian_attachment_id", "l10n_co_edi_attachment_id", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
 # - ["account.move", "l10n_co_dian_document_ids", "l10n_co_edi_document_ids", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
 # - ["account.move", "l10n_co_dian_post_time", "l10n_co_edi_post_time", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
-# - ["account.move", "l10n_my_invoice_need_edi", "l10n_my_edi_is_applicable", "odoo a3ffeb0574b8 '[IMP] l10n_my_edi: show cancelled/invalid status on source invoice'"]
+# - ["account.move", "l10n_my_invoice_need_edi", "l10n_my_edi_is_applicable", "odoo a3ffeb0574b8 '[IMP] l10n_my_edi: show cancelled/invalid status on source invoice'"]  # non : sens différent : le nouveau champ ne teste plus l'état MyInvois
 # - ["account.move", "sdd_has_usable_mandate", "has_usable_mandate", "enterprise 3cd11e664cb '[ADD] account_direct_debit,*: extract mandate logic'"]
-# - ["account.move.line", "deductible_amount", "deductible_percentage", "odoo ffb960c3f0b6 '[FIX] account: deductible percentage instead of amount'"]
-# - ["account.move.line", "translated_product_name", "label", "odoo c5037bbe0789 '[IMP] sale,account,purchase,*: remove product name from description'"]
+# - ["account.move.line", "deductible_amount", "deductible_percentage", "odoo ffb960c3f0b6 '[FIX] account: deductible percentage instead of amount'"]  # non : échelle changée (défaut 100 -> 1.0, pourcentage)
+# - ["account.move.line", "translated_product_name", "label", "odoo c5037bbe0789 '[IMP] sale,account,purchase,*: remove product name from description'"]  # non : sens différent (label : libellé éditable de la ligne)
 # - ["account.payment", "end_to_end_uuid", "transaction_uuid", "enterprise 2fd3d96faae '[IMP] account_accountant: generalize end_to_end_uuid'"]
 # - ["account.payment", "sdd_mandate_id", "mandate_id", "enterprise 3cd11e664cb '[ADD] account_direct_debit,*: extract mandate logic'"]
-# - ["account.payment.register", "l10n_ar_net_amount", "l10n_latam_checks_amount", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]
+# - ["account.payment.register", "l10n_ar_net_amount", "l10n_latam_checks_amount", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]  # non : sens différent (montant des chèques)
 # - ["account.return.payment.wizard", "acc_number", "account_number", "enterprise a78e85496fb '[IMP] *: Improve UX of bank accounts'"]
-# - ["account.tax", "is_withholding_tax_on_payment", "is_withholding_tax", "odoo 7dda80b2aaa6 '[IMP] l10n_account_withholding_tax: add withholding on bills'"]
-# - ["account.tax", "l10n_ar_tax_type", "l10n_ar_withholding_tax_type", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]
-# - ["account.tax", "l10n_ar_type_tax_use", "l10n_ar_withholding_tax_type", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]
-# - ["account.tax", "l10n_ar_withholding_payment_type", "l10n_ar_withholding_tax_type", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]
-# - ["crm.lead2opportunity.partner.mass", "action", "name", "odoo 28cea3e225a4 '[IMP] crm: merge lead to opportunity wizards'"]
-# - ["crm.lead2opportunity.partner.mass", "deduplicate", "link_to_matching_customer", "odoo 28cea3e225a4 '[IMP] crm: merge lead to opportunity wizards'"]
-# - ["crm.lead2opportunity.partner.mass", "lead_id", "team_id", "odoo 28cea3e225a4 '[IMP] crm: merge lead to opportunity wizards'"]
-# - ["fleet.vehicle", "plan_to_change_bike", "plan_to_change_vehicle", "odoo 8aa9bfe16708 '[REF] *_fleet: merge plan_to_change car and bike into a same field'"]
-# - ["fleet.vehicle", "plan_to_change_car", "plan_to_change_vehicle", "odoo 8aa9bfe16708 '[REF] *_fleet: merge plan_to_change car and bike into a same field'"]
-# - ["hr.applicant", "user_email", "recruiter_email", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]
-# - ["hr.applicant", "user_id", "recruiter_id", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]
+# - ["account.tax", "is_withholding_tax_on_payment", "is_withholding_tax", "odoo 7dda80b2aaa6 '[IMP] l10n_account_withholding_tax: add withholding on bills'"]  # oui : curated.yaml
+# - ["account.tax", "l10n_ar_tax_type", "l10n_ar_withholding_tax_type", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]  # oui : curated.yaml
+# - ["account.tax", "l10n_ar_type_tax_use", "l10n_ar_withholding_tax_type", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]  # non : sélection différente (sale/purchase/supplier...)
+# - ["account.tax", "l10n_ar_withholding_payment_type", "l10n_ar_withholding_tax_type", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]  # non : sélection différente (supplier/customer)
+# - ["crm.lead2opportunity.partner.mass", "action", "name", "odoo 28cea3e225a4 '[IMP] crm: merge lead to opportunity wizards'"]  # non : sens différent (action de conversion)
+# - ["crm.lead2opportunity.partner.mass", "deduplicate", "link_to_matching_customer", "odoo 28cea3e225a4 '[IMP] crm: merge lead to opportunity wizards'"]  # non : sens différent
+# - ["crm.lead2opportunity.partner.mass", "lead_id", "team_id", "odoo 28cea3e225a4 '[IMP] crm: merge lead to opportunity wizards'"]  # non : comodel différent (crm.lead -> crm.team)
+# - ["fleet.vehicle", "plan_to_change_bike", "plan_to_change_vehicle", "odoo 8aa9bfe16708 '[REF] *_fleet: merge plan_to_change car and bike into a same field'"]  # oui : curated.yaml
+# - ["fleet.vehicle", "plan_to_change_car", "plan_to_change_vehicle", "odoo 8aa9bfe16708 '[REF] *_fleet: merge plan_to_change car and bike into a same field'"]  # oui : curated.yaml
+# - ["hr.applicant", "user_email", "recruiter_email", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]  # non : comodel différent (res.users.email -> hr.employee.work_email)
+# - ["hr.applicant", "user_id", "recruiter_id", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]  # non : comodel différent (res.users -> hr.employee)
 # - ["hr.appraisal", "employee_feedback_ids", "partner_feedback_ids", "enterprise 4c918de8ff0 '[IMP] hr_appraisal_survey: Ask feedback to res.partner not from employee'"]
-# - ["hr.attendance", "overtime_status", "state", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]
-# - ["hr.bank.account.allocation.wizard.line", "acc_number", "account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
+# - ["hr.attendance", "overtime_status", "state", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]  # non : valeurs différentes (to_approve/approved -> draft/validated)
+# - ["hr.bank.account.allocation.wizard.line", "acc_number", "account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]  # oui : curated.yaml
 # - ["hr.contract.salary.offer", "contract_type_id", "employee_type_id", "enterprise 620d857d960 '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs'"]
 # - ["hr.contract.salary.offer", "monthly_wage", "salary_amount", "enterprise f815a431c21 '[IMP] hr_contract_salary_payroll: prevent reencoding in salary calculator'"]
 # - ["hr.employee", "contract_type_id", "employee_type_id", "enterprise 620d857d960 '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs'"]
-# - ["hr.employee", "current_leave_id", "current_work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.employee", "display_extra_hours", "attendance_based", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]
+# - ["hr.employee", "current_leave_id", "current_work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # non : sens différent (type d'entrée de travail courant, pas seulement congé)
+# - ["hr.employee", "display_extra_hours", "attendance_based", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]  # non : sens différent
 # - ["hr.employee", "double_pay_line_ids", "l10n_be_holiday_attest_ids", "enterprise c285693e804 '[IMP] l10n_be_hr_payroll: Holiday attestations rework'"]
 # - ["hr.employee", "end_notice_period", "dismissal_date", "enterprise d05822d8578 '[IMP] hr_payroll{;*}: Belgian departure integration'"]
 # - ["hr.employee", "first_contract_in_company", "dismissal_date", "enterprise d05822d8578 '[IMP] hr_payroll{;*}: Belgian departure integration'"]
@@ -56,25 +56,25 @@
 # - ["hr.employee", "sdworx_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
 # - ["hr.employee", "start_notice_period", "dismissal_date", "enterprise d05822d8578 '[IMP] hr_payroll{;*}: Belgian departure integration'"]
 # - ["hr.employee", "ucm_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.job", "allowed_user_ids", "favorite_recruiter_ids", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]
-# - ["hr.job", "contract_type_id", "employee_type_id", "odoo 6057e25f8c12 '[IMP] hr: Remove employee_type and use contract_type_id'"]
-# - ["hr.job", "favorite_user_ids", "favorite_recruiter_ids", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]
-# - ["hr.job", "user_id", "recruiter_id", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]
-# - ["hr.leave", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.leave", "leave_type_increases_duration", "work_entry_type_increases_duration", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.leave", "overtime_deductible", "is_time_rule_trimmed", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]
-# - ["hr.leave.accrual.level", "postpone_max_days", "max_carriedover_duration", "odoo 65a61cc982aa '[REF] hr_holidays: changing the way accruals days are computed'"]
-# - ["hr.leave.allocation", "actual_lastcall", "last_accrual", "odoo 65a61cc982aa '[REF] hr_holidays: changing the way accruals days are computed'"]
-# - ["hr.leave.allocation", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.leave.allocation", "last_executed_carryover_date", "last_accrual", "odoo 65a61cc982aa '[REF] hr_holidays: changing the way accruals days are computed'"]
-# - ["hr.leave.allocation", "number_of_hours_display", "number_of_hours", "odoo 343e0b7a4b9a '[IMP] hr_holidays: track time off balance in both days and hours'"]
-# - ["hr.leave.allocation.generate.multi.wizard", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.leave.allocation.generate.multi.wizard", "request_unit", "unit_of_measure", "odoo 45d95156a17e '[IMP] hr_holidays: Separate time off unit taken/given'"]
-# - ["hr.leave.attendance.report", "leave_type_names", "work_entry_type_names", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.leave.employee.type.report", "leave_type", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.leave.generate.multi.wizard", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.leave.report", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["hr.leave.report.calendar", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+# - ["hr.job", "allowed_user_ids", "favorite_recruiter_ids", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]  # non : comodel différent (res.users -> hr.employee)
+# - ["hr.job", "contract_type_id", "employee_type_id", "odoo 6057e25f8c12 '[IMP] hr: Remove employee_type and use contract_type_id'"]  # oui : curated.yaml
+# - ["hr.job", "favorite_user_ids", "favorite_recruiter_ids", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]  # non : comodel différent (res.users -> hr.employee)
+# - ["hr.job", "user_id", "recruiter_id", "odoo 05e22346050d '[IMP] hr*,hr_recruitment**: show recruiters with adequate access rights'"]  # non : comodel différent (res.users -> hr.employee)
+# - ["hr.leave", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["hr.leave", "leave_type_increases_duration", "work_entry_type_increases_duration", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["hr.leave", "overtime_deductible", "is_time_rule_trimmed", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]  # non : sens différent
+# - ["hr.leave.accrual.level", "postpone_max_days", "max_carriedover_duration", "odoo 65a61cc982aa '[REF] hr_holidays: changing the way accruals days are computed'"]  # non : unité changée (dépend de added_value_type)
+# - ["hr.leave.allocation", "actual_lastcall", "last_accrual", "odoo 65a61cc982aa '[REF] hr_holidays: changing the way accruals days are computed'"]  # non : deux anciens champs pour un nouveau, sens différent
+# - ["hr.leave.allocation", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["hr.leave.allocation", "last_executed_carryover_date", "last_accrual", "odoo 65a61cc982aa '[REF] hr_holidays: changing the way accruals days are computed'"]  # non : deux anciens champs pour un nouveau, sens différent
+# - ["hr.leave.allocation", "number_of_hours_display", "number_of_hours", "odoo 343e0b7a4b9a '[IMP] hr_holidays: track time off balance in both days and hours'"]  # oui : curated.yaml
+# - ["hr.leave.allocation.generate.multi.wizard", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["hr.leave.allocation.generate.multi.wizard", "request_unit", "unit_of_measure", "odoo 45d95156a17e '[IMP] hr_holidays: Separate time off unit taken/given'"]  # non : sens différent (unité donnée / prise séparées)
+# - ["hr.leave.attendance.report", "leave_type_names", "work_entry_type_names", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["hr.leave.employee.type.report", "leave_type", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["hr.leave.generate.multi.wizard", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["hr.leave.report", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["hr.leave.report.calendar", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
 # - ["hr.payslip", "l10n_au_schedule_pay", "schedule_pay", "enterprise fe8800e8214 '[IMP] l10n_sa_hr_payroll: 30-day pay schedule'"]
 # - ["hr.recruitment.report", "user_id", "recruiter_id", "enterprise 2f0c05c039f '[IMP] hr_recruitment*: show employees with rights in recruiter selection'"]
 # - ["hr.salary.attachment", "active_amount", "amount", "enterprise 2c4e0737cc7 '[IMP] hr_payroll: Improve salary adjustments (V4)'"]
@@ -87,96 +87,96 @@
 # - ["hr.version", "leave_allocation_id", "employee_type_id", "enterprise 306fea06406 '[IMP] hr_contract_salary: Move benefits to Payroll'"]
 # - ["hr.version", "other_disabled_senior_dependent", "other_dependents", "enterprise 5381c5068da '[IMP] l10n_be_hr_payroll: add dependents needing care to employee family section'"]
 # - ["hr.version", "representation_fees", "l10n_be_lsa_monthly_misc_other_amount", "enterprise 8b5c97007bd '[IMP] l10n_be_hr_payroll: make expense fees more flexible and simpler'"]
-# - ["ir.module.module", "has_iap", "iap_paid_service", "odoo 39620b47ffa2 '[IMP] *: new manifest field `iap_paid_service`'"]
-# - ["mail.activity.type", "triggered_next_type_id", "suggested_next_type_id", "odoo 0d41fffffbf2 '[IMP] calendar, test_(mail): remove trigger next activity'"]
-# - ["mail.message", "starred", "is_bookmarked", "odoo 7424f0da5137 '[IMP] mail,*: use Bookmark as the string for starred'"]
-# - ["mail.message", "starred_partner_ids", "bookmarked_partner_ids", "odoo 7424f0da5137 '[IMP] mail,*: use Bookmark as the string for starred'"]
-# - ["maintenance.request", "kanban_state", "state", "odoo 205e11433e93 '[IMP] maintenance: added new maintenance_request_state_selection widget'"]
-# - ["maintenance.team", "todo_request_count_block", "todo_request_count_changes_requested", "odoo 205e11433e93 '[IMP] maintenance: added new maintenance_request_state_selection widget'"]
-# - ["mrp.consumption.warning.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+# - ["ir.module.module", "has_iap", "iap_paid_service", "odoo 39620b47ffa2 '[IMP] *: new manifest field `iap_paid_service`'"]  # non : sens différent (calculé -> champ du manifest)
+# - ["mail.activity.type", "triggered_next_type_id", "suggested_next_type_id", "odoo 0d41fffffbf2 '[IMP] calendar, test_(mail): remove trigger next activity'"]  # non : déclenchement supprimé (suggestion seulement)
+# - ["mail.message", "starred", "is_bookmarked", "odoo 7424f0da5137 '[IMP] mail,*: use Bookmark as the string for starred'"]  # oui : curated.yaml
+# - ["mail.message", "starred_partner_ids", "bookmarked_partner_ids", "odoo 7424f0da5137 '[IMP] mail,*: use Bookmark as the string for starred'"]  # oui : curated.yaml
+# - ["maintenance.request", "kanban_state", "state", "odoo 205e11433e93 '[IMP] maintenance: added new maintenance_request_state_selection widget'"]  # non : valeurs différentes
+# - ["maintenance.team", "todo_request_count_block", "todo_request_count_changes_requested", "odoo 205e11433e93 '[IMP] maintenance: added new maintenance_request_state_selection widget'"]  # non : sens différent
+# - ["mrp.consumption.warning.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
 # - ["mrp.eco", "will_update_version", "show_eco_type", "enterprise 71a2fd429d2 '[IMP] mrp_plm: improve ECO revision workflows'"]
-# - ["mrp.production", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]
-# - ["mrp.production", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+# - ["mrp.production", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]  # oui : curated.yaml
+# - ["mrp.production", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
 # - ["mrp.production.schedule", "product_uom_id", "uom_id", "enterprise 05188bb3d17 '[IMP] uom: rename logistic fields'"]
-# - ["mrp.production.split", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["mrp.unbuild", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["mrp.workcenter.capacity", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["mrp.workorder", "json_popover", "decoration_dates", "odoo 631889510143 '[IMP] mrp: Improve work orders planning issues'"]
-# - ["mrp.workorder", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["mrp.workorder", "scrap_count", "color", "odoo 1c7d80a10b5d '[IMP] stock,*: remove scrap model'"]
-# - ["pos.config", "auto_validate_terminal_payment", "auto_validate_electronic_payment", "odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay'"]
+# - ["mrp.production.split", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["mrp.unbuild", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["mrp.workcenter.capacity", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["mrp.workorder", "json_popover", "decoration_dates", "odoo 631889510143 '[IMP] mrp: Improve work orders planning issues'"]  # non : sens différent
+# - ["mrp.workorder", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["mrp.workorder", "scrap_count", "color", "odoo 1c7d80a10b5d '[IMP] stock,*: remove scrap model'"]  # non : sans rapport (champ ajouté sur un autre modèle)
+# - ["pos.config", "auto_validate_terminal_payment", "auto_validate_electronic_payment", "odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay'"]  # oui : curated.yaml
 # - ["pos.config", "iface_electronic_scale", "use_iot_box", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
 # - ["pos.config", "iface_print_via_proxy", "use_iot_box", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
 # - ["pos.config", "iface_scan_via_proxy", "use_iot_box", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
 # - ["pos.config", "iface_scanner_ids", "iot_scanner_ids", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
 # - ["pos.config", "iface_sweden_fiscal_data_module", "iot_fdm_se_id", "enterprise 6a8c6d4e3a0 '[REF] l10n_se_pos: use iot http for fdm se'"]
-# - ["pos.config", "invoice_journal_id", "default_partner_id", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]
-# - ["pos.config", "last_session_closing_cash", "current_cash_register_balance", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]
+# - ["pos.config", "invoice_journal_id", "default_partner_id", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]  # non : comodel différent
+# - ["pos.config", "last_session_closing_cash", "current_cash_register_balance", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]  # non : sens différent
 # - ["pos.config", "module_pos_iot", "use_iot_box", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
 # - ["pos.config", "urbanpiper_fiscal_position_id", "urbanpiper_store_id", "enterprise 33a957db020 '[IMP] pos_urban_piper*: store model for food-delivery configuration'"]
 # - ["pos.config", "urbanpiper_pricelist_id", "urbanpiper_store_id", "enterprise 33a957db020 '[IMP] pos_urban_piper*: store model for food-delivery configuration'"]
-# - ["pos.order", "l10n_es_edi_verifactu_refund_reason", "l10n_es_invoice_type", "odoo 0ecd59742b60 '[REF] l10n_es*: unify invoice type and VAT regime code handling'"]
-# - ["pos.order", "l10n_es_tbai_refund_reason", "l10n_es_invoice_type", "odoo 0ecd59742b60 '[REF] l10n_es*: unify invoice type and VAT regime code handling'"]
-# - ["pos.order.line", "coupon_id", "card_id", "odoo ab3f0be23f5f '[REF] pos_loyalty, pos_*_loyalty: complete refactor of loyalty for pos'"]
-# - ["pos.payment.method", "hide_use_payment_terminal", "bancontact_test_mode", "odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay'"]
-# - ["pos.printer", "epson_printer_ip", "printer_ip", "odoo b1f17b6e6119 '[REF] point_of_sale, pos_*: receipt printer refactor'"]
-# - ["pos.session", "cash_journal_id", "bank_statement_id", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]
-# - ["product.product", "is_in_purchase_order", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]
-# - ["product.product", "is_in_selected_section_of_order", "catalog_is_in_selected_section", "odoo c0d4530b8b7c '[MOV] product -> account: move field to the module where used'"]
+# - ["pos.order", "l10n_es_edi_verifactu_refund_reason", "l10n_es_invoice_type", "odoo 0ecd59742b60 '[REF] l10n_es*: unify invoice type and VAT regime code handling'"]  # non : champ unifié, sélection différente
+# - ["pos.order", "l10n_es_tbai_refund_reason", "l10n_es_invoice_type", "odoo 0ecd59742b60 '[REF] l10n_es*: unify invoice type and VAT regime code handling'"]  # non : champ unifié, sélection différente
+# - ["pos.order.line", "coupon_id", "card_id", "odoo ab3f0be23f5f '[REF] pos_loyalty, pos_*_loyalty: complete refactor of loyalty for pos'"]  # oui : curated.yaml
+# - ["pos.payment.method", "hide_use_payment_terminal", "bancontact_test_mode", "odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay'"]  # non : sans rapport
+# - ["pos.printer", "epson_printer_ip", "printer_ip", "odoo b1f17b6e6119 '[REF] point_of_sale, pos_*: receipt printer refactor'"]  # oui : curated.yaml
+# - ["pos.session", "cash_journal_id", "bank_statement_id", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]  # non : comodel différent
+# - ["product.product", "is_in_purchase_order", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]  # non : filtre de catalogue générique, recherche différente
+# - ["product.product", "is_in_selected_section_of_order", "catalog_is_in_selected_section", "odoo c0d4530b8b7c '[MOV] product -> account: move field to the module where used'"]  # non : déplacé dans account, recherche différente
 # - ["product.product", "pricer_product_to_create_or_update", "needs_pricer_update", "enterprise 166a8a240d0 '[IMP] pos_pricer: ux improvements'"]
 # - ["product.product", "pricer_sale_pricelist_id", "pricer_tags_pricelist_id", "enterprise 166a8a240d0 '[IMP] pos_pricer: ux improvements'"]
-# - ["product.product", "product_catalog_product_is_in_bom", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]
-# - ["product.product", "product_catalog_product_is_in_mo", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]
-# - ["product.product", "product_catalog_product_is_in_repair", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]
-# - ["product.product", "product_catalog_product_is_in_sale_order", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]
-# - ["product.product", "product_variant_image_ids", "product_template_image_ids", "odoo 383d15fab457 '[IMP] website_sale: variant images management'"]
-# - ["product.replenish", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["product.supplierinfo", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+# - ["product.product", "product_catalog_product_is_in_bom", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]  # non : filtre de catalogue générique, recherche différente
+# - ["product.product", "product_catalog_product_is_in_mo", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]  # non : filtre de catalogue générique, recherche différente
+# - ["product.product", "product_catalog_product_is_in_repair", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]  # non : filtre de catalogue générique, recherche différente
+# - ["product.product", "product_catalog_product_is_in_sale_order", "catalog_is_in_order", "odoo 8202a371ce7c '[IMP] account,sale,purchase: factorize catalog search filter'"]  # non : filtre de catalogue générique, recherche différente
+# - ["product.product", "product_variant_image_ids", "product_template_image_ids", "odoo 383d15fab457 '[IMP] website_sale: variant images management'"]  # non : sens différent (images du modèle, related)
+# - ["product.replenish", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["product.supplierinfo", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
 # - ["product.template", "l10n_co_dian_mandate_contract", "l10n_co_edi_mandate_contract", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
-# - ["product.template", "visible_expense_policy", "visible_reinvoice_policy", "odoo 8a5b99545dfa '[CLN] (*_,)sale(,_*): rename `expense_policy` field to `reinvoice_policy`'"]
-# - ["purchase.order.line", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]
-# - ["purchase.order.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["purchase.order.line", "translated_product_name", "label", "odoo c5037bbe0789 '[IMP] sale,account,purchase,*: remove product name from description'"]
-# - ["purchase.report", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["purchase.requisition.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["repair.order", "product_uom", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+# - ["product.template", "visible_expense_policy", "visible_reinvoice_policy", "odoo 8a5b99545dfa '[CLN] (*_,)sale(,_*): rename `expense_policy` field to `reinvoice_policy`'"]  # oui : curated.yaml
+# - ["purchase.order.line", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]  # oui : curated.yaml
+# - ["purchase.order.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["purchase.order.line", "translated_product_name", "label", "odoo c5037bbe0789 '[IMP] sale,account,purchase,*: remove product name from description'"]  # non : sens différent (label : libellé éditable de la ligne)
+# - ["purchase.report", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["purchase.requisition.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["repair.order", "product_uom", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
 # - ["res.company", "acerta_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.company", "attendance_overtime_validation", "attendance_validation", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]
+# - ["res.company", "attendance_overtime_validation", "attendance_validation", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]  # non : valeurs différentes (by_manager -> manual_validation)
 # - ["res.company", "group_s_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.company", "hr_attendance_display_overtime", "attendance_based", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]
-# - ["res.company", "l10n_es_edi_verifactu_special_vat_regime", "l10n_es_special_vat_regime", "odoo 0ecd59742b60 '[REF] l10n_es*: unify invoice type and VAT regime code handling'"]
-# - ["res.company", "l10n_fr_reference_leave_type", "l10n_fr_reference_work_entry_type", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.company", "layout_background", "report_tables_id", "odoo fa55c2d1ca5d '[IMP] *: flexible document layout (reports)'"]
+# - ["res.company", "hr_attendance_display_overtime", "attendance_based", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]  # non : sens différent
+# - ["res.company", "l10n_es_edi_verifactu_special_vat_regime", "l10n_es_special_vat_regime", "odoo 0ecd59742b60 '[REF] l10n_es*: unify invoice type and VAT regime code handling'"]  # non : sélection différente
+# - ["res.company", "l10n_fr_reference_leave_type", "l10n_fr_reference_work_entry_type", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["res.company", "layout_background", "report_tables_id", "odoo fa55c2d1ca5d '[IMP] *: flexible document layout (reports)'"]  # non : sans rapport
 # - ["res.company", "official_company_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
 # - ["res.company", "partena_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.company", "peppol_eas", "routing_scheme", "odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]
+# - ["res.company", "peppol_eas", "routing_scheme", "odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]  # non : identifiant multiple (routing_scheme), à vérifier à la main
 # - ["res.company", "prisma_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
 # - ["res.company", "sdworx_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
 # - ["res.company", "ucm_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.config.settings", "account_default_pos_receivable_account_id", "pos_default_partner_id", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]
-# - ["res.config.settings", "account_peppol_eas", "routing_scheme", "odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]
-# - ["res.config.settings", "account_peppol_endpoint", "routing_endpoint", "odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]
+# - ["res.config.settings", "account_default_pos_receivable_account_id", "pos_default_partner_id", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]  # non : comodel différent
+# - ["res.config.settings", "account_peppol_eas", "routing_scheme", "odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]  # non : identifiant multiple (routing_scheme), à vérifier à la main
+# - ["res.config.settings", "account_peppol_endpoint", "routing_endpoint", "odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]  # non : identifiant multiple (routing_endpoint), à vérifier à la main
 # - ["res.config.settings", "acerta_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.config.settings", "active_provider_id", "installed_provider_id", "odoo 1ef1b73ee2ec '[IMP] payment, *: rework payment provider views and state field'"]
-# - ["res.config.settings", "attendance_overtime_validation", "attendance_validation", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]
-# - ["res.config.settings", "default_invoice_policy", "sale_invoice_policy", "odoo d069ce59e28f '[IMP] sale, account, *: support description-first flow on sale orders and invoices'"]
-# - ["res.config.settings", "default_picking_policy", "picking_policy", "odoo 6641258e5e76 '[IMP] sale_stock, *: align shipping policy label and behavior'"]
+# - ["res.config.settings", "active_provider_id", "installed_provider_id", "odoo 1ef1b73ee2ec '[IMP] payment, *: rework payment provider views and state field'"]  # non : sens différent (actif -> installé)
+# - ["res.config.settings", "attendance_overtime_validation", "attendance_validation", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]  # non : valeurs différentes (by_manager -> manual_validation)
+# - ["res.config.settings", "default_invoice_policy", "sale_invoice_policy", "odoo d069ce59e28f '[IMP] sale, account, *: support description-first flow on sale orders and invoices'"]  # non : valeur par défaut produit -> réglage société
+# - ["res.config.settings", "default_picking_policy", "picking_policy", "odoo 6641258e5e76 '[IMP] sale_stock, *: align shipping policy label and behavior'"]  # non : valeur par défaut -> réglage société, libellés changés
 # - ["res.config.settings", "firebase_enable_push_notifications", "enable_push_notifications", "enterprise 7bc21fac9c2 '[IMP] social_push_notifications: remove firebase dependencies'"]
 # - ["res.config.settings", "firebase_use_own_account", "enable_push_notifications", "enterprise 7bc21fac9c2 '[IMP] social_push_notifications: remove firebase dependencies'"]
 # - ["res.config.settings", "gr_s_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.config.settings", "hr_attendance_display_overtime", "attendance_based", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]
-# - ["res.config.settings", "l10n_es_edi_verifactu_special_vat_regime", "l10n_es_special_vat_regime", "odoo 0ecd59742b60 '[REF] l10n_es*: unify invoice type and VAT regime code handling'"]
-# - ["res.config.settings", "l10n_fr_reference_leave_type", "l10n_fr_reference_work_entry_type", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.config.settings", "l10n_vn_edi_default_symbol", "l10n_vn_edi_default_symbol_id", "odoo 2f03c9c3a78f '[IMP] l10n_vn_edi_viettel: flow improvements'"]
-# - ["res.config.settings", "module_hr_attendance", "hr_presence_control_attendance", "odoo cb719a7fbf9a '[FIX] hr,hr_attendance: company-specific attendance setting and reliable module installation'"]
-# - ["res.config.settings", "module_stock_picking_batch", "group_stock_picking_batch", "odoo 78b5ef88fb02 '[IMP] stock,*: move picking batch into stock'"]
-# - ["res.config.settings", "module_website_sale_autocomplete", "module_website_address_autocomplete", "odoo a2814d3f71fc '[REF] website_address_autocomplete: decouple autocomplete from eCommerce'"]
+# - ["res.config.settings", "hr_attendance_display_overtime", "attendance_based", "odoo dce36b041669 '[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine'"]  # non : sens différent
+# - ["res.config.settings", "l10n_es_edi_verifactu_special_vat_regime", "l10n_es_special_vat_regime", "odoo 0ecd59742b60 '[REF] l10n_es*: unify invoice type and VAT regime code handling'"]  # non : sélection différente
+# - ["res.config.settings", "l10n_fr_reference_leave_type", "l10n_fr_reference_work_entry_type", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]  # oui : curated.yaml
+# - ["res.config.settings", "l10n_vn_edi_default_symbol", "l10n_vn_edi_default_symbol_id", "odoo 2f03c9c3a78f '[IMP] l10n_vn_edi_viettel: flow improvements'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_hr_attendance", "hr_presence_control_attendance", "odoo cb719a7fbf9a '[FIX] hr,hr_attendance: company-specific attendance setting and reliable module installation'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_stock_picking_batch", "group_stock_picking_batch", "odoo 78b5ef88fb02 '[IMP] stock,*: move picking batch into stock'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_website_sale_autocomplete", "module_website_address_autocomplete", "odoo a2814d3f71fc '[REF] website_address_autocomplete: decouple autocomplete from eCommerce'"]  # oui : curated.yaml
 # - ["res.config.settings", "official_company_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
 # - ["res.config.settings", "partena_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.config.settings", "pos_auto_validate_terminal_payment", "pos_auto_validate_electronic_payment", "odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay'"]
+# - ["res.config.settings", "pos_auto_validate_terminal_payment", "pos_auto_validate_electronic_payment", "odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay'"]  # oui : curated.yaml
 # - ["res.config.settings", "pos_iface_scanner_ids", "pos_iot_scanner_ids", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
 # - ["res.config.settings", "pos_iface_sweden_fiscal_data_module", "pos_iot_fdm_se_id", "enterprise 6a8c6d4e3a0 '[REF] l10n_se_pos: use iot http for fdm se'"]
-# - ["res.config.settings", "pos_invoice_journal_id", "pos_default_partner_id", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]
+# - ["res.config.settings", "pos_invoice_journal_id", "pos_default_partner_id", "odoo f1f5a0b8f8a3 '[REF] point_of_sale: accounting'"]  # non : comodel différent
 # - ["res.config.settings", "pos_urbanpiper_fiscal_position_id", "pos_urbanpiper_store_id", "enterprise 33a957db020 '[IMP] pos_urban_piper*: store model for food-delivery configuration'"]
 # - ["res.config.settings", "pos_urbanpiper_pricelist_id", "pos_urbanpiper_store_id", "enterprise 33a957db020 '[IMP] pos_urban_piper*: store model for food-delivery configuration'"]
 # - ["res.config.settings", "prisma_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
@@ -188,30 +188,30 @@
 # - ["res.config.settings", "renting_forbidden_tue", "module_sale_management_renting", "enterprise 605c8b47d52 '[IMP] sale_renting, *: one-app free improvements'"]
 # - ["res.config.settings", "renting_forbidden_wed", "module_sale_management_renting", "enterprise 605c8b47d52 '[IMP] sale_renting, *: one-app free improvements'"]
 # - ["res.config.settings", "sdworx_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.config.settings", "send_abandoned_cart_email", "send_abandoned_cart_followup", "odoo 0f477b2a47e5 '[IMP] website_sale: Adding followup via whatsapp for abandoned cart'"]
+# - ["res.config.settings", "send_abandoned_cart_email", "send_abandoned_cart_followup", "odoo 0f477b2a47e5 '[IMP] website_sale: Adding followup via whatsapp for abandoned cart'"]  # oui : curated.yaml
 # - ["res.config.settings", "stock_journal", "stock_journal_id", "enterprise 163154e54ef '[REF] account_accountant: settings from stock_accountant'"]
 # - ["res.config.settings", "ucm_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-# - ["res.config.settings", "website_sale_contact_us_button_url", "contact_us_link_url", "odoo f70bd6edb04d '[IMP] website, *:  Prevent sales of product with category-based filter or zero-price'"]
-# - ["res.config.settings", "website_sale_prevent_zero_price_sale", "prevent_sale", "odoo f70bd6edb04d '[IMP] website, *:  Prevent sales of product with category-based filter or zero-price'"]
+# - ["res.config.settings", "website_sale_contact_us_button_url", "contact_us_link_url", "odoo f70bd6edb04d '[IMP] website, *:  Prevent sales of product with category-based filter or zero-price'"]  # oui : curated.yaml
+# - ["res.config.settings", "website_sale_prevent_zero_price_sale", "prevent_sale", "odoo f70bd6edb04d '[IMP] website, *:  Prevent sales of product with category-based filter or zero-price'"]  # non : sens élargi (catégories)
 # - ["res.partner", "l10n_co_dian_enable_update_data", "l10n_co_edi_enable_update_data", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
-# - ["res.partner", "peppol_eas", "routing_scheme", "odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]
+# - ["res.partner", "peppol_eas", "routing_scheme", "odoo 6f8c2526a00d '[REF] base,*: multi ID for UBL + remove company_registry'"]  # non : identifiant multiple (routing_scheme), à vérifier à la main
 # - ["res.partner", "sdd_count", "mandate_count", "enterprise 3cd11e664cb '[ADD] account_direct_debit,*: extract mandate logic'"]
 # - ["res.partner", "sdd_mandate_ids", "mandate_ids", "enterprise 3cd11e664cb '[ADD] account_direct_debit,*: extract mandate logic'"]
 # - ["res.partner", "ubo_birth_date", "birth_date", "enterprise ea597380a45 '[REF] equity: use birthday instead of ubo_birth_date'"]
-# - ["res.partner.bank", "acc_type", "account_type", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
+# - ["res.partner.bank", "acc_type", "account_type", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]  # oui : curated.yaml
 # - ["sale.order", "has_rented_products", "has_rentable_lines", "enterprise 7cdfe5bd154 '[IMP] sale_renting: switch between SO and RO'"]
-# - ["sale.order", "loyalty_data", "extra_total_fields", "odoo ff1ea50bdf91 '[IMP] sale,sale_(margin,loyalty): display total advantage on sales orders'"]
+# - ["sale.order", "loyalty_data", "extra_total_fields", "odoo ff1ea50bdf91 '[IMP] sale,sale_(margin,loyalty): display total advantage on sales orders'"]  # non : sens différent
 # - ["sale.order", "task_id", "planning_slot_id", "enterprise 0ce4912d2c7 '[REF] planning_field_service_sale_timesheet: migrate FSM sale in planning'"]
-# - ["sale.order.line", "translated_product_name", "label", "odoo c5037bbe0789 '[IMP] sale,account,purchase,*: remove product name from description'"]
-# - ["stock.location", "is_valued_external", "is_valued", "odoo 50b8bf4655b7 '[IMP] stock_account: remove is_valued_external'"]
-# - ["stock.location", "is_valued_internal", "is_valued", "odoo 50b8bf4655b7 '[IMP] stock_account: remove is_valued_external'"]
-# - ["stock.lot", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["stock.move", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]
-# - ["stock.move.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["stock.picking", "l10n_tr_nilvera_dispatch_state", "l10n_tr_nilvera_send_status", "odoo 0484c8e1de26 '[IMP] l10n_tr_nilvera_edispatch: integrate API for automatic sending'"]
+# - ["sale.order.line", "translated_product_name", "label", "odoo c5037bbe0789 '[IMP] sale,account,purchase,*: remove product name from description'"]  # non : sens différent (label : libellé éditable de la ligne)
+# - ["stock.location", "is_valued_external", "is_valued", "odoo 50b8bf4655b7 '[IMP] stock_account: remove is_valued_external'"]  # non : sens inverse (extérieur -> intérieur)
+# - ["stock.location", "is_valued_internal", "is_valued", "odoo 50b8bf4655b7 '[IMP] stock_account: remove is_valued_external'"]  # oui : curated.yaml
+# - ["stock.lot", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["stock.move", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]  # oui : curated.yaml
+# - ["stock.move.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["stock.picking", "l10n_tr_nilvera_dispatch_state", "l10n_tr_nilvera_send_status", "odoo 0484c8e1de26 '[IMP] l10n_tr_nilvera_edispatch: integrate API for automatic sending'"]  # non : module déplacé dans Enterprise
 # - ["stock.put.in.pack", "iot_device_identifier", "device_identifier", "enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`'"]
 # - ["stock.put.in.pack", "iot_ip", "device_identifier", "enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`'"]
-# - ["stock.quant", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["stock.storage.category.capacity", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["stock.warehouse.orderpoint", "product_uom", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
-# - ["stock.warn.insufficient.qty.scrap", "scrap_id", "scrap_move_id", "odoo 1c7d80a10b5d '[IMP] stock,*: remove scrap model'"]
+# - ["stock.quant", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["stock.storage.category.capacity", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["stock.warehouse.orderpoint", "product_uom", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]  # oui : curated.yaml
+# - ["stock.warn.insufficient.qty.scrap", "scrap_id", "scrap_move_id", "odoo 1c7d80a10b5d '[IMP] stock,*: remove scrap model'"]  # non : comodel différent (stock.scrap supprimé -> stock.move)

@@ -177,3 +177,69 @@ def test_curated_module_rules():
         assert all(level == "info" for level, _msg in messages), messages
         # idempotent
         assert manifest.apply_module_rules(new, rules) == (new, [])
+
+
+RENAME_PY = '''from odoo import api, fields, models
+
+
+class StockMove(models.Model):
+    _inherit = "stock.move"
+
+    x_qty = fields.Float(compute="_compute_x_qty")
+
+    @api.depends("product_uom", "location_final_id")
+    def _compute_x_qty(self):
+        for move in self:
+            move.x_qty = move.product_uom.factor if move.location_final_id else 0
+
+
+class HrLeave(models.Model):
+    _inherit = "hr.leave"
+
+    def _x(self):
+        return self.holiday_status_id.name
+'''
+
+RENAME_XML = '''<odoo>
+    <record id="view_move_form" model="ir.ui.view">
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="stock.view_move_form"/>
+        <field name="arch" type="xml">
+            <field name="product_uom" position="after">
+                <field name="location_final_id"/>
+            </field>
+        </field>
+    </record>
+    <record id="view_order_line" model="ir.ui.view">
+        <field name="model">sale.order.line</field>
+        <field name="arch" type="xml"><list><field name="product_uom_id"/></list></field>
+    </record>
+</odoo>
+'''
+
+
+def test_curated_field_renames_190_200(tmp_path):
+    """Verified 19→20 renames applied where the model is known, once."""
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    (module / "models").mkdir(parents=True)
+    (module / "views").mkdir()
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['stock']}")
+    (module / "models" / "stock_move.py").write_text(RENAME_PY)
+    (module / "views" / "views.xml").write_text(RENAME_XML)
+    script = MigrationScript()
+    script.parse_rules()
+    script.handle_fields(module)
+    py = (module / "models" / "stock_move.py").read_text()
+    xml = (module / "views" / "views.xml").read_text()
+    assert '@api.depends("uom_id", "forecasted_location_id")' in py
+    assert "move.uom_id.factor if move.forecasted_location_id" in py
+    assert "self.work_entry_type_id.name" in py
+    assert '<field name="uom_id" position="after">' in xml
+    assert '<field name="forecasted_location_id"/>' in xml
+    # sale.order.line keeps product_uom_id in 20.0: untouched
+    assert '<field name="product_uom_id"/>' in xml
+    script.handle_fields(module)
+    assert (module / "models" / "stock_move.py").read_text() == py
+    assert (module / "views" / "views.xml").read_text() == xml

@@ -293,8 +293,13 @@ def xml_usages(text):
         if not view_model or arch is None:
             continue
         for node in arch.iter("field"):
-            # skip sub-views of x2many fields (they show another model)
-            if any(parent.tag == "field" for parent in node.iterancestors() if parent is not arch):
+            # skip sub-views of x2many fields (they show another model); a
+            # <field position="after|before|replace"> is only a locator of an
+            # inherited view: its children belong to the view model
+            if any(
+                parent.tag == "field" and parent.get("position") in (None, "inside")
+                for parent in node.iterancestors() if parent is not arch
+            ):
                 continue
             if node.get("name"):
                 add(view_model.strip(), node.get("name"), node, "name", f"view of {view_model.strip()}")
