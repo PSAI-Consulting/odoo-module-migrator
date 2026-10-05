@@ -93,6 +93,12 @@ def get_parser():
         help="Do not write any migration report.",
     )
 
+    main_parser.add_argument(
+        "--set-installable", action="store_true",
+        help="Set 'installable': True in the manifests (OCA workflow). By default\n"
+             "a module disabled on purpose is left as is and reported.",
+    )
+
     group = main_parser.add_argument_group(
         "Odoo official scripts (odoo/upgrade_code, Odoo >= 18)"
     )
@@ -168,6 +174,7 @@ def main(args=None):
             upgrade_code_options=upgrade_code_options,
             write_report=args.write_report,
             report_dir=args.report_dir,
+            set_installable=args.set_installable,
         )
 
         # run Migration

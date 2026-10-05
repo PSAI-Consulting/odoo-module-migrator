@@ -38,6 +38,7 @@ class TestMigration(unittest.TestCase):
                 "--log-path",
                 str(self._working_path / "test_log.log"),
                 "--no-commit",
+                "--set-installable",
             ]
         )
 

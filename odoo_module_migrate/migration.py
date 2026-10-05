@@ -35,6 +35,7 @@ class Migration:
         upgrade_code_options=None,
         dry_run=False,
         write_report=True,
+        set_installable=False,
         report_dir=None,
     ):
         if not module_names:
@@ -47,6 +48,7 @@ class Migration:
         self._dry_run = dry_run
         self.upgrade_code_result = None
         self._report = write_report
+        self._set_installable = set_installable
         self._report_dir = pathlib.Path(report_dir).resolve() if report_dir else None
         self.report_collector = None
         self._migration_steps = []
@@ -241,6 +243,7 @@ class Migration:
         # Rules of the migrator itself, then the official scripts of the
         # target Odoo on all the modules at once, then format / commit
         tools.RUN_CONTEXT["upgrade_code"] = bool(self._upgrade_code_options)
+        tools.RUN_CONTEXT["set_installable"] = self._set_installable
         if self._report:
             self.report_collector = report.ReportCollector(
                 [(m._module_name, m._module_path) for m in self._module_migrations]
