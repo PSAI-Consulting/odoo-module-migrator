@@ -22,13 +22,13 @@ regex quand `ast` ne peut pas lire un fichier).
 
 | Type | 17→18 | 18→19 | 19→20 |
 |---|---:|---:|---:|
-| `renamed_fields` (curated, vérifiés) | 32 | – | **93** (+3 existants) |
-| `removed_fields` (curated : remplaçant indiqué ou candidat refusé) | 62 | 62 | 140 |
+| `renamed_fields` (curated, vérifiés) | 32 | 56 | **93** (+3 existants) |
+| `removed_fields` (curated : remplaçant indiqué ou candidat refusé) | 62 | 114 | 140 |
 | `renamed_models` (curated) | – | – | 4 |
 | `removed_models` | – | – | 155 générés + 36 messages curated |
 | `deprecated_modules` (curated) | 19 | 3 | 9 |
-| `text_replaces` (équivalence exacte prouvée) | 1 | – | 6 + 38 imports JS |
-| `text_errors` | – | 1 | 10 + 607 imports JS + 616 vues |
+| `text_replaces` (équivalence exacte prouvée) | 1 + 21 imports JS | 93 imports JS | 6 + 38 imports JS |
+| `text_errors` | 282 imports JS + 143 vues | 1 + 663 imports JS + 476 vues | 10 + 607 imports JS + 616 vues |
 | `text_warnings` | 2 | – | 1 |
 
 ### Champs 19.0 → 20.0 (`renamed_fields/migrate_190_200`)
@@ -71,6 +71,20 @@ propose 88 candidats, tous annotés dans `renamed_fields/migrate_170_180/candida
 candidats refusés que `generated.yaml` ne listait pas sont signalés comme
 supprimés (motif « non confirmé » quand le sens n'a pas été établi : pas de
 remplaçant suggéré).
+
+### Champs 18.0 → 19.0 (`fields --sources`)
+
+10 renommages confirmés par le message du commit, vérifiés (écarté :
+`account.account.deprecated` → `active`, logique inversée ; `groups_id` →
+`group_ids` déjà réécrit par `rename_groups_id.yaml`) et 124 candidats annotés
+(33 oui). 56 renommages au total, vérifiés en comparant les définitions 18.0 /
+19.0 : `product_uom` → `product_uom_id` (product.supplierinfo, sale.report,
+purchase.report, project.milestone, sale.rental.report),
+`product.pricelist.item.product_uom` → `product_uom_name`, `contract_id` →
+`version_id` sur 16 modèles de paie (cohérent avec `hr.contract` →
+`hr.version`), `account_tax_periodicity*` → `account_return_*` (mêmes clés),
+`viva_wallet_*` → `viva_com_*`, `l10n_sa_*` → `l10n_sa_edi_*`… 52 candidats
+refusés non listés par `generated.yaml` signalés comme supprimés.
 
 ### Candidats rejetés (raisons)
 
@@ -137,7 +151,20 @@ remplaçant suggéré).
   `'type': 'product'` (type de produit supprimé, `is_storable`).
 - 18→19 : erreur `odoo.fields.first`.
 
-### JS et vues 19.0 → 20.0
+### JS et vues (17→18, 18→19, 19→20)
+
+Mêmes extractions pour les trois sauts (`text_replaces` / `text_errors`
+`js_modules.yaml` et `views.yaml` de chaque `migrate_XXX_YYY`) ; pour chacun,
+échantillon de vues vérifié absent de la branche cible et imports courants
+non signalés (test paramétré).
+
+| Saut | imports réécrits | imports signalés (dont autre module) | vues supprimées |
+|---|---:|---:|---:|
+| 17→18 | 21 | 282 | 143 |
+| 18→19 | 93 | 663 (23) | 476 |
+| 19→20 | 38 | 607 (34) | 616 |
+
+Détail 19→20 :
 
 - `text_replaces/migrate_190_200/js_modules.yaml` : 38 modules JS déplacés
   **dans leur module** (même nom de fichier, mêmes exports) : imports et
