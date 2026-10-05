@@ -158,7 +158,7 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
                 repo, "log", "-1", "--format=%h%x09%s", f"-S{name} = fields.",
                 f"{ref_from_of(repo)}..{ref_to_of(repo)}", "--", path,
             ).decode("utf-8", "replace").strip()
-            sha, _, subject = commit.partition("	")
+            sha, _, subject = commit.partition("\t")
             source = f"{repo.name.removesuffix('.git')} {sha} {subject!r}" if sha else path
             same_type = [n for n, info in new_fields.items() if info[0] == ftype]
             added_in_commit = []
@@ -214,6 +214,9 @@ def openupgrade_changes(openupgrade_git, ref, models_filter):
                     removed_models.append((match["model"], source))
     renamed_keys = {(m, old) for m, old, _new, _s in renamed_fields}
     removed_fields = [r for r in removed_fields if (r[0], r[1]) not in renamed_keys]
+    # a renamed model is "obsolete" under its old name in the analysis
+    renamed_model_names = {old for old, _new, _s in renamed_models}
+    removed_models = [r for r in removed_models if r[0] not in renamed_model_names]
     return renamed_fields, renamed_models, removed_fields, removed_models
 
 

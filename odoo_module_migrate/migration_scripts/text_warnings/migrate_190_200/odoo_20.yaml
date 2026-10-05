@@ -13,5 +13,5 @@
   '[''"]ir\.model\.access[''"]': "[20] ir.model.access was replaced by ir.access"
   '[''"]ir\.rule[''"]': "[20] ir.rule was replaced by ir.access"
 .xml:
-  'model=["'']ir\.(?:model\.access|rule)["'']': "[20] ir.model.access / ir.rule records must be converted to ir.access (done by upgrade_code 19.4-00-ir-access with --odoo-root)"
+  'model=["'']ir\.(?:model\.access|rule)["'']': "[20] ir.model.access / ir.rule record left in XML: models removed in 20.0, rewrite it as ir.access (with --odoo-root, Odoo's 19.4-00-ir-access converts the others; the ones left usually modify an access of another module)"
   '["'']mail\.tracking\.value["'']': "[20] mail.tracking.value moved to the new module mail_tracking (odoo dd0c51ec1855): add it to the depends"
