@@ -124,14 +124,54 @@ def parse_fields(files):
     return result
 
 
-def target_fields(repos, ref_of):
-    """{model: field names} defined anywhere in the Python files of `ref`."""
-    result = collections.defaultdict(set)
-    for repo in repos:
-        files = read_blobs(repo, ref_of(repo), re.compile(r"(^|/)(addons|models|wizards?|report)/.*\.py$"))
-        for model, fields in parse_fields(files).items():
-            result[model].update(fields)
+def model_parents(files):
+    """{model: models it inherits from} (_inherit / _inherits of the classes)."""
+    parents = collections.defaultdict(set)
+    for text in files.values():
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        for cls in ast.walk(tree):
+            if not isinstance(cls, ast.ClassDef):
+                continue
+            name, inherit = None, []
+            for stmt in cls.body:
+                if not (isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+                        and isinstance(stmt.targets[0], ast.Name)):
+                    continue
+                if stmt.targets[0].id == "_name":
+                    name = (_str_values(stmt.value) or [None])[0]
+                elif stmt.targets[0].id == "_inherit":
+                    inherit += _str_values(stmt.value)
+                elif stmt.targets[0].id == "_inherits" and isinstance(stmt.value, ast.Dict):
+                    inherit += [k.value for k in stmt.value.keys if isinstance(k, ast.Constant)]
+            model = name or (inherit[0] if inherit else None)
+            if model:
+                parents[model].update(i for i in inherit if i != model)
+    return parents
+
+
+def available_fields(model, fields, parents):
+    """Fields of `model`, including the ones of its parents / mixins."""
+    result, todo, seen = set(fields.get(model, ())), [model], {model}
+    while todo:
+        for parent in parents.get(todo.pop(), ()):
+            if parent not in seen:
+                seen.add(parent)
+                result |= set(fields.get(parent, ()))
+                todo.append(parent)
     return result
+
+
+def target_fields(repos, ref_of):
+    """{model: field names} available on each model in `ref` (fields of its
+    parent models and mixins included)."""
+    files = {}
+    for repo in repos:
+        files.update(read_blobs(repo, ref_of(repo), re.compile(r"(^|/)(addons|models|wizards?|report)/.*\.py$")))
+    fields, parents = parse_fields(files), model_parents(files)
+    return {model: available_fields(model, fields, parents) for model in set(fields) | set(parents)}
 
 
 def source_changes(repos, ref_from_of, ref_to_of, models_filter):
@@ -139,20 +179,26 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
     the repositories together (a field moved to enterprise is not removed)."""
     path_re = re.compile(r"(^|/)(addons|models|wizards?|report)/.*\.py$")
     before, after = collections.defaultdict(dict), collections.defaultdict(dict)
+    after_files = {}
     for repo in repos:
         for model, fields in parse_fields(read_blobs(repo, ref_from_of(repo), path_re)).items():
             for name, (ftype, path) in fields.items():
                 before[model][name] = (ftype, path, repo)
-        for model, fields in parse_fields(read_blobs(repo, ref_to_of(repo), path_re)).items():
+        files = read_blobs(repo, ref_to_of(repo), path_re)
+        after_files.update(files)
+        for model, fields in parse_fields(files).items():
             for name, (ftype, path) in fields.items():
                 after[model][name] = (ftype, path, repo)
+    # a field moved to a parent model / mixin still exists on the model
+    parents = model_parents(after_files)
     removed, candidates = [], []
     for model, fields in sorted(before.items()):
         if not models_filter(model) or model not in after:
             continue
         new_fields = {n: info for n, info in after[model].items() if n not in fields}
+        still_there = available_fields(model, after, parents)
         for name, (ftype, path, repo) in sorted(fields.items()):
-            if name in after[model] or name.startswith("_"):
+            if name in still_there or name.startswith("_"):
                 continue
             commit = _git(
                 repo, "log", "-1", "--format=%h%x09%s", f"-S{name} = fields.",
