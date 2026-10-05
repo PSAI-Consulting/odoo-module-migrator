@@ -5,7 +5,9 @@
 from .log import logger
 
 from .config import _MANIFEST_NAMES
-from .tools import _run, _rename_path, restore_formats, snapshot_formats
+from .tools import (
+    _run, _rename_path, changed_files, hash_tree, restore_formats, snapshot_formats,
+)
 
 
 class ModuleMigration:
@@ -34,6 +36,10 @@ class ModuleMigration:
         )
 
         self._formats = snapshot_formats(self._module_path)
+        self._hashes_before = hash_tree(self._module_path)
+        collector = self._migration.report_collector
+        if collector:
+            collector.current = collector.reports.get(self._module_name)
 
         # Apply migration script
         for migration_script in self._migration._migration_scripts:
@@ -47,8 +53,16 @@ class ModuleMigration:
             )
 
     def finalize(self):
+        self.restore()
+        self.commit()
+
+    def restore(self):
         restore_formats(self._formats)
 
+    def changed_files(self, ignore=()):
+        return changed_files(self._hashes_before, hash_tree(self._module_path), ignore)
+
+    def commit(self):
         # Run pre-commit before final commit to format any changes made
         # during migration scripts execution
         self._migration._run_pre_commit_if_configured()

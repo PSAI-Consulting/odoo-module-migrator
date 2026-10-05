@@ -82,6 +82,17 @@ def get_parser():
              "diff, without writing anything in the target directory.",
     )
 
+    main_parser.add_argument(
+        "--report-dir", type=str,
+        help="Write the reports in this directory (<module>.md + README.md)\n"
+             "instead of MIGRATION_REPORT.md inside each module.",
+    )
+
+    main_parser.add_argument(
+        "--no-report", dest="write_report", action="store_false",
+        help="Do not write any migration report.",
+    )
+
     group = main_parser.add_argument_group(
         "Odoo official scripts (odoo/upgrade_code, Odoo >= 18)"
     )
@@ -155,6 +166,8 @@ def main(args=None):
             args.remove_migration_folder,
             args.no_oca_modules,
             upgrade_code_options=upgrade_code_options,
+            write_report=args.write_report,
+            report_dir=args.report_dir,
         )
 
         # run Migration

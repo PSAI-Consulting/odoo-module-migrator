@@ -11,7 +11,7 @@ import subprocess
 from .config import _AVAILABLE_MIGRATION_STEPS, _MANIFEST_NAMES
 from .exception import ConfigException
 from .log import logger
-from . import tools
+from . import report, tools
 from .tools import _run, _get_latest_version_code
 from .upgrade_code import run_upgrade_code
 from .module_migration import ModuleMigration
@@ -33,6 +33,8 @@ class Migration:
         no_oca_modules=False,
         upgrade_code_options=None,
         dry_run=False,
+        write_report=True,
+        report_dir=None,
     ):
         if not module_names:
             module_names = []
@@ -43,6 +45,9 @@ class Migration:
         self._upgrade_code_options = upgrade_code_options
         self._dry_run = dry_run
         self.upgrade_code_result = None
+        self._report = write_report
+        self._report_dir = pathlib.Path(report_dir).resolve() if report_dir else None
+        self.report_collector = None
         self._migration_steps = []
         self._migration_scripts = []
         self._module_migrations = []
@@ -235,16 +240,51 @@ class Migration:
         # Rules of the migrator itself, then the official scripts of the
         # target Odoo on all the modules at once, then format / commit
         tools.RUN_CONTEXT["upgrade_code"] = bool(self._upgrade_code_options)
+        if self._report:
+            self.report_collector = report.ReportCollector(
+                [(m._module_name, m._module_path) for m in self._module_migrations]
+            )
+            logger.addHandler(self.report_collector)
         try:
             for module_migration in self._module_migrations:
                 module_migration.apply_scripts()
+            if self.report_collector:
+                self.report_collector.current = None
             if self._upgrade_code_options:
                 self._run_upgrade_code()
                 self._check_view_anchors()
             for module_migration in self._module_migrations:
-                module_migration.finalize()
+                module_migration.restore()
+            if self.report_collector:
+                self._write_reports(init_version, target_version)
+            for module_migration in self._module_migrations:
+                module_migration.commit()
         finally:
             tools.RUN_CONTEXT.clear()
+            if self.report_collector:
+                logger.removeHandler(self.report_collector)
+
+    def _write_reports(self, init_version, target_version):
+        reports = []
+        for module_migration in self._module_migrations:
+            module_report = self.report_collector.reports[module_migration._module_name]
+            changes = module_migration.changed_files(ignore={report.REPORT_NAME})
+            content = report.render(module_report, init_version, target_version, changes)
+            if self._report_dir:
+                path = self._report_dir / f"{module_migration._module_name}.md"
+            else:
+                path = module_migration._module_path / report.REPORT_NAME
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+            reports.append(module_report)
+            logger.info(
+                "[%s] report: %s (risk: %s, %d TODO)"
+                % (module_migration._module_name, path, module_report.risk, len(module_report.todos))
+            )
+        if self._report_dir:
+            (self._report_dir / "README.md").write_text(
+                report.render_summary(reports, init_version, target_version), encoding="utf-8"
+            )
 
     def _check_view_anchors(self):
         """Inherited views anchored on fields absent from the target views."""

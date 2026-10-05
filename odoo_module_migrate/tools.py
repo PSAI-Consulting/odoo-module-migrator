@@ -179,6 +179,33 @@ def restore_formats(snapshot):
         _write_content(path, text)
 
 
+def hash_tree(module_path):
+    """{relative path: sha1} of the files of a module (for the report)."""
+    import hashlib
+
+    root = pathlib.Path(module_path)
+    return {
+        p.relative_to(root).as_posix(): hashlib.sha1(p.read_bytes()).hexdigest()
+        for p in root.rglob("*")
+        if p.is_file() and "__pycache__" not in p.parts and ".git" not in p.parts
+    }
+
+
+def changed_files(before, after, ignore=()):
+    """Sorted 'path (added|modified|deleted)' between two hash_tree()."""
+    result = []
+    for path in sorted(set(before) | set(after)):
+        if path in ignore:
+            continue
+        if path not in before:
+            result.append(f"{path} (ajouté)")
+        elif path not in after:
+            result.append(f"{path} (supprimé)")
+        elif before[path] != after[path]:
+            result.append(path)
+    return result
+
+
 def _rename_path(module_path, old_file_path, new_file_path, use_git=False):
     """Rename a file, with 'git mv' when possible to keep the history."""
     module_path = pathlib.Path(module_path)

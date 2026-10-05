@@ -81,6 +81,8 @@ def run_dry(args, module_names, upgrade_code_options=None, out=None):
             args.remove_migration_folder,
             args.no_oca_modules,
             upgrade_code_options=upgrade_code_options,
+            write_report=bool(args.report_dir),
+            report_dir=args.report_dir,
         )
         migration.run()
         for name in module_names:

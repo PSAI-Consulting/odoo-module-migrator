@@ -22,7 +22,7 @@ def _snapshot(root):
     return {
         p.relative_to(root).as_posix(): p.read_bytes()
         for p in root.rglob("*")
-        if p.is_file() and "__pycache__" not in p.parts
+        if p.is_file() and "__pycache__" not in p.parts and p.name != "MIGRATION_REPORT.md"
     }
 
 
