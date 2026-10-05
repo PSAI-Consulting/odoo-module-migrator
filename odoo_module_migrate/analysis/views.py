@@ -1,24 +1,35 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
-"""Check the anchors of inherited views against the target Odoo views.
+"""Check inherited views and external XML ids against the target Odoo.
 
-An inherited view anchored on ``//field[@name='x']`` (or ``<field name="x"
-position="...">``) fails to install when the parent view of the target Odoo
-does not contain the field ``x`` anymore (e.g. the ``type`` column of
-product.product_product_tree_view in 20.0).
+1. Anchors of inherited views (``ir.ui.view`` records and QWeb ``<template>``):
+   the last step of an xpath (``//button[@name='x']``, ``//t[@t-set='x']``...)
+   or an element with ``position`` (``<field name="x" position="...">``) must
+   exist in the target view, or in one of the views of its inheritance tree
+   that belong to the dependencies of the module. Otherwise the view does not
+   install (e.g. the ``type`` column of product.product_product_tree_view in 20.0).
+2. External XML ids (``ref="sale.xxx"``, ``ref('sale.xxx')``, override
+   ``<record id="sale.xxx">``) of Odoo modules must exist in the target Odoo
+   (e.g. ``base_address_extended.menu_res_city`` in 20.0).
 
-The index gathers, for each view xmlid, the field names of its arch and of all
-the views extending it (any module): an anchor is reported only when it can be
-found nowhere, so the check gives no false positive (it may miss cases).
+An anchor / XML id is reported only when it can be found nowhere: no false
+positive (some cases may be missed).
 """
 
 import ast
 import collections
+import csv
+import io
 import pathlib
 import re
 
 from lxml import etree
 
-FIELD_ANCHOR_RE = re.compile(r"""field\[@name=(["'])(\w+)\1\]""")
+# attributes that identify an element in an anchor
+ANCHOR_ATTRS = ("name", "id", "t-set", "t-call", "t-name", "string", "for", "t-as")
+STEP_RE = re.compile(r"""^([\w\-]+|\*)\[@([\w\-]+)\s*=\s*(["'])([^"']*)\3\]$""")
+REF_EVAL_RE = re.compile(r"""\bref\(\s*["']([\w]+\.[\w.]+)["']\s*\)""")
+# XML ids created by the ORM / the module loader, not by data files
+GENERATED_PREFIXES = ("model_", "field_", "selection__", "module_", "access_", "constraint_")
 
 
 def _module_dirs(paths):
@@ -33,54 +44,119 @@ def _module_dirs(paths):
 def _manifest(module):
     try:
         return ast.literal_eval(
-            (module / "__manifest__.py").read_text(encoding="utf-8", errors="replace")
+            (module / "__manifest__.py").read_text(encoding="utf-8", errors="replace").lstrip()
         )
     except (ValueError, SyntaxError):
         return {}
 
 
-def _data_files(module):
+def _data_files(module, suffixes=(".xml",)):
     manifest = _manifest(module)
     files = manifest.get("data", []) + manifest.get("demo", [])
-    return [module / f for f in files if f.endswith(".xml") and (module / f).is_file()]
+    return [module / f for f in files if f.endswith(suffixes) and (module / f).is_file()]
 
 
 def _qualify(ref, module):
     return ref if "." in ref else f"{module}.{ref}"
 
 
+def _parse(path):
+    try:
+        return etree.parse(str(path)).getroot()
+    except (etree.XMLSyntaxError, OSError):
+        return None
+
+
+def _views(root, module):
+    """(xmlid, inherit xmlid or None, arch element, node to report) of a file."""
+    for record in root.iter("record"):
+        if record.get("model") != "ir.ui.view" or not record.get("id"):
+            continue
+        inherit = record.find("field[@name='inherit_id']")
+        parent = _qualify(inherit.get("ref"), module) if inherit is not None and inherit.get("ref") else None
+        yield (_qualify(record.get("id"), module), parent,
+               record.find("field[@name='arch']"), inherit if inherit is not None else record)
+    for template in root.iter("template"):
+        if not template.get("id"):
+            continue
+        parent = _qualify(template.get("inherit_id"), module) if template.get("inherit_id") else None
+        yield _qualify(template.get("id"), module), parent, template, template
+
+
+def _keys(arch):
+    """(tag, attr, value) of the elements of an arch, plus (*, attr, value)."""
+    keys = set()
+    for node in arch.iter():
+        if not isinstance(node.tag, str):
+            continue
+        for attr in ANCHOR_ATTRS:
+            value = node.get(attr)
+            if value:
+                keys.add((node.tag, attr, value))
+                keys.add(("*", attr, value))
+    return keys
+
+
+def _last_step(expr):
+    """Last step of a simple xpath, '//a/b[@name="x"]' -> ('b', 'name', 'x')."""
+    depth, cut = 0, -1
+    for i, char in enumerate(expr):
+        if char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+        elif char == "/" and depth == 0:
+            cut = i
+    match = STEP_RE.match(expr[cut + 1:].strip())
+    return (match.group(1), match.group(2), match.group(4)) if match else None
+
+
 class ViewIndex:
     def __init__(self):
-        self.fields = collections.defaultdict(set)    # view -> field names
+        self.keys = collections.defaultdict(set)      # view -> (tag, attr, value)
         self.children = collections.defaultdict(set)  # view -> views extending it
         self.parent = {}                              # view -> inherit_id
         self.views = set()
         self.view_modules = collections.defaultdict(set)  # view -> modules defining it
         self.depends = {}                             # module -> depends
+        self.xmlids = set()                           # all the XML ids of data files
+        self.modules = set()
 
     def add_module(self, module):
         name = module.name
+        self.modules.add(name)
         self.depends[name] = _manifest(module).get("depends", [])
-        for path in _data_files(module):
-            try:
-                root = etree.parse(str(path)).getroot()
-            except etree.XMLSyntaxError:
+        for path in _data_files(module, (".xml", ".csv")):
+            if path.suffix == ".csv":
+                self._add_csv(path, name)
                 continue
-            for record in root.iter("record"):
-                if record.get("model") != "ir.ui.view" or not record.get("id"):
-                    continue
-                xid = _qualify(record.get("id"), name)
+            root = _parse(path)
+            if root is None:
+                continue
+            for node in root.iter("record", "template", "menuitem", "report", "act_window"):
+                xid = node.get("id")
+                # an XML id is created by its own module (others only update it)
+                if xid and ("." not in xid or xid.startswith(name + ".")):
+                    self.xmlids.add(_qualify(xid, name))
+            for xid, parent, arch, _node in _views(root, name):
                 self.views.add(xid)
                 self.view_modules[xid].add(name)
-                inherit = record.find("field[@name='inherit_id']")
-                if inherit is not None and inherit.get("ref"):
-                    self.children[_qualify(inherit.get("ref"), name)].add(xid)
-                    self.parent[xid] = _qualify(inherit.get("ref"), name)
-                arch = record.find("field[@name='arch']")
+                if parent:
+                    self.children[parent].add(xid)
+                    self.parent[xid] = parent
                 if arch is not None:
-                    self.fields[xid].update(
-                        node.get("name") for node in arch.iter("field") if node.get("name")
-                    )
+                    self.keys[xid] |= _keys(arch)
+
+    def _add_csv(self, path, module):
+        try:
+            rows = csv.reader(io.StringIO(path.read_text(encoding="utf-8-sig", errors="replace")))
+            header = next(rows, [])
+        except csv.Error:
+            return
+        if header and header[0] == "id":
+            for row in rows:
+                if row and row[0]:
+                    self.xmlids.add(_qualify(row[0], module))
 
     @classmethod
     def build(cls, paths):
@@ -107,63 +183,98 @@ class ViewIndex:
                 todo.extend(self.depends.get(name, ()))
         return result
 
-    def all_fields(self, xid, modules=None, exclude=(), _seen=None):
-        """Fields of the view and of the views extending it; only the views of
-        `modules` (the dependencies, which are installed for sure) count."""
+    def available(self, xid, modules=None, exclude=(), _seen=None):
+        """Anchor keys of the view and of the views extending it; only the
+        views of `modules` (the dependencies, installed for sure) count."""
         seen = _seen if _seen is not None else set()
         if xid in seen:
             return set()
         seen.add(xid)
         result = set()
         if xid not in exclude and (modules is None or self.view_modules.get(xid, set()) & modules):
-            result |= self.fields.get(xid, set())
+            result |= self.keys.get(xid, set())
         for child in self.children.get(xid, ()):
-            result |= self.all_fields(child, modules, exclude, seen)
+            result |= self.available(child, modules, exclude, seen)
         return result
 
 
-def check_module(module, index, reference_modules):
-    """Yield (path, line, message) for the anchors not found in the parent."""
-    module = pathlib.Path(module)
-    for path in _data_files(module):
-        try:
-            root = etree.parse(str(path)).getroot()
-        except etree.XMLSyntaxError:
+def _anchors(arch):
+    """(node, (tag, attr, value)) of the anchors of an inheriting arch."""
+    for node in arch:
+        if not isinstance(node.tag, str):
             continue
-        for record in root.iter("record"):
-            if record.get("model") != "ir.ui.view":
+        if node.tag == "xpath":
+            step = _last_step(node.get("expr") or "")
+            # only the attributes of the index can be checked (no false positive)
+            if step and step[1] in ANCHOR_ATTRS:
+                yield node, step
+        elif node.get("position") and node.tag not in ("data",):
+            for attr in ANCHOR_ATTRS:
+                if node.get(attr):
+                    yield node, (node.tag, attr, node.get(attr))
+                    break
+
+
+def _describe(key):
+    tag, attr, value = key
+    return f"{tag}[@{attr}='{value}']"
+
+
+def check_module(module, index, reference_modules):
+    """Yield (path, line, message) for the anchors and XML ids not found."""
+    module = pathlib.Path(module)
+    closure = index.closure(module.name)
+    for path in _data_files(module):
+        root = _parse(path)
+        if root is None:
+            continue
+        for xid, parent, arch, report_node in _views(root, module.name):
+            if parent is None or arch is None:
                 continue
-            inherit = record.find("field[@name='inherit_id']")
-            arch = record.find("field[@name='arch']")
-            if inherit is None or arch is None or not inherit.get("ref"):
-                continue
-            parent = _qualify(inherit.get("ref"), module.name)
             if parent not in index.views:
                 if parent.split(".")[0] in reference_modules:
-                    yield path, inherit.sourceline, (
+                    yield path, report_node.sourceline, (
                         f"parent view {parent} does not exist in the target Odoo"
                     )
                 continue
             # the view itself does not count: it holds the anchors
-            xid = _qualify(record.get("id") or "", module.name)
-            available = index.all_fields(
-                index.root(parent), index.closure(module.name), exclude={xid}
-            )
-            anchors = []
-            for node in arch:
-                if not isinstance(node.tag, str):
-                    continue
-                if node.tag == "xpath":
-                    # only the last step of the path must be in the view
-                    found = FIELD_ANCHOR_RE.findall(node.get("expr") or "")
-                    if found:
-                        anchors.append((node, found[-1][1]))
-                elif node.tag == "field" and node.get("name"):
-                    anchors.append((node, node.get("name")))
-            for node, name in anchors:
-                if name not in available:
+            available = index.available(index.root(parent), closure, exclude={xid})
+            for node, key in _anchors(arch):
+                if key not in available:
                     yield path, node.sourceline, (
-                        f"field '{name}' not found in the view {parent} of the target"
+                        f"{_describe(key)} not found in the view {parent} of the target"
                         f" Odoo (nor in any view of its inheritance tree): the view will"
                         f" not install"
                     )
+        yield from _check_xmlids(path, root, module.name, index, reference_modules)
+
+
+def _check_xmlids(path, root, module_name, index, reference_modules):
+    seen = set()
+    for node in root.iter():
+        if not isinstance(node.tag, str):
+            continue
+        if node.tag == "field" and node.get("name") == "inherit_id":
+            continue  # parent views: reported by the anchors check
+        refs = []
+        if node.tag in ("record", "template", "menuitem") and "." in (node.get("id") or ""):
+            refs.append(node.get("id"))  # override of a record of another module
+        for attr in ("ref", "parent", "action", "groups"):
+            value = node.get(attr)
+            if not value:
+                continue
+            if attr == "groups":
+                refs += [g.lstrip("!").strip() for g in value.split(",") if "." in g]
+            elif "." in value:
+                refs.append(value)
+        refs += REF_EVAL_RE.findall(node.get("eval") or "")
+        for ref in refs:
+            module, _, local = ref.partition(".")
+            if (
+                module == module_name or module not in reference_modules
+                or local.startswith(GENERATED_PREFIXES) or ref in index.xmlids
+                or (ref, node.sourceline) in seen
+            ):
+                continue
+            seen.add((ref, node.sourceline))
+            yield path, node.sourceline, f"XML id {ref} does not exist in the target Odoo"

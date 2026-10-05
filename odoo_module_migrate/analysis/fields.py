@@ -251,8 +251,15 @@ def _attr_span(text, pos, line, tag, attr, value, taken):
     `taken` holds the offsets already used, for several identical tags.
     """
     pattern = re.compile(rf"""<{tag}\b[^>]*?\b{attr}\s*=\s*(["']){re.escape(value)}\1""")
-    for match in pattern.finditer(text, pos.starts[line]):
+    # lxml gives the line where a multi-line start tag ENDS: start the search
+    # some lines before (occurrences already used are in `taken`)
+    for match in pattern.finditer(text, pos.starts[max(1, line - 30)]):
         value_start = match.end() - len(value) - 1
+        tag_end = text.find(">", match.end())
+        # the start tag must end on the line given by lxml (not an identical
+        # element a few lines before, e.g. in a skipped sub-view)
+        if tag_end < 0 or text.count("\n", 0, tag_end) + 1 != line:
+            continue
         if value_start not in taken:
             taken.add(value_start)
             return value_start, value_start + len(value)

@@ -43,3 +43,26 @@ def test_anchor_checks(tmp_path):
     assert "'y'" not in messages       # added by v2 of the module itself
     assert "product.missing does not exist" in messages
     assert len(found) == 2
+
+
+def test_other_anchors_templates_and_xmlids(tmp_path):
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(ref, "web", ["base"],
+            '<template id="layout"><html><t t-set="head_web"/><body/></html></template>'
+            '<record id="menu_x" model="ir.ui.menu"><field name="name">x</field></record>'
+            + _view("form", None, '<form><button name="action_ok"/><div name="buttons"/></form>'))
+    mod = _module(custom, "my_web", ["web"], "".join([
+        '<template id="t1" inherit_id="web.layout"><xpath expr="//t[@t-set=\'head_web\']" position="after"/></template>',
+        '<template id="t2" inherit_id="web.layout"><xpath expr="//t[@t-set=\'gone\']" position="after"/></template>',
+        _view("v1", "web.form", "<xpath expr=\"//button[@name='action_ok']\" position=\"after\"/>"),
+        _view("v2", "web.form", '<button name="action_gone" position="after"><span/></button>'),
+        '<record id="web.menu_x" model="ir.ui.menu"><field name="active" eval="False"/></record>',
+        '<record id="web.menu_gone" model="ir.ui.menu"><field name="active" eval="False"/></record>',
+    ]))
+    index = views.ViewIndex.build([ref, custom])
+    messages = sorted(msg for _p, _l, msg in views.check_module(mod, index, {"base", "web"}))
+    assert len(messages) == 3, messages
+    assert "XML id web.menu_gone does not exist" in messages[0]
+    assert messages[1].startswith("button[@name='action_gone'] not found")
+    assert messages[2].startswith("t[@t-set='gone'] not found")

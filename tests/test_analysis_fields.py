@@ -101,6 +101,25 @@ def test_remove_displayed_fields():
     assert remove_displayed_fields(new, xml_usages(new), {("res.partner", "mobile"): ""})[1] == []
 
 
+def test_xml_multiline_tags():
+    xml = '''<odoo>
+    <record id="g1" model="res.groups">
+        <field
+            name="users"
+            eval="[(4, ref('base.user_root'))]"
+        />
+    </record>
+    <record id="g2" model="res.groups">
+        <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+</odoo>
+'''
+    new, count = apply_renames(xml, xml_usages(xml), {("res.groups", "users"): "user_ids"})
+    assert count == 2
+    assert 'name="users"' not in new
+    assert new.count('name="user_ids"') == 2
+
+
 def test_xml_renames():
     new, count = apply_renames(XML, xml_usages(XML), {("res.groups", "users"): "user_ids"})
     assert count == 1
