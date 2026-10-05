@@ -113,6 +113,129 @@ def ensure_blank_template(options, env, name, addons, odoo_root, odoo_python, tm
         )
 
 
+FAILURE_RE = re.compile(
+    r" (ERROR|CRITICAL) .*(Failed to load|Failed to initialize|"
+    r"Some modules have inconsistent states|Traceback)|^Traceback",
+    re.M,
+)
+
+
+class Installer:
+    """Install modules by batches on a database, with checkpoints.
+
+    A batch is installed by one Odoo run (Odoo start-up is the slow part).
+    If it fails, the database is restored from the checkpoint taken before the
+    batch, and the batch is split in two: a module that fails alone is a real
+    failure, with its own error. The result of a run is read in the database
+    (ir_module_module.state), not guessed from the log.
+    """
+
+    def __init__(self, options, env, db, conf, odoo_root, odoo_python, directory):
+        self.options, self.env, self.db, self.conf = options, env, db, conf
+        self.odoo_root, self.odoo_python, self.directory = odoo_root, odoo_python, directory
+        self.checkpoint = db + "_ckpt"
+        self.depends, self.installable = {}, {}
+
+    # -- database helpers
+    def _pg(self, tool, *args, check=True):
+        return subprocess.run([pg_tool(self.options, tool), *pg_args(self.options), *args],
+                              env=self.env, capture_output=True, check=check)
+
+    def drop(self, name):
+        self._pg("dropdb", "--if-exists", name, check=False)
+
+    def create_from(self, template, name=None):
+        name = name or self.db
+        self.drop(name)
+        self._pg("createdb", "-T", template, name)
+
+    def states(self, names):
+        sql = "SELECT name, state FROM ir_module_module WHERE name IN (%s)" % ",".join(
+            "'%s'" % n.replace("'", "") for n in names
+        )
+        out = self._pg("psql", "-d", self.db, "-tAc", sql).stdout.decode("utf-8", "replace")
+        return dict(line.split("|", 1) for line in out.splitlines() if "|" in line)
+
+    # -- installation
+    def _odoo(self, names):
+        proc = subprocess.run(
+            [self.odoo_python, str(self.odoo_root / "odoo-bin"), "-c", str(self.conf),
+             "-d", self.db, "-i", ",".join(names), "--stop-after-init", "--no-http",
+             "--log-level=warn"],
+            capture_output=True, env=dict(self.env, PYTHONUTF8="1"),
+        )
+        return proc.returncode, (proc.stdout + proc.stderr).decode("utf-8", "replace")
+
+    def _try(self, names):
+        """Install `names` from the current state; restore it on failure."""
+        self.create_from(self.db, self.checkpoint)
+        start = time.time()
+        returncode, output = self._odoo(names)
+        states = self.states(names)
+        ok = returncode == 0 and not FAILURE_RE.search(output) and all(
+            states.get(n) == "installed" for n in names
+        )
+        if not ok:
+            self.create_from(self.checkpoint)  # back to the state before the batch
+        return ok, output, round(time.time() - start, 1)
+
+    def _install(self, batch, results, failed):
+        batch = [n for n in batch if not self._blocked(n, results, failed)]
+        if not batch:
+            return
+        ok, output, seconds = self._try(batch)
+        if ok:
+            for name in batch:
+                self._record(results, name, "OK", seconds / len(batch))
+        elif len(batch) == 1:
+            failed.add(batch[0])
+            self._record(results, batch[0], "FAILED", seconds, output)
+        else:
+            middle = len(batch) // 2
+            self._install(batch[:middle], results, failed)
+            self._install(batch[middle:], results, failed)
+
+    def _blocked(self, name, results, failed):
+        if not self.installable.get(name, True):
+            self._record(results, name, "SKIPPED", 0, error="'installable': False in the manifest")
+            return True
+        blocking = [d for d in self.depends.get(name, []) if d in failed]
+        if blocking:
+            failed.add(name)
+            self._record(results, name, "BLOCKED", 0, error="dependency failed: " + ", ".join(blocking))
+            return True
+        return False
+
+    @staticmethod
+    def _record(results, name, status, seconds, output="", error=""):
+        results.append({
+            "module": name, "status": status, "seconds": round(seconds, 1),
+            "error": error or (first_error(output) if status == "FAILED" else ""),
+            "tail": "\n".join(output.splitlines()[-60:]) if status == "FAILED" else "",
+        })
+        print(f"{name:40} {status:7} {results[-1]['error'][:160]}", flush=True)
+
+    def run(self, order, batch_size):
+        for name in order:
+            manifest = ast.literal_eval(
+                (self.directory / name / "__manifest__.py").read_text(encoding="utf-8").lstrip()
+            )
+            self.depends[name] = manifest.get("depends", [])
+            self.installable[name] = manifest.get("installable", True)
+        results, failed = [], set()
+        batch = []
+        for name in order:
+            # a batch never contains a module and one of its dependencies of
+            # the same batch: if the dependency fails, the module is BLOCKED
+            if batch and (len(batch) >= batch_size or set(self.depends[name]) & set(batch)):
+                self._install(batch, results, failed)
+                batch = []
+            batch.append(name)
+        if batch:
+            self._install(batch, results, failed)
+        return results
+
+
 def topological(directory, names):
     manifests = {
         n: ast.literal_eval((directory / n / "__manifest__.py").read_text(encoding="utf-8").lstrip())
@@ -170,6 +293,8 @@ def main(argv=None):
     parser.add_argument("--addons-path", default="", help="reference addons (default: from --odoo-root)")
     parser.add_argument("--modules", default="", help="comma separated (default: all)")
     parser.add_argument("--name", default="run")
+    parser.add_argument("--batch-size", type=int, default=12,
+                        help="modules installed by one Odoo run (1 = one by one)")
     parser.add_argument("--keep-db", action="store_true")
     parser.add_argument("--output", help="JSON result file")
     args = parser.parse_args(argv)
@@ -199,57 +324,14 @@ def main(argv=None):
             ensure_blank_template(options, env, template, addons, odoo_root, args.odoo_python, tmp)
         conf = write_conf(options, [*addons, str(directory)], db, tmp)
 
-        subprocess.run([pg_tool(options, "dropdb"), *pg_args(options), "--if-exists", db],
-                       env=env, check=True, capture_output=True)
-        subprocess.run([pg_tool(options, "createdb"), *pg_args(options), "-T", template, db],
-                       env=env, check=True, capture_output=True)
-        results = []
-        depends = {
-            n: ast.literal_eval(
-                (directory / n / "__manifest__.py").read_text(encoding="utf-8").lstrip()
-            ).get("depends", [])
-            for n in order
-        }
-        failed_modules = set()
+        bench = Installer(options, env, db, conf, odoo_root, args.odoo_python, directory)
+        bench.create_from(template)
         try:
-            for name in order:
-                blocking = [d for d in depends[name] if d in failed_modules]
-                if blocking:
-                    # not tried: a dependency of the set failed
-                    failed_modules.add(name)
-                    results.append({
-                        "module": name, "status": "BLOCKED", "seconds": 0,
-                        "error": "dependency failed: " + ", ".join(blocking), "tail": "",
-                    })
-                    print(f"{name:40} BLOCKED {results[-1]['error']}", flush=True)
-                    continue
-                start = time.time()
-                proc = subprocess.run(
-                    [args.odoo_python, str(odoo_root / "odoo-bin"), "-c", str(conf),
-                     "-d", db, "-i", name, "--stop-after-init", "--no-http",
-                     "--log-level=warn"],
-                    capture_output=True, env=dict(env, PYTHONUTF8="1"),
-                )
-                output = (proc.stdout + proc.stderr).decode("utf-8", "replace")
-                failed = proc.returncode != 0 or re.search(
-                    r" (ERROR|CRITICAL) .*(Failed to load|Failed to initialize|"
-                    r"Some modules have inconsistent states|Traceback)|^Traceback",
-                    output, re.M,
-                )
-                if failed:
-                    failed_modules.add(name)
-                results.append({
-                    "module": name,
-                    "status": "FAILED" if failed else "OK",
-                    "seconds": round(time.time() - start, 1),
-                    "error": first_error(output) if failed else "",
-                    "tail": "\n".join(output.splitlines()[-60:]) if failed else "",
-                })
-                print(f"{name:40} {results[-1]['status']:7} {results[-1]['error'][:160]}", flush=True)
+            results = bench.run(order, args.batch_size)
         finally:
-            if not args.keep_db:
-                subprocess.run([pg_tool(options, "dropdb"), *pg_args(options), "--if-exists", db],
-                               env=env, capture_output=True)
+            for name in (db, bench.checkpoint):
+                if name != db or not args.keep_db:
+                    bench.drop(name)
 
     ok = sum(r["status"] == "OK" for r in results)
     blocked = sum(r["status"] == "BLOCKED" for r in results)
