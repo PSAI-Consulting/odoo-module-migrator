@@ -3,7 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 import os
-import subprocess
+import shutil
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
 
@@ -13,7 +13,7 @@ def remove_migration_folder(**kwargs):
     migration_path_folder = os.path.join(module_path, "migrations")
     if os.path.exists(migration_path_folder):
         logger.info("Removing 'migrations' folder")
-        subprocess.check_output("rm -r %s" % migration_path_folder, shell=True)
+        shutil.rmtree(migration_path_folder)
 
 
 class MigrationScript(BaseMigrationScript):

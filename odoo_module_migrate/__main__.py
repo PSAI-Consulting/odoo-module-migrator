@@ -5,7 +5,7 @@ import argcomplete
 import sys
 
 from . import tools
-from .log import setup_logger
+from .log import setup_logger, _close_handlers
 from .migration import Migration
 
 
@@ -77,6 +77,12 @@ def get_parser():
     )
 
     main_parser.add_argument(
+        "-n", "--dry-run", action="store_true",
+        help="Migrate a temporary copy of the modules and print the unified\n"
+             "diff, without writing anything in the target directory.",
+    )
+
+    main_parser.add_argument(
         "--oca-file-list",
         action="store_true",
         default=False,
@@ -101,6 +107,11 @@ def main(args=None):
     try:
         module_names = [x.strip() for x in (args.modules or "").split(",") if x.strip()]
 
+        if args.dry_run:
+            from .dry_run import run_dry
+            run_dry(args, module_names)
+            return
+
         migration = Migration(
             args.directory,
             args.init_version_name,
@@ -119,6 +130,9 @@ def main(args=None):
 
     except KeyboardInterrupt:
         pass
+    finally:
+        # Release log files (they stay locked on Windows otherwise)
+        _close_handlers()
 
 
 if __name__ == "__main__":

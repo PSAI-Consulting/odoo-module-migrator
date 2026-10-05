@@ -16,6 +16,9 @@ _TEXT_REPLACES = {
     ".xml": {
         r"( |\t)*<openerp>(\n| |\t)*<data>": "<odoo>",
         r"( |\t)*<\/data>(\n| |\t)*<\/openerp>": "</odoo>",
+        # <openerp> without a <data> child (or with attributes on <data>)
+        r"<openerp>": "<odoo>",
+        r"<\/openerp>": "</odoo>",
     },
 }
 

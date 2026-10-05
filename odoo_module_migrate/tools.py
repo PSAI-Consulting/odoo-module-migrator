@@ -1,9 +1,12 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-import subprocess
-import re
-import pathlib
+import codecs
 import os
+import pathlib
+import re
+import shlex
+import subprocess
+import tempfile
 
 from .config import _AVAILABLE_MIGRATION_STEPS
 from .log import logger
@@ -25,28 +28,174 @@ def _get_latest_version_code():
     return _AVAILABLE_MIGRATION_STEPS[-1]["target_version_code"]
 
 
+def _run(args, path=None, check=True):
+    """Run a command given as a list of arguments, without a shell.
+
+    Returns the standard output (bytes). Portable on Windows and POSIX.
+    """
+    cwd = str(pathlib.Path(path).resolve()) if path else None
+    logger.debug("Execute: %s (cwd=%s)", " ".join(map(str, args)), cwd)
+    result = subprocess.run(
+        [str(a) for a in args], cwd=cwd, capture_output=True, check=False
+    )
+    if check and result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode, args, result.stdout, result.stderr
+        )
+    return result.stdout
+
+
 def _execute_shell(shell_command, path=None, raise_error=True):
-    if path:
-        path_str = str(path.resolve())
-        if os.name == 'nt':
-            shell_command = f'cd /d "{path_str}" && {shell_command}'
-        else:
-            shell_command = f"cd '{path_str}' && {shell_command}"
-    logger.debug(f"Execute Shell:\n{shell_command}")
+    """Legacy helper kept for compatibility: runs a command line.
+
+    The command is split into arguments (no shell), so it behaves the same
+    under cmd.exe, PowerShell and POSIX shells. Chained commands (&&, |) are
+    not supported anymore: use several calls instead.
+    """
+    args = shlex.split(shell_command, posix=os.name != "nt")
+    args = [a.strip('"') for a in args]
     if raise_error:
-        return subprocess.check_output(shell_command, shell=True)
-    else:
-        return subprocess.run(shell_command, shell=True)
+        return _run(args, path=path, check=True)
+    try:
+        return _run(args, path=path, check=False)
+    except FileNotFoundError:
+        logger.debug("Command not found: %s", args[0])
+        return b""
+
+
+# ---------------------------------------------------------------------------
+# File I/O preserving the original format (encoding, BOM, line endings)
+# ---------------------------------------------------------------------------
+
+# path -> (encoding, bom, newline) of the file as it was first read
+_FILE_FORMATS = {}
+# absolute paths of the files written during the run (for the report)
+_CHANGED_FILES = set()
+
+
+def _detect_format(raw):
+    bom = raw.startswith(codecs.BOM_UTF8)
+    if bom:
+        raw = raw[len(codecs.BOM_UTF8):]
+    try:
+        text = raw.decode("utf-8")
+        encoding = "utf-8"
+    except UnicodeDecodeError:
+        # Legacy Windows files: keep their encoding when writing them back
+        text = raw.decode("cp1252", errors="replace")
+        encoding = "cp1252"
+    crlf = text.count("\r\n")
+    lf = text.count("\n") - crlf
+    newline = "\r\n" if crlf > lf else "\n"
+    return text, encoding, bom, newline
 
 
 def _read_content(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
+    """Return the text of the file, with '\\n' line endings."""
+    file_path = pathlib.Path(file_path)
+    raw = file_path.read_bytes()
+    text, encoding, bom, newline = _detect_format(raw)
+    _FILE_FORMATS[str(file_path.resolve())] = (encoding, bom, newline)
+    return text.replace("\r\n", "\n")
 
 
 def _write_content(file_path, content):
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
+    """Write the file atomically, in the format it had when it was read.
+
+    Nothing is written if the content did not change.
+    """
+    file_path = pathlib.Path(file_path)
+    key = str(file_path.resolve())
+    if key in _FILE_FORMATS:
+        encoding, bom, newline = _FILE_FORMATS[key]
+    elif file_path.exists():
+        _, encoding, bom, newline = _detect_format(file_path.read_bytes())
+    else:
+        encoding, bom, newline = "utf-8", False, "\n"
+
+    content = content.replace("\r\n", "\n")
+    if newline != "\n":
+        content = content.replace("\n", newline)
+    data = content.encode(encoding, errors="strict" if encoding == "utf-8" else "replace")
+    if bom:
+        data = codecs.BOM_UTF8 + data
+
+    if file_path.exists() and file_path.read_bytes() == data:
+        return
+    _atomic_write_bytes(file_path, data)
+    _FILE_FORMATS[key] = (encoding, bom, newline)
+    _CHANGED_FILES.add(key)
+
+
+def _atomic_write_bytes(file_path, data):
+    file_path = pathlib.Path(file_path)
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".~", suffix=".tmp", dir=str(file_path.parent))
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        os.replace(tmp, file_path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
+_TEXT_EXTENSIONS = (
+    ".py", ".xml", ".js", ".csv", ".scss", ".css", ".po", ".pot", ".rst", ".md",
+    ".txt", ".yml", ".yaml", ".json", ".html",
+)
+
+
+def snapshot_formats(module_path):
+    """Return {path: (encoding, bom, newline)} for the text files of a module."""
+    result = {}
+    for path in pathlib.Path(module_path).rglob("*"):
+        if path.is_file() and path.suffix in _TEXT_EXTENSIONS:
+            _, encoding, bom, newline = _detect_format(path.read_bytes())
+            result[str(path.resolve())] = (encoding, bom, newline)
+    return result
+
+
+def restore_formats(snapshot):
+    """Give back their original BOM / line endings to the files of `snapshot`.
+
+    Some scripts write files directly (lxml, open()): this guarantees that a
+    CRLF file stays CRLF and that a BOM is never added nor lost.
+    """
+    for key, (encoding, bom, newline) in snapshot.items():
+        path = pathlib.Path(key)
+        if not path.exists():
+            continue
+        raw = path.read_bytes()
+        text, cur_encoding, cur_bom, cur_newline = _detect_format(raw)
+        if (cur_bom, cur_newline) == (bom, newline) or cur_encoding != "utf-8":
+            continue
+        _FILE_FORMATS[key] = (cur_encoding, bom, newline)
+        _write_content(path, text)
+
+
+def _rename_path(module_path, old_file_path, new_file_path, use_git=False):
+    """Rename a file, with 'git mv' when possible to keep the history."""
+    module_path = pathlib.Path(module_path)
+    logger.info(
+        "Renaming file: '%s' by '%s'"
+        % (
+            str(old_file_path).replace(str(module_path.resolve()), ""),
+            str(new_file_path).replace(str(module_path.resolve()), ""),
+        )
+    )
+    if use_git:
+        try:
+            _run(["git", "mv", old_file_path, new_file_path], path=module_path)
+            return
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.debug("'git mv' failed, falling back to a plain rename")
+    os.replace(old_file_path, new_file_path)
+    key = str(pathlib.Path(old_file_path).resolve())
+    if key in _FILE_FORMATS:
+        _FILE_FORMATS[str(pathlib.Path(new_file_path).resolve())] = _FILE_FORMATS.pop(key)
+    _CHANGED_FILES.add(str(pathlib.Path(new_file_path).resolve()))
 
 
 def _replace_in_file(file_path, replaces, log_message=None):
@@ -58,7 +207,7 @@ def _replace_in_file(file_path, replaces, log_message=None):
 
     if new_text != current_text:
         if not log_message:
-            log_message = f"Changing content of file: {file_path.name}"
+            log_message = f"Changing content of file: {pathlib.Path(file_path).name}"
         logger.info(log_message)
         _write_content(file_path, new_text)
     return new_text
@@ -69,7 +218,7 @@ def get_files(module_path, extensions):
     module_dir = pathlib.Path(module_path)
     if not module_dir.is_dir():
         raise ValueError(f"'{module_path}' is not a valid directory")
-    
+
     file_paths = []
     for ext in extensions:
         file_paths.extend(module_dir.rglob(f"*{ext}"))

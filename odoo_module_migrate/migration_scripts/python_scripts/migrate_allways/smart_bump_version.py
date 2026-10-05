@@ -60,7 +60,14 @@ def _adapt_version_format(current_version, target_version_name):
     """
     version_parts = current_version.split('.')
     target_major = target_version_name.split('.')[0]  # '18' from '18.0'
-    
+
+    # Standard Odoo format 'X.0.a.b.c' (or 'saas~X.Y.a.b.c'): OCA convention,
+    # a migrated module restarts at '{target}.1.0.0'
+    if re.fullmatch(r"(saas~)?\d+\.\d+\.\d+\.\d+\.\d+", current_version):
+        if current_version.startswith(target_version_name + "."):
+            return current_version  # already migrated: keep it (idempotence)
+        return f"{target_version_name}.1.0.0"
+
     if len(version_parts) >= 2:
         first_part = version_parts[0]
         

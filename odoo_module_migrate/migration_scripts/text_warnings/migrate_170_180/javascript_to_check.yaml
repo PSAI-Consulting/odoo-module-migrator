@@ -1,0 +1,8 @@
+# Code JS « legacy » à réécrire à la main (pas de remplacement automatique sûr).
+# Anciennement des remplacements automatiques non vérifiés du fork (2025-09).
+.js:
+  'from\s+["'']web\.\w+["'']': "[18] Import d'un module JS legacy 'web.*' : ces modules n'existent plus, importer depuis '@web/...'."
+  'odoo\.define\(': "[18] Module JS déclaré avec odoo.define() : convertir en module ES (/** @odoo-module */ ou import/export)."
+  'this\._super\(': "[18] this._super(...) (widget legacy) : convertir en classe OWL et utiliser super.<méthode>(...)."
+  'this\.trigger_up\(': "[18] trigger_up() (widget legacy) : utiliser les services / le bus de l'environnement OWL."
+  '\bmoment\(': "[18] moment.js n'est plus chargé : utiliser luxon (DateTime) et @web/core/l10n/dates."

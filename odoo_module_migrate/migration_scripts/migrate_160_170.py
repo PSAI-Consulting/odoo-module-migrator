@@ -3,18 +3,69 @@
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 import lxml.etree as et
 from pathlib import Path
-import sys
-import os
 import ast
+import re
 from typing import Any
 
 empty_list = ast.parse("[]").body[0].value
+
+# 17.0 signature: _read_group(domain, groupby, aggregates, having, offset, limit, order)
+# Source: odoo 17.0 odoo/models.py, BaseModel._read_group
+_AGGREGATE_RE = re.compile(
+    r"^(__count|\w+(\.\w+)*:(sum|avg|max|min|count|count_distinct|array_agg"
+    r"|recordset|bool_and|bool_or|sum_currency))$"
+)
+
+
+def _str_items(node):
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return [
+            elt.value for elt in node.elts
+            if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+        ]
+    return []
+
+
+def _is_migrated_read_group(node: ast.Call) -> bool:
+    """Whether a _read_group() call already uses the 17.0 signature.
+
+    Makes the transformation idempotent: '__count' or 'field:agg' items can
+    only be aggregates (17.0), never 16.0 groupby specs ('date:month').
+    """
+    keywords = {kw.arg for kw in node.keywords}
+    if "lazy" in keywords:
+        return False
+    if keywords & {"aggregates", "having"}:
+        return True
+    if len(node.args) >= 3:
+        items = _str_items(node.args[2])
+        return bool(items) and all(_AGGREGATE_RE.match(item) for item in items)
+    return False
+
+
+def _read_group_calls(tree):
+    calls = [
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr in ("_read_group", "read_group")
+    ]
+    return sorted(calls, key=lambda n: (n.lineno, n.col_offset))
+
+
+def _spans(calls, flags):
+    return [
+        (n.lineno, n.col_offset, n.end_lineno, n.end_col_offset)
+        for n, migrated in zip(calls, flags)
+        if migrated
+    ]
 
 
 class AbstractVisitor(ast.NodeVisitor):
     def __init__(self) -> None:
         # ((line, line_end, col_offset, end_col_offset), replace_by) NO OVERLAPS
         self.change_todo = []
+        self.skip_spans = []
 
     def post_process(self, all_code: str, file: str) -> str:
         all_lines = all_code.split("\n")
@@ -33,6 +84,10 @@ class AbstractVisitor(ast.NodeVisitor):
         return "\n".join(all_lines)
 
     def add_change(self, old_node: ast.AST, new_node: ast.AST | str):
+        start = (old_node.lineno, old_node.col_offset)
+        for line, col, end_line, end_col in self.skip_spans:
+            if (line, col) <= start <= (end_line, end_col):
+                return  # inside an already migrated call
         position = (
             old_node.lineno,
             old_node.end_lineno,
@@ -222,10 +277,18 @@ def replace_read_group_signature(logger, filename):
     with open(filename, mode="rt", encoding="utf-8") as file:
         new_all = all_code = file.read()
         if ".read_group(" in all_code or "._read_group(" in all_code:
+            # Decided once on the original code: the steps below change the
+            # calls, which would make them look migrated afterwards.
+            migrated_flags = [
+                _is_migrated_read_group(n)
+                for n in _read_group_calls(ast.parse(all_code))
+            ]
             for Step in Steps_visitor:
                 visitor = Step()
                 try:
-                    visitor.visit(ast.parse(new_all))
+                    tree = ast.parse(new_all)
+                    visitor.skip_spans = _spans(_read_group_calls(tree), migrated_flags)
+                    visitor.visit(tree)
                 except Exception:
                     logger.info(
                         f"ERROR in {filename} at step {visitor.__class__}: \n{new_all}"

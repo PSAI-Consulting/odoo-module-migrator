@@ -7,10 +7,10 @@ import glob
 import yaml
 import importlib
 import copy
-from typing import Dict, List, Any, Optional, Tuple, Type
+from typing import Dict, List, Any, Tuple
 
 from .config import _ALLOWED_EXTENSIONS
-from .tools import _execute_shell, _replace_in_file, _read_content, _write_content
+from .tools import _rename_path, _replace_in_file, _read_content, _write_content
 from .log import logger
 from . import tools
 
@@ -26,7 +26,8 @@ class BaseMigrationScript:
     _RENAMED_MODELS: List[Tuple] = []
     _REMOVED_MODELS: List[Tuple] = []
     _GLOBAL_FUNCTIONS: List[Any] = []  # [function_object]
-    _SKIP_FOLDERS: List[str] = ["lib", "static/lib", "libs"] 
+    # Folders never migrated (third-party code), matched on path components
+    _SKIP_FOLDERS: List[str] = ["static/lib", "static/libs", "node_modules", "__pycache__", ".git"]
     _module_path: str = ""
 
     def __init__(self):
@@ -42,8 +43,14 @@ class BaseMigrationScript:
         self._REMOVED_MODELS = copy.deepcopy(getattr(self, '_REMOVED_MODELS', []))
         self._GLOBAL_FUNCTIONS = copy.deepcopy(getattr(self, '_GLOBAL_FUNCTIONS', []))
         self._module_path = ""
+        self._rules_parsed = False
 
     def parse_rules(self) -> None:
+        # Rules are loaded once per script instance: run() is called once per
+        # module, and parsing again would duplicate rules and functions.
+        if self._rules_parsed:
+            return
+        self._rules_parsed = True
         script_file = inspect.getfile(self.__class__)
         migrate_from_to = os.path.basename(script_file).split(".")[0]
         migration_scripts_dir = os.path.dirname(script_file)
@@ -164,13 +171,11 @@ class BaseMigrationScript:
             manifest_path, self._FILE_RENAMES
         )
         for root, directories, filenames in os.walk(module_path.resolve()):
-            # Filters directories to skip
             directories[:] = [
-                d for d in directories 
-                if d not in self._SKIP_FOLDERS 
-                and not any(skip in os.path.join(root, d) for skip in self._SKIP_FOLDERS)
+                d for d in directories
+                if not self._is_skipped_folder(module_path, os.path.join(root, d))
             ]
-            
+
             for filename in filenames:
                 extension = os.path.splitext(filename)[1]
                 if extension not in _ALLOWED_EXTENSIONS:
@@ -207,14 +212,6 @@ class BaseMigrationScript:
         commit_enabled: bool
     ) -> None:
         absolute_file_path = os.path.join(root, filename)
-        
-        # Check if file is in a skipped folder
-        for skip in self._SKIP_FOLDERS:
-            # Simple check if skip folder is part of path
-            if os.sep + skip + os.sep in absolute_file_path or absolute_file_path.endswith(os.sep + skip):
-                logger.debug(f"Skipping file in ignored folder: {absolute_file_path}")
-                return
-
         logger.debug("Migrate '%s' file" % absolute_file_path)
 
         # Rename file, if required
@@ -236,7 +233,8 @@ class BaseMigrationScript:
         removed_models = self.handle_removed_models(self._REMOVED_MODELS)
 
         # Operate changes in the file (replacements, removals)
-        replaces = self._TEXT_REPLACES.get("*", {})
+        # Always work on copies: the rule dicts are shared between files
+        replaces = dict(self._TEXT_REPLACES.get("*", {}))
         replaces.update(self._TEXT_REPLACES.get(extension, {}))
         replaces.update(renamed_models.get("replaces", {}))
         replaces.update(removed_models.get("replaces", {}))
@@ -246,7 +244,7 @@ class BaseMigrationScript:
         )
 
         # Display errors if the new content contains some obsolete pattern
-        errors = self._TEXT_ERRORS.get("*", {})
+        errors = dict(self._TEXT_ERRORS.get("*", {}))
         errors.update(self._TEXT_ERRORS.get(extension, {}))
         errors.update(renamed_models.get("errors", {}))
         errors.update(removed_models.get("errors", {}))
@@ -254,7 +252,7 @@ class BaseMigrationScript:
             if re.findall(pattern, new_text):
                 logger.error(error_message + "\nFile " + os.path.join(root, filename))
 
-        warnings = self._TEXT_WARNINGS.get("*", {})
+        warnings = dict(self._TEXT_WARNINGS.get("*", {}))
         warnings.update(self._TEXT_WARNINGS.get(extension, {}))
         warnings.update(removed_fields.get("warnings", {}))
         warnings.update(renamed_fields.get("warnings", {}))
@@ -417,26 +415,16 @@ class BaseMigrationScript:
             manifest_path = pathlib.Path(new_manifest_file_name)
         return manifest_path
 
-    def _rename_file(self, module_path: pathlib.Path, old_file_path: str, new_file_path: str, commit_enabled: bool) -> None:
-        """
-        Rename a file. try to execute 'git mv', to avoid huge diff.
-        if 'git mv' fails, make a classical rename
-        """
-        logger.info(
-            "Renaming file: '%s' by '%s' "
-            % (
-                old_file_path.replace(str(module_path.resolve()), ""),
-                new_file_path.replace(str(module_path.resolve()), ""),
-            )
+    def _is_skipped_folder(self, module_path, folder_path) -> bool:
+        relative = pathlib.PurePath(os.path.relpath(folder_path, module_path)).as_posix()
+        return any(
+            relative == skip or relative.endswith("/" + skip)
+            for skip in self._SKIP_FOLDERS
         )
+
+    def _rename_file(self, module_path: pathlib.Path, old_file_path: str, new_file_path: str, commit_enabled: bool) -> None:
+        """Rename a file, with 'git mv' when commits are enabled."""
         try:
-            if commit_enabled:
-                _execute_shell(
-                    "git mv %s %s" % (old_file_path, new_file_path), path=module_path
-                )
-            else:
-                _execute_shell(
-                    "mv %s %s" % (old_file_path, new_file_path), path=module_path
-                )
-        except BaseException:
+            _rename_path(module_path, old_file_path, new_file_path, commit_enabled)
+        except OSError:
             logger.error(traceback.format_exc())

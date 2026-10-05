@@ -1,0 +1,8 @@
+# Anciennes API repérées dans le code : à corriger à la main.
+# Ces motifs étaient des remplacements automatiques non vérifiés (fork, 2025-09) ;
+# ils sont rétrogradés en avertissements (voir CHANGELOG, lot 0).
+.py:
+  'self\.pool\b': "[16] 'self.pool' (API OpenERP) : utiliser self.env[...] ou self.env.registry."
+  '\.signal_workflow\(': "[16] Les workflows ont été supprimés en 11.0 : remplacer signal_workflow() par des méthodes d'action."
+  '\.render_template\(': "[16] render_template() : vérifier l'API cible (_render_template / ir.qweb._render)."
+  '\.currency_id\.compute\(': "[16] res.currency.compute() n'existe plus : utiliser currency._convert(amount, to_currency, company, date)."

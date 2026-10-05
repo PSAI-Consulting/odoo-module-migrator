@@ -1,0 +1,9 @@
+# Source : odoo 17.0 addons/web/static/src/core/utils/patch.js
+#   16.0 : export function patch(obj, patchName, patchValue, options = {})
+#   17.0 : export function patch(objToPatch, extension)
+.js:
+  'patch\(([^,()]+),\s*["''][^"'']*["''],\s*\{': 'patch(\1, {'
+# Source : odoo 17.0, l'attribut owl="1" n'est plus nécessaire (tous les templates
+# de static/src sont des templates OWL) ; retiré de la quasi-totalité des addons.
+.xml:
+  '\s+owl=["'']1["'']': ""

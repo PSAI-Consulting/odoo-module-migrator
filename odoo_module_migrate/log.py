@@ -7,6 +7,8 @@
 
 
 from colorama import Fore, Style
+import os
+import sys
 import time
 
 import logging
@@ -22,18 +24,31 @@ LEVEL_COLORS = {
 }
 
 
+def _close_handlers():
+    """Remove the handlers set by a previous setup_logger() call.
+
+    Needed when main() is called several times in the same process (tests):
+    otherwise messages are duplicated and log files stay locked on Windows.
+    """
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
+        handler.close()
+
+
 def setup_logger(level, file_path=False, warning_level_only_file_path=False):
+    _close_handlers()
     if not file_path:
         handler = logging.StreamHandler()
         handler.setFormatter(OdooMigrateFormatter())
         if warning_level_only_file_path:
-            warning_handler = logging.FileHandler(warning_level_only_file_path)
+            warning_handler = logging.FileHandler(
+                warning_level_only_file_path, encoding="utf-8"
+            )
             warning_handler.setLevel(logging.WARNING)
             warning_handler.setFormatter(MarkdownLogFormatter())
-            warning_handler.stream.reconfigure(encoding="utf-8")
             logger.addHandler(warning_handler)
     else:
-        handler = logging.FileHandler(file_path)
+        handler = logging.FileHandler(file_path, encoding="utf-8")
         handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s"
@@ -41,6 +56,8 @@ def setup_logger(level, file_path=False, warning_level_only_file_path=False):
         )
     logger.addHandler(handler)
     logger.setLevel(getattr(logging, str(level)))
+    logger.propagate = False
+
 
 class MarkdownLogFormatter(logging.Formatter):
     COLOR_MAP = {
@@ -63,12 +80,21 @@ class MarkdownLogFormatter(logging.Formatter):
         return f"- [ ] {asctime},{int(record.msecs)} {prefix}{level} {record.getMessage()}"
 
 class OdooMigrateFormatter(logging.Formatter):
+    def __init__(self, *args, use_color=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if use_color is None:
+            use_color = sys.stderr.isatty() and not os.environ.get("NO_COLOR")
+        self.use_color = use_color
+
     def format(self, record):
         """Overwrite format() function to use custom formatter"""
         record.message = record.getMessage()
         record.asctime = time.strftime("%H:%M:%S", self.converter(record.created))
 
-        prefix = self.default_prefix_template(record) % record.__dict__
+        if self.use_color:
+            prefix = self.default_prefix_template(record) % record.__dict__
+        else:
+            prefix = "%(asctime)-10s %(levelname)-10s " % record.__dict__
         return (prefix + " " + record.message).replace("\n", "\n" + "".ljust(23, " "))
 
     def default_prefix_template(self, record):

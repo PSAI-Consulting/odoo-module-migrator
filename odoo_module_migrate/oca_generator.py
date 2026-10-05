@@ -2,7 +2,6 @@
 
 """OCA modules list generator."""
 
-import os
 import pathlib
 from datetime import datetime
 

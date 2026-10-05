@@ -1,6 +1,0 @@
-"__manifest__.py":
-  "'qweb'": "The 'qweb' key in manifest is deprecated in 15.0. Move qweb files to 'data' and 'assets' bundle."
-  "'css'": "The 'css' key in manifest is deprecated in 15.0. Use 'assets' bundle in manifest."
-  
-"*.xml":
-  "inherit_id=['\"]web.assets_backend['\"]": "Assets extension in XML is deprecated in 15.0. Move to __manifest__.py 'assets' dictionary."

@@ -5,11 +5,13 @@ import os
 import pathlib
 import pkgutil
 import inspect
+import ast
+import subprocess
 
 from .config import _AVAILABLE_MIGRATION_STEPS, _MANIFEST_NAMES
 from .exception import ConfigException
 from .log import logger
-from .tools import _execute_shell, _get_latest_version_code
+from .tools import _run, _get_latest_version_code
 from .module_migration import ModuleMigration
 from .base_migration_script import BaseMigrationScript
 
@@ -93,25 +95,40 @@ class Migration:
         for module_name in module_names:
             self._module_migrations.append(ModuleMigration(self, module_name))
 
-        if os.path.exists(".pre-commit-config.yaml") and self._pre_commit:
+        if self._has_pre_commit_config():
             self._run_pre_commit(module_names)
 
         # get migration scripts, depending to the migration list
         self._get_migration_scripts()
 
+    def _has_pre_commit_config(self):
+        return (
+            self._pre_commit
+            and (self._directory_path / ".pre-commit-config.yaml").exists()
+        )
+
+    def _run_pre_commit_if_configured(self):
+        if not self._has_pre_commit_config():
+            return
+        try:
+            _run(["pre-commit", "run", "-a"], path=self._directory_path, check=False)
+        except FileNotFoundError:
+            logger.warning("pre-commit is not installed: skipping it")
+
     def _run_pre_commit(self, module_names):
         logger.info("Run pre-commit")
-        _execute_shell(
-            "pre-commit run -a", path=self._directory_path, raise_error=False
-        )
+        self._run_pre_commit_if_configured()
         if self._commit_enabled:
             logger.info("Stage and commit changes done by pre-commit")
-            _execute_shell("git add -A", path=self._directory_path)
-            _execute_shell(
-                "git commit -m '[IMP] %s: pre-commit execution' --no-verify"
-                % ", ".join(module_names),
+            _run(["git", "add", "-A"], path=self._directory_path)
+            # Don't fail if there is nothing to commit
+            _run(
+                [
+                    "git", "commit", "--no-verify", "-m",
+                    "[IMP] %s: pre-commit execution" % ", ".join(module_names),
+                ],
                 path=self._directory_path,
-                raise_error=False,  # Don't fail if there is nothing to commit
+                check=False,
             )
 
     def _is_module_path(self, module_path):
@@ -125,7 +142,7 @@ class Migration:
                 try:
                     with open(manifest_path, 'r', encoding='utf-8') as f:
                         content = f.read()
-                    manifest_data = eval(content)
+                    manifest_data = ast.literal_eval(content)
                     if isinstance(manifest_data, dict):
                         author = manifest_data.get('author', '')
                         if 'Odoo Community Association (OCA)' in author:
@@ -142,20 +159,27 @@ class Migration:
         branch_name = f"{target_version}-mig-{module_name}"
 
         logger.info(f"Creating new branch '{branch_name}' ...")
-        _execute_shell(
-            f"git checkout --no-track -b {branch_name} {remote_name}/{target_version}",
-            path=self._directory_path
+        _run(
+            ["git", "checkout", "--no-track", "-b", branch_name,
+             f"{remote_name}/{target_version}"],
+            path=self._directory_path,
         )
 
         logger.info("Getting latest changes from old branch")
-        _execute_shell(
-            f"git fetch --depth 9999999 {remote_name} {init_version}",
-            path=self._directory_path
+        _run(
+            ["git", "fetch", "--depth", "9999999", remote_name, init_version],
+            path=self._directory_path,
         )
 
-        _execute_shell(
-            f"git format-patch --keep-subject --stdout {remote_name}/{target_version}..{remote_name}/{init_version} -- {module_name} | git am -3 --keep",
-            path=self._directory_path
+        patch = _run(
+            ["git", "format-patch", "--keep-subject", "--stdout",
+             f"{remote_name}/{target_version}..{remote_name}/{init_version}",
+             "--", module_name],
+            path=self._directory_path,
+        )
+        subprocess.run(
+            ["git", "am", "-3", "--keep"], input=patch,
+            cwd=str(self._directory_path), check=True,
         )
 
     def _load_migration_script(self, full_name):

@@ -112,3 +112,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Artefacts locaux
+validation_report.txt
+tests/data_tmp/

@@ -2,12 +2,10 @@
 # @author: Sylvain LE GAL (https://twitter.com/legalsylvain)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-import os
-
 from .log import logger
 
 from .config import _MANIFEST_NAMES
-from .tools import _execute_shell
+from .tools import _run, _rename_path, restore_formats, snapshot_formats
 
 
 class ModuleMigration:
@@ -31,6 +29,8 @@ class ModuleMigration:
             )
         )
 
+        formats = snapshot_formats(self._module_path)
+
         # Apply migration script
         for migration_script in self._migration._migration_scripts:
             migration_script.run(
@@ -41,22 +41,12 @@ class ModuleMigration:
                 self._migration._directory_path,
                 self._migration._commit_enabled,
             )
-            
-        # Run pre-commit before final commit to format any changes made during migration scripts execution
-        if os.path.exists(".pre-commit-config.yaml") and self._migration._pre_commit:
-            _execute_shell(
-                "pre-commit run -a",
-                path=self._migration._directory_path,
-                raise_error=False,
-            )
 
-        # Run pre-commit before final commit to format any changes made during migration scripts execution
-        if os.path.exists(".pre-commit-config.yaml") and self._migration._pre_commit:
-            _execute_shell(
-                "pre-commit run -a",
-                path=self._migration._directory_path,
-                raise_error=False,
-            )
+        restore_formats(formats)
+
+        # Run pre-commit before final commit to format any changes made
+        # during migration scripts execution
+        self._migration._run_pre_commit_if_configured()
 
         self._commit_changes(
             "[MIG] %s: Migration to %s"
@@ -73,38 +63,18 @@ class ModuleMigration:
                 return manifest_path
 
     def _rename_file(self, module_path, old_file_path, new_file_path):
-        """
-        Rename a file. try to execute 'git mv', to avoid huge diff.
-
-        if 'git mv' fails, make a classical rename
-        """
-        logger.info(
-            "Renaming file: '%s' by '%s' "
-            % (
-                old_file_path.replace(str(module_path.resolve()), ""),
-                new_file_path.replace(str(module_path.resolve()), ""),
-            )
+        _rename_path(
+            module_path, old_file_path, new_file_path, self._migration._commit_enabled
         )
-        if self._migration._commit_enabled:
-            _execute_shell(
-                'git mv "%s" "%s"' % (old_file_path, new_file_path), path=module_path
-            )
-        else:
-            _execute_shell(
-                'mv "%s" "%s"' % (old_file_path, new_file_path), path=module_path
-            )
 
     def _commit_changes(self, commit_name):
         if not self._migration._commit_enabled:
             return
-
-        if _execute_shell("git diff", path=self._migration._directory_path):
-            logger.info(
-                "Commit changes for %s. commit name '%s'"
-                % (self._module_name, commit_name)
-            )
-
-            _execute_shell(
-                ' git add . --all && git commit --no-verify -m "%s"' % (commit_name),
-                path=self._migration._directory_path,
-            )
+        directory = self._migration._directory_path
+        if not _run(["git", "status", "--porcelain", "--", "."], path=directory):
+            return
+        logger.info(
+            "Commit changes for %s. commit name '%s'" % (self._module_name, commit_name)
+        )
+        _run(["git", "add", "--all", "."], path=directory)
+        _run(["git", "commit", "--no-verify", "-m", commit_name], path=directory)
