@@ -269,3 +269,43 @@ def test_rejected_candidates_reported_190_200(tmp_path, caplog):
         and "deductible_percentage" in r.getMessage()
         for r in caplog.records
     )
+
+
+def test_core_api_replaces_190_200():
+    path = f"{SCRIPTS}/text_replaces/migrate_190_200/core_api.yaml"
+    text = (
+        "records = self._filter_access_rules('read')\n"
+        "records = self._filter_access_rules_python('write')\n"
+        "self.check_access_rule('unlink')\n"
+        "amount = fields.Float(group_operator='sum')\n"
+        "from odoo.tools import test_reports\n"
+        "odoo.tools.test_reports.try_report(cr, uid, 'x', ids)\n"
+        "    from odoo.tests.common import Form\n"
+        "if not self._check_recursion():\n"
+    )
+    new = _apply_yaml(path, ".py", text)
+    assert new == (
+        "records = self._filtered_access('read')\n"
+        "records = self._filtered_access('write')\n"
+        "self.check_access('unlink')\n"
+        "amount = fields.Float(aggregator='sum')\n"
+        "from odoo.tests import reports as test_reports\n"
+        "odoo.tests.reports.try_report(cr, uid, 'x', ids)\n"
+        "    from odoo.tests import Form\n"
+        "if self._has_cycle():\n"
+    )
+    assert _apply_yaml(path, ".py", new) == new
+
+
+def test_core_api_errors_190_200():
+    rules = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_190_200/core_api.yaml", encoding="utf-8"))[".py"]
+
+    def hits(text):
+        return [p for p in rules if re.search(p, text)]
+
+    assert hits("self.env['x'].check_access_rights('read', raise_exception=False)")
+    assert hits("from odoo.tools import ustr, html_escape")
+    assert hits("create_unique_index(cr, 'idx', 'tbl', ['a'])")
+    # no false positive on look-alike names
+    assert not hits("def flatten(self, items):\n    return my_flatten(items)\n")
+    assert not hits("self.check_access('read')\nself.has_access('write')\n")
