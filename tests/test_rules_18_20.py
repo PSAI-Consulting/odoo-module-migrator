@@ -344,3 +344,11 @@ def test_model_rules_190_200(tmp_path, caplog):
                for r in caplog.records)
     script.process_file(str(tmp_path), "models.py", ".py", {}, tmp_path, False)
     assert path.read_text() == text
+
+
+def test_product_type_warning_170_180():
+    rules = yaml.safe_load(open(f"{SCRIPTS}/text_warnings/migrate_170_180/product_type.yaml", encoding="utf-8"))
+    assert any(re.search(p, '{"name": "x", "type": "product"}') for p in rules[".py"])
+    assert not any(re.search(p, '{"display_type": "product", "type": "consu"}') for p in rules[".py"])
+    assert any(re.search(p, '<field name="type">product</field>') for p in rules[".xml"])
+    assert not any(re.search(p, '<field name="type">consu</field>') for p in rules[".xml"])
