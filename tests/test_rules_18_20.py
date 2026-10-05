@@ -141,6 +141,7 @@ def test_cron_fields_removed():
     text = (
         '        <field name="numbercall">-1</field>\n'
         '        <field name="doall" eval="False"/>\n'
+        '        <field eval="False" name="doall"/>\n'
         '        <field name="active">True</field>\n'
     )
     new = _apply_yaml(f"{SCRIPTS}/text_replaces/migrate_170_180/ir_cron.yaml", ".xml", text)

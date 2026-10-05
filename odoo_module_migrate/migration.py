@@ -269,6 +269,11 @@ class Migration:
         if float(target_version) < 18:
             logger.info("upgrade_code: no official script before 18.0, skipped")
             return
+        if float(target_version) >= 20:
+            from .upgrade_code.prepare import move_access_records
+
+            for module_migration in self._module_migrations:
+                move_access_records(module_migration._module_path)
         self.upgrade_code_result = run_upgrade_code(
             self._upgrade_code_options,
             [m._module_path for m in self._module_migrations],

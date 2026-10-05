@@ -30,13 +30,17 @@ def _module_dirs(paths):
             yield manifest.parent
 
 
-def _data_files(module):
+def _manifest(module):
     try:
-        manifest = ast.literal_eval(
+        return ast.literal_eval(
             (module / "__manifest__.py").read_text(encoding="utf-8", errors="replace")
         )
     except (ValueError, SyntaxError):
-        return []
+        return {}
+
+
+def _data_files(module):
+    manifest = _manifest(module)
     files = manifest.get("data", []) + manifest.get("demo", [])
     return [module / f for f in files if f.endswith(".xml") and (module / f).is_file()]
 
@@ -51,9 +55,12 @@ class ViewIndex:
         self.children = collections.defaultdict(set)  # view -> views extending it
         self.parent = {}                              # view -> inherit_id
         self.views = set()
+        self.view_modules = collections.defaultdict(set)  # view -> modules defining it
+        self.depends = {}                             # module -> depends
 
     def add_module(self, module):
         name = module.name
+        self.depends[name] = _manifest(module).get("depends", [])
         for path in _data_files(module):
             try:
                 root = etree.parse(str(path)).getroot()
@@ -64,6 +71,7 @@ class ViewIndex:
                     continue
                 xid = _qualify(record.get("id"), name)
                 self.views.add(xid)
+                self.view_modules[xid].add(name)
                 inherit = record.find("field[@name='inherit_id']")
                 if inherit is not None and inherit.get("ref"):
                     self.children[_qualify(inherit.get("ref"), name)].add(xid)
@@ -89,14 +97,28 @@ class ViewIndex:
             xid = self.parent[xid]
         return xid
 
-    def all_fields(self, xid, _seen=None):
+    def closure(self, module):
+        """The module and all its dependencies (base included)."""
+        result, todo = set(), [module, "base"]
+        while todo:
+            name = todo.pop()
+            if name not in result:
+                result.add(name)
+                todo.extend(self.depends.get(name, ()))
+        return result
+
+    def all_fields(self, xid, modules=None, exclude=(), _seen=None):
+        """Fields of the view and of the views extending it; only the views of
+        `modules` (the dependencies, which are installed for sure) count."""
         seen = _seen if _seen is not None else set()
         if xid in seen:
             return set()
         seen.add(xid)
-        result = set(self.fields.get(xid, ()))
+        result = set()
+        if xid not in exclude and (modules is None or self.view_modules.get(xid, set()) & modules):
+            result |= self.fields.get(xid, set())
         for child in self.children.get(xid, ()):
-            result |= self.all_fields(child, seen)
+            result |= self.all_fields(child, modules, exclude, seen)
         return result
 
 
@@ -122,7 +144,11 @@ def check_module(module, index, reference_modules):
                         f"parent view {parent} does not exist in the target Odoo"
                     )
                 continue
-            available = index.all_fields(index.root(parent))
+            # the view itself does not count: it holds the anchors
+            xid = _qualify(record.get("id") or "", module.name)
+            available = index.all_fields(
+                index.root(parent), index.closure(module.name), exclude={xid}
+            )
             anchors = []
             for node in arch:
                 if not isinstance(node.tag, str):
