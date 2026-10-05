@@ -23,10 +23,19 @@ class _Positions:
 
 
 def _find_key(text, key):
+    # Odoo reads manifests with ast.literal_eval(), which accepts a leading
+    # indentation: do the same, and keep the node positions right
+    indent = len(text) - len(text.lstrip(" \t"))
     try:
-        tree = ast.parse(text)
+        tree = ast.parse(text[indent:])
     except SyntaxError as e:
         raise ManifestError(f"Manifest is not valid Python: {e}") from e
+    if indent:
+        for node in ast.walk(tree):
+            if getattr(node, "lineno", None) == 1:
+                node.col_offset += indent
+            if getattr(node, "end_lineno", None) == 1:
+                node.end_col_offset += indent
     for node in ast.walk(tree):
         if isinstance(node, ast.Dict):
             for k, v in zip(node.keys, node.values):

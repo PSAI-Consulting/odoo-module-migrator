@@ -58,6 +58,13 @@ def test_idempotent():
     assert not messages
 
 
+def test_leading_indentation_accepted():
+    # accepted by Odoo (ast.literal_eval strips it)
+    text = "  {'name': 'x', 'depends': ['web_editor']}\n"
+    new, _ = _apply(text)
+    assert new == "  {'name': 'x', 'depends': ['html_editor']}\n"
+
+
 def test_comments_are_not_rewritten():
     with pytest.raises(m.ManifestError):
         m.rewrite_depends("{'depends': [\n  'a',  # comment\n]}", ["b"])

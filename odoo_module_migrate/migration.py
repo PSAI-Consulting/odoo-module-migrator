@@ -7,6 +7,7 @@ import pkgutil
 import inspect
 import ast
 import subprocess
+import traceback
 
 from .config import _AVAILABLE_MIGRATION_STEPS, _MANIFEST_NAMES
 from .exception import ConfigException
@@ -251,8 +252,12 @@ class Migration:
             if self.report_collector:
                 self.report_collector.current = None
             if self._upgrade_code_options:
-                self._run_upgrade_code()
-                self._check_view_anchors()
+                for step in (self._run_upgrade_code, self._check_view_anchors):
+                    try:
+                        step()
+                    except Exception as e:  # noqa: BLE001 - reported, the rest goes on
+                        logger.error("%s failed: %s: %s" % (step.__name__, type(e).__name__, e))
+                        logger.debug(traceback.format_exc())
             for module_migration in self._module_migrations:
                 module_migration.restore()
             if self.report_collector:
@@ -313,7 +318,13 @@ class Migration:
             from .upgrade_code.prepare import move_access_records
 
             for module_migration in self._module_migrations:
-                move_access_records(module_migration._module_path)
+                try:
+                    move_access_records(module_migration._module_path)
+                except Exception as e:  # noqa: BLE001
+                    logger.error(
+                        "Access records not prepared for upgrade_code (%s: %s). File %s"
+                        % (type(e).__name__, e, module_migration._module_path / "__manifest__.py")
+                    )
         self.upgrade_code_result = run_upgrade_code(
             self._upgrade_code_options,
             [m._module_path for m in self._module_migrations],
