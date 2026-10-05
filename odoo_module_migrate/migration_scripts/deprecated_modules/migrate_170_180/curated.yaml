@@ -1,0 +1,28 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise : ne pas le régénérer sans accès à odoo/enterprise).
+#
+# Entrées de OpenUpgrade 18.0 openupgrade_scripts/apriori.py absentes de
+# modules.yaml (ajoutées à apriori.py après sa génération) :
+- ["spreadsheet_dashboard_purchase_stock", "renamed", "spreadsheet_dashboard_purchase_stock_oca"]  # OpenUpgrade 18.0 apriori.py
+- ["product_supplierinfo_for_customer_invoice", "renamed", "product_customerinfo_invoice"]  # OpenUpgrade 18.0 apriori.py (OCA/account-invoicing 2c94d419)
+- ["account_reconciliation_widget_due_date", "renamed", "account_reconcile_due_date"]  # OpenUpgrade 18.0 apriori.py (OCA/account-reconcile)
+- ["commission_formula", "renamed", "commission_formula_oca"]  # OpenUpgrade 18.0 apriori.py (OCA/commission)
+- ["sale_commission_margin", "renamed", "sale_commission_margin_oca"]  # OpenUpgrade 18.0 apriori.py (OCA/commission)
+- ["sale_commission_pricelist", "renamed", "sale_commission_pricelist_oca"]  # OpenUpgrade 18.0 apriori.py (OCA/commission)
+- ["sale_commission_product_criteria", "renamed", "sale_commission_oca_product_criteria"]  # OpenUpgrade 18.0 apriori.py (OCA/commission)
+- ["sale_commission_product_criteria_semaphore", "renamed", "sale_commission_oca_product_criteria_semaphore"]  # OpenUpgrade 18.0 apriori.py (OCA/commission)
+- ["currency_rate_update_boi", "renamed", "l10n_it_currency_rate_update_boi"]  # OpenUpgrade 18.0 apriori.py (OCA/l10n-italy)
+- ["stock_picking_batch_extended_account", "renamed", "stock_picking_batch_account"]  # OpenUpgrade 18.0 apriori.py (OCA/stock-logistics-workflow d8f56c6f2)
+- ["stock_picking_batch_extended_account_sale_type", "renamed", "stock_picking_batch_account_sale_type"]  # OpenUpgrade 18.0 apriori.py (OCA/stock-logistics-workflow 4a9bd2b25)
+- ["hr_expense_employee_analytic_default", "merged", "hr_expense"]  # OpenUpgrade 18.0 apriori.py merged_modules
+- ["sale_partner_shipping_invoice_domain", "merged", "sale_commercial_partner"]  # OpenUpgrade 18.0 apriori.py merged_modules
+- ["sale_product_configurator_widget_product_label", "merged", "sale"]  # OpenUpgrade 18.0 apriori.py merged_modules
+- ["stock_move_line_auto_fill", "merged", "stock"]  # OpenUpgrade 18.0 apriori.py merged_modules
+#
+# Renommages OCA hors apriori.py, vérifiés dans les branches OCA :
+# OCA/l10n-france 45682983 'Rename module from account_banking_fr_lcr to account_payment_fr_lcr'
+# (présent en 17.0, absent en 18.0 ; account_payment_fr_lcr 18.0.1.2.0)
+- ["account_banking_fr_lcr", "renamed", "account_payment_fr_lcr"]
+# OCA/stock-logistics-workflow a24d6e1ec '[MIG] product_customerinfo_picking: Migration to
+# 18.0 renamed from product_supplierinfo_for_customer_picking' (dernière version : 16.0)
+- ["product_supplierinfo_for_customer_picking", "renamed", "product_customerinfo_picking"]
