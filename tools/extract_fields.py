@@ -20,8 +20,7 @@ import subprocess
 CLASS_RE = re.compile(r"^class\s+\w+\s*\(([^)]*)\)\s*:")
 NAME_RE = re.compile(r"^\s{4}_name\s*=\s*['\"]([\w.]+)['\"]")
 INHERIT_RE = re.compile(r"^\s{4}_inherit\s*=\s*(?:\[\s*)?['\"]([\w.]+)['\"]")
-FIELD_RE = re.compile(r"^\s{4}(\w+)\s*(?::[^=
-]+)?=\s*fields\.(\w+)\(")
+FIELD_RE = re.compile(r"^\s{4}(\w+)\s*(?::[^=\n]+)?=\s*fields\.(\w+)\(")
 ANALYSIS_RE = re.compile(
     r"^(?P<module>\w+)\s*/\s*(?P<model>[\w.]+)\s*/\s*(?P<field>\w+)\s*\((?P<type>\w+)\)\s*:\s*DEL\b(?P<rest>.*)$"
 )
