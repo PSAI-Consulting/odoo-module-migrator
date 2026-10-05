@@ -195,4 +195,32 @@ def render_summary(reports, init_version, target_version):
             f"| [{report.name}]({report.name}.md) | {report.risk} | {len(report.todos)} |"
             f" {len(report.errors)} | {len(report.transformations)} |"
         )
+    # most frequent TODO: what to handle once for all the modules
+    modules_by_todo = collections.defaultdict(set)
+    level_by_todo = {}
+    for report in reports:
+        for entry in report.todos:
+            key = _todo_key(entry.message)
+            modules_by_todo[key].add(report.name)
+            level_by_todo[key] = max(level_by_todo.get(key, 0), LEVELS.get(entry.level, 0))
+    if modules_by_todo:
+        lines += [
+            "",
+            "## TODO les plus fréquents",
+            "",
+            "| Modules | Niveau | TODO |",
+            "|---|---|---|",
+        ]
+        ranked = sorted(modules_by_todo.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        for key, modules in ranked[:30]:
+            level = "erreur" if level_by_todo[key] >= 2 else "à vérifier"
+            lines.append(f"| {len(modules)} | {level} | {key.replace('|', '/')} |")
     return "\n".join(lines) + "\n"
+
+
+def _todo_key(message):
+    """Message without what is specific to one place (the context of a field
+    usage, the field of a view anchor...), to group the same change."""
+    message = re.sub(r"\s*\((?:self|rec|record|[a-z_]+)\.\w+\)|\s*\(\.\w+\(\{?\[?\.\.\.\]?\}?\)\)", "", message)
+    message = re.sub(r"\s*\((?:@api\.\w+|<record model=[\w.]+>|view of [\w.]+|xpath of a view of [\w.]+|related=)\)", "", message)
+    return message.strip()
