@@ -8,3 +8,6 @@
   '@api\.model_create_single\b': "[19] @api.model_create_single was removed: use @api.model_create_multi and handle a list of values"
   '\b_transient_max_(?:count|hours)\b': "[19] _transient_max_count / _transient_max_hours were removed: transient records are vacuumed by the ORM settings"
   '\bfrom odoo\.tools\.translate import[^\n]*\btrans_load': "[19] trans_load() / trans_load_data() were removed"
+  # 18.0 odoo/fields.py « def first(records) » : absent de 19.0 (odoo.fields devient un package,
+  # odoo 0a5b1f96b81 '[REF] core: odoo.orm package')
+  '\bfrom odoo\.fields import [^\n]*\bfirst\b|\bfields\.first\(': "[19] odoo.fields.first() was removed: use records[:1] (or next(iter(records)))"

@@ -309,3 +309,13 @@ def test_core_api_errors_190_200():
     # no false positive on look-alike names
     assert not hits("def flatten(self, items):\n    return my_flatten(items)\n")
     assert not hits("self.check_access('read')\nself.has_access('write')\n")
+
+
+def test_user_has_groups_170_180():
+    path = f"{SCRIPTS}/text_replaces/migrate_170_180/core_api.yaml"
+    text = "if self.user_has_groups('base.group_user'):\n    rec.sudo().user_has_groups('x.g,!x.h')\n"
+    new = _apply_yaml(path, ".py", text)
+    # self.user_has_groups: left to replace_user_has_groups (has_group for one group)
+    assert new == ("if self.user_has_groups('base.group_user'):\n"
+                   "    rec.sudo().env.user.has_groups('x.g,!x.h')\n")
+    assert _apply_yaml(path, ".py", new) == new
