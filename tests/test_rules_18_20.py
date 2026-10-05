@@ -3,6 +3,7 @@
 
 import re
 
+import pytest
 import yaml
 
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180 import (
@@ -425,9 +426,10 @@ def test_curated_field_renames_180_190(tmp_path):
     assert (module / "models.py").read_text() == py
 
 
-def test_js_and_view_rules_170_180_no_false_positive():
-    errors = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_170_180/js_modules.yaml", encoding="utf-8"))
-    views = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_170_180/views.yaml", encoding="utf-8"))
+@pytest.mark.parametrize("step", ["migrate_170_180", "migrate_180_190"])
+def test_js_and_view_rules_no_false_positive(step):
+    errors = yaml.safe_load(open(f"{SCRIPTS}/text_errors/{step}/js_modules.yaml", encoding="utf-8"))
+    views = yaml.safe_load(open(f"{SCRIPTS}/text_errors/{step}/views.yaml", encoding="utf-8"))
     js = ('import { registry } from "@web/core/registry";\n'
           'import { useService } from "@web/core/utils/hooks";\n'
           'import { _t } from "@web/core/l10n/translation";\n')
