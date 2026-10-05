@@ -393,7 +393,8 @@ class BaseMigrationScript:
     def handle_renamed_models(self, renamed_models: List[Tuple]) -> Dict[str, Any]:
         """Returns dictionary of all replaces / warnings / errors produced by a model renamed."""
         res = {"replaces": {}, "warnings": {}, "errors": {}}
-        for old_model_name, new_model_name, more_info in renamed_models:
+        # first rule wins (curated.yaml is loaded before generated.yaml)
+        for old_model_name, new_model_name, more_info in reversed(renamed_models):
             old_table_name = old_model_name.replace(".", "_")
             new_table_name = new_model_name.replace(".", "_")
             old_name_esc = re.escape(old_model_name)
@@ -424,7 +425,8 @@ class BaseMigrationScript:
     def handle_removed_models(self, removed_models: List[Tuple]) -> Dict[str, Any]:
         """Returns dictionary of all replaces / warnings / errors produced by a model removed/deprecated."""
         res = {"replaces": {}, "warnings": {}, "errors": {}}
-        for model_name, more_info in removed_models:
+        # first rule wins (curated.yaml is loaded before generated.yaml)
+        for model_name, more_info in reversed(removed_models):
             table_name = model_name.replace(".", "_")
             model_name_esc = re.escape(model_name)
 

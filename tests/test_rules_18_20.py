@@ -319,3 +319,28 @@ def test_user_has_groups_170_180():
     assert new == ("if self.user_has_groups('base.group_user'):\n"
                    "    rec.sudo().env.user.has_groups('x.g,!x.h')\n")
     assert _apply_yaml(path, ".py", new) == new
+
+
+def test_model_rules_190_200(tmp_path, caplog):
+    import logging
+
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import MigrationScript
+
+    script = MigrationScript()
+    script.parse_rules()
+    path = tmp_path / "models.py"
+    path.write_text(
+        "types = self.env['hr.contract.type'].search([])\n"
+        "other = self.env['hr.contract.type.x']\n"
+        "scraps = self.env['stock.scrap']\n"
+    )
+    with caplog.at_level(logging.WARNING):
+        script.process_file(str(tmp_path), "models.py", ".py", {}, tmp_path, False)
+    text = path.read_text()
+    assert "self.env['hr.employee.type'].search([])" in text
+    assert "'hr.contract.type.x'" in text
+    # curated message wins over the generated one
+    assert any("stock.scrap" in r.getMessage() and "stock.move records" in r.getMessage()
+               for r in caplog.records)
+    script.process_file(str(tmp_path), "models.py", ".py", {}, tmp_path, False)
+    assert path.read_text() == text
