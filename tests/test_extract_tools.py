@@ -213,3 +213,22 @@ def test_regex_fallback_for_newer_syntax():
     ]
     parents = ef.model_parents(files)
     assert parents["mrp.bom"] == {"mail.thread", "product.catalog.mixin", "product.template"}
+
+
+def test_ground_truth_similarity(tmp_path):
+    import ground_truth as gt
+
+    def module(name, text):
+        path = tmp_path / name / "m"
+        (path / "views").mkdir(parents=True)
+        (path / "views" / "v.xml").write_text(text)
+        (path / "i18n").mkdir()
+        (path / "i18n" / "fr.po").write_text("ignored")
+        return path
+
+    original = module("o", "<tree>\n<field name='a'/>\n\n<field name='b'/>\n</tree>\n")
+    migrated = module("m", "<list>\n<field name='a'/>\n<field name='b'/>\n</list>\n")
+    expected = module("e", "<list>\n<field name='a'/>\n<field name='c'/>\n</list>\n")
+    assert gt.similarity(original, expected) == (1, 4)
+    assert gt.similarity(migrated, expected) == (3, 4)
+    assert gt.missed(original, migrated, expected) == {"<field name='b'/>": 1}
