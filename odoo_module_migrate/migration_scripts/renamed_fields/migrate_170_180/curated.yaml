@@ -1,0 +1,48 @@
+# Renommages 17.0 -> 18.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
+#
+# Renommages 17.0 -> 18.0 hors OpenUpgrade (tools/extract_changes.py fields --sources,
+# odoo + fork Enterprise), vérifiés modèle par modèle (champs avant / après le commit et en 18.0) :
+# odoo 3813b09321c '[FIX] account: preserve Label for Payment Term Journal Items' : même One2many pos.session, déplacé de l10n_in_pos vers point_of_sale
+- ["account.move", "l10n_in_pos_session_ids", "pos_session_ids", "odoo 3813b09321c '[FIX] account: preserve Label for Payment Term Journal Items'"]
+# odoo acf78c27b12 '[ADD] pos_customer_display: create standalone app' : même image (1920 px, libellé Background Image)
+- ["pos.config", "iface_customer_facing_display_background_image_1920", "customer_display_bg_img", "odoo acf78c27b12 '[ADD] pos_customer_display: create standalone app'"]
+- ["res.config.settings", "pos_iface_customer_facing_display_background_image_1920", "pos_customer_display_bg_img", "odoo acf78c27b12 '[ADD] pos_customer_display: create standalone app'"]
+# odoo 9b1908eb989 '[IMP] point_of_sale,*: add sound and update field' : description HTML du produit, déplacée de pos_self_order vers point_of_sale
+- ["product.template", "description_self_order", "public_description", "odoo 9b1908eb989 '[IMP] point_of_sale,*: add sound and update field'"]
+# odoo 5c0d0f505dd '[IMP] l10n_es_edi_tbai: remove dependency to account_edi' : même sélection (agence fiscale SII)
+- ["res.company", "l10n_es_edi_tax_agency", "l10n_es_sii_tax_agency", "odoo 5c0d0f505dd '[IMP] l10n_es_edi_tbai: remove dependency to account_edi'"]
+- ["res.config.settings", "l10n_es_edi_tax_agency", "l10n_es_sii_tax_agency", "odoo 5c0d0f505dd '[IMP] l10n_es_edi_tbai: remove dependency to account_edi'"]
+# odoo 087b3ed433c '[REF] account_sepa: rename module to account_iso20022' : module account_sepa renommé account_iso20022
+- ["res.config.settings", "module_account_sepa", "module_account_iso20022", "odoo 087b3ed433c '[REF] account_sepa: rename module to account_iso20022'"]
+# odoo 087c48c4ed2 '[IMP] delivery, website_sale{_collect}, *: add Click & Collect' : module website_sale_picking renommé website_sale_collect (apriori.py 18.0)
+- ["res.config.settings", "module_website_sale_picking", "module_website_sale_collect", "odoo 087c48c4ed2 '[IMP] delivery, website_sale{_collect}, *: add Click & Collect'"]
+# odoo 8b8bc0724f7 '[IMP] account_peppol: refactor partner verification' : même sélection (not_verified, not_valid, not_valid_format, valid)
+- ["res.partner", "account_peppol_verification_label", "peppol_verification_state", "odoo 8b8bc0724f7 '[IMP] account_peppol: refactor partner verification'"]
+# odoo 545d5875987 '[MOV] sale,website_sale: move linked line logic to sale' : même One2many sale.order.line (inverse linked_line_id), déplacé dans sale
+- ["sale.order.line", "option_line_ids", "linked_line_ids", "odoo 545d5875987 '[MOV] sale,website_sale: move linked line logic to sale'"]
+# enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency' : préfixe l10n_au_kp_ -> employment_hero_ (module rendu indépendant de l10n_au)
+- ["account.account", "l10n_au_kp_account_identifier", "employment_hero_account_identifier", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["account.account", "l10n_au_kp_enable", "employment_hero_enable", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["account.move", "l10n_au_kp_payrun_identifier", "employment_hero_payrun_identifier", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["account.tax", "l10n_au_kp_enable", "employment_hero_enable", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["account.tax", "l10n_au_kp_tax_identifier", "employment_hero_tax_identifier", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["res.company", "l10n_au_kp_enable", "employment_hero_enable", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["res.company", "l10n_au_kp_journal_id", "employment_hero_journal_id", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["res.company", "l10n_au_kp_lock_date", "employment_hero_lock_date", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["res.config.settings", "l10n_au_kp_enable", "employment_hero_enable", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["res.config.settings", "l10n_au_kp_journal_id", "employment_hero_journal_id", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+- ["res.config.settings", "l10n_au_kp_lock_date", "employment_hero_lock_date", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]
+# enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize' : account_sepa renommé account_iso20022 : champs normalisés
+- ["account.batch.payment", "sct_batch_booking", "iso20022_batch_booking", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]
+- ["res.company", "account_sepa_lei", "iso20022_lei", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]
+- ["res.config.settings", "module_hr_payroll_account_sepa", "module_hr_payroll_account_iso20022", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]
+# enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll' : rapport de paiement de paie uniformisé (même type)
+- ["hr.payslip", "sepa_export", "payment_report", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]
+- ["hr.payslip", "sepa_export_date", "payment_report_date", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]
+- ["hr.payslip", "sepa_export_filename", "payment_report_filename", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]
+- ["hr.payslip.run", "sepa_export", "payment_report", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]
+- ["hr.payslip.run", "sepa_export_date", "payment_report_date", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]
+- ["hr.payslip.run", "sepa_export_filename", "payment_report_filename", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]
+# enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions' : même Many2many documents.tag, même table product_tags_table
+- ["res.company", "product_tags", "product_tag_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]
+- ["res.config.settings", "product_tags", "product_tag_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]

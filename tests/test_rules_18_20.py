@@ -352,3 +352,23 @@ def test_product_type_warning_170_180():
     assert not any(re.search(p, '{"display_type": "product", "type": "consu"}') for p in rules[".py"])
     assert any(re.search(p, '<field name="type">product</field>') for p in rules[".xml"])
     assert not any(re.search(p, '<field name="type">consu</field>') for p in rules[".xml"])
+
+
+def test_curated_field_renames_170_180(tmp_path):
+    from odoo_module_migrate.migration_scripts.migrate_170_180 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    (module / "views").mkdir(parents=True)
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['point_of_sale']}")
+    (module / "views" / "views.xml").write_text(
+        '<odoo><record id="v" model="ir.ui.view"><field name="model">pos.config</field>'
+        '<field name="arch" type="xml"><field name="iface_customer_facing_display_background_image_1920"/>'
+        '</field></record></odoo>'
+    )
+    script = MigrationScript()
+    script.parse_rules()
+    script.handle_fields(module)
+    xml = (module / "views" / "views.xml").read_text()
+    assert '<field name="customer_display_bg_img"/>' in xml
+    script.handle_fields(module)
+    assert (module / "views" / "views.xml").read_text() == xml
