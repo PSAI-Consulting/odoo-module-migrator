@@ -4,27 +4,15 @@ import ast
 import json
 import re
 from io import BytesIO
-import logging
-from typing import Any, List
 
 from lxml import etree
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
-# Pre-compile regex patterns
-RE_IMPORT_EXPRESSION = re.compile(r"from odoo\.osv import expression")
-RE_IMPORT_AND_OR = re.compile(r"from odoo\.osv\.expression import (AND|OR|AND, OR|OR, AND)")
-RE_EXPR_AND = re.compile(r"expression\.AND\(")
-RE_EXPR_OR = re.compile(r"expression\.OR\(")
-RE_BARE_AND_PREFIX = re.compile(r"(?<!\.)AND\(")
-RE_BARE_OR_PREFIX = re.compile(r"(?<!\.)OR\(")
-RE_IMPORT_FIELDS_DOMAIN = re.compile(r"from odoo\.fields import Domain, (AND|OR|AND, OR|OR, AND)")
-RE_SQL_CONSTRAINTS = re.compile(r"\b_sql_constraints\s*=\s*\[([^\]]+)]")
-
 
 def migrate_expression_to_domain(
-    logger: logging.Logger, module_path: Any, module_name: str, manifest_path: Any, migration_steps: List[Any], tools: Any
-) -> None:
+    logger, module_path, module_name, manifest_path, migration_steps, tools
+):
     """Convert odoo.osv.expression usage to odoo.fields.Domain"""
     files_to_process = tools.get_files(module_path, (".py",))
 
@@ -33,18 +21,30 @@ def migrate_expression_to_domain(
             content = tools._read_content(file)
             original_content = content
 
-            content = RE_IMPORT_EXPRESSION.sub("from odoo.fields import Domain", content)
-            content = RE_IMPORT_AND_OR.sub("from odoo.fields import Domain", content)
-            content = RE_EXPR_AND.sub("Domain.AND(", content)
-            content = RE_EXPR_OR.sub("Domain.OR(", content)
-            
-            # These might be risky if AND/OR are used for other things, but kept as per original logic
-            content = RE_BARE_AND_PREFIX.sub("Domain.AND(", content)
-            content = RE_BARE_OR_PREFIX.sub("Domain.OR(", content)
+            content = re.sub(
+                r"from odoo\.osv import expression",
+                "from odoo.fields import Domain",
+                content,
+            )
 
-            content = RE_IMPORT_FIELDS_DOMAIN.sub("from odoo.fields import Domain", content)
+            content = re.sub(
+                r"from odoo\.osv\.expression import (AND|OR|AND, OR|OR, AND)",
+                "from odoo.fields import Domain",
+                content,
+            )
 
-            # Cleanup duplicate imports
+            content = re.sub(r"expression\.AND\(", "Domain.AND(", content)
+            content = re.sub(r"expression\.OR\(", "Domain.OR(", content)
+
+            content = re.sub(r"(?<!\.)AND\(", "Domain.AND(", content)
+            content = re.sub(r"(?<!\.)OR\(", "Domain.OR(", content)
+
+            content = re.sub(
+                r"from odoo\.fields import Domain, (AND|OR|AND, OR|OR, AND)",
+                "from odoo.fields import Domain",
+                content,
+            )
+
             lines = content.split("\n")
             seen_domain_import = False
             cleaned_lines = []
@@ -68,15 +68,28 @@ def migrate_expression_to_domain(
 
 
 def upgrade_sql_constraints(
-    logger: logging.Logger, module_path: Any, module_name: str, manifest_path: Any, migration_steps: List[Any], tools: Any
-) -> None:
+    logger, module_path, module_name, manifest_path, migration_steps, tools
+):
     # Odoo method in which we migrate all occurrences of _sql_constraints
     files_to_process = tools.get_files(module_path, (".py",))
+    # Regex pattern explanation:
+    # (?m) - Multiline mode, ^ matches start of each line
+    # ^(?![ \t]*#) - Negative lookahead: exclude lines starting with # (comments)
+    # ([ \t]*) - Capture group 1: leading spaces/tabs (NOT newlines to avoid extra blank lines)
+    # \b_sql_constraints\s*=\s*\[ - Match "_sql_constraints = ["
+    # ([^\]]+) - Capture group 2: constraint content (everything until the closing bracket)
+    # ] - Match closing bracket
+    # re.DOTALL - Allow . to match newlines for multi-line constraints
+    sql_expression_re = re.compile(
+        r"(?m)^(?![ \t]*#)([ \t]*)\b_sql_constraints\s*=\s*\[([^\]]+)]", re.DOTALL
+    )
     ind = " " * 4
 
     # Function to build the new SQL constraint definition
-    def build_sql_object(match: re.Match) -> str:
-        constraints = ast.literal_eval("[" + match.group(1) + "]")
+    def build_sql_object(match):
+        # Preserve the original indentation level (e.g., 2 spaces, 4 spaces, 8 spaces for nested classes)
+        leading_indent = match.group(1)
+        constraints = ast.literal_eval("[" + match.group(2) + "]")
         result = []
         for name, definition, *messages in constraints:
             message = messages[0] if messages else ""
@@ -91,21 +104,21 @@ def upgrade_sql_constraints(
                 args = f"\n{ind * 2}{definition!r}"
             else:
                 args = repr(definition)
-            result.append(f"_{name} = models.{constructor}({args})")
-        return f"\n{ind}".join(result)
+            result.append(f"{leading_indent}_{name} = models.{constructor}({args})")
+        return "\n".join(result)
 
     # Process each file
     for file in files_to_process:
         content = tools._read_content(file)
-        content = RE_SQL_CONSTRAINTS.sub(build_sql_object, content)
-        if RE_SQL_CONSTRAINTS.search(content):
+        content = sql_expression_re.sub(build_sql_object, content)
+        if sql_expression_re.search(content):
             logger.warning("Failed to replace sql_constraints")
         tools._write_content(file, content)
 
 
 def _remove_group_attrs_in_search_views(
-    logger: logging.Logger, module_path: Any, module_name: str, manifest_path: Any, migration_steps: List[Any], tools: Any
-) -> None:
+    logger, module_path, module_name, manifest_path, migration_steps, tools
+):
     """Remove `expand` and `string` attributes from <group> tags when they
     are inside a <search> view.
     """

@@ -2,7 +2,7 @@
 
 {
     "name": "Module name",
-    "version": "17.0.1.0.0",
+    "version": "18.0.1.0.0",
     "installable": False,
     'license': 'AGPL-3',
     'depends': [
@@ -10,6 +10,5 @@
     ],
     'data': [
         'views/res_partner.xml',
-        'views/product_template_view.xml',
     ],
 }

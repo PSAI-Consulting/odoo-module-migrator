@@ -50,6 +50,14 @@ class ModuleMigration:
                 raise_error=False,
             )
 
+        # Run pre-commit before final commit to format any changes made during migration scripts execution
+        if os.path.exists(".pre-commit-config.yaml") and self._migration._pre_commit:
+            _execute_shell(
+                "pre-commit run -a",
+                path=self._migration._directory_path,
+                raise_error=False,
+            )
+
         self._commit_changes(
             "[MIG] %s: Migration to %s"
             % (
