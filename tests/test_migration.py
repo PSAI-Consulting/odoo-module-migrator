@@ -68,11 +68,12 @@ class TestMigration(unittest.TestCase):
         log_content = _read_content(str(self._working_path / "test_log.log"))
 
         required_logs = [
-            ("ERROR", "web_kanban_sparkline.*should remove the dependency"),
-            ("WARNING", "Replaced.*account_analytic_analysis.*contract'"),
+            ("INFO", r"web_kanban_sparkline' removed \(merged into 'web', already a dependency"),
+            ("INFO", r"account_analytic_analysis' replaced by 'contract' \(oca_moved"),
+            ("WARNING", "Check that 'contract' is available"),
             ("ERROR", "deprecated decorator.*@api.cr"),
             ("ERROR", "ir.values.*removed"),
-            ("ERROR", "removed module.*account_anglo_saxon"),
+            ("ERROR", "account_anglo_saxon', removed from Odoo"),
         ]
 
         for required_log in required_logs:

@@ -12,7 +12,7 @@ from typing import Dict, List, Any, Tuple
 from .config import _ALLOWED_EXTENSIONS
 from .tools import _rename_path, _replace_in_file, _read_content, _write_content
 from .log import logger
-from . import tools
+from . import manifest, tools
 
 
 class BaseMigrationScript:
@@ -288,61 +288,22 @@ class BaseMigrationScript:
         return {"warnings": res}
 
     def handle_deprecated_modules(self, manifest_path: pathlib.Path, deprecated_modules: List[Any]) -> None:
-        current_manifest_text = _read_content(manifest_path)
-        new_manifest_text = current_manifest_text
-        for items in deprecated_modules:
-            old_module = items[0]
-            action = items[1]
-            new_module = items[2] if len(items) > 2 else None
-            
-            old_module_pattern = r"('|\"){0}('|\")".format(old_module)
-            replace_pattern = ""
-            if new_module:
-                new_module_pattern = r"('|\"){0}('|\")".format(new_module)
-                replace_pattern = r"\1{0}\2".format(new_module)
-
-            if not re.findall(old_module_pattern, new_manifest_text):
-                continue
-
-            if action == "removed":
-                logger.error("Depends on removed module '%s'" % (old_module))
-
-            elif action == "renamed" and new_module:
-                new_manifest_text = re.sub(
-                    old_module_pattern, replace_pattern, new_manifest_text
-                )
-                logger.info(
-                    "Replaced dependency of '%s' by '%s'." % (old_module, new_module)
-                )
-
-            elif action == "oca_moved" and new_module:
-                new_manifest_text = re.sub(
-                    old_module_pattern, replace_pattern, new_manifest_text
-                )
-                logger.warning(
-                    "Replaced dependency of '%s' by '%s' (%s)\n"
-                    "Check that '%s' is available on your system."
-                    % (old_module, new_module, items[3] if len(items) > 3 else "moved", new_module)
-                )
-
-            elif action == "merged" and new_module:
-                if not re.findall(new_module_pattern, new_manifest_text):
-                    # adding dependency of the merged module
-                    new_manifest_text = re.sub(
-                        old_module_pattern, replace_pattern, new_manifest_text
-                    )
-                    logger.info(
-                        "'%s' merged in '%s'. Replacing dependency."
-                        % (old_module, new_module)
-                    )
-                else:
-                    logger.error(
-                        "'%s' merged in '%s'. You should remove the"
-                        " dependency to '%s' manually."
-                        % (old_module, new_module, old_module)
-                    )
-        if current_manifest_text != new_manifest_text:
-            _write_content(manifest_path, new_manifest_text)
+        """Rewrite the 'depends' of the manifest for removed / renamed /
+        merged modules (rules of deprecated_modules/migrate_XXX_YYY/*.yaml)."""
+        if not deprecated_modules or not manifest_path or not manifest_path.exists():
+            return
+        text = _read_content(manifest_path)
+        try:
+            depends = manifest.get_depends(text)
+            new_depends, messages = manifest.apply_module_rules(depends, deprecated_modules)
+            if new_depends != depends:
+                text = manifest.rewrite_depends(text, new_depends)
+        except manifest.ManifestError as e:
+            logger.error("%s: dependencies not checked (%s)", manifest_path, e)
+            return
+        for level, message in messages:
+            getattr(logger, level)("%s. File %s" % (message, manifest_path))
+        _write_content(manifest_path, text)
 
     def handle_renamed_models(self, renamed_models: List[Tuple]) -> Dict[str, Any]:
         """Returns dictionary of all replaces / warnings / errors produced by a model renamed."""

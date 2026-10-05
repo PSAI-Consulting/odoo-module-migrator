@@ -20,6 +20,10 @@ class ModuleMigration:
         self._module_path = self._migration._directory_path / module_name
 
     def run(self):
+        self.apply_scripts()
+        self.finalize()
+
+    def apply_scripts(self):
         logger.info(
             "[%s] Running migration from %s to %s"
             % (
@@ -29,7 +33,7 @@ class ModuleMigration:
             )
         )
 
-        formats = snapshot_formats(self._module_path)
+        self._formats = snapshot_formats(self._module_path)
 
         # Apply migration script
         for migration_script in self._migration._migration_scripts:
@@ -42,7 +46,8 @@ class ModuleMigration:
                 self._migration._commit_enabled,
             )
 
-        restore_formats(formats)
+    def finalize(self):
+        restore_formats(self._formats)
 
         # Run pre-commit before final commit to format any changes made
         # during migration scripts execution

@@ -11,7 +11,9 @@ import subprocess
 from .config import _AVAILABLE_MIGRATION_STEPS, _MANIFEST_NAMES
 from .exception import ConfigException
 from .log import logger
+from . import tools
 from .tools import _run, _get_latest_version_code
+from .upgrade_code import run_upgrade_code
 from .module_migration import ModuleMigration
 from .base_migration_script import BaseMigrationScript
 
@@ -29,6 +31,8 @@ class Migration:
         pre_commit=True,
         remove_migration_folder=True,
         no_oca_modules=False,
+        upgrade_code_options=None,
+        dry_run=False,
     ):
         if not module_names:
             module_names = []
@@ -36,6 +40,9 @@ class Migration:
         self._pre_commit = pre_commit
         self._remove_migration_folder = remove_migration_folder
         self._no_oca_modules = no_oca_modules
+        self._upgrade_code_options = upgrade_code_options
+        self._dry_run = dry_run
+        self.upgrade_code_result = None
         self._migration_steps = []
         self._migration_scripts = []
         self._module_migrations = []
@@ -225,5 +232,28 @@ class Migration:
         init_version = self._migration_steps[0]["init_version_name"]
         target_version = self._migration_steps[-1]["target_version_name"]
         logger.debug(f"Running migration from {init_version} to {target_version} in '{self._directory_path.resolve()}'")
-        for module_migration in self._module_migrations:
-            module_migration.run()
+        # Rules of the migrator itself, then the official scripts of the
+        # target Odoo on all the modules at once, then format / commit
+        tools.RUN_CONTEXT["upgrade_code"] = bool(self._upgrade_code_options)
+        try:
+            for module_migration in self._module_migrations:
+                module_migration.apply_scripts()
+            if self._upgrade_code_options:
+                self._run_upgrade_code()
+            for module_migration in self._module_migrations:
+                module_migration.finalize()
+        finally:
+            tools.RUN_CONTEXT.clear()
+
+    def _run_upgrade_code(self):
+        init_version = self._migration_steps[0]["init_version_name"]
+        target_version = self._migration_steps[-1]["target_version_name"]
+        if float(target_version) < 18:
+            logger.info("upgrade_code: no official script before 18.0, skipped")
+            return
+        self.upgrade_code_result = run_upgrade_code(
+            self._upgrade_code_options,
+            [m._module_path for m in self._module_migrations],
+            init_version,
+            target_version,
+        )

@@ -1,0 +1,7 @@
+# Règles écrites à la main : prioritaires sur modules.yaml (généré), que
+# tools/extract_changes.py régénère sans toucher à ce fichier.
+#
+# odoo 2be8edf4f2c0 "[IMP] base_*, account_*,l10n_*: decouple VAT validation" :
+# la validation hors ligne des n° de TVA passe dans base, la validation VIES
+# dans le nouveau module l10n_eu_account_vies (option vat_check_vies).
+- ["base_vat", "merged", "base"]

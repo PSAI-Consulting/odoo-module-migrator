@@ -101,7 +101,18 @@ def _read_rules(xml_files, module_name: str, logger: logging.Logger) -> list:
 def convert_access_to_ir_access(
     logger: logging.Logger, module_path: Any, module_name: str, manifest_path: Any, migration_steps: List[Any], tools: Any
 ) -> None:
-    """Convert ir.model.access.csv + ir.rule records into security/ir.access.csv"""
+    """Convert ir.model.access.csv + ir.rule records into security/ir.access.csv
+
+    Fallback only: when the Odoo sources are given (--odoo-root), Odoo's
+    official 19.4-00-ir-access.py does it, taking the group hierarchy
+    (implied_ids) into account, which this function does not.
+    """
+    if tools.RUN_CONTEXT.get("upgrade_code"):
+        return
+    logger.warning(
+        "[ir.access] Fallback conversion (implied groups are ignored): give "
+        "--odoo-root to use Odoo's official 19.4-00-ir-access.py instead"
+    )
     acl_files = [f for f in tools.get_files(module_path, (".csv",)) if f.name == "ir.model.access.csv"]
     xml_files = tools.get_files(module_path, (".xml",))
     rules = _read_rules(xml_files, module_name, logger)

@@ -11,7 +11,6 @@
         'contract',
         'account',
         'account_check_printing',
-        'web_kanban_sparkline',
         'web',
             ],
 }

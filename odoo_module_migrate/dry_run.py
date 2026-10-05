@@ -58,7 +58,7 @@ def module_diff(before_root, after_root, label):
     return "".join(chunks)
 
 
-def run_dry(args, module_names, out=None):
+def run_dry(args, module_names, upgrade_code_options=None, out=None):
     out = out or sys.stdout
     source = pathlib.Path(args.directory).resolve()
     if not module_names:
@@ -80,6 +80,7 @@ def run_dry(args, module_names, out=None):
             False,  # pre_commit
             args.remove_migration_folder,
             args.no_oca_modules,
+            upgrade_code_options=upgrade_code_options,
         )
         migration.run()
         for name in module_names:

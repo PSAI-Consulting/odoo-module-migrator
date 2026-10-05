@@ -67,6 +67,10 @@ def _execute_shell(shell_command, path=None, raise_error=True):
 # File I/O preserving the original format (encoding, BOM, line endings)
 # ---------------------------------------------------------------------------
 
+# Options of the current run readable by the migration scripts, e.g.
+# RUN_CONTEXT["upgrade_code"]: Odoo's official scripts will run afterwards
+RUN_CONTEXT = {}
+
 # path -> (encoding, bom, newline) of the file as it was first read
 _FILE_FORMATS = {}
 # absolute paths of the files written during the run (for the report)

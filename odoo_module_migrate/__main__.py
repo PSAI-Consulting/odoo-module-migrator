@@ -82,6 +82,29 @@ def get_parser():
              "diff, without writing anything in the target directory.",
     )
 
+    group = main_parser.add_argument_group(
+        "Odoo official scripts (odoo/upgrade_code, Odoo >= 18)"
+    )
+    group.add_argument(
+        "--odoo-root", type=str,
+        help="Sources of the TARGET Odoo (e.g. D:\\Odoo\\odoo\\20.0). Enables\n"
+             "the official upgrade_code scripts (ir.access, OWL 3, t-call...).",
+    )
+    group.add_argument(
+        "--odoo-python", type=str,
+        help="Python able to import the target Odoo (Odoo 20: Python >= 3.12).",
+    )
+    group.add_argument(
+        "--addons-path", type=str,
+        help="Reference addons, comma separated (default: enterprise and\n"
+             "design-themes next to --odoo-root, e.g. D:\\Odoo\\enterprise\\20.0).",
+    )
+    group.add_argument(
+        "--context-path", type=str,
+        help="Other custom addons directories where dependencies of the\n"
+             "migrated modules are looked for (read only).",
+    )
+
     main_parser.add_argument(
         "--oca-file-list",
         action="store_true",
@@ -107,9 +130,17 @@ def main(args=None):
     try:
         module_names = [x.strip() for x in (args.modules or "").split(",") if x.strip()]
 
+        upgrade_code_options = None
+        if args.odoo_root:
+            from .upgrade_code import UpgradeCodeOptions
+            context = ",".join(filter(None, [args.context_path, args.directory]))
+            upgrade_code_options = UpgradeCodeOptions.from_args(
+                args.odoo_root, args.odoo_python, args.addons_path, context
+            )
+
         if args.dry_run:
             from .dry_run import run_dry
-            run_dry(args, module_names)
+            run_dry(args, module_names, upgrade_code_options)
             return
 
         migration = Migration(
@@ -123,6 +154,7 @@ def main(args=None):
             args.pre_commit,
             args.remove_migration_folder,
             args.no_oca_modules,
+            upgrade_code_options=upgrade_code_options,
         )
 
         # run Migration
