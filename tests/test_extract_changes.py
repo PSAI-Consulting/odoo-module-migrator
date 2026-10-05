@@ -25,6 +25,20 @@ def test_target_from_subject(module, subject, expected):
     assert ec.target_from_subject(subject, module, AFTER) == expected
 
 
+def test_promote_candidates():
+    import extract_fields as ef
+
+    confirmed, rest = ef.promote_candidates([
+        ("product.template", "expense_policy", "reinvoice_policy",
+         "odoo 8a5b99545dfa '[CLN] sale: rename `expense_policy` field to `reinvoice_policy`'"),
+        ("sale.order", "has_rented_products", "has_rentable_lines",
+         "enterprise 7cdfe5bd154 '[IMP] sale_renting: switch between SO and RO'"),
+        ("res.partner", "x", "y", "odoo abc '[REF] rename stuff'"),  # old name not cited
+    ])
+    assert [c[1] for c in confirmed] == ["expense_policy"]
+    assert [r[1] for r in rest] == ["has_rented_products", "x"]
+
+
 def test_resolve_chains():
     rules = [("a", "merged", "b", ""), ("b", "merged", "c", ""), ("d", "removed", None, "")]
     assert ec.resolve_chains(rules) == [

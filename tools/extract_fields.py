@@ -175,6 +175,21 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
     return removed, candidates
 
 
+RENAME_SUBJECT_RE = re.compile(r"\brenam(?:e|ed|ing)\b", re.I)
+
+
+def promote_candidates(candidates):
+    """(confirmed, still candidates): a candidate is confirmed when the message
+    of the commit says it is a rename and names the old field."""
+    confirmed, rest = [], []
+    for model, old, new, source in candidates:
+        if RENAME_SUBJECT_RE.search(source) and re.search(rf"\b{re.escape(old)}\b", source):
+            confirmed.append((model, old, new, source))
+        else:
+            rest.append((model, old, new, source))
+    return confirmed, rest
+
+
 def openupgrade_changes(openupgrade_git, ref, models_filter):
     """Renamed fields / models (pre-migration.py) and DEL fields (analysis)."""
     files = read_blobs(
