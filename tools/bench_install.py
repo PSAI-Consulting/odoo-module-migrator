@@ -215,7 +215,9 @@ class Installer:
         })
         print(f"{name:40} {status:7} {results[-1]['error'][:160]}", flush=True)
 
-    def run(self, order, batch_size):
+    def run(self, order, batch_size, isolate=()):
+        """`isolate`: modules likely to fail (errors in their migration
+        report): installed alone, so that they do not make a batch fail."""
         for name in order:
             manifest = ast.literal_eval(
                 (self.directory / name / "__manifest__.py").read_text(encoding="utf-8").lstrip()
@@ -227,13 +229,44 @@ class Installer:
         for name in order:
             # a batch never contains a module and one of its dependencies of
             # the same batch: if the dependency fails, the module is BLOCKED
-            if batch and (len(batch) >= batch_size or set(self.depends[name]) & set(batch)):
+            if batch and (
+                len(batch) >= batch_size or name in isolate
+                or set(self.depends[name]) & set(batch)
+            ):
                 self._install(batch, results, failed)
                 batch = []
+            if name in isolate:
+                self._install([name], results, failed)
+                continue
             batch.append(name)
         if batch:
             self._install(batch, results, failed)
         return results
+
+
+def split_independent(order, depends, workers):
+    """Groups of modules without dependency between groups (connected
+    components of the dependency graph), balanced on `workers` groups."""
+    parent = {name: name for name in order}
+
+    def find(name):
+        while parent[name] != name:
+            parent[name] = parent[parent[name]]
+            name = parent[name]
+        return name
+
+    for name in order:
+        for dep in depends.get(name, []):
+            if dep in parent:
+                parent[find(name)] = find(dep)
+    components = {}
+    for name in order:
+        components.setdefault(find(name), []).append(name)
+    groups = [[] for _ in range(max(1, workers))]
+    for component in sorted(components.values(), key=len, reverse=True):
+        min(groups, key=len).extend(component)
+    position = {name: i for i, name in enumerate(order)}
+    return [sorted(g, key=position.get) for g in groups if g]
 
 
 def topological(directory, names):
@@ -295,6 +328,10 @@ def main(argv=None):
     parser.add_argument("--name", default="run")
     parser.add_argument("--batch-size", type=int, default=12,
                         help="modules installed by one Odoo run (1 = one by one)")
+    parser.add_argument("--isolate", default="",
+                        help="modules installed alone (likely to fail), comma separated")
+    parser.add_argument("--workers", type=int, default=3,
+                        help="independent groups of modules installed in parallel")
     parser.add_argument("--keep-db", action="store_true")
     parser.add_argument("--output", help="JSON result file")
     args = parser.parse_args(argv)
@@ -322,16 +359,34 @@ def main(argv=None):
             if not template.startswith(PREFIX):
                 raise SystemExit(f"--blank-template must start with {PREFIX}")
             ensure_blank_template(options, env, template, addons, odoo_root, args.odoo_python, tmp)
-        conf = write_conf(options, [*addons, str(directory)], db, tmp)
+        isolate = {m for m in args.isolate.split(",") if m}
+        depends = {
+            n: ast.literal_eval(
+                (directory / n / "__manifest__.py").read_text(encoding="utf-8").lstrip()
+            ).get("depends", [])
+            for n in order
+        }
+        groups = split_independent(order, depends, args.workers)
+        results = []
 
-        bench = Installer(options, env, db, conf, odoo_root, args.odoo_python, directory)
-        bench.create_from(template)
-        try:
-            results = bench.run(order, args.batch_size)
-        finally:
-            for name in (db, bench.checkpoint):
-                if name != db or not args.keep_db:
-                    bench.drop(name)
+        def work(index, group):
+            # one database (and one Odoo process at a time) per worker
+            worker_db = db if len(groups) == 1 else f"{db}_w{index}"
+            conf = write_conf(options, [*addons, str(directory)], worker_db, tmp)
+            installer = Installer(options, env, worker_db, conf, odoo_root, args.odoo_python, directory)
+            installer.create_from(template)
+            try:
+                return installer.run(group, args.batch_size, isolate)
+            finally:
+                for name in (worker_db, installer.checkpoint):
+                    if name != worker_db or not args.keep_db:
+                        installer.drop(name)
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=len(groups)) as pool:
+            for group_results in pool.map(work, range(len(groups)), groups):
+                results += group_results
 
     ok = sum(r["status"] == "OK" for r in results)
     blocked = sum(r["status"] == "BLOCKED" for r in results)

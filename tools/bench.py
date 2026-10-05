@@ -163,6 +163,7 @@ def main(argv=None):
     parser.add_argument("--repos", default="D:/Odoo/.repos", help="bare Odoo repositories")
     parser.add_argument("--skip-migration", action="store_true")
     parser.add_argument("--skip-install", action="store_true")
+    parser.add_argument("--workers", type=int, default=3, help="parallel installations")
     args = parser.parse_args(argv)
 
     spec = yaml.safe_load(pathlib.Path(args.bench).read_text(encoding="utf-8"))
@@ -204,10 +205,14 @@ def main(argv=None):
 
     install = []
     if not args.skip_install:
+        # modules with errors in their migration report will probably fail:
+        # installed alone so that they do not make a whole batch fail
+        isolate = [m for m in modules if (_report_summary(work, m)[2] or "0") != "0"]
         run([python, HERE / "bench_install.py", addons,
              "--config", spec["db_config"], "--blank-template", spec["blank_template"],
              "--odoo-root", spec["odoo_root"], "--odoo-python", spec["odoo_python"],
              "--modules", ",".join(modules), "--name", spec["name"],
+             "--isolate", ",".join(isolate), "--workers", str(args.workers),
              "--output", work / "install.json"], check=False)
         install = json.loads((work / "install.json").read_text(encoding="utf-8"))
     write_results(work, spec, modules, install)
