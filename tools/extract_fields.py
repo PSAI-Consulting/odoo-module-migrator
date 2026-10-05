@@ -201,6 +201,9 @@ def target_fields(repos, ref_of):
     return {model: available_fields(model, fields, parents) for model in set(fields) | set(parents)}
 
 
+ADDED_FIELD_RE = re.compile(r"^\+\s+(\w+)\s*=\s*fields\.", re.M)
+
+
 def source_changes(repos, ref_from_of, ref_to_of, models_filter):
     """Removed fields and rename candidates by comparing the sources of all
     the repositories together (a field moved to enterprise is not removed)."""
@@ -218,6 +221,7 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
                 after[model][name] = (ftype, path, repo)
     # a field moved to a parent model / mixin still exists on the model
     parents = model_parents(after_files)
+    added_fields = {}  # (repo, sha): field names added by the commit
     removed, candidates = [], []
     for model, fields in sorted(before.items()):
         if not models_filter(model) or model not in after:
@@ -236,11 +240,10 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
             same_type = [n for n, info in new_fields.items() if info[0] == ftype]
             added_in_commit = []
             if sha and same_type:
-                diff = _git(repo, "show", "--format=", sha).decode("utf-8", "replace")
-                added_in_commit = [
-                    n for n in same_type
-                    if re.search(rf"^\+\s+{re.escape(n)}\s*=\s*fields\.", diff, re.M)
-                ]
+                if (repo, sha) not in added_fields:
+                    diff = _git(repo, "show", "--format=", sha).decode("utf-8", "replace")
+                    added_fields[repo, sha] = set(ADDED_FIELD_RE.findall(diff))
+                added_in_commit = [n for n in same_type if n in added_fields[repo, sha]]
             if len(added_in_commit) == 1:
                 candidates.append((model, name, added_in_commit[0], source))
             else:
@@ -345,6 +348,9 @@ def defined_models(files):
     return result
 
 
+ADDED_NAME_RE = re.compile(r"^\+\s+_name\s*(?::[^=\n]+)?=\s*['\"]([\w.]+)['\"]", re.M)
+
+
 def model_changes(repos, ref_from_of, ref_to_of, models_filter=lambda m: True):
     """(removed, candidates) models between two branches of all the
     repositories together (a model moved to another module still exists).
@@ -369,6 +375,7 @@ def model_changes(repos, ref_from_of, ref_to_of, models_filter=lambda m: True):
         for model, flds in parse_fields(files).items():
             fields_after[model].update(flds)
     new_models = set(after) - set(before)
+    created = {}  # (repo, sha): models whose _name is added by the commit
     removed, candidates = [], []
     for model in sorted(set(before) - set(after)):
         if not models_filter(model):
@@ -387,11 +394,11 @@ def model_changes(repos, ref_from_of, ref_to_of, models_filter=lambda m: True):
         source = f"{repo.name.removesuffix('.git')} {sha} {subject!r}" if sha else path
         added = []
         if sha:
-            diff = _git(repo, "show", "--format=", sha).decode("utf-8", "replace")
+            if (repo, sha) not in created:
+                diff = _git(repo, "show", "--format=", sha).decode("utf-8", "replace")
+                created[repo, sha] = set(ADDED_NAME_RE.findall(diff))
             old_fields = set(fields_before.get(model, ()))
-            for new in sorted(new_models):
-                if not re.search(rf"^\+\s+_name\s*(:[^=]+)?=\s*['\"]{re.escape(new)}['\"]", diff, re.M):
-                    continue
+            for new in sorted(new_models & created[repo, sha]):
                 common = old_fields & set(fields_after.get(new, ()))
                 if old_fields and len(common) * 2 >= len(old_fields):
                     added.append(new)
