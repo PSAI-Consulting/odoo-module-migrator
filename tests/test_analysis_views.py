@@ -56,6 +56,7 @@ def test_other_anchors_templates_and_xmlids(tmp_path):
         '<template id="t1" inherit_id="web.layout"><xpath expr="//t[@t-set=\'head_web\']" position="after"/></template>',
         '<template id="t2" inherit_id="web.layout"><xpath expr="//t[@t-set=\'gone\']" position="after"/></template>',
         _view("v1", "web.form", "<xpath expr=\"//button[@name='action_ok']\" position=\"after\"/>"),
+        _view("v3", "web.form", "<xpath expr=\"//div[@name='buttons']/button[@name='action_ok']\" position=\"after\"/>"),
         _view("v2", "web.form", '<button name="action_gone" position="after"><span/></button>'),
         '<record id="web.menu_x" model="ir.ui.menu"><field name="active" eval="False"/></record>',
         '<record id="web.menu_gone" model="ir.ui.menu"><field name="active" eval="False"/></record>',

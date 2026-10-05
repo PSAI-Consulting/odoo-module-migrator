@@ -308,6 +308,18 @@ class Migration:
             ):
                 logger.error("[view] %s. File %s:%s" % (message, path, line))
 
+        # models inherited / used as comodel that do not exist in the target
+        from .analysis import models
+
+        model_index = models.ModelIndex.build(
+            reference + list(options.context_path) + [self._directory_path]
+        )
+        for module_migration in self._module_migrations:
+            for path, line, message in models.check_module(
+                module_migration._module_path, model_index
+            ):
+                logger.error("%s. File %s:%s" % (message, path, line))
+
     def _run_upgrade_code(self):
         init_version = self._migration_steps[0]["init_version_name"]
         target_version = self._migration_steps[-1]["target_version_name"]

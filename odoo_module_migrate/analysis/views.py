@@ -97,18 +97,27 @@ def _keys(arch):
     return keys
 
 
-def _last_step(expr):
-    """Last step of a simple xpath, '//a/b[@name="x"]' -> ('b', 'name', 'x')."""
-    depth, cut = 0, -1
-    for i, char in enumerate(expr):
+def _steps(expr):
+    """Simple steps of an xpath: '//page[@name="a"]/field[@name="b"]/list'
+    -> [('page', 'name', 'a'), ('field', 'name', 'b')] (other steps skipped)."""
+    parts, depth, current = [], 0, ""
+    for char in expr:
         if char == "[":
             depth += 1
         elif char == "]":
             depth -= 1
-        elif char == "/" and depth == 0:
-            cut = i
-    match = STEP_RE.match(expr[cut + 1:].strip())
-    return (match.group(1), match.group(2), match.group(4)) if match else None
+        if char == "/" and depth == 0:
+            parts.append(current)
+            current = ""
+        else:
+            current += char
+    parts.append(current)
+    result = []
+    for part in parts:
+        match = STEP_RE.match(part.strip())
+        if match:
+            result.append((match.group(1), match.group(2), match.group(4)))
+    return result
 
 
 class ViewIndex:
@@ -204,10 +213,12 @@ def _anchors(arch):
         if not isinstance(node.tag, str):
             continue
         if node.tag == "xpath":
-            step = _last_step(node.get("expr") or "")
-            # only the attributes of the index can be checked (no false positive)
-            if step and step[1] in ANCHOR_ATTRS:
-                yield node, step
+            # every step of the path must exist (e.g. a removed x2many field in
+            # the middle of the path); only the attributes of the index can be
+            # checked (no false positive)
+            for step in _steps(node.get("expr") or ""):
+                if step[1] in ANCHOR_ATTRS:
+                    yield node, step
         elif node.get("position") and node.tag not in ("data",):
             for attr in ANCHOR_ATTRS:
                 if node.get(attr):
