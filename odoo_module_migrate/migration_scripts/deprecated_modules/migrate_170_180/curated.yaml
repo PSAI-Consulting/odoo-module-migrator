@@ -26,3 +26,12 @@
 # OCA/stock-logistics-workflow a24d6e1ec '[MIG] product_customerinfo_picking: Migration to
 # 18.0 renamed from product_supplierinfo_for_customer_picking' (dernière version : 16.0)
 - ["product_supplierinfo_for_customer_picking", "renamed", "product_customerinfo_picking"]
+#
+# Modules Enterprise marqués « removed » dans modules.yaml alors que le commit les fusionne
+# (fork LBruyere/enterprise, message du commit / git show --stat -M) :
+# enterprise 6320847eb81 '[REF] l10n_br_avatax*,l10n_br_edi*: merge *_services modules' :
+# « merges these *_services specific modules into the main one »
+- ["l10n_br_edi_sale_services", "merged", "l10n_br_edi_sale"]
+# enterprise 0a301a13fe5 '[REF] l10n_mx_edi_stock{_extended{_31}}: merge modules' (fichiers
+# déplacés dans l10n_mx_edi_stock_extended, lui-même fusionné dans l10n_mx_edi_stock, dde65a6fead)
+- ["l10n_mx_edi_stock_extended_31", "merged", "l10n_mx_edi_stock"]

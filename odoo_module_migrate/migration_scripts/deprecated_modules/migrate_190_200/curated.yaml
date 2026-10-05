@@ -25,3 +25,15 @@
 # hr_work_entry_holidays (19.0 : depends hr_holidays + hr_work_entry, auto_install) disparaît,
 # hr_holidays 20.0 dépend de hr_work_entry et reprend les types (hr_leave_type -> hr_work_entry_type)
 - ["hr_work_entry_holidays", "merged", "hr_holidays"]
+#
+# Modules Enterprise (fork LBruyere/enterprise, message du commit) :
+# enterprise c514211b878 '[REF] l10n_br*: merge fiscal reform modules into the standard ones' :
+# « We merge all this functionality into the standard modules »
+- ["l10n_br_edi_pos_fiscal_reform", "merged", "l10n_br_edi_pos"]
+- ["l10n_br_edi_sale_fiscal_reform", "merged", "l10n_br_edi_sale"]
+# enterprise 93eede6b22b '[REF] mrp_iot,quality_control_iot: simplify IoT integration into mrp' :
+# « we merged quality_iot, mrp_workorder_iot and quality_mrp_workorder_iot into one single mrp_iot module »
+- ["quality_mrp_workorder_iot", "merged", "mrp_iot"]
+# enterprise 0a1cc35ac79 '[FIX] l10n_be_hr_payroll_dimona_auto: Merge into l10n_be_hr_payroll_dimona',
+# puis l10n_be_hr_payroll_dimona fusionné dans l10n_be_hr_payroll (b8f4445539d, même saut)
+- ["l10n_be_hr_payroll_dimona_auto", "merged", "l10n_be_hr_payroll"]
