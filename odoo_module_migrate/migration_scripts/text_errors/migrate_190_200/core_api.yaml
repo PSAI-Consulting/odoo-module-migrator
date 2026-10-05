@@ -1,0 +1,13 @@
+# API du framework supprimée en 20.0 (absente de la branche 20.0 :
+# tools/extract_changes.py api, vérifié dans odoo/orm/*.py et odoo/tools).
+.py:
+  '\bfrom odoo\.osv\b|\bimport odoo\.osv\b|\bodoo\.osv\.': "[20] The odoo.osv package was removed: use odoo.fields.Domain (Domain.AND / Domain.OR...)"
+  '\.toggle_active\(': "[20] toggle_active() was removed: call action_archive() / action_unarchive()"
+  '\.copy_translations\(': "[20] copy_translations() was removed"
+  '\.check_field_access_rights\(': "[20] check_field_access_rights() was removed: use _check_field_access() / has_field_access()"
+  '\bfrom odoo\.tools\.pycompat\b|\bpycompat\.': "[20] odoo.tools.pycompat was removed: use the csv module"
+  '\blazy_property\b': "[20] lazy_property was removed: use functools.cached_property"
+  '\bormcache_context\b': "[20] ormcache_context was removed: use ormcache with the context keys"
+  '\bodoo\.tools\.populate\b|\b_populate_factories\b': "[20] odoo.tools.populate was removed"
+  '\bfrom odoo\.tools\.query import|\bodoo\.tools\.query\b': "[20] odoo.tools.query was moved to odoo.orm.query"
+  '\bfrom odoo\.service\.(?:db|security) import|\bodoo\.service\.(?:db|security)\b': "[20] odoo.service.db / odoo.service.security were removed"

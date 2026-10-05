@@ -1,0 +1,6 @@
+# API du framework 17.0 -> 18.0 : remplacements à équivalence exacte.
+# Candidats produits par tools/extract_changes.py api, vérifiés dans les sources.
+.py:
+  # odoo 18.0 odoo/fields.py : "Since Odoo 18, 'group_operator' is deprecated, use
+  # 'aggregator' instead" ; Odoo fait lui-même attrs['aggregator'] = attrs.pop('group_operator')
+  '\bgroup_operator(\s*=)': 'aggregator\1'

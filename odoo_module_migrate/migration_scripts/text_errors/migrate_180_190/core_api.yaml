@@ -1,0 +1,10 @@
+# API du framework supprimée en 19.0 (absente de la branche 19.0 :
+# tools/extract_changes.py api, vérifié dans odoo/orm/*.py).
+.py:
+  '\.clear_caches\(\)': "[19] clear_caches() was removed: use self.env.registry.clear_cache()"
+  '\._where_calc\(': "[19] _where_calc() was removed: use _search() (returns a Query)"
+  '\._apply_ir_rules\(': "[19] _apply_ir_rules() was removed: _search() applies the record rules"
+  '\._flush_search\(': "[19] _flush_search() was removed (deprecated since 18.0)"
+  '@api\.model_create_single\b': "[19] @api.model_create_single was removed: use @api.model_create_multi and handle a list of values"
+  '\b_transient_max_(?:count|hours)\b': "[19] _transient_max_count / _transient_max_hours were removed: transient records are vacuumed by the ORM settings"
+  '\bfrom odoo\.tools\.translate import[^\n]*\btrans_load': "[19] trans_load() / trans_load_data() were removed"

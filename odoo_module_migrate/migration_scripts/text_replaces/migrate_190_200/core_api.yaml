@@ -1,0 +1,6 @@
+# API du framework 19.0 -> 20.0 : remplacements à équivalence exacte.
+.py:
+  # odoo 19.0 odoo/orm/models.py : def _check_recursion(self, parent=None):
+  #     return not self._has_cycle(parent)      (supprimé en 20.0)
+  '\bnot\s+self\._check_(?:m2m_)?recursion\(': 'self._has_cycle('
+  '\bself\._check_(?:m2m_)?recursion\(': 'not self._has_cycle('

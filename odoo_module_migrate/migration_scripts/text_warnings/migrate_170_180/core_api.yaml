@@ -1,0 +1,8 @@
+# Dépréciations ajoutées en 18.0 (messages warnings.warn de la branche 18.0,
+# tools/extract_changes.py api). Encore valables en 18/19, supprimées plus tard.
+.py:
+  '\.check_access_rights\(': "[18] check_access_rights() is deprecated since 18.0 (removed in 20.0): use check_access() / has_access()"
+  '\.check_access_rule\(': "[18] check_access_rule() is deprecated since 18.0 (removed in 20.0): use check_access()"
+  '\._filter_access_rules(?:_python)?\(': "[18] _filter_access_rules() is deprecated since 18.0 (removed in 20.0): use _filtered_access()"
+  '\bpycompat\.csv_(?:reader|writer)\b|from odoo\.tools\.pycompat import': "[18] odoo.tools.pycompat is deprecated since 18.0 (removed in 20.0): use the csv module with a text stream"
+  '\bnetsvc\.log\(': "[18] odoo.netsvc.log is deprecated since 18.0: use the logging module"

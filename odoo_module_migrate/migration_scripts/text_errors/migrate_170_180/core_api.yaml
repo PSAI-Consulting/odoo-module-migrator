@@ -1,0 +1,6 @@
+# API du framework supprimée en 18.0 (méthodes de BaseModel absentes de la
+# branche 18.0 : tools/extract_changes.py api, vérifié dans odoo/models.py).
+.py:
+  '\bdef name_get\(|\.name_get\(\)': "[18] name_get() was removed: compute display_name in _compute_display_name() instead"
+  '\.copy_multi\(': "[18] copy_multi() was removed: use copy() on the recordset"
+  '\bodoo\.osv\.osv\b|from odoo\.osv import osv\b': "[18] odoo.osv.osv was removed: use odoo.models"

@@ -325,9 +325,43 @@ def extract_fields(args):
         )
 
 
+def extract_api(args):
+    import extract_api as ea
+
+    repo = pathlib.Path(args.repo)
+    removed_modules, removed_methods, removed_functions, deprecations = ea.api_changes(
+        repo, resolve_ref(repo, args.from_version), resolve_ref(repo, args.to_version)
+    )
+    lines = [
+        f"# Core API candidates {args.from_version} -> {args.to_version}"
+        " (tools/extract_changes.py api): REVIEW before using them as rules.",
+        "", "# Python modules removed:",
+        *[f"#   {m}" for m in removed_modules],
+        "", "# BaseModel methods removed:",
+        *[f"#   {m}" for m in removed_methods],
+        "", "# Functions / classes removed (module where they were defined):",
+        *[f"#   {name}  ({', '.join(mods)})" for name, mods in removed_functions],
+        "", f"# New deprecation messages in {args.to_version}:",
+        *[f"#   {loc}: {msg}" for loc, msg in deprecations],
+    ]
+    out = pathlib.Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(
+        f"{len(removed_modules)} modules, {len(removed_methods)} methods, "
+        f"{len(removed_functions)} functions, {len(deprecations)} deprecations -> {out}",
+        file=sys.stderr,
+    )
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
+    api = sub.add_parser("api", help="core API candidates (methods, functions, modules)")
+    api.add_argument("--from", dest="from_version", required=True)
+    api.add_argument("--to", dest="to_version", required=True)
+    api.add_argument("--repo", required=True, help="odoo bare repository")
+    api.add_argument("--output", required=True)
     flds = sub.add_parser("fields", help="renamed / removed fields and models")
     flds.add_argument("--from", dest="from_version", required=True)
     flds.add_argument("--to", dest="to_version", required=True)
@@ -352,6 +386,9 @@ def main(argv=None):
     elif args.command == "fields":
         sys.path.insert(0, str(pathlib.Path(__file__).parent))
         extract_fields(args)
+    elif args.command == "api":
+        sys.path.insert(0, str(pathlib.Path(__file__).parent))
+        extract_api(args)
 
 
 if __name__ == "__main__":

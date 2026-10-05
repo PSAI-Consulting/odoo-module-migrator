@@ -1,0 +1,6 @@
+# Dépréciations ajoutées en 19.0 (messages warnings.warn de la branche 19.0).
+.py:
+  '\blazy_property\b': "[19] lazy_property is deprecated since 19.0 (removed in 20.0): use functools.cached_property"
+  '\bexpression\.expression\(': "[19] expression() is deprecated since 19.0 (removed in 20.0): use Domain or _search()"
+  '\(\s*[''"]\w+(?:\.\w+)*[''"]\s*,\s*[''"](?:<>|==)[''"]': "[19] Domain operators '<>' and '==' are deprecated since 19.0: use '!=' and '='"
+  '@ormcache\([^)\n]*skiparg': "[19] ormcache(skiparg=...) is deprecated since 19.0"
