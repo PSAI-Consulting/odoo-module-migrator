@@ -137,6 +137,21 @@ def test_product_storable():
     assert new.count("type != 'product'") == 1  # other model untouched
 
 
+def test_odoo_models_imports():
+    from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190 import (
+        odoo_models_imports as omi,
+    )
+
+    text = "from odoo.models import Model, api\nfrom odoo.models import AccessError\nfrom odoo import models\n"
+    new, reported = omi._rewrite(text)
+    assert new == (
+        "from odoo import api\nfrom odoo.models import Model\n"
+        "from odoo.models import AccessError\nfrom odoo import models\n"
+    )
+    assert reported == [(2, "AccessError")]
+    assert omi._rewrite(new)[0] == new
+
+
 def test_cron_fields_removed():
     text = (
         '        <field name="numbercall">-1</field>\n'

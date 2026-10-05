@@ -198,6 +198,52 @@ def select_scripts(uc, from_version, to_version, with_owl3):
     return scripts
 
 
+def _dependency_closure(file_manager, targets):
+    """Names of the targets and of all their dependencies (visible modules)."""
+    result, todo = set(), [t.name for t in targets] + ["base"]
+    while todo:
+        name = todo.pop()
+        if name in result or name not in file_manager._modules:
+            continue
+        result.add(name)
+        todo.extend(_manifest_depends(Path(file_manager._modules[name]) / "__manifest__.py"))
+    return result
+
+
+def patch_ir_access(scripts, targets):
+    """19.4-00-ir-access.py maps model XML ids to model names by reading the
+    Python files of the file manager, i.e. only the target modules here: the
+    models of the dependencies (e.g. account.model_account_payment) would stay
+    unresolved and give an invalid ir.access.csv. The mapping is completed with
+    the models of the dependencies, read only."""
+    import functools
+    from types import SimpleNamespace
+
+    for _name, module in scripts:
+        upgrade = getattr(module, "upgrade", None)
+        original = getattr(upgrade, "get_model_xids", None)
+        if original is None or not hasattr(module, "extract_model_names"):
+            continue
+        original = getattr(original, "__wrapped__", original)
+
+        def get_model_xids(self, _original=original, _module=module):
+            result = dict(_original(self))
+            for addon_name in _dependency_closure(self.file_manager, targets):
+                addon = Path(self.file_manager._modules[addon_name])
+                for path in addon.rglob("*.py"):
+                    if "tests" in path.parts or str(path) in self.file_manager._files:
+                        continue
+                    try:
+                        content = _decode(path.read_bytes())[0]
+                    except OSError:
+                        continue
+                    for model_name in _module.extract_model_names(SimpleNamespace(content=content)):
+                        result.setdefault(_module.model_xmlid(addon_name, model_name), model_name)
+            return result
+
+        upgrade.get_model_xids = functools.cache(get_model_xids)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--odoo-root", required=True)
@@ -232,6 +278,7 @@ def main(argv=None):
     scripts = select_scripts(uc, args.from_version, args.to_version, args.owl3)
     if args.script:
         scripts = [s for s in scripts if s[0] in args.script]
+    patch_ir_access(scripts, targets)
 
     collector = _Collector()
     root_logger = logging.getLogger()
