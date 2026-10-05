@@ -1,0 +1,12 @@
+# Odoo exceptions migration - Warning deprecated in favor of UserError
+# The Warning exception from odoo.exceptions was deprecated and replaced by UserError
+
+.py:
+  # Replace import of Warning from odoo.exceptions
+  from\s+odoo\.exceptions\s+import\s+([^,\n]*,\s*)*Warning(\s*,\s*[^,\n]*)*: "from odoo.exceptions import \\1UserError\\2"
+  from\s+odoo\.exceptions\s+import\s+Warning\s*$: "from odoo.exceptions import UserError"
+  from\s+odoo\.exceptions\s+import\s+Warning\s*,: "from odoo.exceptions import UserError,"
+  from\s+odoo\.exceptions\s+import\s+([^,]+)\s*,\s*Warning: "from odoo.exceptions import \\1, UserError"
+
+  # Replace raise Warning with raise UserError
+  raise\s+Warning\(: "raise UserError("

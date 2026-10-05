@@ -1,0 +1,12 @@
+.py:
+  _table_query: "[20.0] Model._table_query is removed: rewrite the SQL report model (e.g. _auto = False + init() creating a view)"
+  mail\.tracking\.value: "[20.0] mail.tracking.value is removed: tracking is now computed on the fly"
+  mail_tracking_value: "[20.0] the mail_tracking_value table is removed: tracking is now computed on the fly"
+  \.read_group\(: "[20.0] read_group() now has the signature of _read_group() (returns tuples): use _read_group or formatted_read_group"
+  "\\[['\"]ir\\.model\\.access['\"]\\]": "[20.0] ir.model.access is removed: use ir.access"
+  "\\[['\"]ir\\.rule['\"]\\]": "[20.0] ir.rule is removed: use ir.access"
+  check_access_rights\(: "[20.0] check_access_rights() is removed: use check_access() / has_access()"
+  check_access_rule\(: "[20.0] check_access_rule() is removed: use check_access() / has_access()"
+  from odoo\.http import request: "[20.0] request is no longer available in model code: pass the values from the controller"
+.xml:
+  model="ir\.model\.access": "[20.0] ir.model.access records must be converted to ir.access"

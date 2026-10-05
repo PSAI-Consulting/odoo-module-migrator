@@ -31,7 +31,7 @@
   # Company/Multi-company
   \.company_id\.id: ".company_id.id if self.company_id else False"
   'self\.env\.user\.company_id\.id': 'self.env.company.id'
-  'self\.env\.context\.get\(["\']company_id["\']\)': 'self.env.company.id'
+  "self\\.env\\.context\\.get\\([\"']company_id[\"']\\)": 'self.env.company.id'
   
   # Environment updates
   'self\.pool': 'self.env.registry'

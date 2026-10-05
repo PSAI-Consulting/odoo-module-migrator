@@ -1,0 +1,4 @@
+# Account invoice model renamed to account.move in Odoo 13.0
+# The account.invoice model was merged with account.move
+- ["account.invoice", "account.move", "Model renamed in Odoo 13.0 - account.invoice merged with account.move"]
+- ["account.invoice.line", "account.move.line", "Model renamed in Odoo 13.0 - account.invoice.line merged with account.move.line"]
