@@ -257,10 +257,10 @@ def check_module(module, index, reference_modules):
                         f" Odoo (nor in any view of its inheritance tree): the view will"
                         f" not install"
                     )
-        yield from _check_xmlids(path, root, module.name, index, reference_modules)
+        yield from _check_xmlids(path, root, module.name, index, reference_modules, closure)
 
 
-def _check_xmlids(path, root, module_name, index, reference_modules):
+def _check_xmlids(path, root, module_name, index, reference_modules, closure=None):
     seen = set()
     for node in root.iter():
         if not isinstance(node.tag, str):
@@ -283,9 +283,15 @@ def _check_xmlids(path, root, module_name, index, reference_modules):
             module, _, local = ref.partition(".")
             if (
                 module == module_name or module not in reference_modules
-                or local.startswith(GENERATED_PREFIXES) or ref in index.xmlids
-                or (ref, node.sourceline) in seen
+                or local.startswith(GENERATED_PREFIXES) or (ref, node.sourceline) in seen
             ):
                 continue
             seen.add((ref, node.sourceline))
-            yield path, node.sourceline, f"XML id {ref} does not exist in the target Odoo"
+            if ref not in index.xmlids:
+                yield path, node.sourceline, f"XML id {ref} does not exist in the target Odoo"
+            elif closure is not None and module not in closure:
+                # works only if another module happens to install it first
+                yield path, node.sourceline, (
+                    f"XML id {ref} comes from the module '{module}', which is not in the"
+                    f" dependencies of the module: add it to 'depends'"
+                )

@@ -22,6 +22,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -244,6 +245,10 @@ class Installer:
         return results
 
 
+def _manifest_of(directory, name):
+    return ast.literal_eval((directory / name / "__manifest__.py").read_text(encoding="utf-8").lstrip())
+
+
 def split_independent(order, depends, workers):
     """Groups of modules without dependency between groups (connected
     components of the dependency graph), balanced on `workers` groups."""
@@ -366,8 +371,32 @@ def main(argv=None):
             ).get("depends", [])
             for n in order
         }
-        groups = split_independent(order, depends, args.workers)
         results = []
+        # auto_install modules are installed by Odoo together with any module
+        # once their dependencies are there: one that fails makes every other
+        # installation fail. They are installed first, alone; a failing one is
+        # set aside (moved out of the bench copy) for the rest of the run.
+        auto = [n for n in order if _manifest_of(directory, n).get("auto_install")]
+        quarantine = directory.parent / (directory.name + "_set_aside")
+        set_aside = []
+        if auto:
+            conf = write_conf(options, [*addons, str(directory)], db, tmp)
+            installer = Installer(options, env, db, conf, odoo_root, args.odoo_python, directory)
+            installer.create_from(template)
+            try:
+                for result in installer.run(auto, 1):
+                    if result["status"] != "OK":
+                        result["error"] = ("auto_install module: blocks every installation"
+                                           " until fixed (set aside for this run). " + result["error"])
+                        quarantine.mkdir(exist_ok=True)
+                        shutil.move(str(directory / result["module"]), str(quarantine / result["module"]))
+                        set_aside.append(result["module"])
+                    results.append(result)
+            finally:
+                installer.drop(db)
+                installer.drop(installer.checkpoint)
+            order = [n for n in order if n not in auto]
+        groups = split_independent(order, depends, args.workers)
 
         def work(index, group):
             # one database (and one Odoo process at a time) per worker
@@ -384,9 +413,15 @@ def main(argv=None):
 
         from concurrent.futures import ThreadPoolExecutor
 
-        with ThreadPoolExecutor(max_workers=len(groups)) as pool:
-            for group_results in pool.map(work, range(len(groups)), groups):
-                results += group_results
+        try:
+            with ThreadPoolExecutor(max_workers=max(1, len(groups))) as pool:
+                for group_results in pool.map(work, range(len(groups)), groups):
+                    results += group_results
+        finally:
+            for name in set_aside:  # back in place: the bench copy is unchanged
+                shutil.move(str(quarantine / name), str(directory / name))
+            if quarantine.exists() and not any(quarantine.iterdir()):
+                quarantine.rmdir()
 
     ok = sum(r["status"] == "OK" for r in results)
     blocked = sum(r["status"] == "BLOCKED" for r in results)
