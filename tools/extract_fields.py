@@ -20,7 +20,8 @@ import subprocess
 CLASS_RE = re.compile(r"^class\s+\w+\s*\(([^)]*)\)\s*:")
 NAME_RE = re.compile(r"^\s{4}_name\s*=\s*['\"]([\w.]+)['\"]")
 INHERIT_RE = re.compile(r"^\s{4}_inherit\s*=\s*(?:\[\s*)?['\"]([\w.]+)['\"]")
-FIELD_RE = re.compile(r"^\s{4}(\w+)\s*=\s*fields\.(\w+)\(")
+FIELD_RE = re.compile(r"^\s{4}(\w+)\s*(?::[^=
+]+)?=\s*fields\.(\w+)\(")
 ANALYSIS_RE = re.compile(
     r"^(?P<module>\w+)\s*/\s*(?P<model>[\w.]+)\s*/\s*(?P<field>\w+)\s*\((?P<type>\w+)\)\s*:\s*DEL\b(?P<rest>.*)$"
 )
@@ -69,10 +70,14 @@ def _parse_ast(tree, path, result):
             continue
         name, inherit, fields = None, [], {}
         for stmt in cls.body:
-            if not (isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+            # Odoo 20 annotates fields: country_id: ResCountry = fields.Many2one(...)
+            if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) and stmt.value:
+                target = stmt.target.id
+            elif (isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
                     and isinstance(stmt.targets[0], ast.Name)):
+                target = stmt.targets[0].id
+            else:
                 continue
-            target = stmt.targets[0].id
             if target == "_name":
                 name = (_str_values(stmt.value) or [None])[0]
             elif target == "_inherit":

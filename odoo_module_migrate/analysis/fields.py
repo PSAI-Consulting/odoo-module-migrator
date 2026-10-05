@@ -84,6 +84,14 @@ def _defined_fields(cls):
     result = set()
     for stmt in cls.body:
         if (
+            isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name)
+            and isinstance(stmt.value, ast.Call)
+            and isinstance(stmt.value.func, ast.Attribute)
+            and isinstance(stmt.value.func.value, ast.Name)
+            and stmt.value.func.value.id == "fields"
+        ):
+            result.add(stmt.target.id)
+        elif (
             isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
             and isinstance(stmt.targets[0], ast.Name)
             and isinstance(stmt.value, ast.Call)
