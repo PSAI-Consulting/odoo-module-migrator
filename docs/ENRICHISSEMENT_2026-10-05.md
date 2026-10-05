@@ -22,13 +22,13 @@ regex quand `ast` ne peut pas lire un fichier).
 
 | Type | 17→18 | 18→19 | 19→20 |
 |---|---:|---:|---:|
-| `renamed_fields` (curated, vérifiés) | – | – | **93** (+3 existants) |
-| `removed_fields` (curated : remplaçant indiqué) | 22 | 40 | 140 |
+| `renamed_fields` (curated, vérifiés) | 32 | – | **93** (+3 existants) |
+| `removed_fields` (curated : remplaçant indiqué ou candidat refusé) | 62 | 62 | 140 |
 | `renamed_models` (curated) | – | – | 4 |
 | `removed_models` | – | – | 155 générés + 36 messages curated |
 | `deprecated_modules` (curated) | 19 | 3 | 9 |
-| `text_replaces` (équivalence exacte prouvée) | 1 | – | 6 |
-| `text_errors` | – | 1 | 10 |
+| `text_replaces` (équivalence exacte prouvée) | 1 | – | 6 + 38 imports JS |
+| `text_errors` | – | 1 | 10 + 607 imports JS + 616 vues |
 | `text_warnings` | 2 | – | 1 |
 
 ### Champs 19.0 → 20.0 (`renamed_fields/migrate_190_200`)
@@ -58,6 +58,19 @@ supprimés ; les candidats **rejetés** n'étaient donc signalés nulle part. Il
 sont dans `removed_fields/migrate_190_200/curated.yaml`, avec le champ
 successeur quand il en est un (comodel, valeurs ou unité changés) — sans
 renommage automatique.
+
+### Champs 17.0 → 18.0 (`fields --sources`)
+
+OpenUpgrade 18.0 ne voit ni Enterprise ni les champs sans migration de
+données. `fields --sources` (odoo + Enterprise) confirme ses renommages et
+propose 88 candidats, tous annotés dans `renamed_fields/migrate_170_180/candidates.yaml` :
+32 renommages vérifiés modèle par modèle (`l10n_au_kp_*` → `employment_hero_*`,
+`sepa_export*` → `payment_report*`, `module_account_sepa` →
+`module_account_iso20022`, `option_line_ids` → `linked_line_ids`,
+`account_peppol_verification_label` → `peppol_verification_state`…) ; les 40
+candidats refusés que `generated.yaml` ne listait pas sont signalés comme
+supprimés (motif « non confirmé » quand le sens n'a pas été établi : pas de
+remplaçant suggéré).
 
 ### Candidats rejetés (raisons)
 
@@ -124,6 +137,22 @@ renommage automatique.
   `'type': 'product'` (type de produit supprimé, `is_storable`).
 - 18→19 : erreur `odoo.fields.first`.
 
+### JS et vues 19.0 → 20.0
+
+- `text_replaces/migrate_190_200/js_modules.yaml` : 38 modules JS déplacés
+  **dans leur module** (même nom de fichier, mêmes exports) : imports et
+  assets du manifest réécrits.
+- `text_errors/migrate_190_200/js_modules.yaml` : 573 modules JS supprimés,
+  34 déplacés dans un **autre** module (signalés avec le nouvel emplacement :
+  le module qui importe n'en dépend peut-être pas). La migration OWL 3 reste
+  celle du script officiel `owl3-migration.py`.
+- `text_errors/migrate_190_200/views.yaml` : 616 vues / templates supprimés de
+  modules toujours présents (`inherit_id`, `ref`, `t-call`, `env.ref`) ;
+  échantillon de 25 vérifié absent de 20.0 (les snippets `mass_mailing`
+  sont devenus des templates OWL statiques : l'héritage casse bien).
+- Test : les imports et vues courants de 20.0 ne sont jamais signalés ;
+  migration 19→20 d'un module OCA en moins de 5 s avec ces règles.
+
 ### Champs supprimés : remplaçant indiqué (17→18, 18→19, 19→20)
 
 Commit de suppression retrouvé (`git log -S`) et lu pour chaque champ :
@@ -167,6 +196,10 @@ changements imposés par Odoo. Piste prouvée et ajoutée : `'type': 'product'`.
   commit 20.0 : 81b967b831f) ; commits antérieurs à 2023-09 non disponibles.
 - 18 champs supprimés 19→20 n'ont pas de commit de suppression retrouvé
   (source = chemin du fichier) ; vérifiés absents de 20.0.
+- 18→19 (données OpenUpgrade existantes, non modifiées) : `stock.package_level`
+  est à la fois « renommé » en `stock.package.history` (`pre-migration.py`) et
+  « supprimé » ; le renommage s'applique d'abord et réécrit le nom dans le
+  code, alors que le modèle a disparu (odoo 6adaab6abb5) : à revoir.
 - Renommages de modèles inter-modules : seulement signalés (les xmlids
   `module.model_x` ne sont pas réécrits par `handle_renamed_models`).
 
