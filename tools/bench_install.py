@@ -84,12 +84,19 @@ ERROR_RE = re.compile(
 
 
 def first_error(output):
-    lines = [m.group(0) for m in ERROR_RE.finditer(output)]
-    # the last "XxxError: message" line of the traceback is the most useful
+    """Most useful line of the failure: the message of a ParseError (on the
+    lines after 'while parsing <file>'), else the last 'XxxError: ...' line."""
+    lines = output.splitlines()
+    for i, line in enumerate(lines):
+        if "ParseError" in line and "while parsing" in line:
+            detail = " ".join(l.strip() for l in lines[i + 1:i + 4] if l.strip())
+            source = line.rsplit("/", 1)[-1]
+            return f"ParseError {source}: {detail}"[:600]
     for line in reversed(lines):
         if re.match(r"^\s*[\w.]+(?:Error|Exception)\b", line):
-            return line.strip()[:500]
-    return lines[0].strip()[:500] if lines else output.strip().splitlines()[-1][:500]
+            return line.strip()[:600]
+    found = [m.group(0) for m in ERROR_RE.finditer(output)]
+    return (found[0] if found else lines[-1] if lines else "").strip()[:600]
 
 
 def main(argv=None):
@@ -165,6 +172,7 @@ def main(argv=None):
                     "status": "FAILED" if failed else "OK",
                     "seconds": round(time.time() - start, 1),
                     "error": first_error(output) if failed else "",
+                    "tail": "\n".join(output.splitlines()[-60:]) if failed else "",
                 })
                 print(f"{name:40} {results[-1]['status']:7} {results[-1]['error'][:160]}", flush=True)
         finally:

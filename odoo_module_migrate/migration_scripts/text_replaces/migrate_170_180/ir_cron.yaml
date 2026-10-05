@@ -1,0 +1,7 @@
+# ir.cron : champs numbercall et doall supprimés en 18.0
+# Source : odoo commit 2700dd3fd4c45b5282d3803182dfffdfc4418ad8
+# Ligne <field name="numbercall|doall" ...>...</field> (ou auto-fermante) retirée
+# en entier ; les cas restants (Python, autre mise en forme) restent signalés
+# par text_errors/migrate_170_180/ir_cron.yaml.
+.xml:
+  '(?m)^[ \t]*<field\s+name=["''](?:numbercall|doall)["''][^>]*?(?:/>|>[^<]*</field>)[ \t]*\n': ''
