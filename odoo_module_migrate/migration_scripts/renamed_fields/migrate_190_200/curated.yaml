@@ -1,0 +1,10 @@
+# Renommages 19.0 -> 20.0 vérifiés à la main (non détectés automatiquement :
+# le commit ajoute plusieurs champs du même type). Jamais écrasé par
+# tools/extract_changes.py.
+#
+# odoo 113d77eb35aa "[IMP] *: Improve UX of bank accounts" (res.bank supprimé) :
+#   19.0 odoo/addons/base/models/res_bank.py         acc_number, sanitized_acc_number, acc_holder_name
+#   20.0 odoo/addons/base/models/res_partner_bank.py account_number, sanitized_account_number, holder_name
+- ["res.partner.bank", "acc_number", "account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
+- ["res.partner.bank", "sanitized_acc_number", "sanitized_account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
+- ["res.partner.bank", "acc_holder_name", "holder_name", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]

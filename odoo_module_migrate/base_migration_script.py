@@ -291,7 +291,11 @@ class BaseMigrationScript:
             if len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or ""))
         }
         sources = {(r[0], r[1]): (r[-1] if len(r) > 3 else "") for r in self._RENAMED_FIELDS}
-        removed = {(r[0], r[1]): (r[2] if len(r) > 2 else "") for r in self._REMOVED_FIELDS}
+        # a renamed field is not removed (e.g. curated.yaml vs generated.yaml)
+        removed = {
+            (r[0], r[1]): (r[2] if len(r) > 2 else "") for r in self._REMOVED_FIELDS
+            if (r[0], r[1]) not in renames
+        }
         if not renames and not removed:
             return
         files = [
