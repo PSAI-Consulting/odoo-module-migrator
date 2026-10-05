@@ -40,6 +40,32 @@ session : n'y touche pas.
 7. Ne commite jamais les dépôts clonés ni de fichiers de travail (ils restent hors
    du dépôt, par exemple dans `/tmp/odoo-src`).
 
+## Vérifie tout toi-même
+
+Ne crois ni ce prompt, ni les fichiers existants, ni ta mémoire : **chaque règle
+que tu ajoutes, modifies ou valides doit être vérifiée par toi**, et la preuve
+citée dans la règle. Sources, par ordre de confiance :
+
+1. **Le code d'Odoo** (preuve obligatoire) : dépôts git clonés ci-dessous,
+   `git show <sha>`, `git log -S<nom> 19.0..20.0`, `git grep` dans la branche
+   cible, lecture du fichier avant/après. Une règle sans preuve dans le code ne
+   devient jamais une transformation automatique.
+2. **OpenUpgrade** (`OCA/OpenUpgrade`, branches 18.0, 19.0, 20.0) :
+   `openupgrade_scripts/apriori.py`, `scripts/*/pre-migration.py`
+   (`_renamed_fields`, `_renamed_models`), `upgrade_analysis.txt`.
+3. **Internet**, pour comprendre et recouper (jamais seule source) :
+   - wikis OCA : https://github.com/OCA/maintainer-tools/wiki/Migration-to-version-18.0
+     (et `…-19.0`, `…-20.0` s'il existe) ;
+   - changelog ORM officiel : dépôt `odoo/documentation`, branches 18.0 / 19.0 /
+     20.0, `content/developer/reference/backend/orm/changelog.rst` ;
+   - `odoo/upgrade-util` (fonctions `rename_field`, `rename_model`… utilisées par
+     les scripts d'upgrade d'Odoo) ;
+   - les pull requests OCA « [18.0][MIG] », « [19.0][MIG] », « [20.0][MIG] » : des
+     migrations faites à la main, donc des exemples réels de ce qui change ;
+   - les pull requests odoo/odoo citées dans les commits (`closes odoo/odoo#…`).
+4. Si une information ne se recoupe pas, ou si tu as un doute : avertissement
+   (« à vérifier ») ou candidat commenté avec la raison, jamais une règle sûre.
+
 ## Ce qui existe déjà (lis-le avant de commencer)
 
 - `odoo_module_migrate/migration_scripts/<type>/migrate_XXX_YYY/*.yaml` : les
