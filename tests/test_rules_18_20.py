@@ -243,3 +243,29 @@ def test_curated_field_renames_190_200(tmp_path):
     script.handle_fields(module)
     assert (module / "models" / "stock_move.py").read_text() == py
     assert (module / "views" / "views.xml").read_text() == xml
+
+
+def test_rejected_candidates_reported_190_200(tmp_path, caplog):
+    """A rename candidate rejected after review (scale changed) is reported as
+    removed with its probable replacement, never renamed."""
+    import logging
+
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    module.mkdir()
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['account']}")
+    (module / "models.py").write_text(
+        "from odoo import models\n\n\nclass AccountMoveLine(models.Model):\n"
+        "    _inherit = 'account.move.line'\n\n    def _x(self):\n        return self.deductible_amount\n"
+    )
+    script = MigrationScript()
+    script.parse_rules()
+    with caplog.at_level(logging.WARNING):
+        script.handle_fields(module)
+    assert "self.deductible_amount" in (module / "models.py").read_text()
+    assert any(
+        "account.move.line.deductible_amount was removed" in r.getMessage()
+        and "deductible_percentage" in r.getMessage()
+        for r in caplog.records
+    )

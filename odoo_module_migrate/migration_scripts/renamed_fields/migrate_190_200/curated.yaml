@@ -98,3 +98,44 @@
 - ["res.config.settings", "module_stock_picking_batch", "group_stock_picking_batch", "odoo 78b5ef88fb02 '[IMP] stock,*: move picking batch into stock'"]
 # odoo a2814d3f71fc '[REF] website_address_autocomplete: decouple autocomplete from eCommerce' : module website_sale_autocomplete renommé website_address_autocomplete
 - ["res.config.settings", "module_website_sale_autocomplete", "module_website_address_autocomplete", "odoo a2814d3f71fc '[REF] website_address_autocomplete: decouple autocomplete from eCommerce'"]
+#
+# Candidats Enterprise (fork LBruyere/enterprise, branches 19.0 / 20.0) vérifiés de la même façon :
+# enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules' : l10n_co_dian fusionné dans l10n_co_edi : mêmes champs préfixés l10n_co_edi_ (modèle l10n_co_dian.document -> l10n_co_edi.document)
+- ["account.journal", "l10n_co_dian_technical_key", "l10n_co_edi_technical_key", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["account.move", "l10n_co_dian_attachment_id", "l10n_co_edi_attachment_id", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["account.move", "l10n_co_dian_document_ids", "l10n_co_edi_document_ids", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["account.move", "l10n_co_dian_post_time", "l10n_co_edi_post_time", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["product.template", "l10n_co_dian_mandate_contract", "l10n_co_edi_mandate_contract", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["res.partner", "l10n_co_dian_enable_update_data", "l10n_co_edi_enable_update_data", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+# enterprise 2fd3d96faae '[IMP] account_accountant: generalize end_to_end_uuid' : identifiant de transaction généralisé (Char), vérifié sur account.bank.statement.line seulement
+- ["account.bank.statement.line", "end_to_end_uuid", "transaction_uuid", "enterprise 2fd3d96faae '[IMP] account_accountant: generalize end_to_end_uuid'"]
+# enterprise 620d857d960 '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs' : partie Enterprise du renommage hr.contract.type -> hr.employee.type (odoo 6057e25f8c12)
+- ["esg.employee.report", "contract_type_id", "employee_type_id", "enterprise 620d857d960 '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs'"]
+- ["hr.contract.salary.offer", "contract_type_id", "employee_type_id", "enterprise 620d857d960 '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs'"]
+# enterprise a78e85496fb '[IMP] *: Improve UX of bank accounts' : partie Enterprise de acc_number -> account_number (odoo 113d77eb35aa)
+- ["account.return.payment.wizard", "acc_number", "account_number", "enterprise a78e85496fb '[IMP] *: Improve UX of bank accounts'"]
+# enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management' : codes employé des prestataires de paie (un seul module installé à la fois) regroupés dans hr.employee.external_code ; hr.leave.type fusionné dans hr.work.entry.type
+- ["hr.employee", "group_s_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "prisma_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "partena_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "sdworx_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "ucm_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "l10n_it_sdworx_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "l10n_au_leave_loading_leave_types", "l10n_au_leave_loading_work_entry_types", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.version", "l10n_au_leave_loading_leave_types", "l10n_au_leave_loading_work_entry_types", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+# enterprise fe8800e8214 '[IMP] l10n_sa_hr_payroll: 30-day pay schedule' : même related version_id.schedule_pay, déplacé dans hr_payroll
+- ["hr.payslip", "l10n_au_schedule_pay", "schedule_pay", "enterprise fe8800e8214 '[IMP] l10n_sa_hr_payroll: 30-day pay schedule'"]
+# enterprise 05188bb3d17 '[IMP] uom: rename logistic fields' : partie Enterprise de '[IMP] uom: rename logistic fields'
+- ["mrp.production.schedule", "product_uom_id", "uom_id", "enterprise 05188bb3d17 '[IMP] uom: rename logistic fields'"]
+# enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise' : même Many2many iot.device (scanners)
+- ["pos.config", "iface_scanner_ids", "iot_scanner_ids", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
+- ["res.config.settings", "pos_iface_scanner_ids", "pos_iot_scanner_ids", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
+# enterprise 6a8c6d4e3a0 '[REF] l10n_se_pos: use iot http for fdm se' : même Many2one iot.device (fiscal data module)
+- ["pos.config", "iface_sweden_fiscal_data_module", "iot_fdm_se_id", "enterprise 6a8c6d4e3a0 '[REF] l10n_se_pos: use iot http for fdm se'"]
+- ["res.config.settings", "pos_iface_sweden_fiscal_data_module", "pos_iot_fdm_se_id", "enterprise 6a8c6d4e3a0 '[REF] l10n_se_pos: use iot http for fdm se'"]
+# enterprise 163154e54ef '[REF] account_accountant: settings from stock_accountant' : même related company_id.account_stock_journal_id
+- ["res.config.settings", "stock_journal", "stock_journal_id", "enterprise 163154e54ef '[REF] account_accountant: settings from stock_accountant'"]
+# enterprise ea597380a45 '[REF] equity: use birthday instead of ubo_birth_date' : titre : « use birthday instead of ubo_birth_date »
+- ["res.partner", "ubo_birth_date", "birth_date", "enterprise ea597380a45 '[REF] equity: use birthday instead of ubo_birth_date'"]
+# enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`' : même related iot_device_id.identifier
+- ["stock.put.in.pack", "iot_device_identifier", "device_identifier", "enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`'"]
