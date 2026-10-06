@@ -657,3 +657,12 @@ def test_model_rename_in_field_text_120_130(tmp_path):
         '<field name="res_model">account.move.line</field>\n'
         '<field name="name">account.invoice</field>\n'
     )
+
+
+def test_module_rules_110_120():
+    rules = _module_rules("migrate_110_120")
+    new, messages = manifest.apply_module_rules(
+        ["mrp_repair", "product_extended", "website_sale_options", "account_budget", "sale"], rules
+    )
+    assert new == ["repair", "mrp_bom_cost", "website_sale", "account_budget", "sale"]
+    assert all(level == "info" for level, _msg in messages), messages

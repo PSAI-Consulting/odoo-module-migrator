@@ -1,0 +1,13 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise du fork LBruyere/enterprise).
+#
+# account_asset quitte la communauté en 12.0 (présent dans enterprise 12.0) ; l'OCA le
+# remplace par account_asset_management (OCA/account-financial-tools 12.0). Conservé de
+# l'ancienne liste _DEPRECATED_MODULES de migrate_110_120.py (avertissement « oca_moved »).
+- ["account_asset", "oca_moved", "account_asset_management", "Moved to OCA/account-financial-tools (Odoo Enterprise: account_asset)"]
+#
+# Retirés de l'ancienne liste _DEPRECATED_MODULES (faux d'après OpenUpgrade 12.0 apriori.py
+# et les sources) : mrp_repair (renommé repair), product_extended (renommé mrp_bom_cost),
+# rating_project / website_rating_project (fusionnés dans project), website_sale_options
+# (fusionné dans website_sale), website_sale_stock_options (dans website_sale_stock),
+# account_budget et l10n_be_intrastat(_2019) (présents dans enterprise 12.0).
