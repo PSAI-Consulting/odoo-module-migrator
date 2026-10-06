@@ -517,3 +517,19 @@ def test_access_records_left_to_upgrade_code():
     assert not any(r"ir\.rule" in p or r"ir\.model\.access" in p for p in xml)
     assert any(r"ir\.model\.access" in p for p in py)
     assert any(r"account\.group" in p for p in xml)  # 19.3-00-account-groups.py is not run
+
+
+def test_auto_added_fields_notice_only_from_17():
+    """Fields used by view expressions are added automatically since 18.0
+    (odoo 6f06420e4a94, not in 17.0): an 18.0 module already works so, the
+    notice is not repeated by the 18.0 -> 19.0 step."""
+    from odoo_module_migrate.migration_scripts.migrate_170_180 import MigrationScript as M18
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import MigrationScript as M19
+
+    def warnings(script_class):
+        script = script_class()
+        script.parse_rules()
+        return script._file_rules(".xml")["warnings"]
+
+    assert any("137031" in m for m in warnings(M18).values())
+    assert not any("137031" in m for m in warnings(M19).values())
