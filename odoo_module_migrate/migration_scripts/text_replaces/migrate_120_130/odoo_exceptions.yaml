@@ -1,12 +1,10 @@
-# Odoo exceptions migration - Warning deprecated in favor of UserError
-# The Warning exception from odoo.exceptions was deprecated and replaced by UserError
-
+# odoo.exceptions.Warning est un simple alias de UserError en 12.0 et 13.0
+# (odoo/exceptions.py : « Warning = UserError »), déprécié en 14.0, supprimé en 17.0 :
+# le remplacer par UserError ne change rien au comportement.
+# L'ancienne regex ([^,\n]*,\s*)*Warning... perdait des noms importés (groupe répété).
 .py:
-  # Replace import of Warning from odoo.exceptions
-  from\s+odoo\.exceptions\s+import\s+([^,\n]*,\s*)*Warning(\s*,\s*[^,\n]*)*: "from odoo.exceptions import \\1UserError\\2"
-  from\s+odoo\.exceptions\s+import\s+Warning\s*$: "from odoo.exceptions import UserError"
-  from\s+odoo\.exceptions\s+import\s+Warning\s*,: "from odoo.exceptions import UserError,"
-  from\s+odoo\.exceptions\s+import\s+([^,]+)\s*,\s*Warning: "from odoo.exceptions import \\1, UserError"
-
-  # Replace raise Warning with raise UserError
-  raise\s+Warning\(: "raise UserError("
+  '(?m)^(from\s+odoo\.exceptions\s+import\s+(?:[^\n]*[,(\s])?)Warning\b': '\1UserError'
+  '(?m)^(from\s+odoo\.exceptions\s+import\s+[^\n]*\bUserError\b[^\n]*), UserError\b': '\1'
+  '(?m)^(from\s+odoo\.exceptions\s+import\s+)UserError, ([^\n]*\bUserError\b)': '\1\2'
+  '\braise\s+Warning\(': "raise UserError("
+  '\bexcept\s+Warning\b': "except UserError"

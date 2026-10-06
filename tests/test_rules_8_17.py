@@ -371,7 +371,7 @@ def _apply(kind, step, ext, text):
     import re
 
     for pattern, repl in _yaml_rules(kind, step, ext).items():
-        text = re.sub(pattern, repl, text)
+        text = re.sub(pattern, repl or "", text)
     return text
 
 
@@ -567,3 +567,30 @@ def test_actions_130_140():
     warnings = _yaml_rules("text_warnings", "migrate_130_140", ".py")
     assert [line for line in new.splitlines() if _matching(warnings, line)] == []
     assert _matching(warnings, "rec.action_done()")
+
+
+def test_exceptions_and_invoice_120_130():
+    text = (
+        "from odoo.exceptions import AccessError, ValidationError, Warning\n"
+        "from odoo.exceptions import UserError, Warning\n"
+        "from odoo.exceptions import Warning\n"
+        "raise Warning(_('x'))\n"
+        "warnings.warn('x', Warning)\n"
+        "invoice.action_invoice_open()\n"
+        "rec.number, rec.type\n"
+    )
+    new = _apply("text_replaces", "migrate_120_130", ".py", text)
+    assert new == (
+        "from odoo.exceptions import AccessError, ValidationError, UserError\n"
+        "from odoo.exceptions import UserError\n"
+        "from odoo.exceptions import UserError\n"
+        "raise UserError(_('x'))\n"
+        "warnings.warn('x', Warning)\n"
+        "invoice.action_post()\n"
+        "rec.number, rec.type\n"
+    )
+    assert _apply("text_replaces", "migrate_120_130", ".py", new) == new
+    xml = '<field name="type"/><field name="inherit_id" ref="account.invoice_form"/>'
+    assert _apply("text_replaces", "migrate_120_130", ".xml", xml) == (
+        '<field name="type"/><field name="inherit_id" ref="account.view_move_form"/>'
+    )

@@ -1,41 +1,25 @@
-# Account invoice migration - Odoo 13.0
-# account.invoice model was merged with account.move
-
+# account.invoice fusionné dans account.move en 13.0 (odoo 13.0 « accounting-pocalypse » ;
+# OpenUpgrade 13.0 account post-migration.py : merge_models('account.invoice', 'account.move')).
+# Le renommage du modèle est dans renamed_models/migrate_120_130, celui des champs dans
+# renamed_fields/migrate_120_130/curated.yaml (par modèle, sans faux positif).
+#
+# Retirés (faux positifs ou faux) : '.number' -> '.name' et '.type' -> '.move_type' sur tout le
+# code, name="type" -> name="move_type" (move_type n'existe qu'en 14.0), 'open' -> 'posted'
+# sur toute chaîne, ('residual', '>', 0) -> payment_state (payment_state n'existe qu'en 14.0),
+# account.view_account_invoice_filter -> view_account_move_filter (le premier existe en 13.0).
 .py:
-  # Replace model references
-  '[''"]account\.invoice[''"]': "'account.move'"
-  '[''"]account\.invoice\.line[''"]': "'account.move.line'"
-
-  # Replace field names that changed
-  '\.number': ".name"
-  '\.type': ".move_type"
-
-  # Replace state values
-  'state.*=.*[''"]open[''"]': "state = 'posted'"
-  '[''"]open[''"]': "'posted'"
-
-  # Replace residual checks with payment_state
-  '\(''residual'',\s*''>'',\s*0\)': "('payment_state', '!=', 'paid')"
-
-  # Replace method names that changed
+  # 12.0 account.invoice : action_invoice_open / _cancel / _draft ; 13.0 account.move :
+  # action_post / button_cancel / button_draft
   '\.action_invoice_open\(': ".action_post("
   '\.action_invoice_cancel\(': ".button_cancel("
   '\.action_invoice_draft\(': ".button_draft("
 
 .xml:
-  # Replace model in XML views
-  'model="account\.invoice"': 'model="account.move"'
-  'model=''account\.invoice''': "model='account.move'"
-
-  # Replace view references
-  'account\.invoice_form': "account.view_move_form"
-  'account\.invoice_tree': "account.view_move_tree"
-  'account\.view_account_invoice_filter': "account.view_account_move_filter"
-
-  # Replace field names in XML
-  'name="type"': 'name="move_type"'
-
-  # Replace button names
+  # vues supprimées en 13.0 (addons/account/views/account_invoice_view.xml) et leur
+  # équivalent dans account_move_views.xml
+  '\baccount\.invoice_form\b': "account.view_move_form"
+  '\baccount\.invoice_supplier_form\b': "account.view_move_form"
+  '\baccount\.invoice_tree\b': "account.view_invoice_tree"
   'name="action_invoice_open"': 'name="action_post"'
   'name="action_invoice_cancel"': 'name="button_cancel"'
   'name="action_invoice_draft"': 'name="button_draft"'

@@ -11,7 +11,10 @@ _TEXT_ERRORS = {
         ". This module has been removed."
     },
     ".py": {
-        r".*@api.returns.*\n": "[13] Use of deprecated decorator '@api.returns'",
+        # odoo 13.0 odoo/api.py : one, multi, cr, model_cr, model_cr_context supprimés ;
+        # returns existe toujours (jusqu'en 17.0) : pas d'erreur
+        r"@api\.one\b": "[13] '@api.one' was removed: the method now receives a recordset,"
+        " loop on self (for rec in self) and remove the decorator",
         r".*@api.cr.*\n": "[13] Use of deprecated decorator '@api.cr'",
         r"@api.model_cr\b": "[13] Use of deprecated decorator '@api.model_cr'",
         r"@api.model_cr_context\b": "[13] Use of deprecated decorator '@api.model_cr_context'",
@@ -20,7 +23,6 @@ _TEXT_ERRORS = {
 
 _TEXT_REPLACES = {
     ".py": {
-        r".*@api.one.*\n": "",
         r"\.sudo\((?P<user>[^/)]+?)\)": r".with_user(\g<user>)",
         r"\.suspend_security": ".sudo",
         r"\"base_suspend_security\",\n": "",

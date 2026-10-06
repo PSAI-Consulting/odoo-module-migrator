@@ -19,5 +19,6 @@ class ProductMultiPrice(models.Model):
         digits='Product Price',
     )
 
+    @api.one
     def _some_method(self):
         return self.env.user.company_id
