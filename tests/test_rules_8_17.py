@@ -339,3 +339,12 @@ def test_removed_views_160_170():
     old = '<field name="inherit_id" ref="account.account_invoice_onboarding_panel"/>'
     assert len(_matching(errors, old)) == 1
     assert not _matching(errors, '<field name="inherit_id" ref="account.view_move_form"/>')
+
+
+def test_module_rules_150_160():
+    rules = _module_rules("migrate_150_160")
+    depends = ["gift_card", "coupon", "l10n_nl_report_intrastat", "l10n_de_sale", "mail"]
+    new, messages = manifest.apply_module_rules(depends, rules)
+    assert new == ["loyalty", "l10n_nl_intrastat", "l10n_din5008_sale", "mail"]
+    assert all(level == "info" for level, _msg in messages), messages
+    assert manifest.apply_module_rules(new, rules) == (new, [])
