@@ -444,6 +444,9 @@ class BaseMigrationScript:
                     r"model_%s\"" % old_table_name: 'model_%s"' % new_table_name,
                     r"model_%s\'" % old_table_name: "model_%s'" % new_table_name,
                     r"model_%s," % old_table_name: "model_%s," % new_table_name,
+                    # <field name="model">old.model</field> (views, actions)
+                    r"(<field\s+name=[\"'](?:model|res_model|binding_model|src_model)[\"']\s*>)"
+                    r"\s*%s\s*(</field>)" % old_name_esc: r"\g<1>%s\g<2>" % new_model_name,
                 }
             )
             msg = "The model %s has been renamed to %s.%s" % (

@@ -635,3 +635,25 @@ def test_core_api_120_130():
     assert _matching(errors, "from odoo.osv.orm import setup_modifiers")
     assert _matching(errors, "img = tools.image_resize_image_medium(data)")
     assert not _matching(errors, "img = tools.image_process(data, size=(128, 128))")
+
+
+def test_model_rename_in_field_text_120_130(tmp_path):
+    from odoo_module_migrate.migration_scripts.migrate_120_130 import MigrationScript
+
+    script = MigrationScript()
+    script.parse_rules()
+    replaces = script.handle_renamed_models(script._RENAMED_MODELS)["replaces"]
+    xml = (
+        '<field name="model">account.invoice</field>\n'
+        '<field name="res_model">account.invoice.line</field>\n'
+        '<field name="name">account.invoice</field>\n'
+    )
+    import re
+
+    for pattern, repl in replaces.items():
+        xml = re.sub(pattern, repl, xml)
+    assert xml == (
+        '<field name="model">account.move</field>\n'
+        '<field name="res_model">account.move.line</field>\n'
+        '<field name="name">account.invoice</field>\n'
+    )
