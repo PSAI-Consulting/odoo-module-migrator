@@ -1,0 +1,42 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise du fork LBruyere/enterprise).
+#
+# Modules marqués « removed » / mal ciblés dans modules.yaml, corrigés d'après
+# le message du commit et git show --stat -M :
+#
+# enterprise 08a92ec0fb8 '[MOV] event_barcode: integrate into community event module' :
+# « event_barcode is moved to community and integrated directly into event module »
+# (odoo 17.0 addons/event/static/src/client_action)
+- ["event_barcode", "merged", "event"]
+# enterprise e0d059c9e99 '[MOV] sale_enterprise: merge sale & sale_enterprise' :
+# « The sale_enterprise module can be merged with the sale module. »
+- ["sale_enterprise", "merged", "sale"]
+# enterprise cbc468a8cb8 '[REF] *external_tax*: consolidate duplicated code' : le
+# manifeste de l10n_br_avatax_sale est déplacé dans l10n_br_test_avatax_sale (module
+# de tests), models/sale_order.py est supprimé (code générique dans sale_external_tax).
+# Pas de successeur unique : « removed », pas « renamed » en module de tests.
+- ["l10n_br_avatax_sale", "removed"]
+#
+# Modules de correctifs ajoutés à la branche stable 16.0 (absents de l'historique
+# 16.0 → 17.0) dont le code est dans le module parent en 17.0 :
+# enterprise 66dfbe13d8e '[ADD] account_reconcile_wizard: backport reconciliation wizard
+# from 16.3' (17.0 : account_accountant/wizard/account_reconcile_wizard.py)
+- ["account_reconcile_wizard", "merged", "account_accountant"]
+# enterprise 05ca7977fe7 '[IMP] account_sepa_direct_debit: New version of SEPA Direct Debit
+# Schema' (17.0 : account_sepa_direct_debit/schemas/pain.008.001.08.xsd)
+- ["account_sepa_direct_debit_008_001_08", "merged", "account_sepa_direct_debit"]
+# enterprise a8fcdeb29a6 '[FIX] l10n_de_datev_reports: 2 identifiers DateV Export'
+# (17.0 : res.partner.l10n_de_datev_identifier(_customer) dans l10n_de_reports)
+- ["l10n_de_datev_reports", "merged", "l10n_de_reports"]
+# enterprise 1219ba6e315 '[ADD] l10n_hk_hr_payroll_hsbc_autopay: Add HSBC Autopay'
+# (17.0 : l10n_hk_hr_payroll/wizards/hr_payroll_hsbc_autopay_wizard.py)
+- ["l10n_hk_hr_payroll_hsbc_autopay", "merged", "l10n_hk_hr_payroll"]
+#
+# Laissés « removed » dans modules.yaml après vérification :
+# - barcodes_mobile, event_barcode_mobile, hr_attendance_mobile (enterprise 58bd34cc75e :
+#   ponts auto_install supprimés, logique déplacée dans les modules desktop) ;
+# - l10n_ae_pos (odoo 7eddbfd981be : reçu conforme EAU par défaut dans point_of_sale,
+#   mais remplacer la dépendance ferait perdre l10n_ae) ;
+# - l10n_lu_peppol_id (odoo 45ae6ad15cd6 : remplacé par res.partner.peppol_endpoint de
+#   account_edi_ubl_cii, sans module successeur) ;
+# - website_sale_delivery_avatax (pas de successeur prouvé).
