@@ -358,6 +358,9 @@ def test_core_api_replaces_190_200():
         "if self._has_cycle():\n"
     )
     assert _apply_yaml(path, ".py", new) == new
+    # not alone on its line: left to python_scripts/migrate_190_200/odoo_tools_imports.py
+    several = "from odoo.tools import test_reports, ustr\n"
+    assert _apply_yaml(path, ".py", several) == several
 
 
 def test_core_api_errors_190_200():
