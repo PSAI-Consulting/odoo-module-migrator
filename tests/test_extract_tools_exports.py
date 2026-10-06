@@ -39,7 +39,8 @@ def odoo_repo(tmp_path):
             "from .mail import *\nfrom .misc import *\nfrom .query import Query\n"
         ),
         "odoo/tools/mail.py": (
-            "from markupsafe import Markup\nimport re\n"
+            "from markupsafe import Markup\nimport re\nfrom PIL import Image\n"
+            "Image._initialized = 2\n"
             "def html_to_inner_content(html):\n    return html\n"
         ),
         "odoo/tools/misc.py": (
@@ -82,6 +83,8 @@ def test_extractor(odoo_repo):
         rules[("odoo.tools", "html_to_inner_content")]["proof"].split()[1])
     # re-export of another library: its real origin
     assert rules[("odoo.tools", "OrderedDict")]["import"] == "from collections import OrderedDict"
+    # "Image._initialized = 2" does not define Image
+    assert rules[("odoo.tools", "Image")]["import"] == "from PIL import Image"
     # moved with its code adapted, by one commit: proved by that commit
     assert rules[("odoo.tools", "street_split")]["to"] == "odoo.tools.business_data"
     assert "[REF] tools: isolate business code" in rules[("odoo.tools", "street_split")]["proof"]

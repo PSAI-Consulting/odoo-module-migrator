@@ -71,6 +71,17 @@ def _not_runtime(test):
     return text in ("TYPE_CHECKING", "typing.TYPE_CHECKING") or text.replace('"', "'") == "__name__ == '__main__'"
 
 
+def _target_names(target):
+    """Names bound by an assignment target (not ``Image._initialized = 2``)."""
+    if isinstance(target, ast.Name):
+        yield target
+    elif isinstance(target, (ast.Tuple, ast.List)):
+        for elt in target.elts:
+            yield from _target_names(elt)
+    elif isinstance(target, ast.Starred):
+        yield from _target_names(target.value)
+
+
 class Branch:
     """The ``odoo`` package (without addons) of one branch, read with ``git cat-file``."""
 
@@ -184,7 +195,7 @@ class Branch:
                     if isinstance(value, ast.Call) and getattr(value.func, "id", getattr(value.func, "attr", "")) in TYPEVARS:
                         kind = "typevar"
                     for target in targets:
-                        for name in ast.walk(target):
+                        for name in _target_names(target):
                             if isinstance(name, ast.Name):
                                 if name.id == "__all__":
                                     values = strings(value)
@@ -323,9 +334,9 @@ class Proofs:
             found = self.commit("-S", value, path)
             if found:
                 return value, found
-        # the history of the file alone can hide the change (merges): whole odoo/ package
+        # the history of the file alone can hide the change (merges): whole directory
         for value in (f"def {name}(", f"class {name}", f"{name} = "):
-            found = self.commit("-S", value, "odoo")
+            found = self.commit("-S", value, path.rsplit("/", 1)[0])
             if found:
                 return None, found
         return None, None
