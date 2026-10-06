@@ -24,3 +24,19 @@ def test_missing_relative_imports(tmp_path, caplog):
     found = sorted(r.getMessage().split("'")[1] for r in caplog.records)
     # queue_job_config is a name of jobrunner/__init__.py: not reported
     assert found == ["account_move", "wizard"]
+    # the misleading Python message is quoted, so that the install log error is found
+    assert "partially initialized module" in caplog.records[0].getMessage()
+
+
+def test_missing_models_package_python_message(tmp_path):
+    # Stof edi_sftp_data_model / edi_smb_data_model: __init__.py imports a
+    # models package that does not exist (already the case in the 17.0 source)
+    import subprocess
+    import sys
+
+    (tmp_path / "pkgx").mkdir()
+    (tmp_path / "pkgx" / "__init__.py").write_text("from . import models\n", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-c", "import pkgx"], cwd=tmp_path, capture_output=True, text=True
+    )
+    assert "cannot import name 'models' from partially initialized module 'pkgx'" in result.stderr
