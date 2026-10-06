@@ -7,3 +7,4 @@
 - ["pos.order.line", "mp_skip", "skip_change", "OpenUpgrade 17.0 openupgrade_scripts/scripts/point_of_sale/17.0.1.0.1/pre-migration.py"]
 - ["spreadsheet.dashboard", "data", "spreadsheet_binary_data", "OpenUpgrade 17.0 openupgrade_scripts/scripts/spreadsheet_dashboard/17.0.1.0/pre-migration.py"]
 - ["stock.move", "quantity_done", "quantity", "OpenUpgrade 17.0 openupgrade_scripts/scripts/stock/17.0.1.1/pre-migration.py"]
+- ["mail.tracking.value", "field", "field_id", "odoo e147d3559038 \"[REF] mail: rename 'field' to 'field_id' on tracking value\""]
