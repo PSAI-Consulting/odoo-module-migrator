@@ -350,6 +350,23 @@ def test_module_rules_150_160():
     assert manifest.apply_module_rules(new, rules) == (new, [])
 
 
+def test_openupgrade_dk_rename_170_180(tmp_path):
+    from odoo_module_migrate.migration_scripts.migrate_170_180 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    module.mkdir()
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['l10n_dk']}")
+    (module / "models.py").write_text(
+        "from odoo import models\n\n\nclass AccountMove(models.Model):\n"
+        '    _inherit = "account.move"\n\n    def _x(self):\n'
+        "        return self.l10n_dk_currency_rate_at_transaction\n"
+    )
+    script = MigrationScript()
+    script.parse_rules()
+    script.handle_fields(module)
+    assert "return self.invoice_currency_rate\n" in (module / "models.py").read_text()
+
+
 def _apply(kind, step, ext, text):
     import re
 

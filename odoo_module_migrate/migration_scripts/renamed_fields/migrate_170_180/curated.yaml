@@ -46,3 +46,7 @@
 # enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions' : même Many2many documents.tag, même table product_tags_table
 - ["res.company", "product_tags", "product_tag_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]
 - ["res.config.settings", "product_tags", "product_tag_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]
+#
+# OpenUpgrade 18.0 account/18.0.1.3/pre-migration.py, liste field_renames_l10n_dk_bookkeeping
+# (ignorée par tools/extract_fields.py avant sa correction : generated.yaml la donnait supprimée)
+- ["account.move", "l10n_dk_currency_rate_at_transaction", "invoice_currency_rate", "OpenUpgrade 18.0 openupgrade_scripts/scripts/account/18.0.1.3/pre-migration.py"]
