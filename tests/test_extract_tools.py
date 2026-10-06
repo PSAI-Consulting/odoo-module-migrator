@@ -300,3 +300,26 @@ def test_openupgrade_rename_variable_names(tmp_path):
     ren, ren_models, _removed, _removed_models = ef.openupgrade_changes(ou, "16.0", lambda m: True)
     assert sorted(r[:3] for r in ren) == [("coupon.program", "a", "b"), ("event.event", "c", "d")]
     assert [r[:2] for r in ren_models] == [("coupon.program", "loyalty.program")]
+
+
+def test_openupgrade_rename_of_a_field_still_defined(repo, tmp_path):
+    """OpenUpgrade renames a column whose old field still exists in the target
+    (16.0 mrp.workcenter capacity -> default_capacity): candidate only."""
+    ou = tmp_path / "ou"
+    ou.mkdir()
+    _git(ou, "init", "-q", "-b", "20.0")
+    _commit(ou, {
+        "openupgrade_scripts/scripts/base/20.0.1.0/pre-migration.py":
+            "_field_renames = [\n"
+            "    ('res.bank.institution', 'res_bank_institution', 'bic', 'swift'),\n"
+            "    ('res.bank.institution', 'res_bank_institution', 'old_other', 'other'),\n"
+            "]\n",
+    }, "init")
+    out = tmp_path / "scripts"
+    ec.main(["fields", "--from", "19.0", "--to", "20.0", "--repo", str(repo), "--models", "res.",
+             "--openupgrade", str(ou), "--output-dir", str(out)])
+    generated = yaml.safe_load((out / "renamed_fields/migrate_190_200/generated.yaml").read_text())
+    assert [r[:3] for r in generated] == [["res.bank.institution", "old_other", "other"]]
+    candidates = (out / "renamed_fields/migrate_190_200/candidates.yaml").read_text()
+    assert '# - ["res.bank.institution", "bic", "swift"' in candidates
+    assert "old field still defined in 20.0" in candidates
