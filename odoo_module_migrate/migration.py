@@ -322,6 +322,11 @@ class Migration:
                 module_migration._module_path, model_index
             ):
                 logger.error("%s. File %s:%s" % (message, path, line))
+            # paths of @api.depends / related= through fields that do not exist
+            for path, line, message in models.check_field_paths(
+                module_migration._module_path, model_index
+            ):
+                logger.error("%s. File %s:%s" % (message, path, line))
 
     def _run_upgrade_code(self):
         init_version = self._migration_steps[0]["init_version_name"]

@@ -109,29 +109,29 @@ def test_bare_tag_anchors_templates(tmp_path):
 
 
 def test_parent_view_of_a_module_outside_depends(tmp_path):
-    """edi_platform_enable_ftp inherits a view of edi_platform without depending
+    """A module inherits a view of another custom module without depending
     on it: the dependency is reported, not its anchors."""
     ref, custom = tmp_path / "odoo", tmp_path / "custom"
     _module(ref, "base", [], "")
-    _module(custom, "edi_platform", ["base"], _view(
-        "task_form", None, '<form><field name="input_type"/></form>', "edi.task")
-        + '<record id="menu_edi" model="ir.ui.menu"><field name="name">x</field></record>')
-    mod = _module(custom, "edi_ftp", ["base"], _view(
-        "v1", "edi_platform.task_form", '<field name="input_type" position="after"/>', "edi.task")
-        + '<menuitem id="m" parent="edi_platform.menu_edi"/>'
-        + '<menuitem id="m2" parent="edi_platform.menu_unknown"/>')
+    _module(custom, "x_base", ["base"], _view(
+        "task_form", None, '<form><field name="input_type"/></form>', "x.task")
+        + '<record id="menu_x" model="ir.ui.menu"><field name="name">x</field></record>')
+    mod = _module(custom, "x_ext", ["base"], _view(
+        "v1", "x_base.task_form", '<field name="input_type" position="after"/>', "x.task")
+        + '<menuitem id="m" parent="x_base.menu_x"/>'
+        + '<menuitem id="m2" parent="x_base.menu_unknown"/>')
     # with the dependency: nothing
-    mod_ok = _module(custom, "edi_ftp_ok", ["edi_platform"], _view(
-        "v1", "edi_platform.task_form", '<field name="input_type" position="after"/>', "edi.task"))
-    # a dependency not indexed: edi_platform may be one of its dependencies
-    mod_unknown = _module(custom, "edi_ftp_unknown", ["not_indexed"], _view(
-        "v1", "edi_platform.task_form", '<field name="input_type" position="after"/>', "edi.task"))
+    mod_ok = _module(custom, "x_ext_ok", ["x_base"], _view(
+        "v1", "x_base.task_form", '<field name="input_type" position="after"/>', "x.task"))
+    # a dependency not indexed: x_base may be one of its dependencies
+    mod_unknown = _module(custom, "x_ext_unknown", ["not_indexed"], _view(
+        "v1", "x_base.task_form", '<field name="input_type" position="after"/>', "x.task"))
     index = views.ViewIndex.build([ref, custom])
     messages = sorted(msg for _p, _l, msg in views.check_module(mod, index, {"base"}))
     assert messages == [
-        "XML id edi_platform.menu_edi comes from the module 'edi_platform', which is not in the"
+        "XML id x_base.menu_x comes from the module 'x_base', which is not in the"
         " dependencies of the module: add it to 'depends'",
-        "parent view edi_platform.task_form comes from the module 'edi_platform', which is not in"
+        "parent view x_base.task_form comes from the module 'x_base', which is not in"
         " the dependencies of the module: add it to 'depends'",
     ], messages
     assert not list(views.check_module(mod_ok, index, {"base"}))
