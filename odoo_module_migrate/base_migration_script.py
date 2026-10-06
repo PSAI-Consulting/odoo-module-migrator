@@ -15,6 +15,10 @@ from .log import logger
 from . import manifest, tools
 from .analysis import fields as analysis_fields
 
+# Models whose XML / CSV records are converted by Odoo's official upgrade_code
+# scripts (19.4-00-ir-access.py): not reported in data files when they run
+CONVERTED_BY_UPGRADE_CODE = {"ir.model.access", "ir.rule"}
+
 
 class BaseMigrationScript:
     _TEXT_REPLACES: Dict[str, Any] = {}
@@ -268,7 +272,11 @@ class BaseMigrationScript:
         cache = self.__dict__.setdefault("_rules_cache", {})
         if extension not in cache:
             renamed_models = self.handle_renamed_models(self._RENAMED_MODELS)
-            removed_models = self.handle_removed_models(self._REMOVED_MODELS)
+            removed = self._REMOVED_MODELS
+            if tools.RUN_CONTEXT.get("upgrade_code") and extension in (".xml", ".csv"):
+                # records converted afterwards by Odoo's official scripts
+                removed = [r for r in removed if r[0] not in CONVERTED_BY_UPGRADE_CODE]
+            removed_models = self.handle_removed_models(removed)
             result = {}
             for kind, own in (
                 ("replaces", self._TEXT_REPLACES),

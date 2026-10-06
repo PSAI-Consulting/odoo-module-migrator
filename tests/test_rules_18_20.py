@@ -498,3 +498,22 @@ def test_js_and_view_rules_no_false_positive(step):
     assert not [p for p in errors[".js"] if re.search(p, js)]
     xml = '<field name="inherit_id" ref="sale.view_order_form"/>\n'
     assert not [p for p in views[".xml"] if re.search(p, xml)]
+
+
+def test_access_records_left_to_upgrade_code():
+    """ir.rule / ir.model.access in data files: converted by Odoo's official
+    script when it runs, still reported in Python code."""
+    from odoo_module_migrate import tools
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import MigrationScript
+
+    script = MigrationScript()
+    script.parse_rules()
+    tools.RUN_CONTEXT["upgrade_code"] = True
+    try:
+        xml = script._file_rules(".xml")["errors"]
+        py = script._file_rules(".py")["errors"]
+    finally:
+        tools.RUN_CONTEXT.clear()
+    assert not any(r"ir\.rule" in p or r"ir\.model\.access" in p for p in xml)
+    assert any(r"ir\.model\.access" in p for p in py)
+    assert any(r"account\.group" in p for p in xml)  # 19.3-00-account-groups.py is not run
