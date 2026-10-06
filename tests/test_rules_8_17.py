@@ -142,3 +142,144 @@ def test_attrs_states_to_attributes(tmp_path, caplog):
     # second pass: no change
     _move_attrs_to_attributes_view(logger, path)
     assert path.read_text(encoding="utf-8") == ATTRS_EXPECTED
+
+
+HOOKS_PY = '''from odoo import SUPERUSER_ID, api, fields
+
+_logger = None
+
+
+def pre_init_hook(cr):
+    """Prepopulate"""
+    cr.execute("SELECT 1")
+
+
+def post_init_hook(cr, registry, vals=None):
+    with api.Environment.manage():
+        env = api.Environment(cr, SUPERUSER_ID, {})
+        env.ref("sale.rule").active = False
+
+
+def uninstall_hook(cr, registry):
+    registry["res.partner"]._fields
+
+
+def helper(cr):
+    env = api.Environment(cr, SUPERUSER_ID, {})
+    return fields.Date.today(), env
+'''
+
+HOOKS_EXPECTED = '''from odoo import SUPERUSER_ID, api, fields
+
+_logger = None
+
+
+def pre_init_hook(env):
+    """Prepopulate"""
+    cr = env.cr
+    cr.execute("SELECT 1")
+
+
+def post_init_hook(env):
+    env.ref("sale.rule").active = False
+
+
+def uninstall_hook(cr, registry):
+    registry["res.partner"]._fields
+
+
+def helper(cr):
+    env = api.Environment(cr, SUPERUSER_ID, {})
+    return fields.Date.today(), env
+'''
+
+
+def test_init_hooks_env():
+    from odoo_module_migrate.migration_scripts.python_scripts.migrate_160_170 import (
+        init_hooks,
+    )
+
+    hooks = {"pre_init_hook", "post_init_hook", "uninstall_hook"}
+    new, errors = init_hooks._rewrite(HOOKS_PY, hooks)
+    assert new == HOOKS_EXPECTED
+    # registry used: reported, not changed
+    assert errors == [("uninstall_hook", 16, "uses registry")]
+    assert init_hooks._rewrite(new, hooks) == (new, [("uninstall_hook", 16, "uses registry")])
+    # SUPERUSER_ID / api no longer used: import dropped
+    text = HOOKS_PY.split("\n\n\ndef uninstall_hook")[0] + "\n"
+    new, errors = init_hooks._rewrite(text, hooks)
+    assert new.startswith("from odoo import fields\n\n_logger")
+    assert not errors
+
+
+MANAGE_PY = '''from odoo import api
+
+
+def run(env):
+    with api.Environment.manage():
+        env.cr.execute("""
+            SELECT 1
+        """)
+        if env:
+            return 1
+    with api.Environment.manage() as manager:
+        return manager
+'''
+
+MANAGE_EXPECTED = '''from odoo import api
+
+
+def run(env):
+    env.cr.execute("""
+            SELECT 1
+        """)
+    if env:
+        return 1
+    with api.Environment.manage() as manager:
+        return manager
+'''
+
+
+def test_environment_manage_removed():
+    from odoo_module_migrate.migration_scripts.python_scripts.migrate_160_170 import (
+        environment_manage,
+    )
+
+    new, unconverted = environment_manage._rewrite(MANAGE_PY)
+    assert new == MANAGE_EXPECTED
+    assert unconverted == [10]
+    assert environment_manage._rewrite(new) == (new, [10])
+
+
+def _yaml_rules(kind, step, ext):
+    rules = {}
+    for path in sorted(glob.glob(f"{SCRIPTS}/{kind}/{step}/*.yaml")):
+        rules.update((yaml.safe_load(open(path, encoding="utf-8")) or {}).get(ext, {}))
+    return rules
+
+
+def _matching(rules, text):
+    import re
+
+    return sorted(pattern for pattern in rules if re.search(pattern, text))
+
+
+def test_core_api_160_170():
+    errors = _yaml_rules("text_errors", "migrate_160_170", ".py")
+    warnings = _yaml_rules("text_warnings", "migrate_160_170", ".py")
+    old = (
+        "    state = fields.Selection(READONLY_STATES)\n"
+        "    date = fields.Date(readonly=True, states={'draft': [('readonly', False)]})\n"
+        "    ref = fields.Char(states=READONLY_STATES)\n"
+        "    def name_get(self):\n"
+        "        return super().name_get()\n"
+    )
+    assert len(_matching(errors, old)) == 2
+    assert _matching(warnings, old) == [r"\.name_get\(\)"]
+    migrated = (
+        "    states = self.mapped('state')\n"
+        "    self._filter(states=states)\n"
+        "    def _compute_display_name(self):\n"
+        "        record.display_name = record.name\n"
+    )
+    assert not _matching(errors, migrated) and not _matching(warnings, migrated)
