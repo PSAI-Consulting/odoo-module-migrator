@@ -318,14 +318,15 @@ class BaseMigrationScript:
         # The models renamed by this step are renamed in the files before the
         # fields are handled, while the field rules may name the old model
         # (OpenUpgrade 16.0 loyalty: coupon.program fields, then coupon.program
-        # -> loyalty.program): the rules apply to the new name too.
+        # -> loyalty.program): the renames apply to the new name too. Not the
+        # removals: a merged model has all its fields "removed" in the analysis
+        # (13.0 account.invoice -> account.move: account.move.name still exists).
         new_models = {}
         for r in self._RENAMED_MODELS:
             new_models.setdefault(r[0], r[1])
-        for rules in (renames, removed):
-            for (model, field), value in list(rules.items()):
-                if model in new_models:
-                    rules.setdefault((new_models[model], field), value)
+        for (model, field), value in list(renames.items()):
+            if model in new_models:
+                renames.setdefault((new_models[model], field), value)
         removed = {k: v for k, v in removed.items() if k not in renames}
         renames = analysis_fields.with_delegation(renames)
         removed = {
