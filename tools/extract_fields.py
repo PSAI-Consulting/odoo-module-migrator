@@ -322,11 +322,14 @@ def openupgrade_changes(openupgrade_git, ref, models_filter):
                 if FIELD_RENAMES_RE.search(name) and isinstance(value, (list, tuple)):
                     for item in value:
                         if isinstance(item, (list, tuple)) and len(item) == 4:
-                            renamed_fields.append((item[0], item[2], item[3], source))
+                            # stray spaces exist ("lunch.alert " in OpenUpgrade 13.0)
+                            renamed_fields.append(
+                                (str(item[0]).strip(), str(item[2]).strip(), str(item[3]).strip(), source)
+                            )
                 elif MODEL_RENAMES_RE.search(name) and isinstance(value, (list, tuple)):
                     for item in value:
                         if isinstance(item, (list, tuple)) and len(item) == 2:
-                            renamed_models.append((item[0], item[1], source))
+                            renamed_models.append((str(item[0]).strip(), str(item[1]).strip(), source))
         else:
             for line in text.splitlines():
                 match = ANALYSIS_RE.match(line.strip())

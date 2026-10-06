@@ -292,7 +292,7 @@ def test_openupgrade_rename_variable_names(tmp_path):
     _git(ou, "init", "-q", "-b", "16.0")
     _commit(ou, {
         "openupgrade_scripts/scripts/loyalty/16.0.1.0/pre-migration.py":
-            "_fields_renames = [('coupon.program', 'coupon_program', 'a', 'b')]\n"
+            "_fields_renames = [('coupon.program ', 'coupon_program', 'a', 'b')]\n"
             "_models_renames = [('coupon.program', 'loyalty.program')]\n"
             "_field_renames_event_sale = [('event.event', 'event_event', 'c', 'd')]\n"
             "_column_renames = {'x': [('e', 'f')]}\n",
