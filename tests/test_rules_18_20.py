@@ -557,3 +557,80 @@ def test_openupgrade_column_renames_not_applied_170_180(tmp_path, caplog):
     messages = [r.getMessage() for r in caplog.records]
     assert any("account.payment.destination_journal_id was removed" in m for m in messages)
     assert not any("location_dest_id" in m or ".journal_id was" in m for m in messages)
+
+
+def test_expression_to_domain_only_calls_of_and_or():
+    """odoo.osv.expression -> Domain: AND / OR calls only, never in strings,
+    other names (MY_AND), osv.expression.OR or other functions."""
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import (
+        convert_expression_to_domain as convert,
+    )
+
+    text = (
+        "from odoo.osv import expression\n\n"
+        "def f(a, b):\n"
+        "    sql = 'SELECT 1 WHERE x AND(y) OR(z)'  # AND( in a comment\n"
+        "    return str(expression.OR([a, b])), expression.AND([a, b]), MY_AND(a)\n"
+    )
+    new = convert(text)
+    assert new == text.replace("from odoo.osv import expression", "from odoo.fields import Domain").replace(
+        "expression.OR([", "Domain.OR([").replace("expression.AND([", "Domain.AND([")
+    assert convert(new) == new
+    # another function of the module: no equivalent, left (reported in 20.0)
+    other = "from odoo.osv import expression\nx = expression.AND([a]) + expression.normalize_domain(b)\n"
+    assert convert(other) == other
+    names = (
+        "from odoo.osv.expression import AND, OR\n"
+        "x = AND([a, b]) or OR([c])\ny = 'AND(' + MY_AND(c) + obj.AND(d)\n"
+    )
+    assert convert(names) == (
+        "from odoo.fields import Domain\n"
+        "x = Domain.AND([a, b]) or Domain.OR([c])\ny = 'AND(' + MY_AND(c) + obj.AND(d)\n"
+    )
+    # osv.expression.OR(...) of `from odoo import osv`: left (was osv.Domain.OR)
+    pkg = "from odoo import models, osv\nx = osv.expression.OR([a, b])\n"
+    assert convert(pkg) == pkg
+
+
+def test_search_group_attrs_removed_in_place():
+    """<group expand string> of search views (not allowed by common.rng in
+    19.0): only these attributes change, the file is not serialized again
+    (multi-line attributes joined, XML declaration rewritten...)."""
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import remove_search_group_attrs
+
+    text = (
+        "<?xml version='1.0' encoding='utf-8' ?>\n<odoo>\n"
+        "    <menuitem\n        id=\"menu_audit\"\n        name=\"Audit\"\n    />\n"
+        "    <!-- <search><group expand=\"0\"/></search> -->\n"
+        "    <search string=\"Rules\">\n"
+        "        <filter name=\"a\" domain=\"[('x', '>', 1)]\" />\n"
+        "        <group\n            expand=\"0\"\n            string='Group By...'\n        >\n"
+        "            <filter name=\"b\" context=\"{'group_by': 'state'}\" />\n"
+        "        </group>\n"
+        "    </search>\n"
+        "    <form><group string=\"Kept\" name=\"g\" expand=\"1\">&nbsp;</group></form>\n"
+        "    <searchpanel><group string=\"kept too\"/></searchpanel>\n"
+        "</odoo>\n"
+    )
+    new = remove_search_group_attrs(text)
+    assert new == text.replace(
+        "        <group\n            expand=\"0\"\n            string='Group By...'\n        >\n",
+        "        <group\n        >\n",
+    )
+    assert remove_search_group_attrs(new) == new
+
+
+def test_auto_added_fields_notice_only_from_17():
+    """Fields used by view expressions are added automatically since 18.0
+    (odoo 6f06420e4a94, not in 17.0): an 18.0 module already works so, the
+    notice is not repeated by the 18.0 -> 19.0 step."""
+    from odoo_module_migrate.migration_scripts.migrate_170_180 import MigrationScript as M18
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import MigrationScript as M19
+
+    def warnings(script_class):
+        script = script_class()
+        script.parse_rules()
+        return script._file_rules(".xml")["warnings"]
+
+    assert any("137031" in m for m in warnings(M18).values())
+    assert not any("137031" in m for m in warnings(M19).values())

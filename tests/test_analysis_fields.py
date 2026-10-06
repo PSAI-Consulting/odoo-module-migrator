@@ -199,7 +199,59 @@ def test_subview_of_module_x2many():
     assert not any(m == "product.product" for m, _f, _l in {(u.model, u.field, u.line) for u in fa.xml_usages(xml)})
 
 
-def test_delegation():
+REPORTS_XML = '''<odoo>
+    <record id="action_report_x" model="ir.actions.report">
+        <field name="name">X</field>
+        <field name="report_name">my_mod.report_x</field>
+        <field name="report_file">my_mod.report_x</field>
+        <field name="print_report_name">'X'</field>
+    </record>
+    <record id="action_report_y" model="ir.actions.report">
+        <field name="report_file" eval="'my_mod.report_y'"/><field name="name">Y</field>
+    </record>
+    <record id="x_wizard" model="x.wizard">
+        <field name="report_file">kept: another model</field>
+    </record>
+    <record id="ir.actions.report_mobile" model="res.partner">
+        <field name="mobile">removed field, kept and reported</field>
+    </record>
+</odoo>
+'''
+
+
+def test_dropped_record_fields(tmp_path):
+    """ir.actions.report.report_file (odoo 80e1a4464f75): its values are
+    dropped, as Odoo did in its own reports; idempotent."""
+    import logging
+
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import MigrationScript
+
+    (tmp_path / "report").mkdir()
+    path = tmp_path / "report" / "reports.xml"
+    path.write_text(REPORTS_XML, encoding="utf-8")
+    script = MigrationScript()
+    script.parse_rules()
+    records = []
+    handler = logging.Handler()
+    handler.emit = records.append
+    logger = logging.getLogger("odoo_module_migrate.log")
+    logger.addHandler(handler)
+    level = logger.level
+    logger.setLevel(logging.INFO)
+    try:
+        script.handle_fields(tmp_path)
+        text = path.read_text(encoding="utf-8")
+        script.handle_fields(tmp_path)
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(level)
+    assert path.read_text(encoding="utf-8") == text
+    assert text == REPORTS_XML.replace(
+        "        <field name=\"report_file\">my_mod.report_x</field>\n", ""
+    ).replace("<field name=\"report_file\" eval=\"'my_mod.report_y'\"/>", "")
+    messages = [r.getMessage() for r in records]
+    assert not [m for m in messages if "report_file was removed" in m]
+    assert len([m for m in messages if "report_file dropped" in m]) == 2
     rules = {("product.template", "detailed_type"): "x", ("product.product", "y"): "z"}
     result = fa.with_delegation(rules)
     assert result[("product.product", "detailed_type")] == "x"

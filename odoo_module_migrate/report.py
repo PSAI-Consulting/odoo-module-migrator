@@ -25,6 +25,8 @@ SOURCE_RE = re.compile(
     r"|\b(?:odoo|enterprise|design-themes)\s+[0-9a-f]{7,40}\b(?:\s+'[^']*')?"
     r"|OpenUpgrade\s+\d+\.\d+\s+\S+"
 )
+# "[module] Running migration from 19.0 to 20.0" (module_migration.py)
+RUNNING_RE = re.compile(r"\[[\w.]+\] Running migration ")
 LEVELS = {"INFO": 0, "WARNING": 1, "ERROR": 2, "CRITICAL": 2}
 
 
@@ -60,6 +62,7 @@ class ModuleReport:
         return [
             e for e in self.entries
             if e.level == "INFO" and not e.message.startswith(("Dependency", "Running", "Migrate "))
+            and not RUNNING_RE.match(e.message)
         ]
 
     @property

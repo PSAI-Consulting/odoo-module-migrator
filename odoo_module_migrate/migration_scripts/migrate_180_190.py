@@ -3,68 +3,99 @@
 import ast
 import json
 import re
-from io import BytesIO
-
-from lxml import etree
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
+
+
+IMPORT_EXPRESSION_RE = re.compile(r"^([ \t]*)from odoo\.osv import expression[ \t]*$", re.M)
+IMPORT_AND_OR_RE = re.compile(
+    r"^([ \t]*)from odoo\.osv\.expression import \(?[ \t]*(AND|OR)[ \t]*(?:,[ \t]*(AND|OR)[ \t]*)?,?[ \t]*\)?[ \t]*$",
+    re.M
+)
+
+
+def _code_names(text):
+    """(start offset, name, previous significant token, next token) of the
+    NAME tokens of Python code (strings and comments excluded)."""
+    import io
+    import tokenize
+
+    lines = text.splitlines(keepends=True)
+    starts = [0]
+    for line in lines:
+        starts.append(starts[-1] + len(line))
+    result = []
+    tokens = [
+        t for t in tokenize.generate_tokens(io.StringIO(text).readline)
+        if t.type not in (tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT, tokenize.INDENT, tokenize.DEDENT)
+    ]
+    for index, token in enumerate(tokens):
+        if token.type == tokenize.NAME:
+            previous = tokens[index - 1].string if index else ""
+            following = tokens[index + 1].string if index + 1 < len(tokens) else ""
+            following2 = tokens[index + 2].string if index + 2 < len(tokens) else ""
+            following3 = tokens[index + 3].string if index + 3 < len(tokens) else ""
+            offset = starts[token.start[0] - 1] + token.start[1]
+            result.append((offset, token.string, previous, following, following2, following3))
+    return result
+
+
+def convert_expression_to_domain(text):
+    """odoo.osv.expression AND / OR -> odoo.fields.Domain.AND / OR (odoo.osv
+    was removed in 20.0). Only done when every use of the import is a call of
+    AND / OR: other functions (normalize_domain, TRUE_DOMAIN...) have no
+    direct equivalent and are left (reported by the 20.0 rules)."""
+    try:
+        names = _code_names(text)
+    except Exception:  # noqa: BLE001 - tokenize errors: left as is
+        return text
+    edits = []  # (start, end, replacement)
+    module_import = IMPORT_EXPRESSION_RE.search(text)
+    if module_import:
+        uses = [n for n in names if n[1] == "expression" and n[2] != "." and n[0] > module_import.end()]
+        if uses and all(n[3] == "." and n[4] in ("AND", "OR") and n[5] == "(" for n in uses):
+            for offset, *_ in uses:
+                edits.append((offset, offset + len("expression"), "Domain"))
+            edits.append((module_import.start(), module_import.end(),
+                          f"{module_import.group(1)}from odoo.fields import Domain"))
+    names_import = IMPORT_AND_OR_RE.search(text)
+    if names_import:
+        imported = {names_import.group(2), names_import.group(3)} - {None}
+        uses = [n for n in names if n[1] in imported and n[2] != "."
+                and n[0] > names_import.end()]
+        if uses and all(n[3] == "(" for n in uses):
+            for offset, name, *_ in uses:
+                edits.append((offset, offset + len(name), f"Domain.{name}"))
+            edits.append((names_import.start(), names_import.end(),
+                          f"{names_import.group(1)}from odoo.fields import Domain"))
+    if not edits:
+        return text
+    for start, end, replacement in sorted(edits, reverse=True):
+        text = text[:start] + replacement + text[end:]
+    # one import of Domain is enough
+    seen = False
+    lines = []
+    for line in text.split("\n"):
+        if line.strip() == "from odoo.fields import Domain":
+            if seen:
+                continue
+            seen = True
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def migrate_expression_to_domain(
     logger, module_path, module_name, manifest_path, migration_steps, tools
 ):
-    """Convert odoo.osv.expression usage to odoo.fields.Domain"""
-    files_to_process = tools.get_files(module_path, (".py",))
-
-    for file in files_to_process:
-        try:
-            content = tools._read_content(file)
-            original_content = content
-
-            content = re.sub(
-                r"from odoo\.osv import expression",
-                "from odoo.fields import Domain",
-                content,
-            )
-
-            content = re.sub(
-                r"from odoo\.osv\.expression import (AND|OR|AND, OR|OR, AND)",
-                "from odoo.fields import Domain",
-                content,
-            )
-
-            content = re.sub(r"expression\.AND\(", "Domain.AND(", content)
-            content = re.sub(r"expression\.OR\(", "Domain.OR(", content)
-
-            content = re.sub(r"(?<!\.)AND\(", "Domain.AND(", content)
-            content = re.sub(r"(?<!\.)OR\(", "Domain.OR(", content)
-
-            content = re.sub(
-                r"from odoo\.fields import Domain, (AND|OR|AND, OR|OR, AND)",
-                "from odoo.fields import Domain",
-                content,
-            )
-
-            lines = content.split("\n")
-            seen_domain_import = False
-            cleaned_lines = []
-
-            for line in lines:
-                if line.strip() == "from odoo.fields import Domain":
-                    if not seen_domain_import:
-                        cleaned_lines.append(line)
-                        seen_domain_import = True
-                else:
-                    cleaned_lines.append(line)
-
-            content = "\n".join(cleaned_lines)
-
-            if content != original_content:
-                tools._write_content(file, content)
-                logger.info(f"Migrated expression imports to Domain in: {file}")
-
-        except Exception as e:
-            logger.error(f"Error processing file {file}: {str(e)}")
+    """Convert odoo.osv.expression AND / OR to odoo.fields.Domain"""
+    for file in tools.get_files(module_path, (".py",)):
+        content = tools._read_content(file)
+        if "odoo.osv" not in content:
+            continue
+        new_content = convert_expression_to_domain(content)
+        if new_content != content:
+            tools._write_content(file, new_content)
+            logger.info(f"Migrated expression imports to Domain in: {file}")
 
 
 def upgrade_sql_constraints(
@@ -126,56 +157,61 @@ def upgrade_sql_constraints(
         tools._write_content(file, content)
 
 
+# Tokens of an XML text: comments, <search> start / end tags, <group> start tags
+# (attribute values may contain '>')
+_ATTRS = r"""(?:[^>"']|"[^"]*"|'[^']*')*"""
+SEARCH_TOKEN_RE = re.compile(
+    rf"<!--.*?-->|<!\[CDATA\[.*?\]\]>|<search\b{_ATTRS}>|</search\s*>|<group\b{_ATTRS}>",
+    re.S,
+)
+GROUP_ATTR_RE = re.compile(r"""\s+(?:expand|string)\s*=\s*(?:"[^"]*"|'[^']*')""")
+
+
+def remove_search_group_attrs(text):
+    """Text without the `expand` / `string` attributes of the <group> of
+    <search> views; the rest of the file is left as is."""
+    depth = 0
+    parts, last = [], 0
+    for match in SEARCH_TOKEN_RE.finditer(text):
+        token = match.group(0)
+        if token.startswith(("<!--", "<![CDATA[")):
+            continue
+        if token.startswith("</search"):
+            depth = max(depth - 1, 0)
+        elif token.startswith("<search"):
+            if not token.endswith("/>"):
+                depth += 1
+        elif depth:
+            new_token = GROUP_ATTR_RE.sub("", token)
+            if new_token != token:
+                parts.append(text[last:match.start()])
+                parts.append(new_token)
+                last = match.end()
+    if not parts:
+        return text
+    parts.append(text[last:])
+    return "".join(parts)
+
+
 def _remove_group_attrs_in_search_views(
     logger, module_path, module_name, manifest_path, migration_steps, tools
 ):
-    """Remove `expand` and `string` attributes from <group> tags when they
-    are inside a <search> view.
+    """Remove the `expand` and `string` attributes of the <group> of search
+    views: not allowed anymore by odoo/addons/base/rng/common.rng in 19.0.
+
+    The attributes are removed from the text (the file is not serialized
+    again: formatting, entities and comments are kept).
     """
-
-    files_to_process = tools.get_files(module_path, (".xml",))
-
-    for file_path in files_to_process:
-        try:
-            content = tools._read_content(file_path)
-            parser = etree.XMLParser(recover=True)
-            try:
-                # lxml does not accept unicode strings with XML declaration,
-                # so parse from bytes to be safe.
-                tree = etree.parse(BytesIO(content.encode("utf-8")), parser)
-                root = tree.getroot()
-            except Exception:
-                # If full-parse fails, skip this file
-                continue
-
-            changed = False
-
-            # Find all <search> elements and remove expand/string from <group> children
-            for search in root.findall(".//search"):
-                for group in search.findall(".//group"):
-                    for attr in ("expand", "string"):
-                        if attr in group.attrib:
-                            del group.attrib[attr]
-                            changed = True
-
-            if changed:
-                # Write back modified tree
-                new_content = etree.tostring(
-                    root, encoding="utf-8", xml_declaration=True
-                ).decode("utf-8")
-                new_content = new_content.replace(
-                    "<?xml version='1.0' encoding='utf-8'?>",
-                    '<?xml version="1.0" encoding="utf-8"?>',
-                )
-                if not new_content.endswith("\n"):
-                    new_content += "\n"
-                tools._write_content(file_path, new_content)
-                logger.info(
-                    f"Removed expand/string attrs from <group> in search views: {file_path}"
-                )
-
-        except Exception as e:
-            logger.error(f"Error processing XML file {file_path}: {e}")
+    for file_path in tools.get_files(module_path, (".xml",)):
+        content = tools._read_content(file_path)
+        if "<search" not in content:
+            continue
+        new_content = remove_search_group_attrs(content)
+        if new_content != content:
+            tools._write_content(file_path, new_content)
+            logger.info(
+                f"Removed expand/string attrs from <group> in search views: {file_path}"
+            )
 
 
 class MigrationScript(BaseMigrationScript):

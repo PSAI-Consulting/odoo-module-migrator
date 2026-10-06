@@ -212,6 +212,11 @@ class ViewIndex:
         is known for sure to be outside the dependencies."""
         return all(name in self.depends for name in closure)
 
+    def unknown_dependencies(self, module):
+        """Dependencies (direct or not) of the module absent from the indexed
+        addons paths: what they add (views, XML ids, models) is unknown."""
+        return sorted(self.closure(module) - set(self.depends))
+
     def available(self, xid, modules=None, exclude=(), _seen=None):
         """Anchor keys of the view and of the views extending it; only the
         views of `modules` (the dependencies, installed for sure) count."""
@@ -227,39 +232,46 @@ class ViewIndex:
         return result
 
 
+def _specs(arch):
+    """Specs of an inheriting arch, in the order Odoo applies them: the
+    children of a <data> are queued after the other specs
+    (odoo/tools/template_inheritance.py, apply_inheritance_specs)."""
+    queue = [node for node in arch if isinstance(node.tag, str)]
+    while queue:
+        node = queue.pop(0)
+        if node.tag == "data":
+            queue += [child for child in node if isinstance(child.tag, str)]
+        else:
+            yield node
+
+
 def _anchors(arch):
-    """(node, (tag, attr, value)) of the anchors of an inheriting arch."""
-    for node in arch:
-        if not isinstance(node.tag, str):
-            continue
+    """(node, (tag, attr, value), keys added before) of the anchors of an
+    inheriting arch. Odoo applies the specs in order: a spec may be anchored
+    on an element added by a previous spec of the same view
+    (odoo/tools/template_inheritance.py, apply_inheritance_specs)."""
+    added = set()
+    for node in _specs(arch):
         if node.tag == "xpath":
             # every step of the path must exist (e.g. a removed x2many field in
             # the middle of the path); only the attributes of the index can be
             # checked (no false positive)
             for step in _steps(node.get("expr") or ""):
                 if step[1] in ANCHOR_ATTRS or step[1] == "":
-                    yield node, step
-        elif node.get("position") and node.tag not in ("data",):
+                    yield node, step, added
+        elif node.get("position"):
             for attr in ANCHOR_ATTRS:
                 if node.get(attr):
-                    yield node, (node.tag, attr, node.get(attr))
+                    yield node, (node.tag, attr, node.get(attr)), added
                     break
             else:
                 # <header position="inside">: Odoo looks for an element with this
                 # tag (and the same other attributes): the tag must exist
-                yield node, (node.tag, "", "")
-
-
-def _inserted(arch):
-    """Keys of the elements added by an inheriting arch (its specs' content):
-    a later spec of the same view may be anchored on them."""
-    keys = set()
-    for spec in arch:
-        if isinstance(spec.tag, str):
-            for child in spec:
+                yield node, (node.tag, "", ""), added
+        if node.get("position") != "attributes":
+            for child in node:
                 if isinstance(child.tag, str):
-                    keys |= _keys(child)
-    return keys
+                    added = added | _keys(child)
 
 
 def _describe(key):
@@ -271,6 +283,8 @@ def check_module(module, index, reference_modules):
     """Yield (path, line, message) for the anchors and XML ids not found."""
     module = pathlib.Path(module)
     closure = index.closure(module.name)
+    # a dependency outside the addons paths may add any anchor, XML id or
+    # dependency: then only what must exist in the target Odoo itself is checked
     complete = index.complete(closure)
     for path in _data_files(module):
         root = _parse(path)
@@ -285,21 +299,20 @@ def check_module(module, index, reference_modules):
                         f"parent view {parent} does not exist in the target Odoo"
                     )
                 continue
+            if not complete:
+                continue
             owner = parent.split(".")[0]
             if owner in index.modules and owner not in closure:
                 # its anchors cannot be found: the real error is the dependency
-                # (installed only if another module happens to install it first);
-                # unknown when a dependency is not indexed (it may depend on it)
-                if complete:
-                    yield path, report_node.sourceline, _missing_depends(
-                        f"parent view {parent}", owner
-                    )
+                # (installed only if another module happens to install it first)
+                yield path, report_node.sourceline, _missing_depends(
+                    f"parent view {parent}", owner
+                )
                 continue
             # the view itself does not count: it holds the anchors
             available = index.available(index.root(parent), closure, exclude={xid})
-            available |= _inserted(arch)
-            for node, key in _anchors(arch):
-                if key not in available:
+            for node, key, added in _anchors(arch):
+                if key not in available and key not in added:
                     yield path, node.sourceline, (
                         f"{_describe(key)} not found in the view {parent} of the target"
                         f" Odoo (nor in any view of its inheritance tree): the view will"

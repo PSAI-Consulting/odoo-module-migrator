@@ -200,3 +200,10 @@ class MigrationScript(BaseMigrationScript):
     _GLOBAL_FUNCTIONS = [
         convert_access_to_ir_access,
     ]
+    _DROPPED_RECORD_FIELDS = {
+        # odoo 80e1a4464f75 '[REM] core,*: remove report_file field from
+        # ir.actions.report': "no longer used by the QWeb reporting engine",
+        # the <field name="report_file"> lines were deleted from the reports
+        # of Odoo (45 files) without replacement
+        ("ir.actions.report", "report_file"): "unused, odoo 80e1a4464f75",
+    }

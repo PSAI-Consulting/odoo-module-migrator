@@ -265,6 +265,19 @@ class ModelIndex:
                     index.add_module(manifest.parent)
         return index
 
+    def unknown_dependencies(self, module):
+        """Dependencies (direct or not) absent from the indexed addons paths."""
+        result, todo, seen = [], [module, "base"], set()
+        while todo:
+            name = todo.pop()
+            if name in seen:
+                continue
+            seen.add(name)
+            if name not in self.depends:
+                result.append(name)
+            todo.extend(self.depends.get(name, ()))
+        return sorted(result)
+
     def closure(self, module):
         result, todo = set(), [module, "base"]
         while todo:
@@ -292,6 +305,8 @@ def check_module(module, index):
     available = index.available(module.name)
     if not index.models.get("base"):
         return  # no reference addons indexed: nothing can be checked
+    if index.unknown_dependencies(module.name):
+        return  # a dependency outside the addons paths may define any model
     # all the dependencies indexed: a model defined by another module is known
     # for sure to be outside the dependencies
     complete = all(name in index.depends for name in closure)

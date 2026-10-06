@@ -447,6 +447,40 @@ def remove_displayed_fields(text, usages, removed):
     return text, done
 
 
+def remove_record_fields(text, usages, keys):
+    """Remove ``<field name="f">value</field>`` of ``<record model="M">`` for
+    the (M, f) of `keys` (fields removed by Odoo whose values it dropped from
+    its own data files). Only simple values (no sub-element) are removed.
+    Returns (text, removed usages)."""
+    spans = []
+    for usage in usages:
+        if (usage.model, usage.field) not in keys or not usage.context.startswith("<record model="):
+            continue
+        tag_start = text.rfind("<", 0, usage.start)
+        tag_end = text.find(">", usage.start)
+        if tag_start < 0 or tag_end < 0 or not text.startswith("<field", tag_start):
+            continue
+        if text[tag_end - 1] == "/":
+            end = tag_end + 1
+        else:
+            close = text.find("</field>", tag_end)
+            if close < 0 or "<" in text[tag_end + 1:close]:
+                continue
+            end = close + len("</field>")
+        line_start = text.rfind("\n", 0, tag_start) + 1
+        line_end = text.find("\n", end)
+        line_end = len(text) if line_end < 0 else line_end
+        if not text[line_start:tag_start].strip() and not text[end:line_end].strip():
+            spans.append((line_start, min(line_end + 1, len(text)), usage))
+        else:
+            spans.append((tag_start, end, usage))
+    done = []
+    for start, end, usage in sorted(spans, key=lambda s: s[0], reverse=True):
+        text = text[:start] + text[end:]
+        done.append(usage)
+    return text, done
+
+
 def apply_renames(text, usages, renames):
     """Rename the usages found in `renames` {(model, old): new}."""
     edits = sorted(

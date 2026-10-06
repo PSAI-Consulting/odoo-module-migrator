@@ -15,5 +15,6 @@
   # odoo 9f2b9e2d3ac '[IMP] tools: reimplement frozendict' : « ReadonlyDict is deprecated starting Odoo 20, use frozendict »
   '\bReadonlyDict\b': "[20] ReadonlyDict is deprecated since 20.0: use odoo.tools.frozendict"
 .xml:
-  'model=["'']ir\.(?:model\.access|rule)["'']': "[20] ir.model.access / ir.rule record left in XML: models removed in 20.0, rewrite it as ir.access (with --odoo-root, Odoo's 19.4-00-ir-access converts the others; the ones left usually modify an access of another module)"
+  # ir.rule / ir.model.access records left in XML: reported after the conversions
+  # (upgrade_code.prepare.access_records_left, called by Migration.run)
   '["'']mail\.tracking\.value["'']': "[20] mail.tracking.value moved to the new module mail_tracking (odoo dd0c51ec1855): add it to the depends"

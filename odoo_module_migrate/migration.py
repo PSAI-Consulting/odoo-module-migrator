@@ -261,6 +261,8 @@ class Migration:
                     except Exception as e:  # noqa: BLE001 - reported, the rest goes on
                         logger.error("%s failed: %s: %s" % (step.__name__, type(e).__name__, e))
                         logger.debug(traceback.format_exc())
+            if float(init_version) < 20 <= float(target_version):
+                self._check_access_records_left()
             for module_migration in self._module_migrations:
                 module_migration.restore()
             if self.report_collector:
@@ -294,6 +296,15 @@ class Migration:
                 report.render_summary(reports, init_version, target_version), encoding="utf-8"
             )
 
+    def _check_access_records_left(self):
+        """ir.rule / ir.model.access left in XML once converted (by Odoo's
+        19.4-00-ir-access.py or by the fallback of migrate_190_200)."""
+        from .upgrade_code.prepare import ACCESS_LEFT_MESSAGE, access_records_left
+
+        for module_migration in self._module_migrations:
+            for path, line in access_records_left(module_migration._module_path):
+                logger.warning("%s. File %s:%s" % (ACCESS_LEFT_MESSAGE, path, line))
+
     def _check_view_anchors(self):
         """Inherited views anchored on fields absent from the target views."""
         from .analysis import views
@@ -306,6 +317,14 @@ class Migration:
         )
         reference_modules = {m.name for m in views._module_dirs(reference)}
         for module_migration in self._module_migrations:
+            unknown = index.unknown_dependencies(module_migration._module_name)
+            if unknown:
+                logger.warning(
+                    "[view] Dependencies not found in the addons paths (%s): the anchors of the"
+                    " inherited views and the models used are not checked (give --context-path)."
+                    " File %s:1"
+                    % (", ".join(unknown), module_migration._module_path / "__manifest__.py")
+                )
             for path, line, message in views.check_module(
                 module_migration._module_path, index, reference_modules
             ):

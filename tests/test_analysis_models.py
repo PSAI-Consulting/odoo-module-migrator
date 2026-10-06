@@ -47,13 +47,13 @@ def test_model_of_a_module_outside_depends(tmp_path):
         "    family_id = fields.Many2one('x.family')\n"
     )
     mod = _module(custom, "my_mod", ["base"], py)
-    # a dependency is not indexed: the model may come from it, old message
+    # a dependency is not indexed: the model may come from it, nothing reported
     mod2 = _module(custom, "my_mod2", ["unknown_mod"], py)
     index = models.ModelIndex.build([ref, custom])
     messages = [msg for _p, _l, msg in models.check_module(mod, index)]
     assert len(messages) == 1 and "defined by the module(s) x_product" in messages[0], messages
     messages = [msg for _p, _l, msg in models.check_module(mod2, index)]
-    assert len(messages) == 1 and "does not exist in the target Odoo" in messages[0], messages
+    assert messages == [], messages
 
 
 FIELDS_PY = '''from odoo import api, fields, models
@@ -133,3 +133,18 @@ def test_field_paths(tmp_path):
     # transient model on a regular one and the mixin are not checked
     assert found == [(9, "partner_id.gone", "gone"), (11, "line_ids.blocked", "blocked")], found
     assert not list(models.check_field_paths(mod_unknown, index))
+
+
+def test_dependency_outside_the_addons_paths(tmp_path):
+    # my_mod depends on other_addon, absent from the addons paths, which may
+    # define other.unit...: nothing can be reported
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "class P(Model):\n    _name = 'res.partner'\n")
+    mod = _module(custom, "my_mod", ["base", "other_addon"], (
+        "class A(models.Model):\n"
+        "    _inherit = 'other.unit'\n"
+        "    partner_id = fields.Many2one('other.region')\n"
+    ))
+    index = models.ModelIndex.build([ref, custom])
+    assert index.unknown_dependencies("my_mod") == ["other_addon"]
+    assert list(models.check_module(mod, index)) == []
