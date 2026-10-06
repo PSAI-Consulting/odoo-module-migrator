@@ -545,3 +545,25 @@ def test_core_api_130_140():
     errors = _yaml_rules("text_errors", "migrate_130_140", ".py")
     assert _matching(errors, "lines = self.resolve_2many_commands('line_ids', cmds)")
     assert not _matching(errors, "lines = self.line_ids")
+
+
+def test_actions_130_140():
+    text = (
+        "picking.action_done()\n"
+        "self.picking_ids.action_done()\n"
+        "payment.post()\n"
+        "move.post()\n"
+        "order.action_done()\n"
+    )
+    new = _apply("text_replaces", "migrate_130_140", ".py", text)
+    assert new == (
+        "picking._action_done()\n"
+        "self.picking_ids._action_done()\n"
+        "payment.action_post()\n"
+        "move.post()\n"
+        "order.action_done()\n"
+    )
+    assert _apply("text_replaces", "migrate_130_140", ".py", new) == new
+    warnings = _yaml_rules("text_warnings", "migrate_130_140", ".py")
+    assert [line for line in new.splitlines() if _matching(warnings, line)] == []
+    assert _matching(warnings, "rec.action_done()")
