@@ -1,0 +1,11 @@
+# Renommages 10.0 -> 11.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade, oldname=).
+# odoo c030213fa3b8 '[IMP] hr_expense: Allow a user to refuse an expense sheet from a line' : même texte du refus
+- ["hr.expense.refuse.wizard", "description", "reason", "odoo c030213fa3b8 '[IMP] hr_expense: Allow a user to refuse an expense sheet from a line'"]
+# odoo 49c159a9060a '[IMP] purchase, sale_stock, stock_account: to refund purchase' : même booléen « à rembourser » (achats aussi)
+- ["stock.move", "to_refund_so", "to_refund", "odoo 49c159a9060a '[IMP] purchase, sale_stock, stock_account: to refund purchase'"]
+- ["stock.return.picking.line", "to_refund_so", "to_refund", "odoo 49c159a9060a '[IMP] purchase, sale_stock, stock_account: to refund purchase'"]
+# odoo 407c8cbc24c2 '[IMP] stock: sheduled date update with picking delivery type' : même date prévue (min_date) ; max_date (échéance) non repris
+- ["stock.picking", "min_date", "scheduled_date", "odoo 407c8cbc24c2 '[IMP] stock: sheduled date update with picking delivery type'"]
+# odoo ddf2b21bdf38 '[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line' : commit : « rename of stock.pack.operation into stock.move.line »
+- ["stock.picking", "pack_operation_ids", "move_line_ids", "odoo ddf2b21bdf38 '[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line'"]
+- ["stock.picking", "pack_operation_exist", "move_line_exist", "odoo ddf2b21bdf38 '[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line'"]

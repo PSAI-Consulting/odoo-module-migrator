@@ -17,3 +17,6 @@
 # est de plus scindé en hr.leave / hr.leave.allocation en 12.0).
 - ["hr.holidays", "number_of_days", null, "OpenUpgrade 12.0 : chaîne de renommages"]
 - ["hr.holidays", "number_of_days_temp", null, "OpenUpgrade 12.0 : chaîne de renommages"]
+# odoo 12.0 sale.py commitment_date = fields.Datetime(..., oldname='requested_date') : en 11.0,
+# sale_order_dates définit déjà commitment_date (date calculée) : échange de noms.
+- ["sale.order", "requested_date", null, "échange avec le commitment_date de sale_order_dates 11.0"]

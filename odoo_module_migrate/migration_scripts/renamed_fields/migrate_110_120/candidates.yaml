@@ -18,8 +18,6 @@
 # - ["account.abstract.payment", "company_id", "writeoff_account_id", "odoo cdca5d4751a9 '[IMP] account: improve the multi currency handling on register.payment.wizard'"]  # non : sens différent
 # - ["hr.contract", "signature_request_count", "sign_request_count", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]  # oui : curated.yaml
 # - ["hr.contract", "signature_request_ids", "sign_request_ids", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]  # oui : curated.yaml
-# - ["maintenance.equipment", "warranty", "warranty_date", "odoo cb34934f3b97 '[IMP] maintenance: On equipment, rename the field Warranty to \"Warranty Expiration Date\"'"]  # oui : curated.yaml
-# - ["maintenance.request", "technician_user_id", "user_id", "odoo 8b355457c4b1 '[IMP] maintenance,hr_maintenance: notify user assigned to a request'"]  # non : non vérifié
 # - ["payment.transaction", "account_invoice_id", "payment_id", "odoo 01216345e283 '[REF] account,payment(_*),sale*: downgrade transactions into debug items'"]  # non : transactions refondues
 # - ["payment.transaction", "create_date", "date", "odoo 01216345e283 '[REF] account,payment(_*),sale*: downgrade transactions into debug items'"]  # non : sens différent
 # - ["payment.transaction", "sale_order_id", "payment_id", "odoo 01216345e283 '[REF] account,payment(_*),sale*: downgrade transactions into debug items'"]  # non : transactions refondues
@@ -31,7 +29,6 @@
 # - ["res.config.settings", "module_rating_project", "group_project_rating", "odoo 95698bd408a2 '[REM] rating_project: kill the module and move feature in project'"]  # non : groupe au lieu d'un module
 # - ["res.config.settings", "module_sale_order_dates", "group_sale_order_dates", "odoo 867e47927dc9 '[REF] sale_order_dates: kill the module'"]  # non : groupe au lieu d'un module
 # - ["sale.order", "quote_viewed", "require_signature", "odoo 4c31a758cf07 '[REF] various: move sale_payment and website_quote into sale and sale_management'"]  # non : sens différent
-# - ["sale.order", "requested_date", "expected_date", "odoo b34f26406f1f '[IMP] sale_order_dates, sale_stock: change dates computation'"]  # non : échange avec commitment_date (OpenUpgrade 12.0) : message dans removed_fields/curated.yaml
 # - ["sale.subscription.report", "state", "health", "enterprise 72c154455b9 '[IMP] sale_subscription: Add an alert mechanism on subscriptions'"]  # non : sens différent
 # - ["stock.location.route", "pull_ids", "rule_ids", "odoo a35df8d37170 '[IMP] stock: merge push and pull rules'"]  # non : règles push / pull fusionnées (rule_ids)
 # - ["stock.location.route", "push_ids", "rule_ids", "odoo a35df8d37170 '[IMP] stock: merge push and pull rules'"]  # non : règles push / pull fusionnées (rule_ids)

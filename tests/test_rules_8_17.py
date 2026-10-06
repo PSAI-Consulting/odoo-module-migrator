@@ -736,3 +736,11 @@ def test_openerp_namespace_kept_for_9(tmp_path):
     texts = [p.read_text(encoding="utf-8") for p in module.rglob("*.py")]
     assert any("from openerp" in t for t in texts)
     assert not any("from odoo " in t or "from odoo." in t for t in texts)
+
+
+def test_core_api_100_110():
+    errors = _yaml_rules("text_errors", "migrate_100_110", ".py")
+    assert _matching(errors, "from odoo.report import report_sxw")
+    assert _matching(errors, "invoice.signal_workflow('invoice_open')")
+    assert _matching(errors, "from odoo.tools import amount_to_text_en")
+    assert not _matching(errors, "text = self.currency_id.amount_to_text(self.amount_total)")
