@@ -67,3 +67,45 @@ def test_other_anchors_templates_and_xmlids(tmp_path):
     assert "XML id web.menu_gone does not exist" in messages[0]
     assert messages[1].startswith("button[@name='action_gone'] not found")
     assert messages[2].startswith("t[@t-set='gone'] not found")
+
+
+def test_anchor_added_by_a_previous_spec_of_the_same_view(tmp_path):
+    # account_payment_order / aep_standard: a spec anchored on an element added
+    # by a previous spec of the same view is valid (specs applied in order)
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], _view("form", None, '<form><field name="name"/></form>', "res.partner"))
+    mod = _module(custom, "my_mod", ["base"], _view("v1", "base.form", (
+        "<xpath expr=\"//field[@name='name']\" position=\"after\"><field name=\"code\"/></xpath>"
+        "<xpath expr=\"//field[@name='code']\" position=\"after\"><field name=\"ape\"/></xpath>"
+        '<field name="ape" position="after"><div><field name="ref_type"/></div></field>'
+        # anchored on an element only added AFTER it: does not install
+        "<xpath expr=\"//field[@name='late']\" position=\"after\"/>"
+        '<field name="ref_type" position="after"><field name="late"/></field>'
+        # attributes do not add elements
+        '<field name="late" position="attributes"><attribute name="name">renamed</attribute></field>'
+        "<xpath expr=\"//field[@name='renamed']\" position=\"after\"/>"
+        # the children of a <data> are applied after the other specs
+        '<data><field name="z" position="after"/></data>'
+        '<field name="late" position="after"><field name="z"/></field>'
+    ), "res.partner"))
+    index = views.ViewIndex.build([ref, custom])
+    messages = [msg for _p, _l, msg in views.check_module(mod, index, {"base"})]
+    assert len(messages) == 2, messages
+    assert messages[0].startswith("field[@name='late'] not found")
+    assert messages[1].startswith("field[@name='renamed'] not found")
+
+
+def test_dependency_outside_the_addons_paths(tmp_path):
+    # psai_cliche depends on psai_bom, absent from the addons paths: its own
+    # dependencies (product...) are unknown, every view of the tree counts
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(ref, "product", ["base"], _view("form", None, '<form><field name="name"/></form>')
+            + '<record id="menu_p" model="ir.ui.menu"><field name="name">p</field></record>')
+    _module(ref, "other", ["product"], _view("form_x", "product.form",
+            '<field name="name" position="after"><field name="default_code"/></field>'))
+    mod = _module(custom, "my_mod", ["unknown_module"], _view(
+        "v1", "product.form", "<xpath expr=\"//field[@name='default_code']\" position=\"after\"/>")
+        + '<record id="product.menu_p" model="ir.ui.menu"><field name="active" eval="False"/></record>')
+    index = views.ViewIndex.build([ref, custom])
+    assert list(views.check_module(mod, index, {"base", "product", "other"})) == []

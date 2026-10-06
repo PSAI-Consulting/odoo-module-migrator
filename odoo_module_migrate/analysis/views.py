@@ -192,6 +192,13 @@ class ViewIndex:
                 todo.extend(self.depends.get(name, ()))
         return result
 
+    def known_closure(self, module):
+        """closure() when every module of it is known (indexed), else None:
+        the views / XML ids of the dependencies of an unknown module (not in
+        the addons paths) cannot be listed, so nothing can be excluded."""
+        result = self.closure(module)
+        return result if result <= set(self.depends) else None
+
     def available(self, xid, modules=None, exclude=(), _seen=None):
         """Anchor keys of the view and of the views extending it; only the
         views of `modules` (the dependencies, installed for sure) count."""
@@ -207,23 +214,42 @@ class ViewIndex:
         return result
 
 
+def _specs(arch):
+    """Specs of an inheriting arch, in the order Odoo applies them: the
+    children of a <data> are queued after the other specs
+    (odoo/tools/template_inheritance.py, apply_inheritance_specs)."""
+    queue = [node for node in arch if isinstance(node.tag, str)]
+    while queue:
+        node = queue.pop(0)
+        if node.tag == "data":
+            queue += [child for child in node if isinstance(child.tag, str)]
+        else:
+            yield node
+
+
 def _anchors(arch):
-    """(node, (tag, attr, value)) of the anchors of an inheriting arch."""
-    for node in arch:
-        if not isinstance(node.tag, str):
-            continue
+    """(node, (tag, attr, value), keys added before) of the anchors of an
+    inheriting arch. Odoo applies the specs in order: a spec may be anchored
+    on an element added by a previous spec of the same view
+    (odoo/tools/template_inheritance.py, apply_inheritance_specs)."""
+    added = set()
+    for node in _specs(arch):
         if node.tag == "xpath":
             # every step of the path must exist (e.g. a removed x2many field in
             # the middle of the path); only the attributes of the index can be
             # checked (no false positive)
             for step in _steps(node.get("expr") or ""):
                 if step[1] in ANCHOR_ATTRS:
-                    yield node, step
-        elif node.get("position") and node.tag not in ("data",):
+                    yield node, step, added
+        elif node.get("position"):
             for attr in ANCHOR_ATTRS:
                 if node.get(attr):
-                    yield node, (node.tag, attr, node.get(attr))
+                    yield node, (node.tag, attr, node.get(attr)), added
                     break
+        if node.get("position") != "attributes":
+            for child in node:
+                if isinstance(child.tag, str):
+                    added = added | _keys(child)
 
 
 def _describe(key):
@@ -234,7 +260,7 @@ def _describe(key):
 def check_module(module, index, reference_modules):
     """Yield (path, line, message) for the anchors and XML ids not found."""
     module = pathlib.Path(module)
-    closure = index.closure(module.name)
+    closure = index.known_closure(module.name)
     for path in _data_files(module):
         root = _parse(path)
         if root is None:
@@ -250,8 +276,8 @@ def check_module(module, index, reference_modules):
                 continue
             # the view itself does not count: it holds the anchors
             available = index.available(index.root(parent), closure, exclude={xid})
-            for node, key in _anchors(arch):
-                if key not in available:
+            for node, key, added in _anchors(arch):
+                if key not in available and key not in added:
                     yield path, node.sourceline, (
                         f"{_describe(key)} not found in the view {parent} of the target"
                         f" Odoo (nor in any view of its inheritance tree): the view will"
