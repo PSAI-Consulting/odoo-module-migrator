@@ -16,7 +16,8 @@ from . import manifest, tools
 from .analysis import fields as analysis_fields
 
 # Models whose XML / CSV records are converted by Odoo's official upgrade_code
-# scripts (19.4-00-ir-access.py): not reported in data files when they run
+# scripts (19.4-00-ir-access.py) or by the migrator fallback: not reported in
+# data files by the rules, the records left are reported after the conversion
 CONVERTED_BY_UPGRADE_CODE = {"ir.model.access", "ir.rule"}
 
 
@@ -273,8 +274,10 @@ class BaseMigrationScript:
         if extension not in cache:
             renamed_models = self.handle_renamed_models(self._RENAMED_MODELS)
             removed = self._REMOVED_MODELS
-            if tools.RUN_CONTEXT.get("upgrade_code") and extension in (".xml", ".csv"):
-                # records converted afterwards by Odoo's official scripts
+            if extension in (".xml", ".csv"):
+                # records converted afterwards by Odoo's official scripts (or
+                # by the fallback of migrate_190_200): the ones left are
+                # reported once converted (Migration._check_access_records_left)
                 removed = [r for r in removed if r[0] not in CONVERTED_BY_UPGRADE_CODE]
             removed_models = self.handle_removed_models(removed)
             result = {}

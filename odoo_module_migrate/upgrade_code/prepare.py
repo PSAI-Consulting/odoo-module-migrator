@@ -87,3 +87,38 @@ def move_access_records(module_path):
         " 19.4-00-ir-access converts them" % (", ".join(moved_from), target)
     )
     return moved_from
+
+
+# <record model="ir.rule">, <function model="ir.rule">, <value model="ir.rule">...
+ACCESS_MODEL_RE = re.compile(r"""\bmodel=["']ir\.(?:model\.access|rule)["']""")
+COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+ACCESS_LEFT_MESSAGE = (
+    "[20] ir.model.access / ir.rule record left in XML: models removed in 20.0, rewrite it"
+    " as ir.access (with --odoo-root, Odoo's 19.4-00-ir-access converts the others; the ones"
+    " left usually modify an access of another module)"
+)
+
+
+def access_records_left(module_path):
+    """(xml file, first line) of the XML files of the module still using the
+    ir.rule / ir.model.access models, once every conversion is done (the
+    records converted by 19.4-00-ir-access.py or by the fallback are gone)."""
+    manifest_path = module_path / "__manifest__.py"
+    if not manifest_path.exists():
+        return []
+    try:
+        manifest = ast.literal_eval(_read_content(manifest_path).lstrip())
+    except (ValueError, SyntaxError):
+        return []
+    result = []
+    for name in manifest.get("data", []) + manifest.get("demo", []):
+        path = module_path / name
+        if not name.endswith(".xml") or not path.is_file():
+            continue  # only the loaded files matter
+        text = _read_content(path)
+        # commented out records are not loaded
+        text = COMMENT_RE.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+        match = ACCESS_MODEL_RE.search(text)
+        if match:
+            result.append((path, text.count("\n", 0, match.start()) + 1))
+    return result

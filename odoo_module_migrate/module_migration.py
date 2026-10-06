@@ -26,6 +26,9 @@ class ModuleMigration:
         self.finalize()
 
     def apply_scripts(self):
+        collector = self._migration.report_collector
+        if collector:  # before the first log record of the module
+            collector.current = collector.reports.get(self._module_name)
         logger.info(
             "[%s] Running migration from %s to %s"
             % (
@@ -37,9 +40,6 @@ class ModuleMigration:
 
         self._formats = snapshot_formats(self._module_path)
         self._hashes_before = hash_tree(self._module_path)
-        collector = self._migration.report_collector
-        if collector:
-            collector.current = collector.reports.get(self._module_name)
 
         # Apply migration script
         for migration_script in self._migration._migration_scripts:
