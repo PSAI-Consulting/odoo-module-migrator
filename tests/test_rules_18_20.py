@@ -519,6 +519,34 @@ def test_access_records_left_to_upgrade_code():
     assert any(r"account\.group" in p for p in xml)  # 19.3-00-account-groups.py is not run
 
 
+def test_search_group_attrs_removed_in_place():
+    """<group expand string> of search views (not allowed by common.rng in
+    19.0): only these attributes change, the file is not serialized again
+    (auditlog: 249 lines reformatted, an XML declaration rewritten...)."""
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import remove_search_group_attrs
+
+    text = (
+        "<?xml version='1.0' encoding='utf-8' ?>\n<odoo>\n"
+        "    <menuitem\n        id=\"menu_audit\"\n        name=\"Audit\"\n    />\n"
+        "    <!-- <search><group expand=\"0\"/></search> -->\n"
+        "    <search string=\"Rules\">\n"
+        "        <filter name=\"a\" domain=\"[('x', '>', 1)]\" />\n"
+        "        <group\n            expand=\"0\"\n            string='Group By...'\n        >\n"
+        "            <filter name=\"b\" context=\"{'group_by': 'state'}\" />\n"
+        "        </group>\n"
+        "    </search>\n"
+        "    <form><group string=\"Kept\" name=\"g\" expand=\"1\">&nbsp;</group></form>\n"
+        "    <searchpanel><group string=\"kept too\"/></searchpanel>\n"
+        "</odoo>\n"
+    )
+    new = remove_search_group_attrs(text)
+    assert new == text.replace(
+        "        <group\n            expand=\"0\"\n            string='Group By...'\n        >\n",
+        "        <group\n        >\n",
+    )
+    assert remove_search_group_attrs(new) == new
+
+
 def test_auto_added_fields_notice_only_from_17():
     """Fields used by view expressions are added automatically since 18.0
     (odoo 6f06420e4a94, not in 17.0): an 18.0 module already works so, the

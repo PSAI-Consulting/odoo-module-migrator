@@ -3,9 +3,6 @@
 import ast
 import json
 import re
-from io import BytesIO
-
-from lxml import etree
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
@@ -126,56 +123,61 @@ def upgrade_sql_constraints(
         tools._write_content(file, content)
 
 
+# Tokens of an XML text: comments, <search> start / end tags, <group> start tags
+# (attribute values may contain '>')
+_ATTRS = r"""(?:[^>"']|"[^"]*"|'[^']*')*"""
+SEARCH_TOKEN_RE = re.compile(
+    rf"<!--.*?-->|<!\[CDATA\[.*?\]\]>|<search\b{_ATTRS}>|</search\s*>|<group\b{_ATTRS}>",
+    re.S,
+)
+GROUP_ATTR_RE = re.compile(r"""\s+(?:expand|string)\s*=\s*(?:"[^"]*"|'[^']*')""")
+
+
+def remove_search_group_attrs(text):
+    """Text without the `expand` / `string` attributes of the <group> of
+    <search> views; the rest of the file is left as is."""
+    depth = 0
+    parts, last = [], 0
+    for match in SEARCH_TOKEN_RE.finditer(text):
+        token = match.group(0)
+        if token.startswith(("<!--", "<![CDATA[")):
+            continue
+        if token.startswith("</search"):
+            depth = max(depth - 1, 0)
+        elif token.startswith("<search"):
+            if not token.endswith("/>"):
+                depth += 1
+        elif depth:
+            new_token = GROUP_ATTR_RE.sub("", token)
+            if new_token != token:
+                parts.append(text[last:match.start()])
+                parts.append(new_token)
+                last = match.end()
+    if not parts:
+        return text
+    parts.append(text[last:])
+    return "".join(parts)
+
+
 def _remove_group_attrs_in_search_views(
     logger, module_path, module_name, manifest_path, migration_steps, tools
 ):
-    """Remove `expand` and `string` attributes from <group> tags when they
-    are inside a <search> view.
+    """Remove the `expand` and `string` attributes of the <group> of search
+    views: not allowed anymore by odoo/addons/base/rng/common.rng in 19.0.
+
+    The attributes are removed from the text (the file is not serialized
+    again: formatting, entities and comments are kept).
     """
-
-    files_to_process = tools.get_files(module_path, (".xml",))
-
-    for file_path in files_to_process:
-        try:
-            content = tools._read_content(file_path)
-            parser = etree.XMLParser(recover=True)
-            try:
-                # lxml does not accept unicode strings with XML declaration,
-                # so parse from bytes to be safe.
-                tree = etree.parse(BytesIO(content.encode("utf-8")), parser)
-                root = tree.getroot()
-            except Exception:
-                # If full-parse fails, skip this file
-                continue
-
-            changed = False
-
-            # Find all <search> elements and remove expand/string from <group> children
-            for search in root.findall(".//search"):
-                for group in search.findall(".//group"):
-                    for attr in ("expand", "string"):
-                        if attr in group.attrib:
-                            del group.attrib[attr]
-                            changed = True
-
-            if changed:
-                # Write back modified tree
-                new_content = etree.tostring(
-                    root, encoding="utf-8", xml_declaration=True
-                ).decode("utf-8")
-                new_content = new_content.replace(
-                    "<?xml version='1.0' encoding='utf-8'?>",
-                    '<?xml version="1.0" encoding="utf-8"?>',
-                )
-                if not new_content.endswith("\n"):
-                    new_content += "\n"
-                tools._write_content(file_path, new_content)
-                logger.info(
-                    f"Removed expand/string attrs from <group> in search views: {file_path}"
-                )
-
-        except Exception as e:
-            logger.error(f"Error processing XML file {file_path}: {e}")
+    for file_path in tools.get_files(module_path, (".xml",)):
+        content = tools._read_content(file_path)
+        if "<search" not in content:
+            continue
+        new_content = remove_search_group_attrs(content)
+        if new_content != content:
+            tools._write_content(file_path, new_content)
+            logger.info(
+                f"Removed expand/string attrs from <group> in search views: {file_path}"
+            )
 
 
 class MigrationScript(BaseMigrationScript):
