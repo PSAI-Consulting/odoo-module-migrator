@@ -1,0 +1,30 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise du fork LBruyere/enterprise).
+#
+# OpenUpgrade 16.0 apriori.py merged_modules déclare "gift_card " (espace final) ;
+# odoo 1d57b44678c0 '[REM] gift_card: remove gift_card module' : « Removes the
+# gift_card modules as it is merged inside of loyalty. »
+- ["gift_card", "merged", "loyalty"]
+# enterprise 292e8ea7d13 '[MOV] l10n_be_hr_payroll_holiday_pay_recovery: Merge into l10n_be_hr_payroll'
+- ["l10n_be_hr_payroll_holiday_pay_recovery", "merged", "l10n_be_hr_payroll"]
+# enterprise f435654f70f '[IMP] account_reports, l10n_*: Introduce unified reporting engine' :
+# le rapport intrastat NL passe dans l10n_nl_intrastat (models/account_intrastat_report.py,
+# account_sales_report.py) ; modules.yaml le rattachait à tort à l10n_in_reports
+# (__init__.py identique).
+- ["l10n_nl_report_intrastat", "merged", "l10n_nl_intrastat"]
+# même commit : wizards BOE de l10n_es_reports_2021 dans l10n_es_reports
+# (16.0 : l10n_es_reports/wizard/aeat_boe_export_wizards.py)
+- ["l10n_es_reports_2021", "merged", "l10n_es_reports"]
+#
+# Modules de correctifs ajoutés à la branche stable 15.0 dont le contenu est dans le
+# module parent en 16.0 :
+# enterprise 187d233cd04 '[IMP] l10n_es_reports: update mod 303 for 2023',
+# b6136fdbe0b '[FIX] l10n_es_reports: label 77 on report 303' (auto_install sur l10n_es_reports)
+- ["l10n_es_reports_2023", "merged", "l10n_es_reports"]
+- ["l10n_es_reports_2023_2", "merged", "l10n_es_reports"]
+# enterprise 02cc01304e7 '[IMP] account_asset{_fleet},...: assets/fleet/DNA/accounting'
+# (16.0 : taxes non déductibles dans account_asset/models/account_asset.py)
+- ["account_asset_ndt", "merged", "account_asset"]
+# enterprise 67a7bd8b70e '[ADD] l10n_mx_xml_polizas_edi: add PLZ:CompNal node'
+# (16.0 : l10n_mx_xml_polizas/data/templates/xml_polizas.xml contient PLZ:CompNal)
+- ["l10n_mx_xml_polizas_edi", "merged", "l10n_mx_xml_polizas"]

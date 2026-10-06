@@ -1,3 +1,6 @@
-
 .py:
   def _name_search: "[16] You are overriding name_search method in your module, you may make use now of new _rec_names_search class variable to expose the fields to search for without requiring the method override. More details at https://github.com/odoo/odoo/commit/3155c3e425581b71491844e7f9a3dd76a9f245a4."
+  # Source : odoo 32bc28aa665c '[IMP] core: better API for flush() and invalidate()' (16.0 :
+  # « Deprecated method flush(), use flush_model(), flush_recordset() or env.flush_all() instead »)
+  '\bself(?:\.env\[[^\]\n]+\]|\.\w+)*\.(?:flush|recompute)\(': "[16] flush() / recompute() are deprecated (odoo 32bc28aa665c): use flush_model(), flush_recordset() or env.flush_all()"
+  '\bself(?:\.env\[[^\]\n]+\]|\.\w+)*\.(?:refresh|invalidate_cache)\(': "[16] refresh() / invalidate_cache() are deprecated (odoo 32bc28aa665c): use invalidate_model(), invalidate_recordset() or env.invalidate_all()"

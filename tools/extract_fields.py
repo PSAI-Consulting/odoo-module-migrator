@@ -21,10 +21,35 @@ CLASS_RE = re.compile(r"^class\s+\w+\s*\(([^)]*)\)\s*:")
 NAME_RE = re.compile(r"^\s{4}_name\s*=\s*['\"]([\w.]+)['\"]")
 INHERIT_RE = re.compile(r"^\s{4}_inherit\s*=\s*(?:\[\s*)?['\"]([\w.]+)['\"]")
 FIELD_RE = re.compile(r"^\s{4}(\w+)\s*(?::[^=\n]+)?=\s*fields\.(\w+)\(")
+# OpenUpgrade variable names: _field_renames (14.0+), _fields_renames / _models_renames
+# (16.0, 17.0), field_renames_l10n_dk_bookkeeping (18.0), renamed_fields...
+FIELD_RENAMES_RE = re.compile(r"(^|_)(renamed_fields|fields?_renames)(_|$)")
+MODEL_RENAMES_RE = re.compile(r"(^|_)(renamed_models|models?_renames)(_|$)")
 ANALYSIS_RE = re.compile(
     r"^(?P<module>\w+)\s*/\s*(?P<model>[\w.]+)\s*/\s*(?P<field>\w+)\s*\((?P<type>\w+)\)\s*:\s*DEL\b(?P<rest>.*)$"
 )
 OBSOLETE_MODEL_RE = re.compile(r"^obsolete model (?P<model>[\w.]+)")
+
+
+# Branch whose full history (with file contents) is available locally, e.g.
+# 17.0 for the 8.0 -> 17.0 steps: commit searches are then limited to its
+# lineage (merge-base(from, to)..merge-base(to, HISTORY_REF)), where field
+# and model removals happen (master), instead of the stable forward-ports
+# whose contents a partial clone would fetch one by one.
+HISTORY_REF = None
+_RANGES = {}
+
+
+def log_range(repo, ref_from, ref_to):
+    """Commit range searched for the changes between two branches."""
+    if not HISTORY_REF:
+        return f"{ref_from}..{ref_to}"
+    key = (str(repo), ref_from, ref_to)
+    if key not in _RANGES:
+        base = _git(repo, "merge-base", ref_from, ref_to).decode().strip()
+        top = _git(repo, "merge-base", ref_to, HISTORY_REF).decode().strip()
+        _RANGES[key] = f"{base}..{top}"
+    return _RANGES[key]
 
 
 def _git(repo, *args, data=None):
@@ -201,6 +226,64 @@ def target_fields(repos, ref_of):
     return {model: available_fields(model, fields, parents) for model in set(fields) | set(parents)}
 
 
+def _oldnames(files):
+    """[(model, oldname, field, path)] from fields declared with oldname='...'
+    (Odoo <= 12.0: the ORM renames the column of the old field)."""
+    result = []
+    for path, text in files.items():
+        if "oldname" not in text:
+            continue
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        for cls in ast.walk(tree):
+            if not isinstance(cls, ast.ClassDef):
+                continue
+            name, inherit, found = None, [], []
+            for stmt in cls.body:
+                if not (isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+                        and isinstance(stmt.targets[0], ast.Name)):
+                    continue
+                target = stmt.targets[0].id
+                if target == "_name":
+                    name = (_str_values(stmt.value) or [None])[0]
+                elif target == "_inherit":
+                    inherit = _str_values(stmt.value)
+                elif isinstance(stmt.value, ast.Call):
+                    for kw in stmt.value.keywords:
+                        if (kw.arg == "oldname" and isinstance(kw.value, ast.Constant)
+                                and isinstance(kw.value.value, str)):
+                            found.append((kw.value.value, target))
+            for model in ([name] if name else inherit[:1]):
+                result += [(model, old, new, path) for old, new in found]
+    return result
+
+
+def oldname_renames(repos, ref_from_of, ref_to_of, models_filter):
+    """Renames declared by oldname= in the target sources: the old field must
+    exist on the model before and not after (all repositories together)."""
+    path_re = re.compile(r"(^|/)(addons|models|wizards?|report)/.*\.py$")
+    before_files, after_files, sources = {}, {}, {}
+    for repo in repos:
+        before_files.update(read_blobs(repo, ref_from_of(repo), path_re))
+        files = read_blobs(repo, ref_to_of(repo), path_re)
+        after_files.update(files)
+        for path in files:
+            sources[path] = (repo, ref_to_of(repo))
+    before, after = parse_fields(before_files), parse_fields(after_files)
+    parents = model_parents(after_files)
+    renames = []
+    for model, old, new, path in _oldnames(after_files):
+        if not models_filter(model) or old == new:
+            continue
+        if old not in before.get(model, {}) or old in available_fields(model, after, parents):
+            continue
+        repo, ref = sources[path]
+        renames.append((model, old, new, f"{repo.name.removesuffix('.git')} {ref} {path} oldname='{old}'"))
+    return renames
+
+
 ADDED_FIELD_RE = re.compile(r"^\+\s+(\w+)\s*=\s*fields\.", re.M)
 
 
@@ -233,7 +316,7 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
                 continue
             commit = _git(
                 repo, "log", "-1", "--format=%h%x09%s", f"-S{name} = fields.",
-                f"{ref_from_of(repo)}..{ref_to_of(repo)}", "--", path,
+                log_range(repo, ref_from_of(repo), ref_to_of(repo)), "--", path,
             ).decode("utf-8", "replace").strip()
             sha, _, subject = commit.partition("\t")
             source = f"{repo.name.removesuffix('.git')} {sha} {subject!r}" if sha else path
@@ -270,7 +353,12 @@ def openupgrade_changes(openupgrade_git, ref, models_filter):
     """Renamed fields / models (pre-migration.py) and DEL fields (analysis)."""
     files = read_blobs(
         openupgrade_git, ref,
-        re.compile(r"^openupgrade_scripts/scripts/[^/]+/[^/]+/(pre-migration\.py|upgrade_analysis\.txt)$"),
+        # 14.0+: openupgrade_scripts/scripts/<module>/<version>/ ; 13.0 and before
+        # (fork of Odoo): addons/<module>/migrations/<version>/openupgrade_analysis.txt
+        re.compile(
+            r"^openupgrade_scripts/scripts/[^/]+/[^/]+/(pre-migration\.py|upgrade_analysis\.txt)$"
+            r"|(^|/)addons/[^/]+/migrations/[^/]+/(pre-migration\.py|openupgrade_analysis\.txt)$"
+        ),
     )
     renamed_fields, renamed_models, removed_fields, removed_models = [], [], [], []
     for path, text in sorted(files.items()):
@@ -288,13 +376,18 @@ def openupgrade_changes(openupgrade_git, ref, models_filter):
                     value = ast.literal_eval(node.value)
                 except ValueError:
                     continue
-                if name.endswith("renamed_fields") or name.endswith("field_renames"):
+                # _field_renames, _fields_renames, field_renames_l10n_dk..., renamed_fields
+                if FIELD_RENAMES_RE.search(name) and isinstance(value, (list, tuple)):
                     for item in value:
-                        if len(item) == 4:
-                            renamed_fields.append((item[0], item[2], item[3], source))
-                elif name.endswith("renamed_models") or name.endswith("model_renames"):
+                        if isinstance(item, (list, tuple)) and len(item) == 4:
+                            # stray spaces exist ("lunch.alert " in OpenUpgrade 13.0)
+                            renamed_fields.append(
+                                (str(item[0]).strip(), str(item[2]).strip(), str(item[3]).strip(), source)
+                            )
+                elif MODEL_RENAMES_RE.search(name) and isinstance(value, (list, tuple)):
                     for item in value:
-                        renamed_models.append((item[0], item[1], source))
+                        if isinstance(item, (list, tuple)) and len(item) == 2:
+                            renamed_models.append((str(item[0]).strip(), str(item[1]).strip(), source))
         else:
             for line in text.splitlines():
                 match = ANALYSIS_RE.match(line.strip())
@@ -386,7 +479,7 @@ def model_changes(repos, ref_from_of, ref_to_of, models_filter=lambda m: True):
             commit = _git(
                 repo, "log", "-1", "--format=%h%x09%s",
                 rf"-G_name\s*(:[^=]+)?=\s*['\"]{re.escape(model)}['\"]",
-                f"{ref_from_of(repo)}..{ref_to_of(repo)}", "--", path,
+                log_range(repo, ref_from_of(repo), ref_to_of(repo)), "--", path,
             ).decode("utf-8", "replace").strip()
         except subprocess.CalledProcessError:
             pass

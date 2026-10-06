@@ -1,0 +1,41 @@
+# Renommages 12.0 -> 13.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
+#
+# account.invoice fusionné dans account.move (OpenUpgrade 13.0 addons/account/migrations/
+# 13.0.1.1/post-migration.py : UPDATE account_move ... = (ai....), merge_models). Seules les
+# correspondances une à une, sans dépendance au type de facture, sont reprises ; name,
+# reference, comment (dépendants du type) et state (valeurs différentes) ne le sont pas.
+# Les règles écrites sur account.invoice / account.invoice.line s'appliquent aussi au code
+# déjà renommé en account.move / account.move.line (base_migration_script.handle_fields).
+# odoo ab483a3a6610 "[IMP] account: Add restrict mode and normal mode for account move. This commit deletes account_cancel module and squash it into account. The 'update_posted' field is changed by 'restrict_mode_hash_table' field." : même numéro de séquence inaltérable, déplacé de l10n_fr vers account
+- ["account.move", "l10n_fr_secure_sequence_number", "secure_sequence_number", "odoo ab483a3a6610 \"[IMP] account: Add restrict mode and normal mode for account move. This commit deletes account_cancel module and squash it into account. The 'update_posted' field is changed by 'restrict_mode_hash_table' field.\""]
+# odoo a661b0001555 '[REF] utm,mass_mailing: replace mass mailing campaign by utm campaign' : commit : « replace mass mailing campaign by utm campaign »
+- ["mail.compose.message", "mass_mailing_campaign_id", "campaign_id", "odoo a661b0001555 '[REF] utm,mass_mailing: replace mass mailing campaign by utm campaign'"]
+# odoo ca25a692bd19 '[IMP] account, sale: Move terms and conditions to account' : commit : « Move terms and conditions to account » (mêmes champs)
+- ["res.company", "sale_note", "invoice_terms", "odoo ca25a692bd19 '[IMP] account, sale: Move terms and conditions to account'"]
+- ["res.config.settings", "sale_note", "invoice_terms", "odoo ca25a692bd19 '[IMP] account, sale: Move terms and conditions to account'"]
+- ["res.config.settings", "use_sale_note", "use_invoice_terms", "odoo ca25a692bd19 '[IMP] account, sale: Move terms and conditions to account'"]
+# odoo 670384006234 '[REF] crm_iap_lead: split crm_iap_lead into two modules' : module crm_reveal devenu crm_iap_lead_website
+- ["res.config.settings", "module_crm_reveal", "module_crm_iap_lead_website", "odoo 670384006234 '[REF] crm_iap_lead: split crm_iap_lead into two modules'"]
+# odoo beaa30a3d184 '[IMP/REF] accounting-pocalypse yeaaahh' : rapport de factures sur account.move (number -> name, nbr -> nbr_lines)
+- ["account.invoice.report", "number", "name", "odoo beaa30a3d184 '[IMP/REF] accounting-pocalypse yeaaahh'"]
+- ["account.invoice.report", "nbr", "nbr_lines", "odoo beaa30a3d184 '[IMP/REF] accounting-pocalypse yeaaahh'"]
+# enterprise 4acf472919a "[IMP] website_crm_score: Replace 'running' field by 'active'" : commit : « Replace 'running' field by 'active' »
+- ["website.crm.score", "running", "active", "enterprise 4acf472919a \"[IMP] website_crm_score: Replace 'running' field by 'active'\""]
+#
+# OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py :
+- ["account.invoice", "number", "name", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "residual", "amount_residual", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "date_invoice", "invoice_date", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "date_due", "invoice_date_due", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "user_id", "invoice_user_id", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "sent", "invoice_sent", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "origin", "invoice_origin", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "payment_term_id", "invoice_payment_term_id", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "partner_bank_id", "invoice_partner_bank_id", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "incoterm_id", "invoice_incoterm_id", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "source_email", "invoice_source_email", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "vendor_display_name", "invoice_partner_display_name", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice", "cash_rounding_id", "invoice_cash_rounding_id", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice.line", "invoice_id", "move_id", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice.line", "uom_id", "product_uom_id", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- ["account.invoice.line", "account_analytic_id", "analytic_account_id", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]

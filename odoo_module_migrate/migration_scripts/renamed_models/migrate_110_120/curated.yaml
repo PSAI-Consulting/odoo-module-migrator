@@ -1,0 +1,9 @@
+# Modèles renommés 11.0 -> 12.0 vérifiés à la main : prioritaires sur generated.yaml.
+# enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability' (liste du commit)
+- ["signature.request.template", "sign.template", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]
+- ["signature.item", "sign.item", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]
+- ["signature.item.type", "sign.item.type", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]
+- ["signature.item.value", "sign.item.value", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]
+- ["signature.item.party", "sign.item.role", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]
+- ["signature.request", "sign.request", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]
+- ["signature.request.item", "sign.request.item", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]

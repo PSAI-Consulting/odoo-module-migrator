@@ -1,0 +1,24 @@
+# Champs supprimés 15.0 -> 16.0 : messages avec le remplaçant (prioritaires sur
+# generated.yaml). Vérifiés dans le commit de suppression (git log -S, git show) ;
+# le remplaçant n'est JAMAIS appliqué automatiquement (sémantique différente).
+# Format : [modèle, champ, message]
+#
+# odoo 26b2472f4977 '[IMP] account: refactor account types' : le modèle account.account.type
+# est supprimé, account_type est une Selection (asset_receivable, liability_payable, ...)
+- ["account.account", "user_type_id", "account_type (Selection: asset_receivable, asset_cash, liability_payable, income, expense...; account.account.type was removed) - odoo 26b2472f4977 '[IMP] account: refactor account types'"]
+- ["account.account", "internal_type", "account_type (Selection: asset_receivable, liability_payable...) - odoo 26b2472f4977"]
+- ["account.move.line", "account_internal_type", "account_type (related account_id.account_type, new values) - odoo 26b2472f4977"]
+# odoo 7e3403068fc3 '[REF] *: Analytic Apocalypse' : analytic_distribution est un JSON
+# {analytic_account_id: percentage}
+- ["account.move.line", "analytic_account_id", "analytic_distribution (JSON {analytic account id: percentage}) - odoo 7e3403068fc3 '[REF] *: Analytic Apocalypse'"]
+- ["account.move.line", "analytic_tag_ids", "analytic_distribution (analytic tags removed) - odoo 7e3403068fc3"]
+- ["hr.expense", "analytic_account_id", "analytic_distribution (JSON {analytic account id: percentage}) - odoo 7e3403068fc3"]
+- ["purchase.order.line", "account_analytic_id", "analytic_distribution (JSON {analytic account id: percentage}) - odoo 7e3403068fc3"]
+# odoo d8d47f9ff855 '[REF] accounting v16. Yeeeeaah'
+- ["account.move.line", "exclude_from_invoice_tab", "display_type ('product' for invoice lines; tax / payment_term lines have their own display_type) - odoo d8d47f9ff855 '[REF] accounting v16. Yeeeeaah'"]
+- ["account.move", "tax_totals_json", "tax_totals (dict) - odoo d8d47f9ff855"]
+- ["sale.order", "tax_totals_json", "tax_totals (dict) - odoo d8d47f9ff855"]
+- ["purchase.order", "tax_totals_json", "tax_totals (dict) - odoo d8d47f9ff855"]
+# odoo 9e99a9df464d '[IMP] product: Remove price/pricelist_id field from template/variant'
+- ["product.product", "price", "removed: use pricelist._get_product_price(product, quantity) - odoo 9e99a9df464d"]
+- ["product.template", "price", "removed: use pricelist._get_product_price(product, quantity) - odoo 9e99a9df464d"]

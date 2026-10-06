@@ -299,16 +299,21 @@ class BaseMigrationScript:
         # generated.yaml (alphabetical order of the rule files)
         renames = {}
         for r in self._RENAMED_FIELDS:
-            if len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or "")):
+            if len(r) > 2 and r[2] is None:
+                # [model, field, null, why] in curated.yaml: never renamed
+                # automatically (blocks a generated rule, e.g. a name swap)
+                renames.setdefault((r[0], r[1]), None)
+            elif len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or "")):
                 renames.setdefault((r[0], r[1]), r[2])
-        # new name == old name (curated.yaml): NOT renamed, it cancels a rule of
-        # generated.yaml (e.g. a column renamed by OpenUpgrade while the field
-        # still exists in the target Odoo)
-        kept = {k for k, v in renames.items() if v == k[1]}
-        renames = {k: v for k, v in renames.items() if k not in kept}
+        # [model, field, null, why] or new name == old name (curated.yaml):
+        # NOT renamed, it cancels a rule of generated.yaml (e.g. a name swap,
+        # or a column renamed by OpenUpgrade while the field still exists in
+        # the target Odoo)
+        blocked = {k for k, v in renames.items() if v is None or v == k[1]}
+        renames = {k: v for k, v in renames.items() if k not in blocked}
         sources = {
             (r[0], r[1]): (r[-1] if len(r) > 3 else "") for r in self._RENAMED_FIELDS
-            if (r[0], r[1]) not in kept
+            if (r[0], r[1]) not in blocked
         }
         # a renamed field is not removed (e.g. curated.yaml vs generated.yaml)
         removed = {}
@@ -317,6 +322,19 @@ class BaseMigrationScript:
                 removed.setdefault((r[0], r[1]), r[2] if len(r) > 2 else "")
         if not renames and not removed:
             return
+        # The models renamed by this step are renamed in the files before the
+        # fields are handled, while the field rules may name the old model
+        # (OpenUpgrade 16.0 loyalty: coupon.program fields, then coupon.program
+        # -> loyalty.program): the renames apply to the new name too. Not the
+        # removals: a merged model has all its fields "removed" in the analysis
+        # (13.0 account.invoice -> account.move: account.move.name still exists).
+        new_models = {}
+        for r in self._RENAMED_MODELS:
+            new_models.setdefault(r[0], r[1])
+        for (model, field), value in list(renames.items()):
+            if model in new_models:
+                renames.setdefault((new_models[model], field), value)
+        removed = {k: v for k, v in removed.items() if k not in renames}
         renames = analysis_fields.with_delegation(renames)
         removed = {
             k: v for k, v in analysis_fields.with_delegation(removed).items() if k not in renames
@@ -389,7 +407,7 @@ class BaseMigrationScript:
                             " - %s" % removed[key] if removed[key] else "", path, usage.line,
                         )
                     )
-                elif key in sources and key not in renames:
+                elif key in sources and key not in renames and key not in blocked:
                     logger.warning(
                         "Field %s.%s was renamed to %s: update it by hand (%s). File %s:%s" % (
                             usage.model, usage.field,
@@ -428,11 +446,14 @@ class BaseMigrationScript:
                 {
                     r"\"%s\"" % old_name_esc: '"%s"' % new_model_name,
                     r"\'%s\'" % old_name_esc: "'%s'" % new_model_name,
-                    r"\"%s\"" % old_table_name: '"%s"' % new_table_name,
-                    r"\'%s\'" % old_table_name: "'%s'" % new_table_name,
+                    # no replace of the quoted table name: it is often a field
+                    # name too ('product_uom' for product.uom -> uom.uom)
                     r"model_%s\"" % old_table_name: 'model_%s"' % new_table_name,
                     r"model_%s\'" % old_table_name: "model_%s'" % new_table_name,
                     r"model_%s," % old_table_name: "model_%s," % new_table_name,
+                    # <field name="model">old.model</field> (views, actions)
+                    r"(<field\s+name=[\"'](?:model|res_model|binding_model|src_model)[\"']\s*>)"
+                    r"\s*%s\s*(</field>)" % old_name_esc: r"\g<1>%s\g<2>" % new_model_name,
                 }
             )
             msg = "The model %s has been renamed to %s.%s" % (
@@ -443,7 +464,6 @@ class BaseMigrationScript:
             res["warnings"].update(
                 {
                     old_name_esc: msg,
-                    old_table_name: msg,
                 }
             )
         return res

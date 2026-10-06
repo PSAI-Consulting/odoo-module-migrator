@@ -1,0 +1,13 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise du fork LBruyere/enterprise).
+#
+# odoo 4d23d241bfbc '[IMP] l10n_cn: keep only one CoA' : l10n_cn_standard supprimé, son plan
+# comptable gardé dans l10n_cn
+- ["l10n_cn_standard", "merged", "l10n_cn"]
+#
+# Modules de correctifs (auto_install) de la branche stable 13.0, intégrés au module parent en 14.0 :
+# sale_amazon_authentication « Patch module for the authentication flow of the Amazon
+# Connector » (depends sale_amazon) ; social_linkedin_company_support « Post on your LinkedIn
+# company pages » (depends social_linkedin)
+- ["sale_amazon_authentication", "merged", "sale_amazon"]
+- ["social_linkedin_company_support", "merged", "social_linkedin"]

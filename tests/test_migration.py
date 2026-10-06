@@ -69,12 +69,14 @@ class TestMigration(unittest.TestCase):
         log_content = _read_content(str(self._working_path / "test_log.log"))
 
         required_logs = [
-            ("INFO", r"web_kanban_sparkline' removed \(merged into 'web', already a dependency"),
-            ("INFO", r"account_analytic_analysis' replaced by 'contract' \(oca_moved"),
-            ("WARNING", "Check that 'contract' is available"),
+            # odoo f1906d704b25 '[REM] web_kanban_sparkline' (removed, not merged into web)
+            ("ERROR", r"Depends on 'web_kanban_sparkline', removed from Odoo"),
+            # OpenUpgrade 9.0 apriori.py: account_analytic_analysis -> contract
+            ("INFO", r"account_analytic_analysis' replaced by 'contract' \(renamed"),
             ("ERROR", "deprecated decorator.*@api.cr"),
             ("ERROR", "ir.values.*removed"),
-            ("ERROR", "account_anglo_saxon', removed from Odoo"),
+            # odoo c04065abd8f6 '[IMP] accounting v9': merged into account
+            ("INFO", r"account_anglo_saxon' (replaced by|removed \(merged into) 'account'"),
         ]
 
         for required_log in required_logs:

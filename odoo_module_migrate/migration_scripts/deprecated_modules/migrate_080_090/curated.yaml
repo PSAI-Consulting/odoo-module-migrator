@@ -1,0 +1,19 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré : odoo, OpenUpgrade 9.0
+# apriori.py ; pas de branche enterprise 8.0 dans le fork).
+#
+# procurement_jit_stock (8.0 : pont auto_install procurement_jit + stock) : 9.0 procurement_jit
+# dépend de sale_stock (addons/procurement_jit/__openerp__.py)
+- ["procurement_jit_stock", "merged", "procurement_jit"]
+# odoo c9492f890459 '[IMP] report: adapt report to use web_editor and remove website_report'
+- ["website_report", "merged", "report"]
+# knowledge : supprimé d'Odoo 9.0 (odoo e6a3672f9ebc), repris par OCA/knowledge 9.0
+# (conservé de l'ancienne liste _DEPRECATED_MODULES de migrate_080_090.py)
+- ["knowledge", "oca_moved", "knowledge", "Moved to OCA/knowledge"]
+#
+# Retirés de l'ancienne liste _DEPRECATED_MODULES : email_template -> mail_template (module
+# inexistant ; odoo d88c34d11e87 : mail), portal_project_issue -> project_issue (renommé
+# website_project_issue, odoo 50fa3b6ba422), marketing_crm -> crm (odoo f3e7cd1c0e49 :
+# « Move the marketing_crm module into marketing_campaign »), web_gantt / web_kanban_sparkline
+# -> web (supprimés, [REM]), account_chart -> account (renommé l10n_generic_coa, odoo
+# 76082c9d9dc3). account_modules.yaml (account_anglo_saxon « removed ») retiré : fusionné dans
+# account (odoo c04065abd8f6 '[IMP] accounting v9. Yeeeeaah').

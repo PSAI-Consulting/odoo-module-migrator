@@ -1,0 +1,8 @@
+# Source : tools/extract_changes.py api 10.0 -> 11.0, vérifié dans les sources : 10.0 a
+# odoo/report/ (rapports RML / report_sxw), odoo/tools/amount_to_text*.py et
+# BaseModel.signal_workflow / create_workflow / delete_workflow / redirect_workflow ;
+# 11.0 non (11.0 : res.currency.amount_to_text()).
+.py:
+  '\b(odoo|openerp)\.report\b|\breport_sxw\b': "[11] The RML report engine (odoo.report, report_sxw) was removed: convert the report to QWeb"
+  '(?<![.\w])amount_to_text(_en)?\b': "[11] odoo.tools.amount_to_text was removed: use currency_id.amount_to_text(amount)"
+  '\.(signal|create|delete|redirect)_workflow\(': "[11] Workflows were removed in 11.0: replace the workflow signal by a call to the action method"

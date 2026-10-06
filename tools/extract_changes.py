@@ -23,7 +23,8 @@ import re
 import subprocess
 import sys
 
-MANIFEST_RE = re.compile(r"^(?:(?P<prefix>.+)/)?(?P<module>[^/]+)/__manifest__\.py$")
+# __openerp__.py up to 9.0, __manifest__.py from 10.0
+MANIFEST_RE = re.compile(r"^(?:(?P<prefix>.+)/)?(?P<module>[^/]+)/__(?:manifest|openerp)__\.py$")
 
 
 def git(repo, *args):
@@ -45,6 +46,14 @@ def resolve_ref(repo, branch):
     raise SystemExit(f"Branch {branch} not found in {repo}")
 
 
+def step_name(version_from, version_to):
+    """migrate_090_100 (versions on 3 digits, as the migration scripts)."""
+    def code(version):
+        return version.replace(".", "").zfill(3)
+
+    return f"migrate_{code(version_from)}_{code(version_to)}"
+
+
 def list_modules(repo, ref, prefix):
     """{module_name: module_path} of the modules (dirs with a manifest)."""
     args = ["ls-tree", "-r", "--name-only", ref]
@@ -61,7 +70,7 @@ def list_modules(repo, ref, prefix):
 def deletion_commit(repo, ref_from, ref_to, module_path):
     out = git(
         repo, "log", "--diff-filter=D", "--format=%h%x09%s", "-1",
-        f"{ref_from}..{ref_to}", "--", f"{module_path}/__manifest__.py",
+        f"{ref_from}..{ref_to}", "--", f"{module_path}/__manifest__.py", f"{module_path}/__openerp__.py",
     )
     if not out.strip():
         return None, ""
@@ -134,7 +143,18 @@ def load_apriori(openupgrade, version):
     repo = pathlib.Path(openupgrade)
     try:
         ref = resolve_ref(repo, version)
-        source = git(repo, "show", f"{ref}:openupgrade_scripts/apriori.py")
+        source = None
+        # 14.0+ / 13.0 and before (fork of Odoo) / 9.0 (openerp namespace)
+        for path in ("openupgrade_scripts/apriori.py",
+                     "odoo/addons/openupgrade_records/lib/apriori.py",
+                     "openerp/addons/openupgrade_records/lib/apriori.py"):
+            try:
+                source = git(repo, "show", f"{ref}:{path}")
+                break
+            except RuntimeError:
+                continue
+        if source is None:
+            raise RuntimeError("no apriori.py")
     except (RuntimeError, SystemExit):
         print(f"# OpenUpgrade {version}: no apriori.py", file=sys.stderr)
         return {}, {}
@@ -143,7 +163,11 @@ def load_apriori(openupgrade, version):
         if isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict):
             name = node.targets[0].id
             if name in ("renamed_modules", "merged_modules"):
-                result[name] = ast.literal_eval(node.value)
+                # keys with stray spaces exist ("gift_card " in OpenUpgrade 16.0)
+                result[name] = {
+                    str(k).strip(): v.strip() if isinstance(v, str) else v
+                    for k, v in ast.literal_eval(node.value).items()
+                }
     return result.get("renamed_modules", {}), result.get("merged_modules", {})
 
 
@@ -164,7 +188,7 @@ def extract_modules(args):
             where[name] = (repo, prefix, ref_from, ref_to, path)
 
     renamed, merged = load_apriori(args.openupgrade, args.to_version)
-    ou_source = f"OpenUpgrade {args.to_version} openupgrade_scripts/apriori.py"
+    ou_source = f"OpenUpgrade {args.to_version} apriori.py"
 
     rules = []
     for name in sorted(set(before) - set(after)):
@@ -244,10 +268,10 @@ def extract_fields(args):
     def models_filter(model):
         return model.startswith(prefixes)
 
-    step = f"migrate_{args.from_version.replace('.', '')}_{args.to_version.replace('.', '')}"
+    step = step_name(args.from_version, args.to_version)
     out = pathlib.Path(args.output_dir)
     renamed_fields, renamed_models, removed_fields, removed_models = [], [], [], []
-    candidates = []
+    candidates, ou_candidates = [], []
 
     if args.openupgrade:
         ou = pathlib.Path(args.openupgrade)
@@ -258,13 +282,26 @@ def extract_fields(args):
             )
         except SystemExit:
             pass
-        if removed_fields and args.repo:
+        if (removed_fields or renamed_fields) and args.repo:
             # "DEL" in an analysis means "this module does not define the field
             # anymore": keep it only if no module of the target defines it
             target = ef.target_fields(
                 [pathlib.Path(spec.partition("@")[0]) for spec in args.repo],
                 lambda repo: resolve_ref(repo, args.to_version),
             )
+            # a data rename whose old field is still defined in the target is
+            # not a code rename (renaming again would not be idempotent, e.g.
+            # OpenUpgrade 16.0 mrp.workcenter capacity -> default_capacity):
+            # candidate only
+            kept = [r for r in renamed_fields if r[1] not in target.get(r[0], ())]
+            ou_candidates += [
+                (*r[:3], f"{r[3]} (old field still defined in {args.to_version})")
+                for r in renamed_fields if r not in kept
+            ]
+            if len(kept) != len(renamed_fields):
+                print(f"{len(renamed_fields) - len(kept)} renamed fields still defined in "
+                      f"{args.to_version}: candidates", file=sys.stderr)
+            renamed_fields = kept
             before = len(removed_fields)
             removed_fields = [r for r in removed_fields if r[1] not in target.get(r[0], ())]
             removed_models = [r for r in removed_models if r[0] not in target]
@@ -283,10 +320,18 @@ def extract_fields(args):
         )
         # "rename X to Y" in the commit message: confirmed
         confirmed, candidates = ef.promote_candidates(candidates)
+        # oldname='x' on a field of the target (Odoo <= 12.0): confirmed
+        confirmed = ef.oldname_renames(
+            repos,
+            lambda repo: resolve_ref(repo, args.from_version),
+            lambda repo: resolve_ref(repo, args.to_version),
+            models_filter,
+        ) + confirmed
         renamed_fields, removed_fields, candidates = ef.merge_changes(
             (renamed_fields, removed_fields), (confirmed, src_removed, candidates)
         )
 
+    candidates = ou_candidates + candidates
     header = [
         f"Generated by tools/extract_changes.py fields --from {args.from_version} --to {args.to_version}",
         "Do not edit: write corrections in another file of this folder.",
@@ -333,7 +378,7 @@ def extract_models(args):
     sources (for the versions OpenUpgrade does not cover yet)."""
     import extract_fields as ef
 
-    step = f"migrate_{args.from_version.replace('.', '')}_{args.to_version.replace('.', '')}"
+    step = step_name(args.from_version, args.to_version)
     out = pathlib.Path(args.output_dir)
     prefixes = tuple(args.models.split(",")) if args.models else None
     repos = [pathlib.Path(spec.partition("@")[0]) for spec in args.repo]
@@ -393,7 +438,7 @@ def _write_text_rules(path, header, sections):
 
 
 def _step(args):
-    return f"migrate_{args.from_version.replace('.', '')}_{args.to_version.replace('.', '')}"
+    return step_name(args.from_version, args.to_version)
 
 
 def extract_js(args):
@@ -502,6 +547,45 @@ def extract_api(args):
     )
 
 
+# odoo: addons/<module>/..., odoo/addons/<module>/... ; enterprise: <module>/...
+MODULE_PATH_RE = re.compile(r"^(?:odoo/addons/|addons/)?(?P<module>\w+)/.*\.py$")
+CLASS_RE = re.compile(r"^class \w+\(.*?\):\n(?P<body>(?:(?:[ \t]+.*|)\n)*)", re.M)
+NAME_RE = re.compile(r"^[ \t]+_name\s*=\s*['\"]([\w.]+)['\"]", re.M)
+INHERIT_RE = re.compile(r"^[ \t]+_inherit\s*=\s*(.+)$", re.M)
+
+
+def extract_model_modules(args):
+    """{model: module defining it} (for xmlids model_<model>): a class with
+    _name and without the same name in _inherit. Ambiguous models are left out."""
+    import extract_fields as ef
+
+    owners = collections.defaultdict(set)
+    for spec in args.repo:
+        repo = pathlib.Path(spec)
+        files = ef.read_blobs(repo, resolve_ref(repo, args.to_version), re.compile(r"\.py$"))
+        for path, text in files.items():
+            match = MODULE_PATH_RE.match(path)
+            if not match or "/tests/" in path or path.startswith("odoo/addons/test_"):
+                continue
+            module = "base" if path.startswith("odoo/addons/base/") else match["module"]
+            if path.startswith("odoo/") and module != "base":
+                continue
+            for cls in CLASS_RE.finditer(text):
+                body = cls["body"]
+                for name in NAME_RE.findall(body):
+                    inherit = INHERIT_RE.search(body)
+                    if inherit and re.search(r"['\"]%s['\"]" % re.escape(name), inherit[1]):
+                        continue
+                    owners[name].add(module)
+    rows = sorted((m, mods.pop()) for m, mods in owners.items() if len(mods) == 1)
+    lines = [
+        f"# Module defining each model in {args.to_version} (xmlid <module>.model_<model>).",
+        f"# Generated by tools/extract_changes.py model-modules --to {args.to_version}: do not edit.",
+    ] + [f"{_q(m)}: {_q(mod)}" for m, mod in rows]
+    pathlib.Path(args.output).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"{len(rows)} models written to {args.output}", file=sys.stderr)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -532,6 +616,8 @@ def main(argv=None):
         cmd.add_argument("--to", dest="to_version", required=True)
         cmd.add_argument("--repo", action="append", required=True, help="bare repository, repeatable")
         cmd.add_argument("--output-dir", required=True, help="odoo_module_migrate/migration_scripts")
+    for cmd in (flds, mdls, *[sub.choices[n] for n in ("js", "views")]):
+        cmd.add_argument("--history-ref", help="branch whose full history is local (e.g. 17.0): commit searches limited to its lineage")
     mods = sub.add_parser("modules", help="removed / renamed / merged modules")
     mods.add_argument("--from", dest="from_version", required=True)
     mods.add_argument("--to", dest="to_version", required=True)
@@ -540,6 +626,10 @@ def main(argv=None):
     mods.add_argument("--openupgrade", help="OpenUpgrade clone (for apriori.py)")
     mods.add_argument("--output", help="YAML file (default: stdout)")
     mods.add_argument("--curated", help="hand-written rules to skip (default: curated.yaml next to --output)")
+    mm = sub.add_parser("model-modules", help="module defining each model (for model_* xmlids)")
+    mm.add_argument("--to", dest="to_version", required=True)
+    mm.add_argument("--repo", action="append", required=True, help="bare repository, repeatable")
+    mm.add_argument("--output", required=True)
     args = parser.parse_args(argv)
     if args.command == "modules":
         if args.output and not args.curated:
@@ -547,9 +637,13 @@ def main(argv=None):
         extract_modules(args)
     else:
         sys.path.insert(0, str(pathlib.Path(__file__).parent))
+        if getattr(args, "history_ref", None):
+            import extract_fields as ef
+
+            ef.HISTORY_REF = args.history_ref
         {
             "fields": extract_fields, "api": extract_api, "models": extract_models,
-            "js": extract_js, "views": extract_views,
+            "js": extract_js, "views": extract_views, "model-modules": extract_model_modules,
         }[args.command](args)
 
 

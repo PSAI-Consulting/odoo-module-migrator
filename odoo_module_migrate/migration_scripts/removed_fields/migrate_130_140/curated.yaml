@@ -1,0 +1,12 @@
+# Champs supprimés 13.0 -> 14.0 : messages avec le remplaçant (prioritaires sur
+# generated.yaml). Vérifiés dans le commit ; jamais appliqués automatiquement.
+# Format : [modèle, champ, message]
+#
+# odoo 8066ab43482a '[REF] crm: update revenue fields names' (échange de noms, renommage bloqué
+# dans renamed_fields/curated.yaml)
+- ["crm.lead", "planned_revenue", "renamed expected_revenue; the 13.0 expected_revenue (prorated) is now prorated_revenue - odoo 8066ab43482a '[REF] crm: update revenue fields names'"]
+# odoo 14.0 stock.move : date « Date Scheduled », date_deadline « Date Promise to the customer »
+- ["stock.move", "date_expected", "date (scheduled date) in 14.0; date_deadline is the customer promise (readonly) - OpenUpgrade 14.0 moves the data to date_deadline"]
+# odoo c660770ebd84 '[REF] mrp: remove routing model'
+- ["mrp.routing.workcenter", "routing_id", "bom_id (operations are defined on the bill of materials) - odoo c660770ebd84 '[REF] mrp: remove routing model'"]
+- ["mrp.bom", "routing_id", "operation_ids (operations on the bill of materials) - odoo c660770ebd84"]

@@ -1,0 +1,41 @@
+# Renommages 14.0 -> 15.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
+# Hors OpenUpgrade (tools/extract_changes.py fields --sources, odoo + fork Enterprise),
+# vérifiés modèle par modèle (champs avant / après le commit et en 15.0) :
+# odoo c1693581d794 '[IMP] account: payment method improvements' : même booléen calculé (lignes de méthodes de paiement)
+- ["account.payment", "hide_payment_method", "hide_payment_method_line", "odoo c1693581d794 '[IMP] account: payment method improvements'"]
+- ["account.payment.register", "hide_payment_method", "hide_payment_method_line", "odoo c1693581d794 '[IMP] account: payment method improvements'"]
+# odoo 5ad660877f48 '[IMP] account: Improve reconciliation Models usability' : related des champs renommés sur account.reconcile.model (OpenUpgrade 15.0)
+- ["account.reconcile.model.line", "match_total_amount", "allow_payment_tolerance", "odoo 5ad660877f48 '[IMP] account: Improve reconciliation Models usability'"]
+- ["account.reconcile.model.line", "match_total_amount_param", "payment_tolerance_param", "odoo 5ad660877f48 '[IMP] account: Improve reconciliation Models usability'"]
+# odoo a99d882c0222 '[IMP] crm,*_crm: better merge leads side documents' : même compteur « # Meetings »
+- ["crm.lead", "meeting_count", "calendar_event_count", "odoo a99d882c0222 '[IMP] crm,*_crm: better merge leads side documents'"]
+# odoo 254d6a71e8d5 '[IMP] hr_holidays: Improve Accruals, dashboards and general UX (Back2basics)' : même champ calculé (_compute_valid, _search_valid)
+- ["hr.leave.type", "valid", "has_valid_allocation", "odoo 254d6a71e8d5 '[IMP] hr_holidays: Improve Accruals, dashboards and general UX (Back2basics)'"]
+# odoo 8aa1d6ff02b6 '[IMP] mail: revamp the activity type form view' : mêmes champs (formulaire du type d'activité revu)
+- ["mail.activity.type", "default_description", "default_note", "odoo 8aa1d6ff02b6 '[IMP] mail: revamp the activity type form view'"]
+- ["mail.activity.type", "default_next_type_id", "triggered_next_type_id", "odoo 8aa1d6ff02b6 '[IMP] mail: revamp the activity type form view'"]
+# odoo 5553ad50bf54 '[MOV] mail: reorder model files' : même Many2many (table mail_activity_rel)
+- ["mail.activity.type", "next_type_ids", "suggested_next_type_ids", "odoo 5553ad50bf54 '[MOV] mail: reorder model files'"]
+# odoo 59ce7d396930 '[IMP] mail, mass_mailing: ease "reply to" fields understanding' : même booléen (renommé aussi sur mail.message, odoo e4cace71152b)
+- ["mail.compose.message", "no_auto_thread", "reply_to_force_new", "odoo 59ce7d396930 '[IMP] mail, mass_mailing: ease \"reply to\" fields understanding'"]
+# odoo 573ed74c121c '[REF] payment, *: refactor online payments API' : même compteur de factures
+- ["payment.transaction", "invoice_ids_nbr", "invoices_count", "odoo 573ed74c121c '[REF] payment, *: refactor online payments API'"]
+# odoo 7b165cd55508 '[REF] payment_paypal: migrate PayPal to the new payment API' : même Char (type de transaction PayPal)
+- ["payment.transaction", "paypal_txn_type", "paypal_type", "odoo 7b165cd55508 '[REF] payment_paypal: migrate PayPal to the new payment API'"]
+# odoo 27538bca036a '[IMP] project,hr(_timesheet)_holidays: usability improvement for project' : même projet interne, déplacé dans hr_timesheet
+- ["res.company", "leave_timesheet_project_id", "internal_project_id", "odoo 27538bca036a '[IMP] project,hr(_timesheet)_holidays: usability improvement for project'"]
+- ["res.config.settings", "leave_timesheet_project_id", "internal_project_id", "odoo 27538bca036a '[IMP] project,hr(_timesheet)_holidays: usability improvement for project'"]
+# odoo 8eacdca93780 '[MOV] crm_iap_mine: rename ``crm_iap_lead`` module' : module crm_iap_lead renommé crm_iap_mine
+- ["res.config.settings", "module_crm_iap_lead", "module_crm_iap_mine", "odoo 8eacdca93780 '[MOV] crm_iap_mine: rename ``crm_iap_lead`` module'"]
+# odoo 98d2f4452637 '[MOV] crm_iap_enrich: rename ``crm_iap_lead_enrich`` module' : module crm_iap_lead_enrich renommé crm_iap_enrich
+- ["res.config.settings", "module_crm_iap_lead_enrich", "module_crm_iap_enrich", "odoo 98d2f4452637 '[MOV] crm_iap_enrich: rename ``crm_iap_lead_enrich`` module'"]
+# odoo 528880aa9cde '[MOV] website_crm_iap_reveal: rename ``crm_iap_lead_website`` module' : module crm_iap_lead_website renommé website_crm_iap_reveal
+- ["res.config.settings", "module_crm_iap_lead_website", "module_website_crm_iap_reveal", "odoo 528880aa9cde '[MOV] website_crm_iap_reveal: rename ``crm_iap_lead_website`` module'"]
+# odoo cf98a525b7c9 '[MOV] website_event_(track_)exhibitor: FUUUUSION !' : module website_event_track_exhibitor renommé website_event_exhibitor
+- ["res.config.settings", "module_website_event_track_exhibitor", "module_website_event_exhibitor", "odoo cf98a525b7c9 '[MOV] website_event_(track_)exhibitor: FUUUUSION !'"]
+# odoo 688d65530575 '[IMP] {purchase, sale}_stock, product: packaging revamp' : même Many2one product.packaging, déplacé de sale_stock vers sale
+- ["sale.order.line", "product_packaging", "product_packaging_id", "odoo 688d65530575 '[IMP] {purchase, sale}_stock, product: packaging revamp'"]
+# enterprise 4641825daa0 '[IMP] account_reports: tax report: allow opening of foreign reports if needed' : related de res.company account_fiscal_country_id (renommé par OpenUpgrade 15.0)
+- ["res.config.settings", "account_tax_fiscal_country_id", "account_fiscal_country_id", "enterprise 4641825daa0 '[IMP] account_reports: tax report: allow opening of foreign reports if needed'"]
+# enterprise 41b340d2020 '[REF] payment_sepa_direct_debit: migrate SEPA to the new payment API' : même champ calculé (crédits SMS SEPA)
+- ["payment.acquirer", "iap_sms_credits", "sdd_sms_credits", "enterprise 41b340d2020 '[REF] payment_sepa_direct_debit: migrate SEPA to the new payment API'"]

@@ -1,0 +1,5 @@
+# Source : tools/extract_changes.py api 13.0 -> 14.0, vérifié dans les sources : définis en
+# 13.0 (odoo/models.py, odoo/tools/pycompat.py), absents de 14.0.
+.py:
+  '\.resolve_2many_commands\(': "[14] BaseModel.resolve_2many_commands() was removed: read the commands directly (or use new records)"
+  '\bpycompat\.reraise\(|from\s+odoo\.tools\.pycompat\s+import\s+[^\n]*\breraise\b': "[14] odoo.tools.pycompat.reraise() was removed: use raise ... from ..."

@@ -2,3 +2,100 @@
 # Do not edit: write corrections in another file of this folder.
 # Rename CANDIDATES found in the sources (field removed in the commit
 # that adds a field of the same type): check them, then uncomment.
+# - ["hr.expense", "total_amount", "total_amount_currency", "OpenUpgrade 17.0 openupgrade_scripts/scripts/hr_expense/17.0.2.0/pre-migration.py (old field still defined in 17.0)"]  # non : non confirmé (sens, type ou comodel différents en 17.0)
+# - ["account.analytic.line", "ancestor_task_id", "parent_task_id", "odoo a424cf481c67 '[IMP] project: delete useless fields'"]  # non : sens différent (ancêtre racine -> parent direct)
+# - ["account.analytic.line", "plan_id", "auto_account_id", "odoo dc696c8ed485 '[IMP] analytic: allow cross analytics'"]  # non : analytique croisée : plus de plan unique par ligne
+# - ["account.move", "asset_asset_type", "deferred_entry_type", "enterprise f622d837119 '[IMP] account_{accountant,asset,reports},sale_subscription,*: deferred management'"]  # non : sens différent (écritures différées)
+# - ["account.move", "draft_asset_ids", "draft_asset_exists", "enterprise c30b60c996c '[FIX] account_asset: wrong smart buttons on bills'"]  # oui : curated.yaml
+# - ["account.move", "l10n_mx_edi_origin", "l10n_mx_edi_cfdi_origin", "enterprise 5f4b3ef2c8f '[REF] l10n_mx_edi: Reword Mexican EDI independant of account_edi'"]  # oui : curated.yaml
+# - ["account.move", "l10n_sa_delivery_date", "delivery_date", "odoo a5801a12b5ec '[IMP] l10n_hu, l10n_sa, account: delivery date + hu brush up'"]  # oui : curated.yaml
+# - ["account.move", "l10n_sa_show_delivery_date", "show_delivery_date", "odoo a5801a12b5ec '[IMP] l10n_hu, l10n_sa, account: delivery date + hu brush up'"]  # oui : curated.yaml
+# - ["account.move", "number_asset_ids", "count_asset", "enterprise c30b60c996c '[FIX] account_asset: wrong smart buttons on bills'"]  # oui : curated.yaml
+# - ["account.payment.term.line", "days_after", "nb_days", "odoo 9c134ec37981 '[IMP] account: simplify payment term usability'"]  # non : conditions de paiement refondues (nb_days + delay_type)
+# - ["account.payment.term.line", "months", "nb_days", "odoo 9c134ec37981 '[IMP] account: simplify payment term usability'"]  # non : conditions de paiement refondues (nb_days + delay_type)
+# - ["account.report.footnote", "line", "line_id", "enterprise d2d4f5e0404 '[REF] account_reports: conversion to owl'"]  # non : format d'identifiant de ligne changé (conversion OWL)
+# - ["account.report.footnote", "manager_id", "report_id", "enterprise d2d4f5e0404 '[REF] account_reports: conversion to owl'"]  # non : comodel différent
+# - ["hr.appraisal", "is_appraisal_manager", "is_manager", "enterprise a6ae53fb655 '[FIX] hr_appraisal,hr_appraisal_skills,hr_appraisal_survey: show publication warning, correct computation for implicit_manager, light refactor'"]  # non : deux champs fusionnés
+# - ["hr.appraisal", "is_implicit_manager", "is_manager", "enterprise a6ae53fb655 '[FIX] hr_appraisal,hr_appraisal_skills,hr_appraisal_survey: show publication warning, correct computation for implicit_manager, light refactor'"]  # non : deux champs fusionnés
+# - ["hr.contract", "driver_salay", "l10n_in_driver_salay", "enterprise 52a5d166873 '[IMP] l10n_in_hr_payroll: polish indian localization'"]  # oui : curated.yaml
+# - ["hr.contract.salary.resume", "advantage_ids", "benefit_ids", "enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms'"]  # oui : curated.yaml
+# - ["hr.employee", "resident_bool", "is_non_resident", "enterprise a0baf1bab6c '[IMP] l10n_(be/lt)_hr_payroll: Move non-resident field to hr_payroll'"]  # oui : curated.yaml
+# - ["hr.expense", "attachment_number", "nb_attachment", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # oui : curated.yaml
+# - ["hr.expense", "is_ref_editable", "is_multiple_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : sens différent
+# - ["hr.expense", "label_convert_rate", "label_currency_rate", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # oui : curated.yaml
+# - ["hr.expense", "reference", "label_currency_rate", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : champ supprimé (OCR), pas de remplaçant
+# - ["hr.expense", "same_currency", "is_multiple_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : logique inversée (is_multiple_currency == not same_currency)
+# - ["hr.expense", "sheet_is_editable", "is_multiple_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # oui : curated.yaml
+# - ["hr.expense", "unit_amount_display", "price_unit", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : champ d'affichage supprimé
+# - ["hr.expense.refuse.wizard", "hr_expense_ids", "sheet_ids", "odoo f79ff3fb3746 '[IMP] hr_expense: do not create purchase.receipt'"]  # non : comodel différent (hr.expense -> hr.expense.sheet)
+# - ["hr.expense.sheet", "account_move_id", "company_currency_id", "odoo 81fe11fabb60 '[IMP] hr_expense: Split company payments per expense'"]  # non : sens différent (une écriture par dépense)
+# - ["hr.leave", "has_stress_day", "has_mandatory_day", "odoo 1b512efdac4b '[IMP] holiday: improve UX holiday timeoff'"]  # oui : curated.yaml
+# - ["hr.payroll.structure.type", "salary_advantage_ids", "salary_benefits_ids", "enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms'"]  # oui : curated.yaml
+# - ["hr.timesheet.attendance.report", "user_id", "employee_id", "odoo 9e0277eeec80 '[FIX] hr_timesheet_attendance: base report on employees, not users'"]  # non : comodel différent (res.users -> hr.employee)
+# - ["mail.compose.message", "auto_delete_message", "auto_delete_keep_log", "odoo 9140ce06c370 \"[REF] mail: better define 'keep log' fields of composer\""]  # non : logique inversée (garder une copie / supprimer la copie)
+# - ["mail.compose.message", "use_active_domain", "composition_batch", "odoo 1a1acabd7bbd '[REF] mail: cleanup mono/multi record composer behavior'"]  # non : sens différent
+# - ["mail.wizard.invite", "send_mail", "notify", "odoo ab358543c427 '[IMP] {test_}mail: honor notif type pref when adding follower'"]  # oui : curated.yaml
+# - ["mrp.workorder", "allow_employee", "all_employees_allowed", "enterprise dd5c3133180 '[IMP] mrp_workorder*: add MES'"]  # non : sens différent
+# - ["payment.provider", "adyen_checkout_api_url", "adyen_api_url_prefix", "odoo 428a2cda6737 '[IMP] payment_adyen: replace API URLs with an account-specific URL prefix'"]  # non : format différent (préfixe de compte)
+# - ["payment.provider", "adyen_recurring_api_url", "adyen_api_url_prefix", "odoo 428a2cda6737 '[IMP] payment_adyen: replace API URLs with an account-specific URL prefix'"]  # non : format différent (préfixe de compte)
+# - ["pos.config", "number_of_opened_session", "number_of_rescue_session", "odoo 9644ca52fff9 '[IMP] point_of_sale: display rescue session'"]  # non : sens différent (sessions de secours)
+# - ["pos.order", "blackbox_device", "sweden_blackbox_device", "enterprise 807420a33e0 '[IMP] pos_l10n_se: Update module'"]  # non : non vérifié
+# - ["product.label.layout", "move_line_ids", "move_ids", "odoo b159190c7e16 '[IMP] stock: display right number of labels in a ready pickings'"]  # non : comodel différent (stock.move.line -> stock.move)
+# - ["product.label.layout", "picking_quantity", "move_quantity", "odoo 28d238b578ec '[IMP] stock: product label layout base on move'"]  # non : valeurs de sélection différentes ('picking' -> 'move')
+# - ["project.task", "child_text", "display_name", "odoo 335579325f71 '[MOV] project: create a separate file per model (views and models)'"]  # non : sens différent
+# - ["project.task", "kanban_state", "state", "odoo 2e78356f8219 '[IMP] project,*: create new task.state Selection field'"]  # non : valeurs de sélection différentes (state)
+# - ["project.task", "planned_date_end", "planned_date_start", "enterprise 72b61b6d45c '[IMP] project: merge date_deadline and planned_date_end'"]  # non : sens différent (date de début)
+# - ["project.task.burndown.chart.report", "planned_hours", "allocated_hours", "odoo a844f37aacfb \"[IMP] hr_timesheet,project: refactor 'planned_hours' field\""]  # oui : curated.yaml
+# - ["project.task.type", "auto_validation_kanban_state", "auto_validation_state", "odoo 2e78356f8219 '[IMP] project,*: create new task.state Selection field'"]  # oui : curated.yaml
+# - ["repair.order", "description", "parts_availability", "odoo eaa6e1a08c3d '[REF] repair, *_repair: Separate Repair from Sales/Invoicing scopes'"]  # non : sens différent
+# - ["repair.order", "fees_lines", "move_ids", "odoo eaa6e1a08c3d '[REF] repair, *_repair: Separate Repair from Sales/Invoicing scopes'"]  # non : comodel différent (repair.fee -> stock.move)
+# - ["repair.order", "invoice_method", "parts_availability_state", "odoo eaa6e1a08c3d '[REF] repair, *_repair: Separate Repair from Sales/Invoicing scopes'"]  # non : facturation retirée de repair
+# - ["repair.order", "invoice_state", "parts_availability_state", "odoo eaa6e1a08c3d '[REF] repair, *_repair: Separate Repair from Sales/Invoicing scopes'"]  # non : facturation retirée de repair
+# - ["repair.order", "operations", "move_ids", "odoo eaa6e1a08c3d '[REF] repair, *_repair: Separate Repair from Sales/Invoicing scopes'"]  # non : comodel différent (repair.line -> stock.move)
+# - ["res.company", "chart_template_id", "root_id", "odoo 512574861691 '[REF] account: remove chart template'"]  # non : modèles de plan comptable supprimés
+# - ["res.company", "dearness_allowance", "l10n_in_dearness_allowance", "enterprise 52a5d166873 '[IMP] l10n_in_hr_payroll: polish indian localization'"]  # oui : curated.yaml
+# - ["res.company", "property_stock_account_input_categ_id", "root_id", "odoo 512574861691 '[REF] account: remove chart template'"]  # non : champ de modèle de plan comptable supprimé
+# - ["res.company", "property_stock_account_output_categ_id", "root_id", "odoo 512574861691 '[REF] account: remove chart template'"]  # non : champ de modèle de plan comptable supprimé
+# - ["res.company", "property_stock_valuation_account_id", "root_id", "odoo 512574861691 '[REF] account: remove chart template'"]  # non : champ de modèle de plan comptable supprimé
+# - ["res.company", "timesheet_mail_manager_allow", "timesheet_mail_allow", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]  # oui : curated.yaml
+# - ["res.company", "timesheet_mail_manager_delay", "timesheet_mail_delay", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]  # oui : curated.yaml
+# - ["res.company", "timesheet_mail_manager_interval", "timesheet_mail_interval", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]  # oui : curated.yaml
+# - ["res.company", "timesheet_mail_manager_nextdate", "timesheet_mail_nextdate", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]  # oui : curated.yaml
+# - ["res.config.settings", "l10n_it_edi_sdicoop_demo_mode", "l10n_it_edi_demo_mode", "odoo 6ffcda567700 '[IMP] l10n_it_edi: remove account_edi from depends'"]  # oui : curated.yaml
+# - ["res.config.settings", "l10n_it_edi_sdicoop_register", "l10n_it_edi_register", "odoo 6ffcda567700 '[IMP] l10n_it_edi: remove account_edi from depends'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_account_predictive_bills", "predict_bill_product", "enterprise 53696d918b1 '[REM] account_predictive_bills: merge into account_accountant'"]  # non : sens différent (réglage de société)
+# - ["res.config.settings", "module_event_barcode", "use_event_barcode", "odoo 0e9a9aff468c '[MOV] event_barcode: integrate into community event module'"]  # non : sens différent (paramètre au lieu d'un module)
+# - ["res.config.settings", "reminder_manager_allow", "reminder_allow", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]  # oui : curated.yaml
+# - ["res.config.settings", "reminder_manager_delay", "reminder_delay", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]  # oui : curated.yaml
+# - ["res.config.settings", "reminder_manager_interval", "reminder_interval", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]  # oui : curated.yaml
+# - ["res.partner", "display_name", "complete_name", "odoo 3c62ca1eb96d '[REM] core: remove `name_get` API'"]  # non : display_name existe toujours en 17.0 (non stocké)
+# - ["res.partner", "vies_failed_message", "vies_vat_to_check", "odoo b1f1f216d09e '[IMP] base_vat: VIES validation on Fiscal Position'"]  # non : sens différent
+# - ["res.partner.bank", "l10n_ch_show_subscription", "l10n_ch_display_qr_bank_options", "odoo 0889c999a5fb '[IMP] account-l10n_ch: remove ISR documents'"]  # non : sens différent
+# - ["res.users", "address_home_id", "work_contact_id", "odoo e8c48f824e07 '[IMP] hr: Remove address_home_id field'"]  # non : work_contact_id existait déjà en 16.0 (contact professionnel)
+# - ["res.users", "employee_phone", "private_phone", "odoo e8c48f824e07 '[IMP] hr: Remove address_home_id field'"]  # oui : curated.yaml
+# - ["res.users", "resident_bool", "is_non_resident", "enterprise a0baf1bab6c '[IMP] l10n_(be/lt)_hr_payroll: Move non-resident field to hr_payroll'"]  # oui : curated.yaml
+# - ["sale.order", "recurrence_id", "plan_id", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order", "recurring_live", "is_renewing", "enterprise dba792a4c00 '[IMP] sale_subscription: remove subscription stage, add subscription state'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order", "renew_state", "subscription_state", "enterprise dba792a4c00 '[IMP] sale_subscription: remove subscription stage, add subscription state'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order", "stage_category", "subscription_state", "enterprise dba792a4c00 '[IMP] sale_subscription: remove subscription stage, add subscription state'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order", "subscription_management", "subscription_state", "enterprise dba792a4c00 '[IMP] sale_subscription: remove subscription stage, add subscription state'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order", "to_renew", "is_renewing", "enterprise dba792a4c00 '[IMP] sale_subscription: remove subscription stage, add subscription state'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.alert", "subscription_template_ids", "subscription_plan_ids", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.log", "category", "subscription_state", "enterprise dba792a4c00 '[IMP] sale_subscription: remove subscription stage, add subscription state'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.log", "company_currency_id", "origin_order_id", "enterprise c4c00fd8880 '[IMP] sale_subscription: split log into expansion and contraction'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.template", "auto_close_limit", "duration_value", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.template", "invoice_mail_template_id", "plan_id", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.template", "recurrence_id", "plan_id", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.template", "recurring_rule_boundary", "duration_unit", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.template", "recurring_rule_count", "duration_value", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.template", "recurring_rule_type", "duration_unit", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.order.template", "user_closable", "is_unlimited", "enterprise 2579b5896a4 '[IMP] sale_subscription: Sale Subscription Plans'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.subscription.report", "date_order", "first_contract_date", "enterprise cea87ced679 '[IMP] sale_subscription: add report model to ease subscription analysis'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.subscription.report", "quantity", "margin", "enterprise cea87ced679 '[IMP] sale_subscription: add report model to ease subscription analysis'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["sale.subscription.report", "stage_category", "subscription_state", "enterprise dba792a4c00 '[IMP] sale_subscription: remove subscription stage, add subscription state'"]  # non : refonte des abonnements (plans, subscription_state) : pas d'équivalent direct
+# - ["stock.lot", "repair_order_count", "repair_part_count", "odoo 4ac541ba9b72 '[FIX] repair: correctly select repair lines'"]  # non : sens différent (lignes de réparation)
+# - ["stock.lot", "repair_order_ids", "repair_line_ids", "odoo 4ac541ba9b72 '[FIX] repair: correctly select repair lines'"]  # non : sens différent (lignes de réparation)
+# - ["stock.move", "from_immediate_transfer", "picked", "odoo 7dda6bb92715 '[REF] stock: quantity pocalypse'"]  # non : sens différent (picked)
+# - ["stock.move", "show_reserved_availability", "picked", "odoo 7dda6bb92715 '[REF] stock: quantity pocalypse'"]  # non : sens différent (picked)
+# - ["stock.move.line", "is_initial_demand_editable", "picked", "odoo 7dda6bb92715 '[REF] stock: quantity pocalypse'"]  # non : sens différent (picked)
+# - ["website.visitor", "mail_channel_ids", "discuss_channel_ids", "odoo 90cb44e1e1b6 '[REF] mail, *: rename mail.channel to discuss.channel'"]  # oui : curated.yaml

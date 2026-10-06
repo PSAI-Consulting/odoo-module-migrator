@@ -1,0 +1,6 @@
+# Source : odoo 15.0 odoo/tests/common.py : « Deprecated class SavepointCase has been merged
+# into TransactionCase » (SavepointCase n'est plus qu'un alias de TransactionCase).
+.py:
+  '\bSavepointCase,\s*TransactionCase\b': 'TransactionCase'
+  '\bTransactionCase,\s*SavepointCase\b': 'TransactionCase'
+  '(?<![\w.])SavepointCase\b': 'TransactionCase'

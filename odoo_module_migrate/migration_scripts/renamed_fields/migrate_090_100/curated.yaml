@@ -1,0 +1,3 @@
+# Renommages 9.0 -> 10.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade, oldname=).
+# odoo 3912beff314c '[MOVE] hr_recruitment_survey: Make a bridge module with survey related code' : même Many2one survey.survey, déplacé dans hr_recruitment_survey
+- ["hr.applicant", "survey", "survey_id", "odoo 3912beff314c '[MOVE] hr_recruitment_survey: Make a bridge module with survey related code'"]

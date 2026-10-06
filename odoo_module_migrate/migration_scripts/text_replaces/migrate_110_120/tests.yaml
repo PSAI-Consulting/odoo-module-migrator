@@ -1,0 +1,5 @@
+# Source : odoo 1fe5145f0cc1 '[REF] tests: replace phantomjs by Chrome headless' (12.0 :
+# phantom_js() supprimé, browser_js(url_path, code, ready, login, timeout) même signature).
+# Règle déplacée depuis migrate_130_140 (phantom_js n'existe déjà plus en 12.0).
+.py:
+  '\.phantom_js\(': '.browser_js('

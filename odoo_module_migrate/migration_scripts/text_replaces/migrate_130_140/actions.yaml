@@ -1,0 +1,8 @@
+# Source : odoo 0c6488a95aa5 '[REF] stock: Set action_done on pickings private' (14.0 :
+# stock.picking._action_done(), plus de action_done()) ; odoo caeb782841fc '[IMP] account,*:
+# Improve bank statements/payments workflow' (14.0 : account.payment.action_post(), plus de
+# post() ; account.move.post() existe encore). Réécrit seulement quand le nom de la variable
+# désigne un picking / un paiement (sale.order.action_done() existe toujours) ; sinon signalé.
+.py:
+  '\b(\w*picking(?:s|_ids?)?)\.action_done\(\)': '\1._action_done()'
+  '\b(\w*payment(?:s|_ids?)?)\.post\(\)': '\1.action_post()'

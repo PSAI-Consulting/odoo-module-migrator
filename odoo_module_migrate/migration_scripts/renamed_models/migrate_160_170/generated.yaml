@@ -2,5 +2,9 @@
 # Do not edit: write corrections in another file of this folder.
 # Format: [old_model, new_model, source]
 - ["hr.leave.stress.day", "hr.leave.mandatory.day", "OpenUpgrade 17.0 openupgrade_scripts/scripts/hr_holidays/17.0.1.6/pre-migration.py"]
+- ["mail.channel", "discuss.channel", "OpenUpgrade 17.0 openupgrade_scripts/scripts/mail/17.0.1.15/pre-migration.py"]
+- ["mail.channel.member", "discuss.channel.member", "OpenUpgrade 17.0 openupgrade_scripts/scripts/mail/17.0.1.15/pre-migration.py"]
+- ["mail.channel.rtc.session", "discuss.channel.rtc.session", "OpenUpgrade 17.0 openupgrade_scripts/scripts/mail/17.0.1.15/pre-migration.py"]
+- ["mailing.contact.subscription", "mailing.subscription", "OpenUpgrade 17.0 openupgrade_scripts/scripts/mass_mailing/17.0.2.7/pre-migration.py"]
 - ["payment.icon", "payment.method", "OpenUpgrade 17.0 openupgrade_scripts/scripts/payment/17.0.2.0/pre-migration.py"]
 - ["restaurant.printer", "pos.printer", "OpenUpgrade 17.0 openupgrade_scripts/scripts/point_of_sale/17.0.1.0.1/pre-migration.py"]

@@ -67,3 +67,6 @@
 # odoo 18.0 addons/stock/models/stock_orderpoint.py l. 85 : qty_to_order toujours défini (calculé, inverse) ;
 # qty_to_order_manual (l. 87) est la valeur saisie
 - ["stock.warehouse.orderpoint", "qty_to_order", "qty_to_order", "odoo 18.0 addons/stock/models/stock_orderpoint.py: qty_to_order still defined (qty_to_order_manual is the manual value)"]
+# OpenUpgrade 18.0 account/18.0.1.3/pre-migration.py, liste field_renames_l10n_dk_bookkeeping
+# (ignorée par tools/extract_fields.py avant sa correction : generated.yaml la donnait supprimée)
+- ["account.move", "l10n_dk_currency_rate_at_transaction", "invoice_currency_rate", "OpenUpgrade 18.0 openupgrade_scripts/scripts/account/18.0.1.3/pre-migration.py"]

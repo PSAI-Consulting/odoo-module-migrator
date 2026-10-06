@@ -242,3 +242,143 @@ def test_ground_truth_similarity(tmp_path):
     assert gt.similarity(original, expected) == (1, 4)
     assert gt.similarity(migrated, expected) == (3, 4)
     assert gt.missed(original, migrated, expected) == {"<field name='b'/>": 1}
+
+
+def test_log_range_history_ref(repo):
+    """With a local full-history branch, searches stop at its lineage."""
+    import subprocess as sp
+
+    head = lambda ref: sp.run(["git", "-C", str(repo), "rev-parse", ref], capture_output=True, text=True).stdout.strip()
+    assert ef.log_range(repo, "19.0", "20.0") == "19.0..20.0"
+    ef.HISTORY_REF = "20.0"
+    try:
+        ef._RANGES.clear()
+        assert ef.log_range(repo, "19.0", "20.0") == f"{head('19.0')}..{head('20.0')}"
+    finally:
+        ef.HISTORY_REF = None
+        ef._RANGES.clear()
+
+
+def test_openupgrade_old_layout(tmp_path):
+    """OpenUpgrade 13.0 and before is a fork of Odoo: apriori.py and the
+    analyses live in openupgrade_records / addons/*/migrations/."""
+    ou = tmp_path / "ou"
+    ou.mkdir()
+    _git(ou, "init", "-q", "-b", "13.0")
+    _commit(ou, {
+        "odoo/addons/openupgrade_records/lib/apriori.py":
+            "renamed_modules = {'web_settings_dashboard': 'base_setup'}\nmerged_modules = {'account_cancel': 'account', 'gift_card ': 'loyalty'}\n",
+        "addons/sale/migrations/13.0.1.1/openupgrade_analysis.txt":
+            "sale         / sale.order               / x_old (char)                  : DEL \n"
+            "obsolete model sale.old\n",
+        "addons/sale/migrations/13.0.1.1/pre-migration.py":
+            "_field_renames = [('sale.order', 'sale_order', 'a', 'b')]\n",
+    }, "init")
+    renamed, merged = ec.load_apriori(str(ou), "13.0")
+    assert renamed == {"web_settings_dashboard": "base_setup"}
+    # stray space stripped ("gift_card " in OpenUpgrade 16.0)
+    assert merged == {"account_cancel": "account", "gift_card": "loyalty"}
+    ren, ren_models, removed, removed_models = ef.openupgrade_changes(ou, "13.0", lambda m: True)
+    assert [r[:3] for r in ren] == [("sale.order", "a", "b")]
+    assert [r[:2] for r in removed] == [("sale.order", "x_old")]
+    assert [r[0] for r in removed_models] == ["sale.old"]
+
+
+def test_openupgrade_rename_variable_names(tmp_path):
+    """OpenUpgrade 16.0 / 17.0 also name the lists _fields_renames and
+    _models_renames (loyalty: coupon.program -> loyalty.program)."""
+    ou = tmp_path / "ou"
+    ou.mkdir()
+    _git(ou, "init", "-q", "-b", "16.0")
+    _commit(ou, {
+        "openupgrade_scripts/scripts/loyalty/16.0.1.0/pre-migration.py":
+            "_fields_renames = [('coupon.program ', 'coupon_program', 'a', 'b')]\n"
+            "_models_renames = [('coupon.program', 'loyalty.program')]\n"
+            "_field_renames_event_sale = [('event.event', 'event_event', 'c', 'd')]\n"
+            "_column_renames = {'x': [('e', 'f')]}\n",
+    }, "init")
+    ren, ren_models, _removed, _removed_models = ef.openupgrade_changes(ou, "16.0", lambda m: True)
+    assert sorted(r[:3] for r in ren) == [("coupon.program", "a", "b"), ("event.event", "c", "d")]
+    assert [r[:2] for r in ren_models] == [("coupon.program", "loyalty.program")]
+
+
+def test_openupgrade_rename_of_a_field_still_defined(repo, tmp_path):
+    """OpenUpgrade renames a column whose old field still exists in the target
+    (16.0 mrp.workcenter capacity -> default_capacity): candidate only."""
+    ou = tmp_path / "ou"
+    ou.mkdir()
+    _git(ou, "init", "-q", "-b", "20.0")
+    _commit(ou, {
+        "openupgrade_scripts/scripts/base/20.0.1.0/pre-migration.py":
+            "_field_renames = [\n"
+            "    ('res.bank.institution', 'res_bank_institution', 'bic', 'swift'),\n"
+            "    ('res.bank.institution', 'res_bank_institution', 'old_other', 'other'),\n"
+            "]\n",
+    }, "init")
+    out = tmp_path / "scripts"
+    ec.main(["fields", "--from", "19.0", "--to", "20.0", "--repo", str(repo), "--models", "res.",
+             "--openupgrade", str(ou), "--output-dir", str(out)])
+    generated = yaml.safe_load((out / "renamed_fields/migrate_190_200/generated.yaml").read_text())
+    assert [r[:3] for r in generated] == [["res.bank.institution", "old_other", "other"]]
+    candidates = (out / "renamed_fields/migrate_190_200/candidates.yaml").read_text()
+    assert '# - ["res.bank.institution", "bic", "swift"' in candidates
+    assert "old field still defined in 20.0" in candidates
+
+
+def test_oldname_renames(tmp_path):
+    """Odoo <= 12.0 declares renames with oldname= (11.0 delivery.carrier:
+    free_over = fields.Boolean(..., oldname='free_if_more_than'))."""
+    repo = tmp_path / "odoo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "10.0")
+    v10 = (
+        "from odoo import fields, models\n\n\nclass Carrier(models.Model):\n"
+        "    _name = 'delivery.carrier'\n\n"
+        "    free_if_more_than = fields.Boolean()\n    old_kept = fields.Char()\n"
+    )
+    _commit(repo, {"addons/delivery/models/carrier.py": v10}, "init")
+    _git(repo, "checkout", "-q", "-b", "11.0")
+    v11 = (
+        "from odoo import fields, models\n\n\nclass Carrier(models.Model):\n"
+        "    _name = 'delivery.carrier'\n\n"
+        "    free_over = fields.Boolean(oldname='free_if_more_than')\n"
+        "    old_kept = fields.Char()\n    other = fields.Char(oldname='old_kept')\n"
+        "    ancient = fields.Char(oldname='never_in_10')\n"
+    )
+    _commit(repo, {"addons/delivery/models/carrier.py": v11}, "rename")
+    renames = ef.oldname_renames([repo], _refs("10.0"), _refs("11.0"), lambda m: True)
+    # old_kept still exists, never_in_10 did not exist in 10.0: not renames
+    assert [r[:3] for r in renames] == [("delivery.carrier", "free_if_more_than", "free_over")]
+    assert "oldname='free_if_more_than'" in renames[0][3]
+
+
+def test_api_module_name_openerp():
+    """9.0 has openerp/, 10.0 odoo/: both are named odoo.* to be compared."""
+    import extract_api
+
+    assert extract_api._module_name("openerp/tools/misc.py") == "odoo.tools.misc"
+    assert extract_api._module_name("odoo/tools/misc.py") == "odoo.tools.misc"
+    assert extract_api._module_name("openerp/addons/base/res/res_partner.py") is None
+
+
+def test_modules_with_openerp_manifest(tmp_path):
+    """Up to 9.0 the manifest is __openerp__.py: removed modules must be seen."""
+    repo = tmp_path / "odoo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "9.0")
+    _commit(repo, {
+        "addons/sale/__openerp__.py": "{'name': 'sale'}",
+        "addons/web_tip/__openerp__.py": "{'name': 'web_tip'}",
+    }, "init")
+    _git(repo, "checkout", "-q", "-b", "10.0")
+    _commit(repo, {"addons/sale/__manifest__.py": "{'name': 'sale'}"}, "[REM] web_tip: remove",
+            delete=["addons/web_tip/__openerp__.py", "addons/sale/__openerp__.py"])
+    assert ec.list_modules(repo, "9.0", "addons") == {"sale": "addons/sale", "web_tip": "addons/web_tip"}
+    assert ec.list_modules(repo, "10.0", "addons") == {"sale": "addons/sale"}
+    sha, subject = ec.deletion_commit(repo, "9.0", "10.0", "addons/web_tip")
+    assert subject == "[REM] web_tip: remove"
+
+
+def test_step_name():
+    assert ec.step_name("9.0", "10.0") == "migrate_090_100"
+    assert ec.step_name("16.0", "17.0") == "migrate_160_170"

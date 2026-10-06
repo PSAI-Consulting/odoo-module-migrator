@@ -18,7 +18,8 @@ import re
 
 from extract_fields import read_blobs
 
-CORE_RE = re.compile(r"^odoo/(?!addons/|tests/|cli/|upgrade_code/|upgrade/)(.+)\.py$")
+# openerp/ before 10.0, named odoo.* to compare 9.0 with 10.0
+CORE_RE = re.compile(r"^(?:odoo|openerp)/(?!addons/|tests/|cli/|upgrade_code/|upgrade/)(.+)\.py$")
 CLASS_RE = re.compile(r"^class\s+(\w+)\b")
 METHOD_RE = re.compile(r"^    def (\w+)\(")
 TOP_DEF_RE = re.compile(r"^(?:def|class)\s+([A-Za-z]\w*)\b")

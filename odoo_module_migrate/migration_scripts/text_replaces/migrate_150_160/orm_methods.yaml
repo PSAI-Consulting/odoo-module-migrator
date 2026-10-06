@@ -1,3 +1,6 @@
+# Source : odoo 16.0 odoo/models.py : get_xml_id() « is deprecated method, use
+# get_external_id() instead » ; fields_get_keys() « is deprecated, use `_fields` »
+# (15.0 : return list(self._fields)). Supprimés en 17.0 (odoo ba565758c6e9).
 .py:
   \.get_xml_id\(: ".get_external_id("
-  \.fields_get_keys\(\): "._fields"
+  '((?:\bself|\b[a-z_]\w*)(?:\.\w+|\[[^\[\]\n]+\])*)\.fields_get_keys\(\)': 'list(\1._fields)'

@@ -1,0 +1,5 @@
+# Modèles renommés 13.0 -> 14.0 vérifiés à la main : prioritaires sur generated.yaml.
+# odoo 0ea9254c81ea '[IMP] account: fusion wizards for automatic entries' : commit : « fusion wizards for automatic entries »
+- ["account.accrual.accounting.wizard", "account.automatic.entry.wizard", "odoo 0ea9254c81ea '[IMP] account: fusion wizards for automatic entries'"]
+# odoo 47ff160b422a '[REF] mail: improve and refactor mail template preview' : commit : « improve and refactor mail template preview »
+- ["email_template.preview", "mail.template.preview", "odoo 47ff160b422a '[REF] mail: improve and refactor mail template preview'"]

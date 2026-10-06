@@ -1,0 +1,5 @@
+# Source : odoo 0c6488a95aa5 '[REF] stock: Set action_done on pickings private' (14.0 :
+# stock.picking._action_done(), plus de action_done()). Les appels sur un picking évident sont
+# réécrits (text_replaces/migrate_130_140/actions.yaml) ; sale.order.action_done() existe toujours.
+.py:
+  '(?<!order)(?<!orders)(?<!_ids)\.action_done\(\)': "[14] stock.picking.action_done() is private since 14.0 (odoo 0c6488a95aa5): use _action_done() (or button_validate()) if this is a picking"

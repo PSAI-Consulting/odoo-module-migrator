@@ -1,0 +1,39 @@
+# Renommages 15.0 -> 16.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
+# Hors OpenUpgrade (tools/extract_changes.py fields --sources, odoo + fork Enterprise),
+# vérifiés modèle par modèle (champs avant / après le commit et en 16.0) :
+# odoo 56e7bcf0cb88 '[REF] *{stock,mrp}*: rename reserved fields' : champs réservés renommés (15.0 product_qty / product_uom_qty, 16.0 reserved_qty / reserved_uom_qty)
+- ["stock.move.line", "product_qty", "reserved_qty", "odoo 56e7bcf0cb88 '[REF] *{stock,mrp}*: rename reserved fields'"]
+- ["stock.move.line", "product_uom_qty", "reserved_uom_qty", "odoo 56e7bcf0cb88 '[REF] *{stock,mrp}*: rename reserved fields'"]
+# odoo cd9833e4adc9 '[REF] *stock*: rename location destination fields' : même Many2one « Destination Location » (16.0 : location_dest_id et location_src_id)
+- ["stock.rule", "location_id", "location_dest_id", "odoo cd9833e4adc9 '[REF] *stock*: rename location destination fields'"]
+# odoo eac2440fe098 '[ADD] l10n_din5008: isolate din 5008 from l10n_de' : l10n_de_* -> l10n_din5008_* (module l10n_din5008 isolé de l10n_de, mêmes champs calculés)
+- ["account.move", "l10n_de_document_title", "l10n_din5008_document_title", "odoo eac2440fe098 '[ADD] l10n_din5008: isolate din 5008 from l10n_de'"]
+- ["purchase.order", "l10n_de_document_title", "l10n_din5008_document_title", "odoo eac2440fe098 '[ADD] l10n_din5008: isolate din 5008 from l10n_de'"]
+- ["repair.order", "l10n_de_document_title", "l10n_din5008_document_title", "odoo eac2440fe098 '[ADD] l10n_din5008: isolate din 5008 from l10n_de'"]
+- ["sale.order", "l10n_de_document_title", "l10n_din5008_document_title", "odoo eac2440fe098 '[ADD] l10n_din5008: isolate din 5008 from l10n_de'"]
+- ["repair.order", "l10n_de_template_data", "l10n_din5008_template_data", "odoo eac2440fe098 '[ADD] l10n_din5008: isolate din 5008 from l10n_de'"]
+# odoo a3eec47f3585 '[IMP] hr_timesheet: Move timesheet_cost into a separate module.' : même coût horaire, déplacé dans hr_hourly_cost
+- ["hr.employee", "timesheet_cost", "hourly_cost", "odoo a3eec47f3585 '[IMP] hr_timesheet: Move timesheet_cost into a separate module.'"]
+# odoo fdcaa53ca0b5 '[IMP] mail, *: rename mail.channel.partner to mail.channel.member' : mail.channel.partner renommé mail.channel.member
+- ["mail.channel", "channel_last_seen_partner_ids", "channel_member_ids", "odoo fdcaa53ca0b5 '[IMP] mail, *: rename mail.channel.partner to mail.channel.member'"]
+- ["mail.channel.rtc.session", "channel_partner_id", "channel_member_id", "odoo fdcaa53ca0b5 '[IMP] mail, *: rename mail.channel.partner to mail.channel.member'"]
+# odoo f7b8f0750131 '[IMP] payment: rename of acquirer to provider' : acquirer renommé provider
+- ["payment.link.wizard", "available_acquirer_ids", "available_provider_ids", "odoo f7b8f0750131 '[IMP] payment: rename of acquirer to provider'"]
+- ["payment.link.wizard", "has_multiple_acquirers", "has_multiple_providers", "odoo f7b8f0750131 '[IMP] payment: rename of acquirer to provider'"]
+- ["payment.link.wizard", "payment_acquirer_selection", "payment_provider_selection", "odoo f7b8f0750131 '[IMP] payment: rename of acquirer to provider'"]
+# odoo 1d92a264a666 '[ADD] sale_loyalty: manage loyalty in sales orders' : module sale_coupon renommé sale_loyalty (OpenUpgrade 16.0 apriori.py)
+- ["res.config.settings", "module_sale_coupon", "module_sale_loyalty", "odoo 1d92a264a666 '[ADD] sale_loyalty: manage loyalty in sales orders'"]
+# odoo 766e0c98c4a6 '[IMP] website_crm_partner_assign: use read_group for computed fields' : même champ calculé stocké (_compute_implemented_partner_count)
+- ["res.partner", "implemented_count", "implemented_partner_count", "odoo 766e0c98c4a6 '[IMP] website_crm_partner_assign: use read_group for computed fields'"]
+# enterprise 897da43116b '[IMP] l10n_mx_{edi, edi_stock, reports}: improvements and code cleaning' : même Many2one account.move « Substituted By »
+- ["account.move", "l10n_mx_edi_cancel_invoice_id", "l10n_mx_edi_cancel_move_id", "enterprise 897da43116b '[IMP] l10n_mx_{edi, edi_stock, reports}: improvements and code cleaning'"]
+# enterprise 80f9c296624 '[IMP] {snailmail_}account_followup: rework follow-ups' : mêmes champs (relances refondues)
+- ["res.partner", "payment_next_action_date", "followup_next_action_date", "enterprise 80f9c296624 '[IMP] {snailmail_}account_followup: rework follow-ups'"]
+- ["res.partner", "unpaid_invoices", "unpaid_invoice_ids", "enterprise 80f9c296624 '[IMP] {snailmail_}account_followup: rework follow-ups'"]
+#
+# Rejetés après vérification (anciennes règles account.yaml / hr.yaml / stock.yaml) :
+# - account.account user_type_id / internal_type -> account_type (odoo 26b2472f4977) :
+#   Many2one account.account.type devenu Selection ; message dans removed_fields/curated.yaml.
+# - account.move.line / hr.expense analytic_account_id -> analytic_distribution (odoo
+#   7064c95aa04e, 7e3403068fc3) : Many2one devenu JSON {compte: pourcentage} ; idem.
+# - stock.move.line product_qty -> reserved_qty : conservé ci-dessus (odoo 56e7bcf0cb88).

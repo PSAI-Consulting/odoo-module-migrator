@@ -1,0 +1,4 @@
+# Modèles renommés 10.0 -> 11.0 vérifiés à la main : prioritaires sur generated.yaml.
+# odoo ddf2b21bdf38 '[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line'
+# (10.0 : stock.pack.operation ; 11.0 : stock.move.line)
+- ["stock.pack.operation", "stock.move.line", "odoo ddf2b21bdf38 '[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line'"]
