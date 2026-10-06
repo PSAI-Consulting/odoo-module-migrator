@@ -33,6 +33,29 @@ RECORD_METHODS_DOMAIN = {"search", "search_count", "search_read", "read_group",
                          "_read_group", "filtered_domain", "search_fetch"}
 
 
+# Delegation inheritance (_inherits) of Odoo, the same from 12.0 to 20.0: the
+# fields of the parent are fields of the child (product.product.detailed_type
+# is product.template.detailed_type). product/models/product_product.py,
+# base/models/res_users.py, mail/models/mail_mail.py, base/models/ir_cron.py
+DELEGATED = {
+    "product.product": "product.template",
+    "res.users": "res.partner",
+    "mail.mail": "mail.message",
+    "ir.cron": "ir.actions.server",
+}
+
+
+def with_delegation(rules):
+    """{(model, field): value} completed for the models delegating to `model`
+    (an explicit rule of the child wins)."""
+    result = dict(rules)
+    for child, parent in DELEGATED.items():
+        for (model, field), value in rules.items():
+            if model == parent:
+                result.setdefault((child, field), value)
+    return result
+
+
 @dataclass(frozen=True)
 class Usage:
     model: str
@@ -238,6 +261,37 @@ def python_usages(text):
     return visitor.usages, visitor.defined
 
 
+def python_comodels(text):
+    """{(model, field): comodel} of the relational fields defined in a Python
+    file (``fields.One2many('m', ...)``, ``comodel_name='m'``)."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return {}
+    result = {}
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef):
+            continue
+        models = _class_models(cls)
+        for stmt in cls.body:
+            target = stmt.target if isinstance(stmt, ast.AnnAssign) else (
+                stmt.targets[0] if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 else None)
+            call = getattr(stmt, "value", None)
+            if not (
+                isinstance(target, ast.Name) and isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Attribute)
+                and call.func.attr in ("Many2one", "One2many", "Many2many")
+            ):
+                continue
+            comodel = (_str_list(call.args[0]) if call.args else []) or [
+                v for kw in call.keywords if kw.arg == "comodel_name" for v in _str_list(kw.value)
+            ]
+            if comodel:
+                for model in models:
+                    result[(model, target.id)] = comodel[0]
+    return result
+
+
 # ---------------------------------------------------------------------------
 # XML
 # ---------------------------------------------------------------------------
@@ -280,7 +334,27 @@ def _attr_span(text, pos, line, tag, attr, value, taken):
     return None
 
 
-def xml_usages(text):
+def _subview_model(node, arch, view_model, comodels):
+    """Model of the sub-view holding `node`, when every x2many field around it
+    is a field defined by the module (comodel known for sure), else None."""
+    chain = [
+        parent for parent in node.iterancestors()
+        if parent is not arch and parent.tag == "field"
+        and not (parent.get("name") == "arch")
+    ]
+    if not chain or any(parent.get("position") is not None for parent in chain):
+        return None
+    model = view_model
+    for parent in reversed(chain):  # outermost first
+        model = comodels.get((model, parent.get("name")))
+        if model is None:
+            return None
+    return model
+
+
+def xml_usages(text, comodels=None):
+    """`comodels` {(model, field): comodel}: fields of the sub-views of these
+    x2many fields are reported too (with the comodel)."""
     try:
         root = etree.fromstring(text.encode("utf-8"))
     except etree.XMLSyntaxError:
@@ -307,11 +381,15 @@ def xml_usages(text):
         if not view_model or arch is None:
             continue
         for node in arch.iter("field"):
-            # skip sub-views of x2many fields (they show another model)
+            model = view_model.strip()
+            # sub-views of x2many fields show another model: only checked when
+            # the comodel is known for sure
             if _in_subview(node, arch):
-                continue
+                model = comodels and _subview_model(node, arch, model, comodels)
+                if not model:
+                    continue
             if node.get("name"):
-                add(view_model.strip(), node.get("name"), node, "name", f"view of {view_model.strip()}")
+                add(model, node.get("name"), node, "name", f"view of {model}")
         # <label for="field"> refers to a field of the view model too
         for node in arch.iter("label"):
             if _in_subview(node, arch):

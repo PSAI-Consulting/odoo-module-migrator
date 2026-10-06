@@ -1,4 +1,5 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+from odoo_module_migrate.analysis import fields as fa
 from odoo_module_migrate.analysis.fields import apply_renames, python_usages, xml_usages
 
 PY = '''from odoo import api, fields, models
@@ -159,3 +160,47 @@ def test_xml_field_locator_children_belong_to_view_model():
     assert ("sale.order", "x_after") in found
     assert ("sale.order", "x_line") not in found  # inside the x2many sub-view
     assert ("sale.order", "x_sub") not in found
+
+
+def test_subview_of_module_x2many():
+    """Sub-view of an x2many defined by the module: its comodel is known."""
+    py = (
+        "from odoo import fields, models\n\n\n"
+        "class Batch(models.Model):\n"
+        "    _name = 'product.product.batch'\n"
+        "    product_ids = fields.Many2many('product.product', string='Products')\n"
+        "    other_ids = fields.One2many(comodel_name='stock.move', inverse_name='x')\n"
+    )
+    comodels = fa.python_comodels(py)
+    assert comodels == {
+        ("product.product.batch", "product_ids"): "product.product",
+        ("product.product.batch", "other_ids"): "stock.move",
+    }
+    xml = """<odoo>
+    <record id="v" model="ir.ui.view">
+        <field name="model">product.product.batch</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="product_ids">
+                    <list><field name="detailed_type"/></list>
+                </field>
+                <field name="unknown_ids">
+                    <list><field name="detailed_type"/></list>
+                </field>
+            </form>
+        </field>
+    </record>
+</odoo>
+"""
+    found = {(u.model, u.field, u.line) for u in fa.xml_usages(xml, comodels)}
+    assert ("product.product", "detailed_type", 7) in found
+    assert not any(line == 10 for _m, _f, line in found)  # comodel unknown
+    # without comodels: sub-views skipped as before
+    assert not any(m == "product.product" for m, _f, _l in {(u.model, u.field, u.line) for u in fa.xml_usages(xml)})
+
+
+def test_delegation():
+    rules = {("product.template", "detailed_type"): "x", ("product.product", "y"): "z"}
+    result = fa.with_delegation(rules)
+    assert result[("product.product", "detailed_type")] == "x"
+    assert ("product.template", "y") not in result

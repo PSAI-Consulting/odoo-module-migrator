@@ -309,12 +309,22 @@ class BaseMigrationScript:
                 removed.setdefault((r[0], r[1]), r[2] if len(r) > 2 else "")
         if not renames and not removed:
             return
+        renames = analysis_fields.with_delegation(renames)
+        removed = {
+            k: v for k, v in analysis_fields.with_delegation(removed).items() if k not in renames
+        }
         files = [
             p for p in tools.get_files(module_path, (".py", ".xml"))
             if not self._is_skipped_folder(module_path, str(p.parent))
         ]
         # Fields defined by the module itself on a model are its own
         defined = set()
+        # comodels of the relational fields of the module: their sub-views
+        # in the XML views can be checked
+        comodels = {}
+        for path in files:
+            if path.suffix == ".py":
+                comodels.update(analysis_fields.python_comodels(_read_content(path)))
         parsed = {}
         for path in files:
             text = _read_content(path)
@@ -322,7 +332,7 @@ class BaseMigrationScript:
                 usages, fields_by_model = analysis_fields.python_usages(text)
                 defined.update((m, f) for m, fs in fields_by_model.items() for f in fs)
             else:
-                usages = analysis_fields.xml_usages(text)
+                usages = analysis_fields.xml_usages(text, comodels)
             parsed[path] = (text, usages)
 
         for path, (text, usages) in parsed.items():
@@ -341,7 +351,7 @@ class BaseMigrationScript:
                 if count:  # positions changed with the renames
                     text = new_text
                     usages = [
-                        u for u in analysis_fields.xml_usages(text)
+                        u for u in analysis_fields.xml_usages(text, comodels)
                         if (u.model, u.field) not in defined
                     ]
                 # displayed fields that do not exist anymore: removed from views
