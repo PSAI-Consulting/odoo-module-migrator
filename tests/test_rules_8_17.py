@@ -751,3 +751,12 @@ def test_module_rules_090_100():
     new, messages = manifest.apply_module_rules(["hr_equipment", "project_timesheet", "sale_layout", "sale"], rules)
     assert new == ["maintenance", "hr_timesheet", "sale"]
     assert all(level == "info" for level, _msg in messages), messages
+
+
+def test_module_rules_080_090():
+    rules = _module_rules("migrate_080_090")
+    new, messages = manifest.apply_module_rules(
+        ["email_template", "account_anglo_saxon", "portal_project_issue", "sale"], rules
+    )
+    assert new == ["mail", "account", "website_project_issue", "sale"]
+    assert all(level == "info" for level, _msg in messages), messages
