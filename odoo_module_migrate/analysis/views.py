@@ -207,6 +207,11 @@ class ViewIndex:
                 todo.extend(self.depends.get(name, ()))
         return result
 
+    def complete(self, closure):
+        """Whether all the modules of a closure are indexed: only then a module
+        is known for sure to be outside the dependencies."""
+        return all(name in self.depends for name in closure)
+
     def available(self, xid, modules=None, exclude=(), _seen=None):
         """Anchor keys of the view and of the views extending it; only the
         views of `modules` (the dependencies, installed for sure) count."""
@@ -266,6 +271,7 @@ def check_module(module, index, reference_modules):
     """Yield (path, line, message) for the anchors and XML ids not found."""
     module = pathlib.Path(module)
     closure = index.closure(module.name)
+    complete = index.complete(closure)
     for path in _data_files(module):
         root = _parse(path)
         if root is None:
@@ -279,6 +285,16 @@ def check_module(module, index, reference_modules):
                         f"parent view {parent} does not exist in the target Odoo"
                     )
                 continue
+            owner = parent.split(".")[0]
+            if owner in index.modules and owner not in closure:
+                # its anchors cannot be found: the real error is the dependency
+                # (installed only if another module happens to install it first);
+                # unknown when a dependency is not indexed (it may depend on it)
+                if complete:
+                    yield path, report_node.sourceline, _missing_depends(
+                        f"parent view {parent}", owner
+                    )
+                continue
             # the view itself does not count: it holds the anchors
             available = index.available(index.root(parent), closure, exclude={xid})
             available |= _inserted(arch)
@@ -289,7 +305,16 @@ def check_module(module, index, reference_modules):
                         f" Odoo (nor in any view of its inheritance tree): the view will"
                         f" not install"
                     )
-        yield from _check_xmlids(path, root, module.name, index, reference_modules, closure)
+        yield from _check_xmlids(
+            path, root, module.name, index, reference_modules, closure if complete else None
+        )
+
+
+def _missing_depends(what, owner):
+    return (
+        f"{what} comes from the module '{owner}', which is not in the dependencies of the"
+        f" module: add it to 'depends'"
+    )
 
 
 def _check_xmlids(path, root, module_name, index, reference_modules, closure=None):
@@ -314,16 +339,16 @@ def _check_xmlids(path, root, module_name, index, reference_modules, closure=Non
         for ref in refs:
             module, _, local = ref.partition(".")
             if (
-                module == module_name or module not in reference_modules
+                module == module_name or module not in index.modules
                 or local.startswith(GENERATED_PREFIXES) or (ref, node.sourceline) in seen
             ):
                 continue
             seen.add((ref, node.sourceline))
             if ref not in index.xmlids:
-                yield path, node.sourceline, f"XML id {ref} does not exist in the target Odoo"
+                # only the target Odoo is known for sure (an XML id of another
+                # custom module may be created by its code)
+                if module in reference_modules:
+                    yield path, node.sourceline, f"XML id {ref} does not exist in the target Odoo"
             elif closure is not None and module not in closure:
                 # works only if another module happens to install it first
-                yield path, node.sourceline, (
-                    f"XML id {ref} comes from the module '{module}', which is not in the"
-                    f" dependencies of the module: add it to 'depends'"
-                )
+                yield path, node.sourceline, _missing_depends(f"XML id {ref}", module)

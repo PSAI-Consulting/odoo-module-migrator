@@ -32,3 +32,25 @@ def test_missing_models(tmp_path):
     # stock.valuation.layer removed; mail.thread and other.model not in the
     # dependencies (other is not a dependency of my_mod)
     assert found == [(5, "stock.valuation.layer"), (6, "mail.thread"), (6, "other.model")]
+
+
+def test_model_of_a_module_outside_depends(tmp_path):
+    """The model exists in another indexed module, not in the dependencies
+    (stof_accords_galec: product.family of easi_product): name the module."""
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "class P(Model):\n    _name = 'res.partner'\n")
+    _module(custom, "easi_product", ["base"], "class F(Model):\n    _name = 'product.family'\n")
+    py = (
+        "from odoo import fields, models\n"
+        "class A(models.Model):\n"
+        "    _name = 'sale.accord'\n"
+        "    family_id = fields.Many2one('product.family')\n"
+    )
+    mod = _module(custom, "my_mod", ["base"], py)
+    # a dependency is not indexed: the model may come from it, old message
+    mod2 = _module(custom, "my_mod2", ["unknown_mod"], py)
+    index = models.ModelIndex.build([ref, custom])
+    messages = [msg for _p, _l, msg in models.check_module(mod, index)]
+    assert len(messages) == 1 and "defined by the module(s) easi_product" in messages[0], messages
+    messages = [msg for _p, _l, msg in models.check_module(mod2, index)]
+    assert len(messages) == 1 and "does not exist in the target Odoo" in messages[0], messages

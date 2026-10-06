@@ -113,35 +113,56 @@ class ModelIndex:
                     index.add_module(manifest.parent)
         return index
 
-    def available(self, module):
-        result, todo, seen = set(), [module, "base"], set()
+    def closure(self, module):
+        result, todo = set(), [module, "base"]
         while todo:
             name = todo.pop()
-            if name in seen:
-                continue
-            seen.add(name)
-            result |= self.models.get(name, set())
-            todo.extend(self.depends.get(name, ()))
+            if name not in result:
+                result.add(name)
+                todo.extend(self.depends.get(name, ()))
         return result
+
+    def available(self, module):
+        result = set()
+        for name in self.closure(module):
+            result |= self.models.get(name, set())
+        return result
+
+    def owners(self, model):
+        """The indexed modules defining `model` (_name)."""
+        return sorted(name for name, models in self.models.items() if model in models)
 
 
 def check_module(module, index):
     """Yield (path, line, message) for the models that do not exist."""
     module = pathlib.Path(module)
+    closure = index.closure(module.name)
     available = index.available(module.name)
     if not index.models.get("base"):
         return  # no reference addons indexed: nothing can be checked
+    # all the dependencies indexed: a model defined by another module is known
+    # for sure to be outside the dependencies
+    complete = all(name in index.depends for name in closure)
+
+    def missing(model, what):
+        owners = index.owners(model) if complete else []
+        if owners:
+            return (
+                f"[model] '{model}' ({what}) is defined by the module(s) {', '.join(owners)},"
+                f" not in the dependencies of the module: add one of them to 'depends'"
+            )
+        return None
     for path in _python_files(module):
         for line, name, inherit, inherits, comodels in _classes(path):
             for parent in [*inherit, *inherits]:
                 if parent != name and parent not in available:
-                    yield path, line, (
+                    yield path, line, missing(parent, "inherited") or (
                         f"[model] '{parent}' (inherited) does not exist in the target Odoo,"
                         f" nor in the dependencies of the module: the module will not install"
                     )
             for comodel_line, comodel in comodels:
                 if comodel not in available:
-                    yield path, comodel_line, (
+                    yield path, comodel_line, missing(comodel, "comodel of a relational field") or (
                         f"[model] '{comodel}' (comodel of a relational field) does not exist"
                         f" in the target Odoo, nor in the dependencies of the module"
                     )
