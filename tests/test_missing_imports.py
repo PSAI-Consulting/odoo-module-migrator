@@ -29,8 +29,8 @@ def test_missing_relative_imports(tmp_path, caplog):
 
 
 def test_missing_models_package_python_message(tmp_path):
-    # Stof edi_sftp_data_model / edi_smb_data_model: __init__.py imports a
-    # models package that does not exist (already the case in the 17.0 source)
+    # real case: the __init__.py of a module imports a
+    # models package that does not exist (already broken in the source version)
     import subprocess
     import sys
 

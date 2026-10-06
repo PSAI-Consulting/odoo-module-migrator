@@ -18,8 +18,8 @@ def _check(text, expected, reported=()):
     return rep
 
 
-# Stof edi_platform / sale_order_block_duplicate_product
-STOF = '''from odoo import registry, models, fields, api, _
+# real case: a new cursor opened on the database in a settings method
+NEW_CURSOR = '''from odoo import registry, models, fields, api, _
 
 
 class ResConfigSettings(models.TransientModel):
@@ -32,7 +32,7 @@ class ResConfigSettings(models.TransientModel):
 
 
 def test_from_import_with_other_names():
-    _check(STOF, STOF.replace(
+    _check(NEW_CURSOR, NEW_CURSOR.replace(
         "from odoo import registry, models, fields, api, _",
         "from odoo import models, fields, api, _\nfrom odoo.modules.registry import Registry",
     ).replace("with registry(", "with Registry("))
@@ -44,7 +44,7 @@ def test_from_import_alone_and_alias():
 
 
 def test_unused_import_dropped():
-    # Stof stof_api_transport: imported, never used
+    # imported, never used
     text = "from odoo import registry, models\n\n\nclass A(models.Model):\n    _name = 'a'\n"
     _check(text, "from odoo import models\n\n\nclass A(models.Model):\n    _name = 'a'\n")
     text = "from odoo import registry\nfrom odoo import models\n"
@@ -62,7 +62,7 @@ def test_odoo_attribute():
         "import odoo\nfrom odoo.modules.registry import Registry\n\n\n"
         "def run(db):\n    with Registry(db).cursor() as cr:\n        pass\n"
     ))
-    # Stof stof_custom_atp_reservation: comment kept on its line
+    # comment kept on its line
     text = "import odoo  # noqa: E402\nr = odoo.registry(db_name)\n"
     _check(text, "import odoo  # noqa: E402\nfrom odoo.modules.registry import Registry\nr = Registry(db_name)\n")
     # Registry already imported: not added twice
@@ -136,7 +136,7 @@ def test_migrate_function(tmp_path, caplog):
 
     path = tmp_path / "models" / "a.py"
     path.parent.mkdir()
-    path.write_text(STOF + "\n\ndef bad():\n    return 1\n", encoding="utf-8")
+    path.write_text(NEW_CURSOR + "\n\ndef bad():\n    return 1\n", encoding="utf-8")
     other = tmp_path / "models" / "b.py"
     other.write_text("import odoo\nx = odoo.registry()\n", encoding="utf-8")
     logger = logging.getLogger("test_registry")
