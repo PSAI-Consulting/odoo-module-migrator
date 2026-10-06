@@ -1,0 +1,13 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise du fork LBruyere/enterprise).
+#
+# Modules marqués « removed » dans modules.yaml alors que le commit les fusionne :
+# enterprise 0efd3f52948 '[DEL] l10n_mx_edi_cancellation: Features in l10n_mx_edi'
+- ["l10n_mx_edi_cancellation", "merged", "l10n_mx_edi"]
+# enterprise 85bcf2b686f '[FIX]: l10n_uk_reports(_hmrc): adapt to new tax model and merge modules'
+- ["l10n_uk_reports_hmrc", "merged", "l10n_uk_reports"]
+# enterprise dbb8753057e '[REF] website_form_editor: move to community' (13.0 : addons/website_form)
+- ["website_form_editor", "merged", "website_form"]
+# Module de correctifs (auto_install) de la branche stable 12.0 « Improved Cash Flow Statement »
+# (depends account_reports), intégré au rapport de flux de trésorerie de account_reports en 13.0
+- ["account_reports_cash_flow", "merged", "account_reports"]
