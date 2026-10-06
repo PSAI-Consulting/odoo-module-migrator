@@ -8,8 +8,12 @@
   '\bfrom odoo\.tools\.pycompat\b|\bpycompat\.': "[20] odoo.tools.pycompat was removed: use the csv module"
   '\blazy_property\b': "[20] lazy_property was removed: use functools.cached_property"
   '\bormcache_context\b': "[20] ormcache_context was removed: use ormcache with the context keys"
-  '\bodoo\.tools\.populate\b|\b_populate_factories\b': "[20] odoo.tools.populate was removed"
-  '\bfrom odoo\.tools\.query import|\bodoo\.tools\.query\b': "[20] odoo.tools.query was moved to odoo.orm.query"
+  # odoo 970e3d96abe3 '[REF] tools: Rename old populate -> duplicate' ; « from odoo.tools.populate
+  # import X » est traité nom par nom par python_scripts/migrate_190_200/odoo_tools_imports.py
+  '(?<!from )\bodoo\.tools\.populate\b|\b_populate_factories\b': "[20] odoo.tools.populate was removed (renamed odoo.tools.duplicate, odoo 970e3d96abe3)"
+  # odoo ef789d3c5086 '[MOV] core: move Query into odoo.orm' ; « from odoo.tools.query import Query »
+  # est réécrit par python_scripts/migrate_190_200/odoo_tools_imports.py (-> from odoo.models import Query)
+  '(?<!from )\bodoo\.tools\.query\b': "[20] odoo.tools.query was moved to odoo.orm.query: import Query from odoo.models"
   '\bfrom odoo\.service\.(?:db|security) import|\bodoo\.service\.(?:db|security)\b': "[20] odoo.service.db / odoo.service.security were removed"
   # odoo 0915e817f41 '[REM] orm: old check access methods' ; en 19.0 check_access_rights(op) valait
   # self.browse().check_access(op), et avec raise_exception=False self.browse().has_access(op)

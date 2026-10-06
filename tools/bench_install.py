@@ -307,7 +307,8 @@ def first_error(output):
         if "has an incompatible version" in line:  # module silently not installed
             return line.split(": ", 1)[-1].strip()[:600]
     for i, line in enumerate(lines):
-        if "ParseError" in line and "while parsing" in line:
+        # the message, not the source line of the traceback ("raise ParseError(...)")
+        if "ParseError" in line and "while parsing" in line and "raise " not in line:
             detail = " ".join(l.strip() for l in lines[i + 1:i + 4] if l.strip())
             source = line.rsplit("/", 1)[-1]
             return f"ParseError {source}: {detail}"[:600]
