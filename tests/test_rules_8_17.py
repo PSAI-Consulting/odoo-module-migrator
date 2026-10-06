@@ -594,3 +594,37 @@ def test_exceptions_and_invoice_120_130():
     assert _apply("text_replaces", "migrate_120_130", ".xml", xml) == (
         '<field name="type"/><field name="inherit_id" ref="account.view_move_form"/>'
     )
+
+
+def test_invoice_fields_follow_account_move_120_130(tmp_path, caplog):
+    import logging
+
+    from odoo_module_migrate.migration_scripts.migrate_120_130 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    module.mkdir()
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['account']}")
+    (module / "models.py").write_text(
+        "from odoo import models\n\n\nclass Invoice(models.Model):\n"
+        '    _inherit = "account.move"\n\n    def _x(self):\n'
+        "        return self.date_invoice, self.number, self.name\n"
+    )
+    script = MigrationScript()
+    script.parse_rules()
+    with caplog.at_level(logging.WARNING):
+        script.handle_fields(module)
+    text = (module / "models.py").read_text()
+    assert "return self.invoice_date, self.name, self.name\n" in text
+    # account.move.name is not reported as removed (merged model)
+    assert "account.move.name" not in caplog.text
+
+
+def test_blocked_rules_are_loaded():
+    """[model, field, null] rows of curated.yaml block the generated renames."""
+    for step, key in (
+        ("migrate_130_140", ["stock.move", "date_expected"]),
+        ("migrate_130_140", ["crm.lead", "planned_revenue"]),
+        ("migrate_160_170", ["hr.expense", "total_amount_company"]),
+    ):
+        rows = yaml.safe_load(open(f"{SCRIPTS}/renamed_fields/{step}/curated.yaml", encoding="utf-8"))
+        assert [r[2] for r in rows if r[:2] == key] == [None], (step, key)
