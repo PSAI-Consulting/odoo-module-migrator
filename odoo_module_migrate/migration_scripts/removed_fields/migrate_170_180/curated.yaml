@@ -67,3 +67,6 @@
 - ["res.partner", "l10n_mx_edi_addenda", "voir l10n_mx_edi_addenda_id (pas un renommage : comodel différent (ir.ui.view -> l10n_mx_edi.addenda)) - enterprise 6e54457bf94 '[REF] l10n_mx_edi: addenda'"]
 - ["sale.rental.schedule", "analytic_account_id", "voir project_id (pas un renommage : plans analytiques sur les projets (comodel / sens différent)) - enterprise c2648d6ff4a '[IMP] industry_fsm,sale_renting,sale_subscription: analytic plans on projects'"]
 - ["sale.report", "analytic_account_id", "voir project_id (pas un renommage : plans analytiques sur les projets (comodel / sens différent)) - odoo 238a41e3528 '[IMP] project,sale,purchase,stock,mrp: analytic plans on projects'"]
+#
+# Supprimé, renommé à tort en journal_id par OpenUpgrade (colonne) : journal_id est le journal du paiement
+- ["account.payment", "destination_journal_id", "removed with internal transfers (journal_id is the journal of the payment, not the destination) - odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]

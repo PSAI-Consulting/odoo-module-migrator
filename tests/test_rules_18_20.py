@@ -517,3 +517,40 @@ def test_access_records_left_to_upgrade_code():
     assert not any(r"ir\.rule" in p or r"ir\.model\.access" in p for p in xml)
     assert any(r"ir\.model\.access" in p for p in py)
     assert any(r"account\.group" in p for p in xml)  # 19.3-00-account-groups.py is not run
+
+
+def test_openupgrade_column_renames_not_applied_170_180(tmp_path, caplog):
+    """Columns renamed by OpenUpgrade while the field still exists in 18.0
+    (curated "new == old"): not renamed (stock.move.location_dest_id was turned
+    into location_final_id, then forecasted_location_id: view not installable)."""
+    import logging
+
+    from odoo_module_migrate.migration_scripts.migrate_170_180 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    (module / "views").mkdir(parents=True)
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['stock', 'account']}")
+    (module / "models.py").write_text(
+        "from odoo import api, fields, models\n\n\nclass StockMove(models.Model):\n"
+        "    _inherit = 'stock.move'\n\n    @api.depends('location_dest_id')\n"
+        "    def _x(self):\n        return self.location_dest_id\n\n\n"
+        "class AccountPayment(models.Model):\n    _inherit = 'account.payment'\n\n"
+        "    def _y(self):\n        return self.journal_id, self.destination_journal_id\n"
+    )
+    xml = (
+        '<odoo><record id="v" model="ir.ui.view"><field name="model">stock.move</field>'
+        '<field name="inherit_id" ref="stock.view_move_tree"/>'
+        '<field name="arch" type="xml"><field name="location_dest_id" position="attributes">'
+        '<attribute name="optional">show</attribute></field></field></record></odoo>'
+    )
+    (module / "views" / "views.xml").write_text(xml)
+    py = (module / "models.py").read_text()
+    script = MigrationScript()
+    script.parse_rules()
+    with caplog.at_level(logging.WARNING):
+        script.handle_fields(module)
+    assert (module / "models.py").read_text() == py
+    assert (module / "views" / "views.xml").read_text() == xml
+    messages = [r.getMessage() for r in caplog.records]
+    assert any("account.payment.destination_journal_id was removed" in m for m in messages)
+    assert not any("location_dest_id" in m or ".journal_id was" in m for m in messages)

@@ -46,3 +46,24 @@
 # enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions' : même Many2many documents.tag, même table product_tags_table
 - ["res.company", "product_tags", "product_tag_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]
 - ["res.config.settings", "product_tags", "product_tag_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]
+#
+# Renommages de COLONNES d'OpenUpgrade (pre-migration.py, migration des données)
+# qui ne sont PAS des renommages de l'API : l'ancien champ existe toujours en
+# 18.0 (et en 20.0), il ne doit pas être renommé dans le code client.
+# Format « non renommé » : nouveau nom == ancien nom (annule la règle de generated.yaml).
+# odoo 18.0 addons/stock/models/stock_move.py : location_dest_id (l. 83) ET location_final_id (l. 87),
+# nouveau champ distinct (emplacement final) ; renommé forecasted_location_id en 20.0, location_dest_id reste
+- ["stock.move", "location_dest_id", "location_dest_id", "odoo 18.0 addons/stock/models/stock_move.py: location_dest_id still defined (location_final_id is another field)"]
+# odoo 18.0 addons/account/models/account_payment.py l. 26 : journal_id défini (même sens : journal du paiement) ;
+# old_journal_id n'existe pas en 18.0 (colonne temporaire d'OpenUpgrade)
+- ["account.payment", "journal_id", "journal_id", "odoo 18.0 addons/account/models/account_payment.py: journal_id still defined, old_journal_id does not exist"]
+# odoo 01b87f1230b '[IMP] account: make journal entry optional for payments' : destination_journal_id
+# supprimé avec les virements internes (is_internal_transfer) ; journal_id n'a PAS le même sens
+# (journal du paiement, pas journal de destination) : signalé comme supprimé (removed_fields), pas renommé
+- ["account.payment", "destination_journal_id", "destination_journal_id", "odoo 01b87f1230b: removed with internal transfers, journal_id has another meaning"]
+# odoo 18.0 addons/pos_self_order/models/pos_config.py l. 35 : self_ordering_takeaway toujours défini
+# (takeaway est un autre champ de pos_restaurant) ; supprimé en 19.0 (removed_fields 18→19)
+- ["pos.config", "self_ordering_takeaway", "self_ordering_takeaway", "odoo 18.0 addons/pos_self_order/models/pos_config.py: self_ordering_takeaway still defined"]
+# odoo 18.0 addons/stock/models/stock_orderpoint.py l. 85 : qty_to_order toujours défini (calculé, inverse) ;
+# qty_to_order_manual (l. 87) est la valeur saisie
+- ["stock.warehouse.orderpoint", "qty_to_order", "qty_to_order", "odoo 18.0 addons/stock/models/stock_orderpoint.py: qty_to_order still defined (qty_to_order_manual is the manual value)"]
