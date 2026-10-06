@@ -20,7 +20,7 @@ import collections
 import re
 import subprocess
 
-from extract_fields import _git, read_blobs
+from extract_fields import _git, log_range, read_blobs
 
 JS_PATH_RE = re.compile(r"(?:^|/)addons/(?P<module>\w+)/static/src/(?P<path>.+)\.js$")
 EXPORT_RE = re.compile(
@@ -59,7 +59,7 @@ def _last_commit(repo, ref_from, ref_to, path, regex=None):
     if regex:
         args.append(f"-G{regex}")
     try:
-        out = _git(repo, *args, f"{ref_from}..{ref_to}", "--", path).decode("utf-8", "replace").strip()
+        out = _git(repo, *args, log_range(repo, ref_from, ref_to), "--", path).decode("utf-8", "replace").strip()
     except subprocess.CalledProcessError:
         return ""
     sha, _, subject = out.partition("\t")

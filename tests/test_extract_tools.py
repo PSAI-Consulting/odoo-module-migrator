@@ -242,3 +242,18 @@ def test_ground_truth_similarity(tmp_path):
     assert gt.similarity(original, expected) == (1, 4)
     assert gt.similarity(migrated, expected) == (3, 4)
     assert gt.missed(original, migrated, expected) == {"<field name='b'/>": 1}
+
+
+def test_log_range_history_ref(repo):
+    """With a local full-history branch, searches stop at its lineage."""
+    import subprocess as sp
+
+    head = lambda ref: sp.run(["git", "-C", str(repo), "rev-parse", ref], capture_output=True, text=True).stdout.strip()
+    assert ef.log_range(repo, "19.0", "20.0") == "19.0..20.0"
+    ef.HISTORY_REF = "20.0"
+    try:
+        ef._RANGES.clear()
+        assert ef.log_range(repo, "19.0", "20.0") == f"{head('19.0')}..{head('20.0')}"
+    finally:
+        ef.HISTORY_REF = None
+        ef._RANGES.clear()

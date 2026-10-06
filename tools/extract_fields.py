@@ -27,6 +27,27 @@ ANALYSIS_RE = re.compile(
 OBSOLETE_MODEL_RE = re.compile(r"^obsolete model (?P<model>[\w.]+)")
 
 
+# Branch whose full history (with file contents) is available locally, e.g.
+# 17.0 for the 8.0 -> 17.0 steps: commit searches are then limited to its
+# lineage (merge-base(from, to)..merge-base(to, HISTORY_REF)), where field
+# and model removals happen (master), instead of the stable forward-ports
+# whose contents a partial clone would fetch one by one.
+HISTORY_REF = None
+_RANGES = {}
+
+
+def log_range(repo, ref_from, ref_to):
+    """Commit range searched for the changes between two branches."""
+    if not HISTORY_REF:
+        return f"{ref_from}..{ref_to}"
+    key = (str(repo), ref_from, ref_to)
+    if key not in _RANGES:
+        base = _git(repo, "merge-base", ref_from, ref_to).decode().strip()
+        top = _git(repo, "merge-base", ref_to, HISTORY_REF).decode().strip()
+        _RANGES[key] = f"{base}..{top}"
+    return _RANGES[key]
+
+
 def _git(repo, *args, data=None):
     result = subprocess.run(
         ["git", "-C", str(repo), *args], input=data, capture_output=True, check=True
@@ -233,7 +254,7 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
                 continue
             commit = _git(
                 repo, "log", "-1", "--format=%h%x09%s", f"-S{name} = fields.",
-                f"{ref_from_of(repo)}..{ref_to_of(repo)}", "--", path,
+                log_range(repo, ref_from_of(repo), ref_to_of(repo)), "--", path,
             ).decode("utf-8", "replace").strip()
             sha, _, subject = commit.partition("\t")
             source = f"{repo.name.removesuffix('.git')} {sha} {subject!r}" if sha else path
@@ -386,7 +407,7 @@ def model_changes(repos, ref_from_of, ref_to_of, models_filter=lambda m: True):
             commit = _git(
                 repo, "log", "-1", "--format=%h%x09%s",
                 rf"-G_name\s*(:[^=]+)?=\s*['\"]{re.escape(model)}['\"]",
-                f"{ref_from_of(repo)}..{ref_to_of(repo)}", "--", path,
+                log_range(repo, ref_from_of(repo), ref_to_of(repo)), "--", path,
             ).decode("utf-8", "replace").strip()
         except subprocess.CalledProcessError:
             pass

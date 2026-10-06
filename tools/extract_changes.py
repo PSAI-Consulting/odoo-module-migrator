@@ -532,6 +532,8 @@ def main(argv=None):
         cmd.add_argument("--to", dest="to_version", required=True)
         cmd.add_argument("--repo", action="append", required=True, help="bare repository, repeatable")
         cmd.add_argument("--output-dir", required=True, help="odoo_module_migrate/migration_scripts")
+    for cmd in (flds, mdls, *[sub.choices[n] for n in ("js", "views")]):
+        cmd.add_argument("--history-ref", help="branch whose full history is local (e.g. 17.0): commit searches limited to its lineage")
     mods = sub.add_parser("modules", help="removed / renamed / merged modules")
     mods.add_argument("--from", dest="from_version", required=True)
     mods.add_argument("--to", dest="to_version", required=True)
@@ -547,6 +549,10 @@ def main(argv=None):
         extract_modules(args)
     else:
         sys.path.insert(0, str(pathlib.Path(__file__).parent))
+        if getattr(args, "history_ref", None):
+            import extract_fields as ef
+
+            ef.HISTORY_REF = args.history_ref
         {
             "fields": extract_fields, "api": extract_api, "models": extract_models,
             "js": extract_js, "views": extract_views,
