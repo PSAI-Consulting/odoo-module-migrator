@@ -66,17 +66,17 @@ def test_api_returns_removed():
 
 
 GROUPS_XML = '''<odoo>
-    <record model="ir.module.category" id="module_category_edi_worker">
-        <field name="name">EDI Worker</field>
+    <record model="ir.module.category" id="module_category_my_module">
+        <field name="name">My Module</field>
     </record>
-    <record id="group_edi_worker_user" model="res.groups">
+    <record id="group_my_module_user" model="res.groups">
         <field name="name">User</field>
-        <field name="category_id" ref="module_category_edi_worker"/>
+        <field name="category_id" ref="module_category_my_module"/>
     </record>
-    <record id="group_edi_worker_manager" model="res.groups">
+    <record id="group_my_module_manager" model="res.groups">
         <field name="name">Administrator</field>
-        <field name="category_id" ref="module_category_edi_worker"/>
-        <field name="implied_ids" eval="[(4, ref('group_edi_worker_user'))]"/>
+        <field name="category_id" ref="module_category_my_module"/>
+        <field name="implied_ids" eval="[(4, ref('group_my_module_user'))]"/>
     </record>
     <record id="group_technical" model="res.groups">
         <field name="name">Technical</field>
@@ -91,17 +91,17 @@ def test_groups_category_to_privilege():
         groups_privilege as gp,
     )
 
-    names = {"edi_worker.module_category_edi_worker": "EDI Worker"}
-    new, created, hidden = gp._convert(GROUPS_XML, "edi_worker", names)
-    assert created == ["res_groups_privilege_edi_worker"] and hidden == 1
+    names = {"my_module.module_category_my_module": "My Module"}
+    new, created, hidden = gp._convert(GROUPS_XML, "my_module", names)
+    assert created == ["res_groups_privilege_my_module"] and hidden == 1
     assert new.count('model="res.groups.privilege"') == 1
-    assert new.index("res.groups.privilege") < new.index('id="group_edi_worker_user"')
-    assert '<field name="name">EDI Worker</field>\n        <field name="category_id" ref="module_category_edi_worker"/>' in new
-    assert new.count('<field name="privilege_id" ref="res_groups_privilege_edi_worker"/>') == 2
+    assert new.index("res.groups.privilege") < new.index('id="group_my_module_user"')
+    assert '<field name="name">My Module</field>\n        <field name="category_id" ref="module_category_my_module"/>' in new
+    assert new.count('<field name="privilege_id" ref="res_groups_privilege_my_module"/>') == 2
     assert "module_category_hidden" not in new
     assert 'name="category_id"' not in new.split("res.groups.privilege")[1].split("</record>", 1)[1]
     # idempotent
-    assert gp._convert(new, "edi_worker", names) == (new, [], 0)
+    assert gp._convert(new, "my_module", names) == (new, [], 0)
 
 
 def test_product_storable():

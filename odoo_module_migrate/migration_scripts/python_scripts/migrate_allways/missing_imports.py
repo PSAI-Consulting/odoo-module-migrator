@@ -51,8 +51,10 @@ def check_missing_relative_imports(**kwargs):
             for name in missing:
                 logger.error(
                     "Import of '%s' that does not exist in the module: the module cannot load"
-                    " (defect of the original code, not of the migration). File %s:%s"
-                    % (name, path, node.lineno)
+                    " (defect of the original code, not of the migration; Python reports it as"
+                    " \"cannot import name '%s' from partially initialized module ... (most likely"
+                    " due to a circular import)\", it is not a circular import). File %s:%s"
+                    % (name, name, path, node.lineno)
                 )
 
 

@@ -120,3 +120,4 @@ tests/data_tmp/
 # Sorties des outils de banc d'essai (tools/), si écrites dans le dépôt
 bench/
 *.bench.json
+.claude/
