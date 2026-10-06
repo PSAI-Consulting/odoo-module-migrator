@@ -154,7 +154,11 @@ def load_apriori(openupgrade, version):
         if isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict):
             name = node.targets[0].id
             if name in ("renamed_modules", "merged_modules"):
-                result[name] = ast.literal_eval(node.value)
+                # keys with stray spaces exist ("gift_card " in OpenUpgrade 16.0)
+                result[name] = {
+                    str(k).strip(): v.strip() if isinstance(v, str) else v
+                    for k, v in ast.literal_eval(node.value).items()
+                }
     return result.get("renamed_modules", {}), result.get("merged_modules", {})
 
 

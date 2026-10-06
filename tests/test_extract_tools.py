@@ -267,7 +267,7 @@ def test_openupgrade_old_layout(tmp_path):
     _git(ou, "init", "-q", "-b", "13.0")
     _commit(ou, {
         "odoo/addons/openupgrade_records/lib/apriori.py":
-            "renamed_modules = {'web_settings_dashboard': 'base_setup'}\nmerged_modules = {'account_cancel': 'account'}\n",
+            "renamed_modules = {'web_settings_dashboard': 'base_setup'}\nmerged_modules = {'account_cancel': 'account', 'gift_card ': 'loyalty'}\n",
         "addons/sale/migrations/13.0.1.1/openupgrade_analysis.txt":
             "sale         / sale.order               / x_old (char)                  : DEL \n"
             "obsolete model sale.old\n",
@@ -275,7 +275,9 @@ def test_openupgrade_old_layout(tmp_path):
             "_field_renames = [('sale.order', 'sale_order', 'a', 'b')]\n",
     }, "init")
     renamed, merged = ec.load_apriori(str(ou), "13.0")
-    assert renamed == {"web_settings_dashboard": "base_setup"} and merged == {"account_cancel": "account"}
+    assert renamed == {"web_settings_dashboard": "base_setup"}
+    # stray space stripped ("gift_card " in OpenUpgrade 16.0)
+    assert merged == {"account_cancel": "account", "gift_card": "loyalty"}
     ren, ren_models, removed, removed_models = ef.openupgrade_changes(ou, "13.0", lambda m: True)
     assert [r[:3] for r in ren] == [("sale.order", "a", "b")]
     assert [r[:2] for r in removed] == [("sale.order", "x_old")]
