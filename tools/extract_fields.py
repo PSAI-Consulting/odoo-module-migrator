@@ -291,7 +291,12 @@ def openupgrade_changes(openupgrade_git, ref, models_filter):
     """Renamed fields / models (pre-migration.py) and DEL fields (analysis)."""
     files = read_blobs(
         openupgrade_git, ref,
-        re.compile(r"^openupgrade_scripts/scripts/[^/]+/[^/]+/(pre-migration\.py|upgrade_analysis\.txt)$"),
+        # 14.0+: openupgrade_scripts/scripts/<module>/<version>/ ; 13.0 and before
+        # (fork of Odoo): addons/<module>/migrations/<version>/openupgrade_analysis.txt
+        re.compile(
+            r"^openupgrade_scripts/scripts/[^/]+/[^/]+/(pre-migration\.py|upgrade_analysis\.txt)$"
+            r"|(^|/)addons/[^/]+/migrations/[^/]+/(pre-migration\.py|openupgrade_analysis\.txt)$"
+        ),
     )
     renamed_fields, renamed_models, removed_fields, removed_models = [], [], [], []
     for path, text in sorted(files.items()):

@@ -257,3 +257,26 @@ def test_log_range_history_ref(repo):
     finally:
         ef.HISTORY_REF = None
         ef._RANGES.clear()
+
+
+def test_openupgrade_old_layout(tmp_path):
+    """OpenUpgrade 13.0 and before is a fork of Odoo: apriori.py and the
+    analyses live in openupgrade_records / addons/*/migrations/."""
+    ou = tmp_path / "ou"
+    ou.mkdir()
+    _git(ou, "init", "-q", "-b", "13.0")
+    _commit(ou, {
+        "odoo/addons/openupgrade_records/lib/apriori.py":
+            "renamed_modules = {'web_settings_dashboard': 'base_setup'}\nmerged_modules = {'account_cancel': 'account'}\n",
+        "addons/sale/migrations/13.0.1.1/openupgrade_analysis.txt":
+            "sale         / sale.order               / x_old (char)                  : DEL \n"
+            "obsolete model sale.old\n",
+        "addons/sale/migrations/13.0.1.1/pre-migration.py":
+            "_field_renames = [('sale.order', 'sale_order', 'a', 'b')]\n",
+    }, "init")
+    renamed, merged = ec.load_apriori(str(ou), "13.0")
+    assert renamed == {"web_settings_dashboard": "base_setup"} and merged == {"account_cancel": "account"}
+    ren, ren_models, removed, removed_models = ef.openupgrade_changes(ou, "13.0", lambda m: True)
+    assert [r[:3] for r in ren] == [("sale.order", "a", "b")]
+    assert [r[:2] for r in removed] == [("sale.order", "x_old")]
+    assert [r[0] for r in removed_models] == ["sale.old"]

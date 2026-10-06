@@ -134,7 +134,18 @@ def load_apriori(openupgrade, version):
     repo = pathlib.Path(openupgrade)
     try:
         ref = resolve_ref(repo, version)
-        source = git(repo, "show", f"{ref}:openupgrade_scripts/apriori.py")
+        source = None
+        # 14.0+ / 13.0 and before (fork of Odoo) / 9.0 (openerp namespace)
+        for path in ("openupgrade_scripts/apriori.py",
+                     "odoo/addons/openupgrade_records/lib/apriori.py",
+                     "openerp/addons/openupgrade_records/lib/apriori.py"):
+            try:
+                source = git(repo, "show", f"{ref}:{path}")
+                break
+            except RuntimeError:
+                continue
+        if source is None:
+            raise RuntimeError("no apriori.py")
     except (RuntimeError, SystemExit):
         print(f"# OpenUpgrade {version}: no apriori.py", file=sys.stderr)
         return {}, {}
@@ -164,7 +175,7 @@ def extract_modules(args):
             where[name] = (repo, prefix, ref_from, ref_to, path)
 
     renamed, merged = load_apriori(args.openupgrade, args.to_version)
-    ou_source = f"OpenUpgrade {args.to_version} openupgrade_scripts/apriori.py"
+    ou_source = f"OpenUpgrade {args.to_version} apriori.py"
 
     rules = []
     for name in sorted(set(before) - set(after)):
