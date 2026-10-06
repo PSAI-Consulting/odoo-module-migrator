@@ -53,3 +53,9 @@
 - ["res.config.settings", "reminder_manager_allow", "reminder_allow", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
 - ["res.config.settings", "reminder_manager_delay", "reminder_delay", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
 - ["res.config.settings", "reminder_manager_interval", "reminder_interval", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
+#
+# Règles générées bloquées (null : jamais de renommage automatique) :
+# OpenUpgrade 17.0 hr_expense pre-migration renomme total_amount_company -> total_amount alors que
+# total_amount (16.0, devise de la dépense) devient total_amount_currency : échange de noms, un
+# second passage renommerait le nouveau total_amount. Message dans removed_fields/curated.yaml.
+- ["hr.expense", "total_amount_company", null, "odoo 68fbdc964038 : échange de noms avec total_amount"]

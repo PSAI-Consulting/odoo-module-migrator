@@ -299,8 +299,14 @@ class BaseMigrationScript:
         # generated.yaml (alphabetical order of the rule files)
         renames = {}
         for r in self._RENAMED_FIELDS:
-            if len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or "")):
+            if len(r) > 2 and r[2] is None:
+                # [model, field, null, why] in curated.yaml: never renamed
+                # automatically (blocks a generated rule, e.g. a name swap)
+                renames.setdefault((r[0], r[1]), None)
+            elif len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or "")):
                 renames.setdefault((r[0], r[1]), r[2])
+        blocked = {k for k, v in renames.items() if v is None}
+        renames = {k: v for k, v in renames.items() if v is not None}
         sources = {(r[0], r[1]): (r[-1] if len(r) > 3 else "") for r in self._RENAMED_FIELDS}
         # a renamed field is not removed (e.g. curated.yaml vs generated.yaml)
         removed = {}
@@ -393,7 +399,7 @@ class BaseMigrationScript:
                             " - %s" % removed[key] if removed[key] else "", path, usage.line,
                         )
                     )
-                elif key in sources and key not in renames:
+                elif key in sources and key not in renames and key not in blocked:
                     logger.warning(
                         "Field %s.%s was renamed to %s: update it by hand (%s). File %s:%s" % (
                             usage.model, usage.field,
