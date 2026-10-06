@@ -335,146 +335,250 @@ def _check_open_form_view(logger, file_path: Path):
         )
 
 
+# Source : odoo 17.0 odoo/addons/base/models/ir_ui_view.py : « Since 17.0, the "attrs"
+# and "states" attributes are no longer used. »
+# Semantics kept from odoo 16.0 odoo/addons/base/models/ir_ui_view.py,
+# transfer_node_to_modifiers():
+# - states="a,b" adds ('state', 'not in', [a, b]) to the invisible domain of attrs
+#   (implicit AND) or is the invisible domain;
+# - a static invisible/readonly/required="1" wins over the domain, "0" gives way;
+# - a static invisible in a list (outside <header>) is column_invisible.
+_ARCH_XPATH = "record[@model='ir.ui.view']/field[@name='arch']"
+_START_TAG_RE = re.compile(
+    r"<(?P<tag>[\w:.-]+)(?P<attrs>(?:\s+[\w:.-]+\s*=\s*(?:\"[^\"]*\"|'[^']*'))*)\s*/?>"
+)
+_XML_ATTR_RE = re.compile(r"(?P<sep>\s+)(?P<name>[\w:.-]+)\s*=\s*(?P<q>[\"'])(?P<value>.*?)(?P=q)", re.S)
+_MASK_RE = re.compile(r"<!--.*?-->|<!\[CDATA\[.*?\]\]>", re.S)
+
+
+class _CannotConvert(Exception):
+    pass
+
+
+def _leaf_to_python(leaf):
+    if not isinstance(leaf, ast.Tuple | ast.List) or len(leaf.elts) != 3:
+        raise _CannotConvert(f"malformed leaf {ast.unparse(leaf)}")
+    left, operator, right = leaf.elts
+    if not isinstance(left, ast.Constant) or not isinstance(operator, ast.Constant):
+        raise _CannotConvert(f"malformed leaf {ast.unparse(leaf)}")
+    if operator.value in ("!=", "="):
+        if isinstance(right, ast.Constant) and isinstance(right.value, bool):
+            falsy = (operator.value == "=") != right.value
+            return f"not {left.value}" if falsy else str(left.value)
+        if isinstance(right, ast.List) and not right.elts:
+            return f"not {left.value}" if operator.value == "=" else str(left.value)
+    if operator.value not in ("=", "!=", "<", ">", "<=", ">=", "in", "not in"):
+        raise _CannotConvert(f"operator {operator.value!r}")
+    op = "==" if operator.value == "=" else operator.value
+    return f"{left.value} {op} {ast.unparse(right)}"
+
+
+def _get_operand(elts):
+    """Elements of the first operand (prefix notation) of a domain."""
+    if not elts:
+        raise _CannotConvert("missing operand")
+    first = elts[0]
+    if isinstance(first, ast.Constant) and first.value in ("&", "|", "!"):
+        left = _get_operand(elts[1:])
+        if first.value == "!":
+            return [first] + left
+        right = _get_operand(elts[1 + len(left):])
+        return [first] + left + right
+    return [first]
+
+
+def _domain_to_python(elts):
+    """Python expression of a domain (implicit AND between the operands)."""
+    parts = []
+    while elts:
+        operand = _get_operand(elts)
+        elts = elts[len(operand):]
+        first = operand[0]
+        if isinstance(first, ast.Constant) and first.value == "!":
+            parts.append(f"not ({_domain_to_python(operand[1:])})")
+        elif isinstance(first, ast.Constant) and first.value in ("&", "|"):
+            left = _get_operand(operand[1:])
+            right = operand[1 + len(left):]
+            word = " and " if first.value == "&" else " or "
+            parts.append(f"({_domain_to_python(left)}{word}{_domain_to_python(right)})")
+        else:
+            parts.append(_leaf_to_python(first))
+    return " and ".join(parts)
+
+
+def _attrs_to_expressions(attrs_string):
+    """{attribute: python expression} of attrs="{...}" (raises _CannotConvert)."""
+    try:
+        expression = ast.parse(attrs_string.strip(), mode="eval").body
+    except SyntaxError:
+        raise _CannotConvert("attrs is not a python dict")
+    if not isinstance(expression, ast.Dict) or None in expression.keys:
+        raise _CannotConvert("attrs is not a python dict")
+    result = {}
+    for key, value in zip(expression.keys, expression.values):
+        if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+            raise _CannotConvert(f"key {ast.unparse(key)}")
+        if isinstance(value, ast.Constant) and isinstance(value.value, bool | int):
+            result[key.value] = str(bool(value.value))
+        elif isinstance(value, ast.List | ast.Tuple):
+            result[key.value] = _domain_to_python(value.elts) or "False"
+        else:
+            raise _CannotConvert(f"value {ast.unparse(value)}")
+    return result
+
+
+def _states_expression(states):
+    values = [value.strip() for value in states.split(",") if value.strip()]
+    if not values:
+        raise _CannotConvert("empty states")
+    if len(values) == 1:
+        return f"state != {values[0]!r}"
+    return f"state not in {tuple(values)!r}"
+
+
+def _str2bool(value):
+    value = value.strip().lower()
+    if value in ("1", "true"):
+        return True
+    if value in ("0", "false"):
+        return False
+    raise _CannotConvert(f"non boolean static value {value!r}")
+
+
+def _new_attributes(node):
+    """[(name, value or None to remove)] replacing attrs / states on `node`."""
+    expressions = {}
+    if node.get("attrs") is not None:
+        expressions.update(_attrs_to_expressions(node.get("attrs")))
+    if node.get("states") is not None:
+        states = _states_expression(node.get("states"))
+        if "invisible" in expressions and expressions["invisible"] not in ("True", "False"):
+            expressions["invisible"] = f"{expressions['invisible']} and {states}"
+        else:
+            expressions["invisible"] = states
+    in_list = any(p.tag == "tree" for p in node.iterancestors()) and not any(
+        p.tag == "header" for p in node.iterancestors()
+    )
+    changes = [("attrs", None), ("states", None)]
+    for name, expression in expressions.items():
+        static = node.get(name)
+        if static is not None:
+            if name == "invisible" and in_list:
+                raise _CannotConvert("static invisible (column_invisible) in a list")
+            if _str2bool(static):
+                continue  # the static value wins
+        changes.append((name, expression))
+    return changes
+
+
+def _quote_attribute(value):
+    return '"%s"' % (
+        value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    )
+
+
+def _edit_start_tag(tag_text, changes):
+    """Start tag `tag_text` with the attributes changed in place."""
+    attributes = list(_XML_ATTR_RE.finditer(tag_text))
+    spans = {m["name"]: m for m in attributes}
+    edits = []  # (start, end, text)
+    pending = []
+    anchor = spans.get("attrs") or spans.get("states")
+    for name, value in changes:
+        match = spans.get(name)
+        if value is None:
+            if match:
+                edits.append((match.start(), match.end(), ""))
+        elif match:
+            edits.append((match.start("q"), match.end(), _quote_attribute(value)))
+        else:
+            pending.append(f"{anchor['sep']}{name}={_quote_attribute(value)}")
+    if pending:
+        position = anchor.end()
+        edits.append((position, position, "".join(pending)))
+    for start, end, text in sorted(edits, key=lambda e: (e[0], e[1]), reverse=True):
+        tag_text = tag_text[:start] + text + tag_text[end:]
+    return tag_text
+
+
+def _escape_text(value):
+    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 def _move_attrs_to_attributes_view(logger, file_path: Path):
-    """Transform <field attrs={'required': [('field', '=', value)]}> to <field required="field == value" /> in views"""
-    parser = et.XMLParser()
-    tree = et.parse(str(file_path.resolve()), parser)
-    field_selector = "record[@model='ir.ui.view']/field[@name='arch']"
-    modified = False
-
-    def leaf_to_python(leaf):
-        left, operator, right = leaf.elts
-        if operator.value in ("!=", "="):
-            if (
-                isinstance(right, ast.Constant)
-                and isinstance(right.value, bool)
-                and right.value in (False, True)
-            ):
-                falsy = (
-                    operator.value == "="
-                    and not right.value
-                    or operator.value == "!="
-                    and right.value
-                )
-                return "{}{}{}".format(
-                    falsy and "not" or "",
-                    falsy and " " or "",
-                    left.value,
-                )
-            if isinstance(right, ast.List) and not right.elts:
-                falsy = operator.value == "="
-                return "{}{}{}".format(
-                    falsy and "not" or "",
-                    falsy and " " or "",
-                    left.value,
-                )
-
-        return "{} {} {}".format(
-            left.value,
-            operator.value if operator.value != "=" else "==",
-            ast.unparse(right),
+    """Replace attrs="{...}" and states="..." in the views by the 17.0 attributes
+    (invisible="...", readonly="...", ...), in place: the rest of the file is kept
+    as is. Nodes that cannot be converted safely are reported and kept."""
+    content = file_path.read_bytes()
+    if b"attrs" not in content and b"states" not in content:
+        return
+    try:
+        tree = et.fromstring(content, et.XMLParser(remove_comments=False)).getroottree()
+        text = content.decode("utf-8")
+    except (et.XMLSyntaxError, UnicodeDecodeError):
+        return
+    # <template> too: QWeb views are not validated, but some are view fragments
+    # (OCA/server-ux 17.0 base_cancel_confirm/views/cancel_confirm_template.xml)
+    archs = tree.xpath(f"{_ARCH_XPATH} | data/{_ARCH_XPATH} | template | data/template")
+    if not archs:
+        return
+    in_arch = set()
+    for arch in archs:
+        in_arch.update(arch.iterdescendants())
+    elements = [e for e in tree.getroot().iter() if isinstance(e.tag, str)]
+    masked = _MASK_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group()), text)
+    tags = list(_START_TAG_RE.finditer(masked))
+    if len(tags) != len(elements) or any(
+        m["tag"] != et.QName(e).localname and m["tag"] != e.tag for m, e in zip(tags, elements)
+    ):
+        logger.warning(
+            "%s: attrs/states not converted (XML layout not understood), convert them by hand",
+            file_path.name,
         )
-
-    def get_operand(domain):
-        if not domain.elts:
-            return ast.List([])
-
-        current = domain.elts[0]
-
-        if isinstance(current, ast.Tuple | ast.List):
-            return ast.List([current])
-
-        if isinstance(current, ast.Constant):
-            left = get_operand(ast.List(domain.elts[1:]))
-
-            if current.value == "!":
-                return ast.List([current] + left.elts)
-
-            right = get_operand(ast.List(domain.elts[1 + len(left.elts) :]))
-            return ast.List([current] + left.elts + right.elts)
-
-    def domain_to_python(domain):
-        if not domain.elts:
-            return ""
-        if len(domain.elts) == 1:
-            return leaf_to_python(domain.elts[0])
-        first = domain.elts[0]
-        if isinstance(first, ast.Constant):
-            if first.value in ("&", "|"):
-                left = get_operand(ast.List(domain.elts[1:]))
-                right = get_operand(ast.List(domain.elts[len(left.elts) + 1 :]))
-                tail = domain_to_python(
-                    ast.List(domain.elts[len(left.elts) + len(right.elts) + 1 :])
-                )
-                return (
-                    "("
-                    + domain_to_python(left)
-                    + (" and " if first.value == "&" else " or ")
-                    + domain_to_python(right)
-                    + ")"
-                    + (tail and f" and {tail}" or "")
-                )
-            if first.value == "!":
-                left = get_operand(ast.List(domain.elts[1:]))
-                tail = domain_to_python(ast.List(domain.elts[len(left.elts) + 1 :]))
-                return "not ({})".format(domain_to_python(left)) + (
-                    tail and f" and {tail}" or ""
-                )
-
-            raise ValueError("unknown operator")
-        if isinstance(first, ast.List | ast.Tuple):
-            return (
-                domain_to_python(ast.List([domain.elts[0]]))
-                + " and "
-                + domain_to_python(ast.List(domain.elts[1:]))
-            )
-        raise ValueError("malformed domain")
-
-    def attrs_to_attributes(attrs_string):
+        return
+    edits = []  # (start, end, new text)
+    for match, node in zip(tags, elements):
+        if node not in in_arch:
+            continue
         try:
-            attrs_expression = ast.parse(attrs_string.strip(), mode="eval")
-        except:
-            return {}
-        if not isinstance(attrs_expression, ast.Expression):
-            return {}
-        if not isinstance(attrs_expression.body, ast.Dict):
-            return {}
-        attrs = attrs_expression.body
-        result = {}
-        for key, value in zip(attrs.keys, attrs.values):
-            try:
-                result[key.value] = domain_to_python(value)
-            except:
-                result[key.value] = f"False # could not parse {ast.unparse(value)}"
-        return result
-
-    for arch in tree.xpath(f"{field_selector} | data/{field_selector}"):
-        # <field attrs="{}" />
-        for node in arch.xpath("//*[@attrs]"):
-            attributes = attrs_to_attributes(node.attrib["attrs"])
-            if not attributes:
-                continue
-            node.attrib.update(attributes)
-            del node.attrib["attrs"]
-            modified = True
-        # inherited views
-        for node in arch.xpath("//attribute[@name='attrs']"):
-            attributes = attrs_to_attributes(node.text)
-            if not attributes:
-                continue
-            parent = node.getparent()
-            for key, value in attributes.items():
-                new_node = et.SubElement(parent, "attribute", name=key)
-                new_node.text = value
-            parent.remove(node)
-            modified = True
-
-    if modified:
-        tree.write(file_path, xml_declaration=True)
-        with open(file_path, "r+") as xml_file:
-            xml_file.write('<?xml version="1.0" encoding="utf-8"?>')
-            xml_file.seek(0, 2)
-            xml_file.write("\n")
+            if "attrs" in node.attrib or "states" in node.attrib:
+                changes = _new_attributes(node)
+                new_tag = _edit_start_tag(match.group(), changes)
+                edits.append((match.start(), match.end(), new_tag))
+            elif node.tag == "attribute" and node.get("name") in ("attrs", "states"):
+                if len(node) or match.group().endswith("/>"):
+                    raise _CannotConvert("empty or structured <attribute>")
+                end = masked.index("</attribute>", match.end()) + len("</attribute>")
+                value = node.text or ""
+                if node.get("name") == "attrs":
+                    expressions = _attrs_to_expressions(value) if value.strip() else {}
+                else:
+                    expressions = {"invisible": _states_expression(value)}
+                if not expressions:
+                    raise _CannotConvert("empty <attribute>")
+                line_start = masked.rfind("\n", 0, match.start()) + 1
+                indent = masked[line_start:match.start()]
+                if indent.strip():
+                    indent = ""
+                opening = _XML_ATTR_RE.sub(
+                    lambda m: m.group() if m["name"] != "name" else f'{m["sep"]}name="{{name}}"',
+                    match.group(),
+                )
+                new_nodes = [
+                    opening.replace("{name}", name) + _escape_text(expression) + "</attribute>"
+                    for name, expression in expressions.items()
+                ]
+                edits.append((match.start(), end, ("\n" + indent).join(new_nodes)))
+        except _CannotConvert as error:
+            logger.warning(
+                "%s line %s: attrs/states of <%s> not converted (%s), convert it by hand",
+                file_path.name, node.sourceline, node.tag, error,
+            )
+    if not edits:
+        return
+    for start, end, new_text in sorted(edits, reverse=True):
+        text = text[:start] + new_text + text[end:]
+    file_path.write_text(text, encoding="utf-8")
 
 
 def _check_open_form(
