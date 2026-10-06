@@ -16,7 +16,9 @@
   # odoo 4f6f4efbad0 '[MOV] tests: test_reports is not a tool' : odoo/tools/test_reports.py ->
   # odoo/tests/reports.py, try_report / try_report_action à signature identique
   '\bodoo\.tools\.test_reports\b': 'odoo.tests.reports'
-  '\bfrom odoo\.tools import test_reports\b': 'from odoo.tests import reports as test_reports'
+  # seul sur sa ligne (« import test_reports, ustr » donnerait « reports as test_reports, ustr »
+  # importé de odoo.tests ; ce cas est signalé par python_scripts/migrate_190_200/odoo_tools_imports.py)
+  '(?m)^([ \t]*)from odoo\.tools import test_reports[ \t]*$': '\1from odoo.tests import reports as test_reports'
   # odoo 080bbf6153a : odoo/tests/common.py __getattr__ « Since 18.0: odoo.tests.common.Form
   # is deprecated, use odoo.tests.Form » (supprimé en 20.0)
   '(?m)^(\s*)from odoo\.tests\.common import Form$': '\1from odoo.tests import Form'
