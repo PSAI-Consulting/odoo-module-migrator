@@ -67,3 +67,72 @@ def test_other_anchors_templates_and_xmlids(tmp_path):
     assert "XML id web.menu_gone does not exist" in messages[0]
     assert messages[1].startswith("button[@name='action_gone'] not found")
     assert messages[2].startswith("t[@t-set='gone'] not found")
+
+
+def test_bare_tag_anchors(tmp_path):
+    """<header position="inside"> and //header need such an element in the
+    target view (product.product_normal_form_view has no <header> in 20.0,
+    odoo 4c8bf7a7a90f); what the view inserts itself counts."""
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(ref, "product", ["base"], _view(
+        "form", None, '<form><sheet><group name="g"><field name="name"/></group></sheet></form>'))
+    mod = _module(custom, "my_mod", ["product"], "".join([
+        _view("v1", "product.form", '<header position="inside"><field name="x"/></header>'),
+        _view("v3", "product.form", '<xpath expr="//form[1]/sheet[1]/group[2]" position="after"/>'),
+        _view("v4", "product.form", '<sheet position="inside"><div class="x"/></sheet>'),
+        # inserted by the view itself, then used as an anchor
+        _view("v5", "product.form",
+              '<sheet position="before"><footer><button name="b"/></footer></sheet>'
+              '<xpath expr="//footer/button[@name=\'b\']" position="after"/>'),
+        _view("v6", "product.form", "<xpath expr=\"//div[hasclass('x')]/..\" position=\"after\"/>"),
+    ]))
+    mod2 = _module(custom, "my_mod2", ["product"],
+                   _view("v2", "product.form", '<xpath expr="//header" position="inside"/>'))
+    index = views.ViewIndex.build([ref, custom])
+    for module in (mod, mod2):
+        messages = [msg for _p, _l, msg in views.check_module(module, index, {"base", "product"})]
+        assert [m.split(" ")[0] for m in messages] == ["<header>"], messages
+
+
+def test_bare_tag_anchors_templates(tmp_path):
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(ref, "web", ["base"], '<template id="layout"><div><span/></div></template>')
+    mod = _module(custom, "my_web", ["web"], "".join([
+        '<template id="t1" inherit_id="web.layout"><xpath expr="/t/div/span" position="after"/></template>',
+        '<template id="t2" inherit_id="web.layout"><xpath expr="//h2" position="replace"/></template>',
+    ]))
+    index = views.ViewIndex.build([ref, custom])
+    messages = [msg for _p, _l, msg in views.check_module(mod, index, {"base", "web"})]
+    assert len(messages) == 1 and messages[0].startswith("<h2> not found"), messages
+
+
+def test_parent_view_of_a_module_outside_depends(tmp_path):
+    """A module inherits a view of another custom module without depending
+    on it: the dependency is reported, not its anchors."""
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(custom, "x_base", ["base"], _view(
+        "task_form", None, '<form><field name="input_type"/></form>', "x.task")
+        + '<record id="menu_x" model="ir.ui.menu"><field name="name">x</field></record>')
+    mod = _module(custom, "x_ext", ["base"], _view(
+        "v1", "x_base.task_form", '<field name="input_type" position="after"/>', "x.task")
+        + '<menuitem id="m" parent="x_base.menu_x"/>'
+        + '<menuitem id="m2" parent="x_base.menu_unknown"/>')
+    # with the dependency: nothing
+    mod_ok = _module(custom, "x_ext_ok", ["x_base"], _view(
+        "v1", "x_base.task_form", '<field name="input_type" position="after"/>', "x.task"))
+    # a dependency not indexed: x_base may be one of its dependencies
+    mod_unknown = _module(custom, "x_ext_unknown", ["not_indexed"], _view(
+        "v1", "x_base.task_form", '<field name="input_type" position="after"/>', "x.task"))
+    index = views.ViewIndex.build([ref, custom])
+    messages = sorted(msg for _p, _l, msg in views.check_module(mod, index, {"base"}))
+    assert messages == [
+        "XML id x_base.menu_x comes from the module 'x_base', which is not in the"
+        " dependencies of the module: add it to 'depends'",
+        "parent view x_base.task_form comes from the module 'x_base', which is not in"
+        " the dependencies of the module: add it to 'depends'",
+    ], messages
+    assert not list(views.check_module(mod_ok, index, {"base"}))
+    assert not list(views.check_module(mod_unknown, index, {"base"}))

@@ -82,10 +82,161 @@ def _classes(path):
             yield cls.lineno, name, inherit, inherits, comodels
 
 
+# ---------------------------------------------------------------------------
+# Fields of the models: paths of @api.depends / related=
+# ---------------------------------------------------------------------------
+
+# fields every model has (odoo/orm/models.py: id, display_name, log access)
+MAGIC_FIELDS = {"id", "display_name", "create_uid", "create_date", "write_uid", "write_date",
+                "__last_update"}
+# fields added at run time: custom fields, reified groups of res.users (<= 18.0)
+DYNAMIC_FIELD_RE = re.compile(r"^(x_|in_group_|sel_groups_)")
+# regex fallback (newer Python syntax): over-approximation, every field of the
+# file is given to every model of the file
+FIELD_ASSIGN_RE = re.compile(r"^\s{4}(\w+)\s*(?::[^=\n]+)?=\s*[\w.]*\b[A-Z]\w*\(", re.M)
+MODEL_DECL_RE = re.compile(r"^\s{4}_(?:name|inherit)\s*=\s*(\[[^\]]*\]|.*)$", re.M)
+QUOTED_MODEL_RE = re.compile(r"""['"]([a-z0-9_]+(?:\.[a-z0-9_]+)+)['"]""")
+
+
+def _call_name(node):
+    if isinstance(node, ast.Call):
+        func = node.func
+        return func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", None)
+    return None
+
+
+def _class_infos(tree):
+    """Per model class: model, _name, parents, transient, fields {name:
+    comodel or None}, paths [(line, 'depends' | 'related', 'a.b.c')]."""
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef):
+            continue
+        name, inherit, inherits, fields, paths = None, [], [], {}, []
+        for stmt in cls.body:
+            target = None
+            if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 and isinstance(stmt.targets[0], ast.Name):
+                target = stmt.targets[0].id
+            elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                target = stmt.target.id
+            if target is not None and stmt.value is not None:
+                if target == "_name":
+                    name = (_str_values(stmt.value) or [None])[0]
+                elif target == "_inherit":
+                    inherit = _str_values(stmt.value)
+                elif target == "_inherits" and isinstance(stmt.value, ast.Dict):
+                    inherits = [k.value for k in stmt.value.keys if isinstance(k, ast.Constant)]
+                elif (_call_name(stmt.value) or "")[:1].isupper():
+                    # a field (fields.Char(...), Many2one(...)...): any call of a
+                    # capitalized name counts (over-approximation, no false positive)
+                    call = stmt.value
+                    comodel = None
+                    if _call_name(call) in RELATIONAL - {"Many2oneReference"}:
+                        values = (_str_values(call.args[0]) if call.args else []) or [
+                            v for kw in call.keywords if kw.arg == "comodel_name"
+                            for v in _str_values(kw.value)
+                        ]
+                        comodel = values[0] if values and "." in values[0] else None
+                    fields[target] = comodel
+                    for kw in call.keywords:
+                        if kw.arg == "related" and isinstance(kw.value, ast.Constant) \
+                                and isinstance(kw.value.value, str):
+                            paths.append((kw.value.lineno, "related", kw.value.value))
+            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for deco in stmt.decorator_list:
+                    if isinstance(deco, ast.Call) and _call_name(deco) == "depends":
+                        for arg in deco.args:
+                            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                                paths.append((arg.lineno, "depends", arg.value))
+        model = name or (inherit[0] if inherit else None)
+        if not model:
+            continue
+        bases = {
+            base.attr if isinstance(base, ast.Attribute) else getattr(base, "id", "")
+            for base in cls.bases
+        }
+        parents = {m for m in [*inherit, *inherits] if m != model}
+        yield model, name, parents, bases, fields, paths
+
+
 class ModelIndex:
     def __init__(self):
         self.models = collections.defaultdict(set)  # module -> models it defines
         self.depends = {}
+        # all the indexed modules together (a field found anywhere is not reported)
+        self.fields = collections.defaultdict(set)      # model -> field names
+        self.comodels = collections.defaultdict(set)    # (model, field) -> comodels
+        self.parents = collections.defaultdict(set)     # model -> _inherit / _inherits
+        self.defined = set()                            # models with a _name
+        self.transient = set()
+        self.abstract = set()
+
+    def _add_fields(self, path):
+        text = path.read_bytes()
+        try:
+            tree = ast.parse(text)
+        except (SyntaxError, ValueError):
+            text = text.decode("utf-8", "replace")
+            models = {m for decl in MODEL_DECL_RE.findall(text) for m in QUOTED_MODEL_RE.findall(decl)}
+            names = set(FIELD_ASSIGN_RE.findall(text))
+            for model in models:
+                self.fields[model] |= names
+                self.parents[model] |= models - {model}
+            # models defined by _name only can't be told apart: all are defined
+            self.defined |= set(NAME_RE.findall(text))
+            return
+        for model, name, parents, bases, fields, _paths in _class_infos(tree):
+            if name:
+                self.defined.add(name)
+            if "TransientModel" in bases:
+                self.transient.add(model)
+            if "AbstractModel" in bases:
+                self.abstract.add(model)
+            self.parents[model] |= parents
+            self.fields[model] |= set(fields)
+            for field, comodel in fields.items():
+                if comodel:
+                    self.comodels[(model, field)].add(comodel)
+
+    def ancestors(self, model):
+        result, todo = set(), [model]
+        while todo:
+            current = todo.pop()
+            if current not in result:
+                result.add(current)
+                todo.extend(self.parents.get(current, ()))
+        return result
+
+    def wrong_field(self, model, dotted, kind):
+        """(field, model) of the first field of the path that does not exist,
+        when every model on the way is known for sure; else None."""
+        if model in self.abstract:
+            return None  # a mixin may rely on the fields of the models using it
+        model0_transient = model in self.transient
+        current = model
+        names = dotted.split(".")
+        for position, field in enumerate(names):
+            if not re.fullmatch(r"\w+", field):
+                return None
+            # odoo/orm/fields.py resolve_depends: the dependencies of a transient
+            # model on regular models are not checked
+            if kind == "depends" and model0_transient and current not in self.transient:
+                return None
+            ancestors = self.ancestors(current)
+            if not ancestors <= self.defined:
+                return None  # a parent model unknown: its fields are unknown
+            if field in MAGIC_FIELDS or DYNAMIC_FIELD_RE.match(field):
+                return None
+            if not any(field in self.fields.get(m, ()) for m in ancestors):
+                return field, current
+            # the definition on the model itself wins over its parents
+            comodels = set(self.comodels.get((current, field), ())) or set().union(
+                *(self.comodels.get((m, field), set()) for m in ancestors)
+            )
+            if position + 1 < len(names):
+                if len(comodels) != 1:
+                    return None  # not relational, or comodel unknown
+                current = comodels.pop()
+        return None
 
     def add_module(self, module):
         module = pathlib.Path(module)
@@ -102,6 +253,7 @@ class ModelIndex:
                 # _name extends it (it exists in a dependency)
                 if name:
                     self.models[module.name].add(name)
+            self._add_fields(path)
 
     @classmethod
     def build(cls, paths):
@@ -113,35 +265,86 @@ class ModelIndex:
                     index.add_module(manifest.parent)
         return index
 
-    def available(self, module):
-        result, todo, seen = set(), [module, "base"], set()
+    def closure(self, module):
+        result, todo = set(), [module, "base"]
         while todo:
             name = todo.pop()
-            if name in seen:
-                continue
-            seen.add(name)
-            result |= self.models.get(name, set())
-            todo.extend(self.depends.get(name, ()))
+            if name not in result:
+                result.add(name)
+                todo.extend(self.depends.get(name, ()))
         return result
+
+    def available(self, module):
+        result = set()
+        for name in self.closure(module):
+            result |= self.models.get(name, set())
+        return result
+
+    def owners(self, model):
+        """The indexed modules defining `model` (_name)."""
+        return sorted(name for name, models in self.models.items() if model in models)
 
 
 def check_module(module, index):
     """Yield (path, line, message) for the models that do not exist."""
     module = pathlib.Path(module)
+    closure = index.closure(module.name)
     available = index.available(module.name)
     if not index.models.get("base"):
         return  # no reference addons indexed: nothing can be checked
+    # all the dependencies indexed: a model defined by another module is known
+    # for sure to be outside the dependencies
+    complete = all(name in index.depends for name in closure)
+
+    def missing(model, what):
+        owners = index.owners(model) if complete else []
+        if owners:
+            return (
+                f"[model] '{model}' ({what}) is defined by the module(s) {', '.join(owners)},"
+                f" not in the dependencies of the module: add one of them to 'depends'"
+            )
+        return None
     for path in _python_files(module):
         for line, name, inherit, inherits, comodels in _classes(path):
             for parent in [*inherit, *inherits]:
                 if parent != name and parent not in available:
-                    yield path, line, (
+                    yield path, line, missing(parent, "inherited") or (
                         f"[model] '{parent}' (inherited) does not exist in the target Odoo,"
                         f" nor in the dependencies of the module: the module will not install"
                     )
             for comodel_line, comodel in comodels:
                 if comodel not in available:
-                    yield path, comodel_line, (
+                    yield path, comodel_line, missing(comodel, "comodel of a relational field") or (
                         f"[model] '{comodel}' (comodel of a relational field) does not exist"
                         f" in the target Odoo, nor in the dependencies of the module"
                     )
+
+
+def check_field_paths(module, index):
+    """Yield (path, line, message) for the paths of @api.depends / related=
+    of the module going through a field that does not exist: Odoo does not
+    load the registry (odoo/orm/fields.py: "Wrong @depends on ...", "Field ...
+    referenced in related field definition ... does not exist")."""
+    module = pathlib.Path(module)
+    if not index.models.get("base"):
+        return
+    # a field may come from a dependency that is not indexed
+    if not all(name in index.depends for name in index.closure(module.name)):
+        return
+    for path in _python_files(module):
+        try:
+            tree = ast.parse(path.read_bytes())
+        except (SyntaxError, ValueError):
+            continue
+        for model, _name, _parents, _bases, _fields, paths in _class_infos(tree):
+            for line, kind, dotted in paths:
+                wrong = index.wrong_field(model, dotted, kind)
+                if not wrong:
+                    continue
+                field, field_model = wrong
+                what = "@api.depends" if kind == "depends" else "related="
+                yield path, line, (
+                    f"[model] {what} '{dotted}' of {model}: the field '{field}' does not exist"
+                    f" on {field_model} in the target Odoo (nor in any indexed module): the"
+                    f" registry will not load"
+                )

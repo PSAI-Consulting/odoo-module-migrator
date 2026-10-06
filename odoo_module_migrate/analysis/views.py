@@ -7,6 +7,10 @@
    exist in the target view, or in one of the views of its inheritance tree
    that belong to the dependencies of the module. Otherwise the view does not
    install (e.g. the ``type`` column of product.product_product_tree_view in 20.0).
+   An anchor without identifying attribute (``<header position="inside">``,
+   ``//header``) needs at least an element with this tag (no ``<header>`` in
+   product.product_normal_form_view in 20.0). What the view inserts itself
+   counts (a later spec may be anchored on it).
 2. External XML ids (``ref="sale.xxx"``, ``ref('sale.xxx')``, override
    ``<record id="sale.xxx">``) of Odoo modules must exist in the target Odoo
    (e.g. ``base_address_extended.menu_res_city`` in 20.0).
@@ -27,6 +31,8 @@ from lxml import etree
 # attributes that identify an element in an anchor
 ANCHOR_ATTRS = ("name", "id", "t-set", "t-call", "t-name", "string", "for", "t-as")
 STEP_RE = re.compile(r"""^([\w\-]+|\*)\[@([\w\-]+)\s*=\s*(["'])([^"']*)\3\]$""")
+# a step that is a bare tag, possibly with a position ('header', 'group[2]')
+TAG_STEP_RE = re.compile(r"^([\w\-]+)(?:\[\d+\])?$")
 REF_EVAL_RE = re.compile(r"""\bref\(\s*["']([\w]+\.[\w.]+)["']\s*\)""")
 # XML ids created by the ORM / the module loader, not by data files
 GENERATED_PREFIXES = ("model_", "field_", "selection__", "module_", "access_", "constraint_")
@@ -84,11 +90,15 @@ def _views(root, module):
 
 
 def _keys(arch):
-    """(tag, attr, value) of the elements of an arch, plus (*, attr, value)."""
+    """(tag, attr, value) of the elements of an arch, plus (*, attr, value)
+    and (tag, '', '') for the tag alone."""
     keys = set()
+    if arch.tag == "template":
+        keys.add(("t", "", ""))  # the arch of a <template> is a <t t-name="...">
     for node in arch.iter():
         if not isinstance(node.tag, str):
             continue
+        keys.add((node.tag, "", ""))
         for attr in ANCHOR_ATTRS:
             value = node.get(attr)
             if value:
@@ -117,6 +127,11 @@ def _steps(expr):
         match = STEP_RE.match(part.strip())
         if match:
             result.append((match.group(1), match.group(2), match.group(4)))
+            continue
+        match = TAG_STEP_RE.match(part.strip())
+        if match:
+            # e.g. //header: Odoo needs such an element in the arch
+            result.append((match.group(1), "", ""))
     return result
 
 
@@ -192,6 +207,11 @@ class ViewIndex:
                 todo.extend(self.depends.get(name, ()))
         return result
 
+    def complete(self, closure):
+        """Whether all the modules of a closure are indexed: only then a module
+        is known for sure to be outside the dependencies."""
+        return all(name in self.depends for name in closure)
+
     def available(self, xid, modules=None, exclude=(), _seen=None):
         """Anchor keys of the view and of the views extending it; only the
         views of `modules` (the dependencies, installed for sure) count."""
@@ -217,24 +237,41 @@ def _anchors(arch):
             # the middle of the path); only the attributes of the index can be
             # checked (no false positive)
             for step in _steps(node.get("expr") or ""):
-                if step[1] in ANCHOR_ATTRS:
+                if step[1] in ANCHOR_ATTRS or step[1] == "":
                     yield node, step
         elif node.get("position") and node.tag not in ("data",):
             for attr in ANCHOR_ATTRS:
                 if node.get(attr):
                     yield node, (node.tag, attr, node.get(attr))
                     break
+            else:
+                # <header position="inside">: Odoo looks for an element with this
+                # tag (and the same other attributes): the tag must exist
+                yield node, (node.tag, "", "")
+
+
+def _inserted(arch):
+    """Keys of the elements added by an inheriting arch (its specs' content):
+    a later spec of the same view may be anchored on them."""
+    keys = set()
+    for spec in arch:
+        if isinstance(spec.tag, str):
+            for child in spec:
+                if isinstance(child.tag, str):
+                    keys |= _keys(child)
+    return keys
 
 
 def _describe(key):
     tag, attr, value = key
-    return f"{tag}[@{attr}='{value}']"
+    return f"{tag}[@{attr}='{value}']" if attr else f"<{tag}>"
 
 
 def check_module(module, index, reference_modules):
     """Yield (path, line, message) for the anchors and XML ids not found."""
     module = pathlib.Path(module)
     closure = index.closure(module.name)
+    complete = index.complete(closure)
     for path in _data_files(module):
         root = _parse(path)
         if root is None:
@@ -248,8 +285,19 @@ def check_module(module, index, reference_modules):
                         f"parent view {parent} does not exist in the target Odoo"
                     )
                 continue
+            owner = parent.split(".")[0]
+            if owner in index.modules and owner not in closure:
+                # its anchors cannot be found: the real error is the dependency
+                # (installed only if another module happens to install it first);
+                # unknown when a dependency is not indexed (it may depend on it)
+                if complete:
+                    yield path, report_node.sourceline, _missing_depends(
+                        f"parent view {parent}", owner
+                    )
+                continue
             # the view itself does not count: it holds the anchors
             available = index.available(index.root(parent), closure, exclude={xid})
+            available |= _inserted(arch)
             for node, key in _anchors(arch):
                 if key not in available:
                     yield path, node.sourceline, (
@@ -257,7 +305,16 @@ def check_module(module, index, reference_modules):
                         f" Odoo (nor in any view of its inheritance tree): the view will"
                         f" not install"
                     )
-        yield from _check_xmlids(path, root, module.name, index, reference_modules, closure)
+        yield from _check_xmlids(
+            path, root, module.name, index, reference_modules, closure if complete else None
+        )
+
+
+def _missing_depends(what, owner):
+    return (
+        f"{what} comes from the module '{owner}', which is not in the dependencies of the"
+        f" module: add it to 'depends'"
+    )
 
 
 def _check_xmlids(path, root, module_name, index, reference_modules, closure=None):
@@ -282,16 +339,16 @@ def _check_xmlids(path, root, module_name, index, reference_modules, closure=Non
         for ref in refs:
             module, _, local = ref.partition(".")
             if (
-                module == module_name or module not in reference_modules
+                module == module_name or module not in index.modules
                 or local.startswith(GENERATED_PREFIXES) or (ref, node.sourceline) in seen
             ):
                 continue
             seen.add((ref, node.sourceline))
             if ref not in index.xmlids:
-                yield path, node.sourceline, f"XML id {ref} does not exist in the target Odoo"
+                # only the target Odoo is known for sure (an XML id of another
+                # custom module may be created by its code)
+                if module in reference_modules:
+                    yield path, node.sourceline, f"XML id {ref} does not exist in the target Odoo"
             elif closure is not None and module not in closure:
                 # works only if another module happens to install it first
-                yield path, node.sourceline, (
-                    f"XML id {ref} comes from the module '{module}', which is not in the"
-                    f" dependencies of the module: add it to 'depends'"
-                )
+                yield path, node.sourceline, _missing_depends(f"XML id {ref}", module)

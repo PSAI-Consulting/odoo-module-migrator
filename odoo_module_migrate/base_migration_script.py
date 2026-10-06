@@ -301,7 +301,15 @@ class BaseMigrationScript:
         for r in self._RENAMED_FIELDS:
             if len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or "")):
                 renames.setdefault((r[0], r[1]), r[2])
-        sources = {(r[0], r[1]): (r[-1] if len(r) > 3 else "") for r in self._RENAMED_FIELDS}
+        # new name == old name (curated.yaml): NOT renamed, it cancels a rule of
+        # generated.yaml (e.g. a column renamed by OpenUpgrade while the field
+        # still exists in the target Odoo)
+        kept = {k for k, v in renames.items() if v == k[1]}
+        renames = {k: v for k, v in renames.items() if k not in kept}
+        sources = {
+            (r[0], r[1]): (r[-1] if len(r) > 3 else "") for r in self._RENAMED_FIELDS
+            if (r[0], r[1]) not in kept
+        }
         # a renamed field is not removed (e.g. curated.yaml vs generated.yaml)
         removed = {}
         for r in self._REMOVED_FIELDS:
