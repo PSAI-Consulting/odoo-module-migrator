@@ -760,3 +760,12 @@ def test_module_rules_080_090():
     )
     assert new == ["mail", "account", "website_project_issue", "sale"]
     assert all(level == "info" for level, _msg in messages), messages
+
+
+def test_core_api_090_100():
+    errors = _yaml_rules("text_errors", "migrate_090_100", ".py")
+    assert _matching(errors, "from openerp.osv import fields, osv")
+    assert _matching(errors, "if not self.check_recursion(cr, uid, ids):")
+    assert not _matching(errors, "if not self._check_recursion():")
+    assert not _matching(errors, "from odoo import fields, models")
+    assert _matching(errors, "class A(osv.osv):\n    _name = \"a\"\n    _columns = {}\n")

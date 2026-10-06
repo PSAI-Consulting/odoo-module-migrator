@@ -1,0 +1,7 @@
+# Source : tools/extract_changes.py api 9.0 -> 10.0, vérifié dans les sources : 9.0 a
+# openerp/osv/fields.py (ancienne API _columns), openerp/pooler.py et
+# BaseModel.check_recursion(cr, uid, ids) (dépréciée) ; 10.0 non.
+.py:
+  '(?m)\bfrom\s+(odoo|openerp)\.osv\s+import\s+[^\n]*\bfields\b|\b(odoo|openerp)\.osv\.fields\b|^\s*_columns\s*=': "[10] The old API fields (osv.fields, _columns) were removed: declare the fields with odoo.fields"
+  '\b(odoo|openerp)\.pooler\b|\bpooler\.get_pool\(': "[10] openerp.pooler was removed: use odoo.registry() / self.env"
+  '\.check_recursion\(': "[10] check_recursion(cr, uid, ids) was removed: use self._check_recursion()"
