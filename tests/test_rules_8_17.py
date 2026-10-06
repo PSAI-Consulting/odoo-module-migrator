@@ -707,3 +707,13 @@ def test_model_rename_keeps_field_names_110_120():
         "ref = 'product.model_uom_uom'\n"
     )
     assert not any(re.search(p, "vals = {'product_uom': 1}") for p in res["warnings"])
+
+
+def test_uom_xmlids_110_120():
+    text = "self.env.ref('product.product_uom_unit'), ref=\"product.product_uom_categ_kgm\", product.product_uom_unknown"
+    rules = _yaml_rules("text_replaces", "migrate_110_120", "*")
+    import re
+
+    for pattern, repl in rules.items():
+        text = re.sub(pattern, repl, text)
+    assert text == "self.env.ref('uom.product_uom_unit'), ref=\"uom.product_uom_categ_kgm\", product.product_uom_unknown"

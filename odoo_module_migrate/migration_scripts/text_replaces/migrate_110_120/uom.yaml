@@ -1,0 +1,5 @@
+# Source : 12.0 module uom (OpenUpgrade 12.0 : product.uom -> uom.uom) : les unités de
+# 11.0 addons/product/data/product_data.xml sont dans 12.0 addons/uom/data/uom_data.xml,
+# mêmes identifiants (liste exacte des 24 identifiants communs).
+"*":
+  '\bproduct\.(product_uom_categ_kgm|product_uom_categ_unit|product_uom_categ_vol|product_uom_cm|product_uom_day|product_uom_dozen|product_uom_floz|product_uom_foot|product_uom_gal|product_uom_gram|product_uom_hour|product_uom_inch|product_uom_kgm|product_uom_km|product_uom_lb|product_uom_litre|product_uom_meter|product_uom_mile|product_uom_oz|product_uom_qt|product_uom_ton|product_uom_unit|uom_categ_length|uom_categ_wtime)\b': 'uom.\1'
