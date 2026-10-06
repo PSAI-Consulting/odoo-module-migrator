@@ -666,3 +666,12 @@ def test_module_rules_110_120():
     )
     assert new == ["repair", "mrp_bom_cost", "website_sale", "account_budget", "sale"]
     assert all(level == "info" for level, _msg in messages), messages
+
+
+def test_module_rules_100_110():
+    rules = _module_rules("migrate_100_110")
+    new, messages = manifest.apply_module_rules(
+        ["crm_project_issue", "account_accountant", "stock_picking_wave", "sale"], rules
+    )
+    assert new == ["crm_project", "account_accountant", "stock_picking_batch", "sale"]
+    assert all(level == "info" for level, _msg in messages), messages

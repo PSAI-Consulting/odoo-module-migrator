@@ -1,0 +1,10 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise du fork LBruyere/enterprise).
+#
+# odoo af0048679183 '[REM] hr_timesheet_sheet: kill the module' ; repris par l'OCA sous le même
+# nom (OCA/hr-timesheet 11.0). Conservé de l'ancienne liste _DEPRECATED_MODULES (oca_moved).
+- ["hr_timesheet_sheet", "oca_moved", "hr_timesheet_sheet", "Moved to OCA/hr-timesheet"]
+#
+# Retirés de l'ancienne liste _DEPRECATED_MODULES de migrate_100_110.py : account_accountant
+# « removed » (présent dans enterprise 11.0) ; crm_project_issue renommé vers lui-même (OpenUpgrade
+# 11.0 apriori.py : crm_project_issue -> crm_project).
