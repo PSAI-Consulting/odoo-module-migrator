@@ -157,14 +157,16 @@ def main(argv=None):
             installer.create_from(template)
             try:
                 start = time.time()
-                ok, output, _seconds = installer._try([name])
+                # fresh copy per module: no checkpoint needed
+                returncode, output = installer._odoo([name])
+                ok = (returncode == 0 and not bi.FAILURE_RE.search(output)
+                      and installer.states([name]).get(name) == "installed")
                 status = "OK" if ok else "FAILED"
                 result = {"module": name, "status": status, "seconds": round(time.time() - start, 1),
                           "error": "" if ok else bi.first_error(output),
                           "tail": "" if ok else "\n".join(output.splitlines()[-60:])}
             finally:
                 installer.drop(db)
-                installer.drop(installer.checkpoint)
             print(f"{name:40} {status:7} {result['error'][:160]}", flush=True)
             return result
 
