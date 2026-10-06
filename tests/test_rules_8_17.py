@@ -503,3 +503,10 @@ def test_report_act_window_to_record_130_140(tmp_path, caplog):
     assert '<field name="binding_model_id" ref="my_module.model_x_own"/>' in text
     _reformat_file(path, {"x.own"}, "my_module", logger)
     assert path.read_text(encoding="utf-8") == text
+
+
+def test_module_rules_130_140():
+    rules = _module_rules("migrate_130_140")
+    new, messages = manifest.apply_module_rules(["l10n_cn_standard", "ocn_client", "sale"], rules)
+    assert new == ["l10n_cn", "mail_mobile", "sale"]
+    assert manifest.apply_module_rules(new, rules) == (new, [])
