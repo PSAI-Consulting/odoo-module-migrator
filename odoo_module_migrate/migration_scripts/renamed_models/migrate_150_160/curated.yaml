@@ -1,0 +1,18 @@
+# Modèles renommés 15.0 -> 16.0 vérifiés à la main : prioritaires sur generated.yaml
+# (OpenUpgrade). Candidats de tools/extract_changes.py models vérifiés dans le commit :
+# odoo 6a23b9bcd6ae '[REF] *stock*: rename model `stock.production.lot` into `stock.lot`' : commit : « rename model stock.production.lot into stock.lot »
+- ["stock.production.lot", "stock.lot", "odoo 6a23b9bcd6ae '[REF] *stock*: rename model `stock.production.lot` into `stock.lot`'"]
+# odoo c146c7d16f20 '[REF] *stock*: rename model `stock.location.route` into `stock.route`' : commit : « rename model stock.location.route into stock.route »
+- ["stock.location.route", "stock.route", "odoo c146c7d16f20 '[REF] *stock*: rename model `stock.location.route` into `stock.route`'"]
+# odoo fdcaa53ca0b5 '[IMP] mail, *: rename mail.channel.partner to mail.channel.member' : commit : « rename mail.channel.partner to mail.channel.member »
+- ["mail.channel.partner", "mail.channel.member", "odoo fdcaa53ca0b5 '[IMP] mail, *: rename mail.channel.partner to mail.channel.member'"]
+# enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment' : commit : « rename models and files to better represent appointment »
+- ["calendar.appointment.question", "appointment.question", "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"]
+- ["calendar.appointment.slot", "appointment.slot", "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"]
+- ["calendar.appointment.type", "appointment.type", "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"]
+# enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model' : commit : « Merge sale.subscription into sale.order model » (modèles annexes renommés)
+- ["sale.subscription.alert", "sale.order.alert", "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"]
+- ["sale.subscription.log", "sale.order.log", "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"]
+- ["sale.subscription.stage", "sale.order.stage", "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"]
+# enterprise ca650eb57ca '[IMP] l10n_lu_reports: merge reports modules' : module l10n_lu_reports_annual_vat fusionné dans l10n_lu_reports
+- ["l10n_lu_reports_annual_vat.report.appendix.expenditures", "l10n_lu_reports.report.appendix.expenditures", "enterprise ca650eb57ca '[IMP] l10n_lu_reports: merge reports modules'"]

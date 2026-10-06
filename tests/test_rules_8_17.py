@@ -395,3 +395,26 @@ def test_orm_deprecations_150_160_and_160_170():
         assert [line for line in text.splitlines() if _matching(rules, line)] == [
             "self.flush()", "self.env['x'].invalidate_cache(['a'])",
         ]
+
+
+def test_field_rules_follow_renamed_model_150_160(tmp_path):
+    """OpenUpgrade 16.0 renames coupon.program fields under the old model name,
+    while coupon.program is renamed loyalty.program in the same step: the model
+    is renamed in the files first, the field rules must still apply."""
+    from odoo_module_migrate.migration_scripts.migrate_150_160 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    module.mkdir()
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['coupon']}")
+    (module / "models.py").write_text(
+        "from odoo import models\n\n\nclass Program(models.Model):\n"
+        '    _inherit = "loyalty.program"\n\n    def _x(self):\n'
+        "        return self.promo_code_usage, self.maximum_use_number\n"
+    )
+    script = MigrationScript()
+    script.parse_rules()
+    script.handle_fields(module)
+    text = (module / "models.py").read_text()
+    assert "return self.trigger, self.max_usage" in text
+    script.handle_fields(module)
+    assert (module / "models.py").read_text() == text
