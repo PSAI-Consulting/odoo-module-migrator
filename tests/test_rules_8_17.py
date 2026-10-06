@@ -717,3 +717,22 @@ def test_uom_xmlids_110_120():
     for pattern, repl in rules.items():
         text = re.sub(pattern, repl, text)
     assert text == "self.env.ref('uom.product_uom_unit'), ref=\"uom.product_uom_categ_kgm\", product.product_uom_unknown"
+
+
+def test_openerp_namespace_kept_for_9(tmp_path):
+    """9.0 still uses openerp and __openerp__.py (odoo / __manifest__.py: 10.0)."""
+    import shutil
+
+    from odoo_module_migrate.__main__ import main
+
+    shutil.copytree("tests/data_template/module_080", tmp_path / "module_080")
+    main([
+        "--directory", str(tmp_path), "--modules", "module_080",
+        "--init-version-name", "8.0", "--target-version-name", "9.0",
+        "--no-commit", "--no-pre-commit", "--log-level", "ERROR",
+    ])
+    module = tmp_path / "module_080"
+    assert (module / "__openerp__.py").exists() and not (module / "__manifest__.py").exists()
+    texts = [p.read_text(encoding="utf-8") for p in module.rglob("*.py")]
+    assert any("from openerp" in t for t in texts)
+    assert not any("from odoo " in t or "from odoo." in t for t in texts)
