@@ -303,6 +303,9 @@ def first_error(output):
     """Most useful line of the failure: the message of a ParseError (on the
     lines after 'while parsing <file>'), else the last 'XxxError: ...' line."""
     lines = output.splitlines()
+    for line in lines:
+        if "has an incompatible version" in line:  # module silently not installed
+            return line.split(": ", 1)[-1].strip()[:600]
     for i, line in enumerate(lines):
         if "ParseError" in line and "while parsing" in line:
             detail = " ".join(l.strip() for l in lines[i + 1:i + 4] if l.strip())
