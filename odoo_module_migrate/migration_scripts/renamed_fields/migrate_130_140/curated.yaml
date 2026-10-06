@@ -19,3 +19,13 @@
 - ["res.config.settings", "module_inter_company_rules", "module_account_inter_company_rules", "odoo be2ee7707a4b '[IMP] inter_company_rules: split sale/purchase and account'"]
 # enterprise 76f611ff8b3 '[IMP] planning: generic improvements' : même Many2one planning.role
 - ["hr.employee", "planning_role_id", "default_planning_role_id", "enterprise 76f611ff8b3 '[IMP] planning: generic improvements'"]
+#
+# Règles bloquées (null : jamais de renommage automatique) :
+# odoo 8066ab43482a '[REF] crm: update revenue fields names' : « changes the field name
+# expected_revenue into prorated_revenue and the field name planned_revenue into
+# expected_revenue » : échange de noms, non idempotent ; message dans removed_fields/curated.yaml.
+- ["crm.lead", "planned_revenue", null, "odoo 8066ab43482a : échange de noms avec expected_revenue"]
+- ["crm.lead", "expected_revenue", null, "odoo 8066ab43482a : expected_revenue réutilisé en 14.0"]
+# OpenUpgrade 14.0 stock pre-migration renomme la colonne date_expected -> date_deadline, mais en
+# 14.0 la date prévue est stock.move.date (date_deadline : promesse client, en lecture seule).
+- ["stock.move", "date_expected", null, "date prévue = date en 14.0, pas date_deadline"]

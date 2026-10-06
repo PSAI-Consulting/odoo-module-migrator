@@ -54,6 +54,15 @@
 - ["res.config.settings", "reminder_manager_delay", "reminder_delay", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
 - ["res.config.settings", "reminder_manager_interval", "reminder_interval", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
 #
+# Rejetés après vérification (anciennes règles hr.yaml / l10n_mx.yaml) :
+# - hr.expense total_amount -> total_amount_currency et total_amount_company -> total_amount
+#   (odoo 68fbdc964038) : échange de noms, un second passage renommerait le nouveau total_amount ;
+#   message dans removed_fields/curated.yaml.
+# - hr.employee address_home_id -> work_contact_id (odoo e8c48f824e07) : work_contact_id existait
+#   déjà en 16.0 (contact professionnel) ; l'adresse privée est sur l'employé (private_*).
+# - account.tax l10n_mx_tax_type -> l10n_mx_factor_type (odoo cdd29dfe9800) : l10n_mx_tax_type
+#   existe encore en 17.0 avec un autre sens : renommage non idempotent.
+#
 # Règles générées bloquées (null : jamais de renommage automatique) :
 # OpenUpgrade 17.0 hr_expense pre-migration renomme total_amount_company -> total_amount alors que
 # total_amount (16.0, devise de la dépense) devient total_amount_currency : échange de noms, un

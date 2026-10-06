@@ -2,6 +2,7 @@
 # Do not edit: write corrections in another file of this folder.
 # Rename CANDIDATES found in the sources (field removed in the commit
 # that adds a field of the same type): check them, then uncomment.
+# - ["hr.expense", "total_amount", "total_amount_currency", "OpenUpgrade 17.0 openupgrade_scripts/scripts/hr_expense/17.0.2.0/pre-migration.py (old field still defined in 17.0)"]  # non : non confirmé (sens, type ou comodel différents en 17.0)
 # - ["account.analytic.line", "ancestor_task_id", "parent_task_id", "odoo a424cf481c67 '[IMP] project: delete useless fields'"]  # non : sens différent (ancêtre racine -> parent direct)
 # - ["account.analytic.line", "plan_id", "auto_account_id", "odoo dc696c8ed485 '[IMP] analytic: allow cross analytics'"]  # non : analytique croisée : plus de plan unique par ligne
 # - ["account.move", "asset_asset_type", "deferred_entry_type", "enterprise f622d837119 '[IMP] account_{accountant,asset,reports},sale_subscription,*: deferred management'"]  # non : sens différent (écritures différées)
@@ -25,11 +26,9 @@
 # - ["hr.expense", "reference", "label_currency_rate", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : champ supprimé (OCR), pas de remplaçant
 # - ["hr.expense", "same_currency", "is_multiple_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : logique inversée (is_multiple_currency == not same_currency)
 # - ["hr.expense", "sheet_is_editable", "is_multiple_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # oui : curated.yaml
-# - ["hr.expense", "unit_amount", "price_unit", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # oui : curated.yaml
 # - ["hr.expense", "unit_amount_display", "price_unit", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : champ d'affichage supprimé
 # - ["hr.expense.refuse.wizard", "hr_expense_ids", "sheet_ids", "odoo f79ff3fb3746 '[IMP] hr_expense: do not create purchase.receipt'"]  # non : comodel différent (hr.expense -> hr.expense.sheet)
 # - ["hr.expense.sheet", "account_move_id", "company_currency_id", "odoo 81fe11fabb60 '[IMP] hr_expense: Split company payments per expense'"]  # non : sens différent (une écriture par dépense)
-# - ["hr.expense.sheet", "total_amount_taxes", "total_tax_amount", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # oui : curated.yaml
 # - ["hr.leave", "has_stress_day", "has_mandatory_day", "odoo 1b512efdac4b '[IMP] holiday: improve UX holiday timeoff'"]  # oui : curated.yaml
 # - ["hr.payroll.structure.type", "salary_advantage_ids", "salary_benefits_ids", "enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms'"]  # oui : curated.yaml
 # - ["hr.timesheet.attendance.report", "user_id", "employee_id", "odoo 9e0277eeec80 '[FIX] hr_timesheet_attendance: base report on employees, not users'"]  # non : comodel différent (res.users -> hr.employee)
