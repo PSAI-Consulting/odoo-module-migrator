@@ -23,7 +23,7 @@
             <field name="binding_type">report</field>
         </record>
 
-        <record id="stock_lot" model="stock.lot">
+        <record id="stock_production_lot" model="stock.lot">
             <field name="name">0000000000003</field>
             <field name="product_id" ref="mrp.product_product_computer_desk"/>
             <field name="product_qty">1</field>

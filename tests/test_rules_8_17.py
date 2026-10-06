@@ -683,3 +683,27 @@ def test_rules_110_120():
     assert not _matching(errors, "    'data': ['views/sale_order.xml'],")
     rows = yaml.safe_load(open(f"{SCRIPTS}/renamed_models/migrate_110_120/curated.yaml", encoding="utf-8"))
     assert ["signature.request", "sign.request"] in [r[:2] for r in rows]
+
+
+def test_model_rename_keeps_field_names_110_120():
+    """product.uom -> uom.uom must not touch the product_uom field."""
+    import re
+
+    from odoo_module_migrate.migration_scripts.migrate_110_120 import MigrationScript
+
+    script = MigrationScript()
+    script.parse_rules()
+    res = script.handle_renamed_models(script._RENAMED_MODELS)
+    text = (
+        "vals = {'product_uom': uom.id}\n"
+        "uom = self.env['product.uom']\n"
+        "ref = 'product.model_product_uom'\n"
+    )
+    for pattern, repl in res["replaces"].items():
+        text = re.sub(pattern, repl, text)
+    assert text == (
+        "vals = {'product_uom': uom.id}\n"
+        "uom = self.env['uom.uom']\n"
+        "ref = 'product.model_uom_uom'\n"
+    )
+    assert not any(re.search(p, "vals = {'product_uom': 1}") for p in res["warnings"])

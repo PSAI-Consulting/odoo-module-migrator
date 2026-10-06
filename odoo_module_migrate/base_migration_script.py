@@ -439,8 +439,8 @@ class BaseMigrationScript:
                 {
                     r"\"%s\"" % old_name_esc: '"%s"' % new_model_name,
                     r"\'%s\'" % old_name_esc: "'%s'" % new_model_name,
-                    r"\"%s\"" % old_table_name: '"%s"' % new_table_name,
-                    r"\'%s\'" % old_table_name: "'%s'" % new_table_name,
+                    # no replace of the quoted table name: it is often a field
+                    # name too ('product_uom' for product.uom -> uom.uom)
                     r"model_%s\"" % old_table_name: 'model_%s"' % new_table_name,
                     r"model_%s\'" % old_table_name: "model_%s'" % new_table_name,
                     r"model_%s," % old_table_name: "model_%s," % new_table_name,
@@ -457,7 +457,6 @@ class BaseMigrationScript:
             res["warnings"].update(
                 {
                     old_name_esc: msg,
-                    old_table_name: msg,
                 }
             )
         return res
