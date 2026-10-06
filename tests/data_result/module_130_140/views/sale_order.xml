@@ -3,12 +3,24 @@
     <record id="act_window_example" model="ir.actions.act_window">
         <field name="name">Example</field>
         <field name="res_model">account.move.line</field>
-        <field name="binding_model_id" ref="account.model_account_move"/>
-        <field name="domain">[('id', '&gt;', 0)]</field>
         <field name="view_mode">tree</field>
+        <field name="domain">[('id', '&gt;', 0)]</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
     </record>
     <record id="report_example" model="ir.actions.report">
-        <field name="report_name">Name</field>
         <field name="name">String</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">module_130.report_example</field>
+        <field name="report_file">module_130.report_example</field>
+        <field name="groups_id" eval="[(4, ref('base.group_user'))]"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+    <record id="report_hidden" model="ir.actions.report">
+        <field name="name">Hidden</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">module_130.report_hidden</field>
     </record>
 </odoo>

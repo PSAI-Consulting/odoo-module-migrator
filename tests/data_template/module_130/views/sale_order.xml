@@ -9,7 +9,17 @@
         view_mode="tree"/>
     <report
         id="report_example"
-        name="Name"
+        model="sale.order"
+        name="module_130.report_example"
         string="String"
+        file="module_130.report_example"
+        groups="base.group_user"
+    />
+    <report
+        id="report_hidden"
+        model="res.partner"
+        name="module_130.report_hidden"
+        string="Hidden"
+        menu="False"
     />
 </odoo>

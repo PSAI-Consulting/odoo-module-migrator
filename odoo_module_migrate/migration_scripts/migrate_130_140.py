@@ -9,107 +9,178 @@ import lxml.etree as et
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
 
-def src_model_new_value(field_elem, model_dot_name):
-    """
-    Particular behavior for new binding_model_id.
-
-    Apply some heuristic to change
-    old attribute `src_model=account.move`
-    to `<field name="binding_model_id" ref="account.model_account_move"/>`.
-    """
-    module_name = model_dot_name.split(".")[0]
-    model_und_name = model_dot_name.replace(".", "_")
-    ref_value = f"{module_name}.model_{model_und_name}"
-    field_elem.set("ref", ref_value)
-
-
-def value_to_text(field_elem, attr_value):
-    """Standard behavior: an attribute value is the new fields's text."""
-    field_elem.text = attr_value
+# Source: odoo 14.0 removed the <report> and <act_window> XML shortcuts
+# (odoo/tools/convert.py has no _tag_report / _tag_act_window anymore). The
+# conversion follows the semantics of odoo 13.0 odoo/tools/convert.py
+# (_tag_report, _tag_act_window, ir.actions.report.create_action()).
+_MODEL_MODULES_FILE = Path(__file__).parent / "data" / "model_modules_140.yaml"
+_SHORTCUT_RE = re.compile(
+    r"<(?P<tag>report|act_window)\b(?P<attrs>(?:\s+[\w:.-]+\s*=\s*(?:\"[^\"]*\"|'[^']*'))*)\s*/>"
+)
+_MASK_RE = re.compile(r"<!--.*?-->|<!\[CDATA\[.*?\]\]>", re.S)
+_MODEL_NAME_RE = re.compile(r"""^\s+_name\s*=\s*['"]([\w.]+)['"]""", re.M)
+_model_modules = None
 
 
-TAG_ATTR_RENAMING = {
-    "report": {
-        "name": ("report_name", value_to_text),
-        "string": ("name", value_to_text),
-    },
-    "act_window": {
-        "src_model": ("binding_model_id", src_model_new_value),
-    },
-}
-"""
-Configuration for renaming particular attributes.
-
-The dictionary maps old tag names to their attributes' names.
-Each old attribute name is then mapped a tuple containing:
-
-- name of the corresponding new field
-- a function that applies the old attribute's value to the new field
-"""
+class _CannotConvert(Exception):
+    pass
 
 
-def _reformat_file(file_path: Path):
-    """Reformat `file_path`.
+def _xml_text(value):
+    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-    Substitute `act_window` and `report` tag with `record` tag.
-    Note that:
-    - `id` attribute is kept in the `record` tag;
-    - in `report` tag:
-      - `string` has been renamed to `name`;
-      - `name` has been renamed to `report_name`;
-    - other attributes are assigned to respective fields
-    """
-    parser = et.XMLParser(remove_blank_text=True)
-    tree = et.parse(str(file_path.resolve()), parser)
-    root = tree.getroot()
-    reformat_tags = (*root.findall("act_window"), *root.findall("report"))
-    if not reformat_tags:
+
+def _model_ref(model, own_models, module_name):
+    global _model_modules
+    if _model_modules is None:
+        import yaml
+
+        _model_modules = yaml.safe_load(_MODEL_MODULES_FILE.read_text(encoding="utf-8")) or {}
+    if model in own_models:
+        module = module_name
+    elif model in _model_modules:
+        module = _model_modules[model]
+    else:
+        raise _CannotConvert("module of model %s unknown" % model)
+    return "%s.model_%s" % (module, model.replace(".", "_"))
+
+
+def _groups_eval(groups):
+    items = []
+    for group in groups.split(","):
+        group = group.strip()
+        if group.startswith("-"):
+            items.append("(3, ref('%s'))" % group[1:])
+        elif group:
+            items.append("(4, ref('%s'))" % group)
+    return "[%s]" % ", ".join(items)
+
+
+def _report_fields(attrs, own_models, module_name):
+    """[(field, kind, value)] kind: text / ref / eval (13.0 _tag_report)."""
+    for required in ("string", "model", "name"):
+        if not attrs.get(required):
+            raise _CannotConvert("attribute %s missing" % required)
+    fields = [
+        ("name", "text", attrs["string"]),
+        ("model", "text", attrs["model"]),
+        ("report_type", "text", attrs.get("report_type") or "qweb-pdf"),
+        ("report_name", "text", attrs["name"]),
+    ]
+    for attr, field in (("file", "report_file"), ("print_report_name", "print_report_name"),
+                        ("attachment", "attachment"), ("usage", "usage")):
+        if attrs.get(attr):
+            fields.append((field, "text", attrs[attr]))
+    for attr in ("attachment_use", "multi", "auto", "header"):
+        if attrs.get(attr):
+            fields.append((attr, "eval", attrs[attr]))
+    if attrs.get("groups"):
+        fields.append(("groups_id", "eval", _groups_eval(attrs["groups"])))
+    if attrs.get("paperformat"):
+        fields.append(("paperformat_id", "ref", attrs["paperformat"]))
+    menu = attrs.get("menu")
+    if not menu or menu.strip() not in ("False", "0"):
+        if menu and menu.strip() not in ("True", "1"):
+            raise _CannotConvert("menu=%r" % menu)
+        fields.append(("binding_model_id", "ref", _model_ref(attrs["model"], own_models, module_name)))
+        fields.append(("binding_type", "text", "report"))
+    unknown = set(attrs) - {"id", "string", "model", "name", "report_type", "file",
+                            "print_report_name", "attachment", "usage", "attachment_use",
+                            "multi", "auto", "header", "groups", "paperformat", "menu"}
+    if unknown:
+        raise _CannotConvert("attributes %s" % ", ".join(sorted(unknown)))
+    return "ir.actions.report", fields
+
+
+def _act_window_fields(attrs, own_models, module_name):
+    """[(field, kind, value)] (13.0 _tag_act_window; src_model / key2 of 12.0)."""
+    if not attrs.get("name") or not attrs.get("res_model"):
+        raise _CannotConvert("name or res_model missing")
+    fields = [("name", "text", attrs["name"]), ("res_model", "text", attrs["res_model"])]
+    for attr in ("view_mode", "domain", "context", "target", "usage", "limit"):
+        if attrs.get(attr):
+            fields.append((attr, "text", attrs[attr]))
+    if attrs.get("view_id"):
+        fields.append(("view_id", "ref", attrs["view_id"]))
+    if attrs.get("groups"):
+        fields.append(("groups_id", "eval", _groups_eval(attrs["groups"])))
+    binding_model = attrs.get("binding_model") or attrs.get("src_model")
+    binding_type = attrs.get("binding_type")
+    key2 = attrs.get("key2")
+    if key2 and key2 not in ("client_action_multi", "client_print_multi"):
+        raise _CannotConvert("key2=%r" % key2)
+    if key2 == "client_print_multi":
+        binding_type = "report"
+    if binding_model:
+        fields.append(("binding_model_id", "ref", _model_ref(binding_model, own_models, module_name)))
+        if binding_type:
+            fields.append(("binding_type", "text", binding_type))
+        if attrs.get("binding_views") is not None:
+            fields.append(("binding_view_types", "text", attrs["binding_views"]))
+    unknown = set(attrs) - {"id", "name", "res_model", "view_mode", "domain", "context", "target",
+                            "usage", "limit", "view_id", "groups", "binding_model", "src_model",
+                            "binding_type", "key2", "binding_views"}
+    if unknown:
+        raise _CannotConvert("attributes %s" % ", ".join(sorted(unknown)))
+    return "ir.actions.act_window", fields
+
+
+def _record_text(xmlid, model, fields, indent, step):
+    lines = ['<record id="%s" model="%s">' % (xmlid, model)]
+    for name, kind, value in fields:
+        if kind == "text":
+            lines.append('<field name="%s">%s</field>' % (name, _xml_text(value)))
+        else:
+            lines.append('<field name="%s" %s="%s"/>' % (
+                name, kind, _xml_text(value).replace('"', "&quot;")))
+    lines.append("</record>")
+    return ("\n" + indent).join(
+        [lines[0]] + [step + line for line in lines[1:-1]] + [lines[-1]]
+    )
+
+
+def _reformat_file(file_path: Path, own_models=(), module_name="", logger=None):
+    """Replace the <report> / <act_window> shortcuts of `file_path` by
+    <record> tags, in place (the rest of the file is kept as is)."""
+    text = file_path.read_text(encoding="utf-8")
+    if "<report" not in text and "<act_window" not in text:
         return None
-
-    regexp = r"(?P<indent>[ \t]*)" r"(?P<tag><{tag_type}[^/]*id=\"{tag_id}\"[^/]*/>)"
-
-    new_tags_dict = dict()
-    for tag in reformat_tags:
-        tag_regex = regexp.format(
-            tag_type=tag.tag,
-            tag_id=tag.attrib["id"],
-        )
-        for attrib, value in tag.attrib.items():
-            if attrib == "id":
-                continue
-            tag.attrib.pop(attrib)
-
-            attr_renames_dict = TAG_ATTR_RENAMING.get(tag.tag, dict())
-            new_value_func = value_to_text
-            if attrib in attr_renames_dict:
-                new_attr_name, new_value_func = attr_renames_dict.get(attrib)
-                attrib = new_attr_name
-
-            field_elem = et.SubElement(tag, "field", {"name": attrib})
-            new_value_func(field_elem, value)
-
-        tag.attrib["model"] = "ir.actions." + tag.tag
-        tag.tag = "record"
-
-        new_tags_dict[tag_regex] = tag
-
-    # Read in the file
-    xml_file = file_path.read_text()
-
-    # Replace the target string
-    for tag_regex, tag in new_tags_dict.items():
-        match = re.search(tag_regex, xml_file)
-        if match:
-            indent = match.group("indent")
-            tag_match = match.group("tag")
-            et.indent(tag, space=indent, level=1)
-            # Remove trailing newline
-            tag_string = et.tostring(tag, pretty_print=True)[:-1]
-            xml_file = xml_file.replace(tag_match, tag_string.decode())
-
-    # Write the file out again
-    file_path.write_text(xml_file)
-    return file_path
+    try:
+        tree = et.fromstring(text.encode("utf-8"))
+    except et.XMLSyntaxError:
+        return None
+    elements = [e for e in tree.iter("report", "act_window")]
+    masked = _MASK_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group()), text)
+    matches = list(_SHORTCUT_RE.finditer(masked))
+    if len(matches) != len(elements) or any(m["tag"] != e.tag for m, e in zip(matches, elements)):
+        if logger:
+            logger.error("%s: <report> / <act_window> not converted (XML layout not understood),"
+                         " convert them to <record> by hand" % file_path.name)
+        return None
+    edits = []
+    for match, element in zip(matches, elements):
+        attrs = dict(element.attrib)
+        try:
+            if not attrs.get("id"):
+                raise _CannotConvert("no id")
+            build = _report_fields if element.tag == "report" else _act_window_fields
+            model, fields = build(attrs, own_models, module_name)
+        except _CannotConvert as error:
+            if logger:
+                logger.error(
+                    "[14] <%s> is not supported anymore: convert it to <record> by hand (%s)."
+                    " File %s:%s" % (element.tag, error, file_path.name, element.sourceline))
+            continue
+        line_start = masked.rfind("\n", 0, match.start()) + 1
+        indent = masked[line_start:match.start()]
+        indent = indent if not indent.strip() else ""
+        edits.append((match.start(), match.end(), _record_text(attrs["id"], model, fields, indent, "    ")))
+    for start, end, new in sorted(edits, reverse=True):
+        text = text[:start] + new + text[end:]
+    if edits:
+        file_path.write_text(text, encoding="utf-8")
+        return file_path
+    return None
 
 
 def _get_files(module_path, reformat_file_ext):
@@ -124,31 +195,19 @@ def _get_files(module_path, reformat_file_ext):
 def reformat_deprecated_tags(
     logger, module_path, module_name, manifest_path, migration_steps, tools
 ):
-    """Reformat deprecated tags in XML files.
-
-    Deprecated tags are `act_window` and `report`:
-    they have to be substituted by the `record` tag.
-    """
-
-    reformat_file_ext = ".xml"
-    file_paths = _get_files(module_path, reformat_file_ext)
-    logger.debug(f"{reformat_file_ext} files found:\n" f"{list(map(str, file_paths))}")
-
-    reformatted_files = list()
-    for file_path in file_paths:
-        reformatted_file = _reformat_file(file_path)
-        if reformatted_file:
-            reformatted_files.append(reformatted_file)
-    logger.debug("Reformatted files:\n" f"{list(reformatted_files)}")
+    """Replace the <act_window> and <report> tags, removed in 14.0, by <record>."""
+    own_models = set()
+    for py_file in _get_files(module_path, ".py"):
+        own_models.update(_MODEL_NAME_RE.findall(py_file.read_text(encoding="utf-8", errors="replace")))
+    for file_path in _get_files(module_path, ".xml"):
+        if _reformat_file(file_path, own_models, module_name, logger):
+            logger.info("[14] <report> / <act_window> converted to <record> in %s" % file_path)
 
 
 _TEXT_REPLACES = {
     ".js": {
         r"tour\.STEPS\.SHOW_APPS_MENU_ITEM": "tour.stepUtils.showAppsMenuItem()",
         r"tour\.STEPS\.TOGGLE_HOME_MENU": "tour.stepUtils.toggleHomeMenu()",
-    },
-    ".py": {
-        r"\.phantom_js\(": ".browser_js(",
     },
 }
 

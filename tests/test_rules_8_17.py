@@ -464,3 +464,42 @@ def test_savepointcase_140_150():
         "class TestY(HttpSavepointCase):\n"
     )
     assert _apply("text_replaces", "migrate_140_150", ".py", new) == new
+
+
+SHORTCUTS_XML = """<odoo>
+    <!-- <report id="old" model="x" name="x" string="x"/> -->
+    <act_window id="action_a" name="A &amp; B" res_model="res.partner"
+        binding_model="sale.order" binding_type="report" binding_views="list"/>
+    <act_window id="action_b" name="B" res_model="x.unknown" binding_model="x.unknown.model"/>
+    <act_window id="action_c" name="C" res_model="x.own" binding_model="x.own"/>
+</odoo>
+"""
+
+
+def test_report_act_window_to_record_130_140(tmp_path, caplog):
+    import logging
+
+    from odoo_module_migrate.migration_scripts.migrate_130_140 import _reformat_file
+
+    path = tmp_path / "views.xml"
+    path.write_text(SHORTCUTS_XML, encoding="utf-8")
+    logger = logging.getLogger("test")
+    _reformat_file(path, {"x.own"}, "my_module", logger)
+    text = path.read_text(encoding="utf-8")
+    assert "<!-- <report id=\"old\"" in text
+    assert (
+        '    <record id="action_a" model="ir.actions.act_window">\n'
+        '        <field name="name">A &amp; B</field>\n'
+        '        <field name="res_model">res.partner</field>\n'
+        '        <field name="binding_model_id" ref="sale.model_sale_order"/>\n'
+        '        <field name="binding_type">report</field>\n'
+        '        <field name="binding_view_types">list</field>\n'
+        "    </record>\n"
+    ) in text
+    # model of another unknown module: kept and reported
+    assert '<act_window id="action_b"' in text
+    assert "module of model x.unknown.model unknown" in caplog.text
+    # model of the module itself: local xmlid
+    assert '<field name="binding_model_id" ref="my_module.model_x_own"/>' in text
+    _reformat_file(path, {"x.own"}, "my_module", logger)
+    assert path.read_text(encoding="utf-8") == text
