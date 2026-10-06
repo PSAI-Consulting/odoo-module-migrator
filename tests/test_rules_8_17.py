@@ -675,3 +675,11 @@ def test_module_rules_100_110():
     )
     assert new == ["crm_project", "account_accountant", "stock_picking_batch", "sale"]
     assert all(level == "info" for level, _msg in messages), messages
+
+
+def test_rules_110_120():
+    errors = _yaml_rules("text_errors", "migrate_110_120", ".py")
+    assert _matching(errors, "    'test': ['test/sale_order.yml'],")
+    assert not _matching(errors, "    'data': ['views/sale_order.xml'],")
+    rows = yaml.safe_load(open(f"{SCRIPTS}/renamed_models/migrate_110_120/curated.yaml", encoding="utf-8"))
+    assert ["signature.request", "sign.request"] in [r[:2] for r in rows]

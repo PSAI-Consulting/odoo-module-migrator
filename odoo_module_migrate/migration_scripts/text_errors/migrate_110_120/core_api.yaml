@@ -1,0 +1,4 @@
+# Source : odoo 12.0 : odoo/tools/yaml_import.py et yaml_tag.py supprimés (tools/extract_changes.py
+# api 11.0 -> 12.0) : les fichiers .yml de données / tests ne sont plus chargés.
+.py:
+  '[''"][\w/.-]+\.yml[''"]': "[12] YAML data / test files are not supported anymore (odoo.tools.yaml_import was removed): convert them to XML data or Python tests"

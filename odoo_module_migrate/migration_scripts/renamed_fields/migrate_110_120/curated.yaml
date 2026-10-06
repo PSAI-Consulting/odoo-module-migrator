@@ -1,0 +1,19 @@
+# Renommages 11.0 -> 12.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
+# odoo cb34934f3b97 '[IMP] maintenance: On equipment, rename the field Warranty to "Warranty Expiration Date"' : commit : « rename the field Warranty to Warranty Expiration Date »
+- ["maintenance.equipment", "warranty", "warranty_date", "odoo cb34934f3b97 '[IMP] maintenance: On equipment, rename the field Warranty to \"Warranty Expiration Date\"'"]
+# odoo 4aa28921e133 '[MOV] account_batch_deposit > account_batch_payment' : module account_batch_deposit renommé account_batch_payment
+- ["res.config.settings", "module_account_batch_deposit", "module_account_batch_payment", "odoo 4aa28921e133 '[MOV] account_batch_deposit > account_batch_payment'"]
+# odoo a701031c929f '[REM] account_invoicing: Merge module into account' : module account_invoicing fusionné dans account
+- ["res.config.settings", "module_account_invoicing", "module_account", "odoo a701031c929f '[REM] account_invoicing: Merge module into account'"]
+# enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability' : signature.request renommé sign.request
+- ["hr.contract", "signature_request_count", "sign_request_count", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]
+- ["hr.contract", "signature_request_ids", "sign_request_ids", "enterprise 5a1f718182f '[IMP] sign: Rename model name to improve code readability'"]
+# enterprise 7587be4663c '[MOV] ocn_client: Odoo Cloud Notification for mobile push notifications' : module mail_push renommé ocn_client
+- ["res.config.settings", "mail_push_notification", "ocn_push_notification", "enterprise 7587be4663c '[MOV] ocn_client: Odoo Cloud Notification for mobile push notifications'"]
+#
+# Règles bloquées (null : jamais de renommage automatique) :
+# OpenUpgrade 12.0 hr_holidays pre-migration : number_of_days -> number_of_days_display et
+# number_of_days_temp -> number_of_days : chaîne de renommages, non idempotente (hr.holidays
+# est de plus scindé en hr.leave / hr.leave.allocation en 12.0).
+- ["hr.holidays", "number_of_days", null, "OpenUpgrade 12.0 : chaîne de renommages"]
+- ["hr.holidays", "number_of_days_temp", null, "OpenUpgrade 12.0 : chaîne de renommages"]
