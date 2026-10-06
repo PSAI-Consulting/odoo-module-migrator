@@ -436,3 +436,14 @@ def test_module_rules_140_150():
     assert new == ["helpdesk_sale_timesheet", "l10n_ch", "website_appointment", "sale"]
     assert all(level == "info" for level, _msg in messages), messages
     assert manifest.apply_module_rules(new, rules) == (new, [])
+
+
+def test_rules_140_150():
+    errors = _yaml_rules("text_errors", "migrate_140_150", ".py")
+    assert _matching(errors, "return http.local_redirect('/web')")
+    assert not _matching(errors, "return request.redirect('/web')")
+    assert not _matching(errors, "html = html_escape(x)")
+    rules = []
+    for path in sorted(glob.glob(f"{SCRIPTS}/renamed_fields/migrate_140_150/*.yaml")):
+        rules += yaml.safe_load(open(path, encoding="utf-8")) or []
+    assert ["crm.lead", "meeting_count", "calendar_event_count"] in [r[:3] for r in rules]

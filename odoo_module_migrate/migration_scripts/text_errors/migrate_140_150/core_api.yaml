@@ -1,0 +1,8 @@
+# Source : tools/extract_changes.py api 14.0 -> 15.0, vérifié dans les sources : définis en
+# 14.0 (odoo/http.py, odoo/tools/mail.py, odoo/api.py), absents de 15.0. html_escape et
+# guess_mimetype restent (alias en 15.0) : pas de règle.
+.py:
+  '\blocal_redirect\(': "[15] odoo.http.local_redirect() was removed: use request.redirect()"
+  '\bredirect_with_hash\(': "[15] odoo.http.redirect_with_hash() was removed: use request.redirect()"
+  '\bemail_send\(': "[15] odoo.tools.mail.email_send() was removed: send with ir.mail_server / mail.mail"
+  '\bapi\.Environments\b|\bimport\s+[^\n]*\bEnvironments\b': "[15] odoo.api.Environments was removed"
