@@ -348,3 +348,33 @@ def test_module_rules_150_160():
     assert new == ["loyalty", "l10n_nl_intrastat", "l10n_din5008_sale", "mail"]
     assert all(level == "info" for level, _msg in messages), messages
     assert manifest.apply_module_rules(new, rules) == (new, [])
+
+
+def _apply(kind, step, ext, text):
+    import re
+
+    for pattern, repl in _yaml_rules(kind, step, ext).items():
+        text = re.sub(pattern, repl, text)
+    return text
+
+
+def test_orm_deprecations_150_160_and_160_170():
+    text = (
+        "xid = rec.get_xml_id()\n"
+        "names = self.env['res.partner'].fields_get_keys() + ['x']\n"
+        "self.flush()\n"
+        "self.env['x'].invalidate_cache(['a'])\n"
+        "f.flush()\n"
+        "self._refresh()\n"
+    )
+    for step in ("migrate_150_160", "migrate_160_170"):
+        new = _apply("text_replaces", step, ".py", text)
+        assert "xid = rec.get_external_id()\n" in new
+        assert "names = list(self.env['res.partner']._fields) + ['x']\n" in new
+        assert _apply("text_replaces", step, ".py", new) == new
+    warnings = _yaml_rules("text_warnings", "migrate_150_160", ".py")
+    errors = _yaml_rules("text_errors", "migrate_160_170", ".py")
+    for rules in (warnings, errors):
+        assert [line for line in text.splitlines() if _matching(rules, line)] == [
+            "self.flush()", "self.env['x'].invalidate_cache(['a'])",
+        ]

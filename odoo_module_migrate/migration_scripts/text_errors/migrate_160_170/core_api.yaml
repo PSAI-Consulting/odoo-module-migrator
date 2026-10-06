@@ -3,6 +3,10 @@
 # n'est plus appelé et avertit « Since 17.0, deprecated method, read display_name instead »)
 # Source : odoo 17.0 odoo/fields.py « Since Odoo 17, property {self}.states is no longer
 # supported. » (paramètre states= des champs ignoré)
+# Source : odoo ba565758c6e9 '[REM] core: remove deprecated methods of models.py'
+# (flush, recompute, refresh, invalidate_cache supprimés)
 .py:
+  '\bself(?:\.env\[[^\]\n]+\]|\.\w+)*\.(?:flush|recompute)\(': "[17] flush() / recompute() were removed (odoo ba565758c6e9): use flush_model(), flush_recordset() or env.flush_all()"
+  '\bself(?:\.env\[[^\]\n]+\]|\.\w+)*\.(?:refresh|invalidate_cache)\(': "[17] refresh() / invalidate_cache() were removed (odoo ba565758c6e9): use invalidate_model(), invalidate_recordset() or env.invalidate_all()"
   '\bdef name_get\(': "[17] name_get() is no longer called since 17.0 (odoo 3c62ca1eb96d): compute display_name in _compute_display_name() instead"
   '\bstates=(\{|[A-Z][A-Z_]*\b)': "[17] The states= parameter of fields is ignored since 17.0 (odoo 17.0 odoo/fields.py): use readonly/required/invisible expressions in the views instead"
