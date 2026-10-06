@@ -32,6 +32,9 @@ class BaseMigrationScript:
     _RENAMED_MODELS: List[Tuple] = []
     _REMOVED_MODELS: List[Tuple] = []
     _GLOBAL_FUNCTIONS: List[Any] = []  # [function_object]
+    # {(model, field): source} removed fields whose values in <record> are
+    # dropped, as Odoo did in its own data files (handle_fields)
+    _DROPPED_RECORD_FIELDS: Dict[Tuple[str, str], str] = {}
     # Folders never migrated (third-party code), matched on path components
     _SKIP_FOLDERS: List[str] = ["static/lib", "static/libs", "node_modules", "__pycache__", ".git"]
     _module_path: str = ""
@@ -370,6 +373,25 @@ class BaseMigrationScript:
                                 usage.model, usage.field,
                                 " - %s" % removed[(usage.model, usage.field)]
                                 if removed[(usage.model, usage.field)] else "",
+                                path, usage.line,
+                            )
+                        )
+                    # positions changed
+                    usages = [
+                        u for u in analysis_fields.xml_usages(text_after, comodels)
+                        if (u.model, u.field) not in defined
+                    ]
+                # values of removed fields that Odoo dropped from its own data
+                text_after, dropped = analysis_fields.remove_record_fields(
+                    text_after, usages, self._DROPPED_RECORD_FIELDS
+                )
+                if dropped:
+                    _write_content(path, text_after)
+                    for usage in dropped:
+                        logger.info(
+                            "Value of the removed field %s.%s dropped (%s). File %s:%s" % (
+                                usage.model, usage.field,
+                                self._DROPPED_RECORD_FIELDS[(usage.model, usage.field)],
                                 path, usage.line,
                             )
                         )
