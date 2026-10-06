@@ -11,3 +11,6 @@
   # 18.0 odoo/modules/module.py : "Since 17.0: use tools.misc.file_path instead of
   # get_resource_path(...)" ; absent de 19.0 (alias get_module_resource, check_resource_path)
   '\b(?:get_resource_path|get_module_resource|check_resource_path)\b': "[19] get_resource_path / get_module_resource were removed (deprecated since 17.0): use odoo.tools.misc.file_path('module/path/to/file'), which raises FileNotFoundError instead of returning False"
+  # 18.0 odoo/fields.py « def first(records) » : absent de 19.0 (odoo.fields devient un package,
+  # odoo 0a5b1f96b81 '[REF] core: odoo.orm package')
+  '\bfrom odoo\.fields import [^\n]*\bfirst\b|\bfields\.first\(': "[19] odoo.fields.first() was removed: use records[:1] (or next(iter(records)))"

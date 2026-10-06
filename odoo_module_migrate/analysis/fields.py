@@ -246,10 +246,11 @@ def _in_subview(node, arch):
     """Whether `node` is in the sub-view of an x2many field (another model).
 
     A <field position="..."> is an anchor of an inherited view, not a field
-    with a sub-view: what is inside belongs to the view model.
+    with a sub-view: what is put after/before it belongs to the view model
+    (position="inside" adds to the field itself: may be its sub-view).
     """
     return any(
-        parent.tag == "field" and parent.get("position") is None
+        parent.tag == "field" and parent.get("position") in (None, "inside")
         for parent in node.iterancestors()
         if parent is not arch and not (parent.tag == "field" and parent.get("name") == "arch")
     )

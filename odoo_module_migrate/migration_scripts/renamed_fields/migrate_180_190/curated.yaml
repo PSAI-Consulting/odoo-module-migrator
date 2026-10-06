@@ -1,0 +1,78 @@
+# Renommages 18.0 -> 19.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
+# Trouvés par tools/extract_changes.py fields --sources (odoo + fork Enterprise), vérifiés
+# en comparant les définitions 18.0 / 19.0 (même type, même comodel / related, ancien nom absent).
+# (account.account.deprecated -> active n'est PAS un renommage : logique inversée, voir removed_fields.)
+# (groups_id -> group_ids : déjà réécrit par text_replaces/migrate_180_190/rename_groups_id.yaml.)
+# odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id' :
+- ["product.supplierinfo", "product_uom", "product_uom_id", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
+- ["project.milestone", "product_uom", "product_uom_id", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
+- ["purchase.report", "product_uom", "product_uom_id", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
+- ["sale.report", "product_uom", "product_uom_id", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
+#   18.0 product_uom = fields.Char(related='product_tmpl_id.uom_name') ; 19.0 product_uom_name (même related)
+- ["product.pricelist.item", "product_uom", "product_uom_name", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
+- ["sale.rental.report", "product_uom", "product_uom_id", "enterprise e98f1bc5433 '[CLN] various: rename product_uom field to product_uom_id'"]
+# enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids' (même One2many)
+- ["sale.subscription.plan", "product_subscription_pricing_ids", "subscription_rule_ids", "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"]
+- ["product.template", "product_subscription_pricing_ids", "subscription_rule_ids", "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"]
+- ["product.product", "product_subscription_pricing_ids", "subscription_rule_ids", "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"]
+- ["calendar.popover.delete.wizard", "record", "calendar_event_id", "odoo 3662b558cfa '[REF] calendar: rename wizard record field'"]
+#
+# Candidats de fields --sources 18 -> 19 vérifiés modèle par modèle (avant / après le commit et en 19.0) :
+# odoo 9d676f246ea '[IMP] calendar(_sms): make notify responsible field general' : option de rappel généralisée (SMS -> tous moyens), même booléen
+- ["calendar.alarm", "sms_notify_responsible", "notify_responsible", "odoo 9d676f246ea '[IMP] calendar(_sms): make notify responsible field general'"]
+# odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports' : même Datetime de validation
+- ["hr.expense", "approved_on", "approval_date", "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"]
+# odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail' : option du module de réservation PdV
+- ["pos.config", "module_pos_restaurant_appointment", "module_pos_appointment", "odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail'"]
+- ["res.config.settings", "pos_module_pos_restaurant_appointment", "pos_module_pos_appointment", "odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail'"]
+# odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com' : module pos_viva_wallet renommé pos_viva_com (apriori.py 19.0)
+- ["pos.payment.method", "viva_wallet_latest_response", "viva_com_latest_response", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]
+- ["pos.payment.method", "viva_wallet_test_mode", "viva_com_test_mode", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]
+- ["res.config.settings", "module_pos_viva_wallet", "module_pos_viva_com", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]
+# odoo c277a5987b1 '[REF] product: move tags fields from website_sale to product' : champ déplacé de website_sale vers product (même booléen)
+- ["product.tag", "visible_on_ecommerce", "visible_to_customers", "odoo c277a5987b1 '[REF] product: move tags fields from website_sale to product'"]
+# odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill' : module l10n_in_edi_ewaybill renommé l10n_in_ewaybill (apriori.py 19.0)
+- ["res.company", "l10n_in_edi_ewaybill_auth_validity", "l10n_in_ewaybill_auth_validity", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]
+- ["res.config.settings", "module_l10n_in_edi_ewaybill", "module_l10n_in_ewaybill", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]
+# odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework' : titre : « renaming fields »
+- ["res.company", "l10n_sa_additional_identification_number", "l10n_sa_edi_additional_identification_number", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]
+- ["res.company", "l10n_sa_additional_identification_scheme", "l10n_sa_edi_additional_identification_scheme", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]
+- ["res.partner", "l10n_sa_additional_identification_number", "l10n_sa_edi_additional_identification_number", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]
+- ["res.partner", "l10n_sa_additional_identification_scheme", "l10n_sa_edi_additional_identification_scheme", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]
+# odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp' : confirmation de livraison par SMS étendue (même booléen)
+- ["res.company", "stock_move_sms_validation", "stock_text_confirmation", "odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp'"]
+- ["res.config.settings", "stock_move_sms_validation", "stock_text_confirmation", "odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp'"]
+# odoo 8cbd8114244 '[FIX] sale_pdf_quote_builder: fix misnaming' : titre : « fix misnaming » (même Many2many)
+- ["sale.order", "available_product_document_ids", "available_quotation_document_ids", "odoo 8cbd8114244 '[FIX] sale_pdf_quote_builder: fix misnaming'"]
+# enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns' : mêmes clés de périodicité (+ fiscalyear), même journal, même jour de rappel
+- ["account.financial.year.op", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- ["account.financial.year.op", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- ["account.financial.year.op", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- ["res.company", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- ["res.company", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- ["res.company", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- ["res.config.settings", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- ["res.config.settings", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- ["res.config.settings", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+# enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model' : hr.contract renommé hr.version (renamed_models 18->19, OpenUpgrade) : contract_id -> version_id
+- ["hr.payroll.edit.payslip.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["hr.payroll.headcount.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["hr.payslip", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["hr.payslip.input", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["hr.payslip.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["hr.payslip.worked_days", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n.be.december.slip.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n.be.dimona.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n.be.double.pay.recovery.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n.in.tds.computation.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n.mx.hr.fonacot", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n.mx.hr.infonavit", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n_au.payroll.finalisation.wizard.emp", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n_au.termination.payment", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n_be.hr.payroll.schedule.change.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["l10n_be.schedule.change.allocation", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["hr.payroll.headcount.line", "contract_names", "version_names", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["hr.payroll.index", "contract_ids", "version_ids", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- ["hr.work.entry.export.employee.mixin", "contract_ids", "version_ids", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+# enterprise fa08eac1419 '[IMP] account_{*}: reconciliation using end to end ID' : même identifiant Char
+- ["account.payment", "end_to_end_id", "end_to_end_uuid", "enterprise fa08eac1419 '[IMP] account_{*}: reconciliation using end to end ID'"]

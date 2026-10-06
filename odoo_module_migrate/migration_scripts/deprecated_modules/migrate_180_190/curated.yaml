@@ -1,0 +1,12 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec des
+# données Enterprise : ne pas le régénérer sans accès à odoo/enterprise).
+#
+# Modules Enterprise marqués « removed » dans modules.yaml alors que le commit les fusionne
+# (fork LBruyere/enterprise, message du commit) :
+# enterprise f0c5b3e34f0 '[MERGE] l10n_be_hr_contract_salary: Merge mobility budget module in the standard belgian module'
+- ["l10n_be_hr_contract_salary_mobility_budget", "merged", "l10n_be_hr_contract_salary"]
+# enterprise d04d2a2739c '[MERGE] l10n_in_reports_gstr: merge spreadsheet', puis l10n_in_reports_gstr
+# fusionné dans l10n_in_reports (a433371c22d, même saut)
+- ["l10n_in_reports_gstr_spreadsheet", "merged", "l10n_in_reports"]
+# enterprise 29acaa3d078 '[REF] l10n_us_hr_payroll: merge l10n_us_hr_payroll_state_calculation'
+- ["l10n_us_hr_payroll_state_calculation", "merged", "l10n_us_hr_payroll"]

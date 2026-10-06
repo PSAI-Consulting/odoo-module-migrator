@@ -110,6 +110,29 @@ def _parse_regex(text, path, result):
             result[model][match[1]] = (match[2], path)
 
 
+CLASS_ATTR_RE = re.compile(
+    r"^\s{4}(?P<attr>_name|_inherit|_inherits)\s*(?::[^=\n]+)?=\s*(?P<value>\{[^}]*\}|\[[^\]]*\]|\([^)]*\)|['\"][\w.]+['\"])",
+    re.M,
+)
+
+
+def _regex_classes(text):
+    """[(name, inherit)] of the classes of a file that ast cannot parse."""
+    result = []
+    for chunk in re.split(r"^class\s+\w+", text, flags=re.M)[1:]:
+        name, inherit = None, []
+        for match in CLASS_ATTR_RE.finditer(chunk):
+            values = re.findall(r"['\"]([\w.]+)['\"]", match["value"])
+            if match["attr"] == "_name":
+                name = values[0] if values else None
+            elif match["attr"] == "_inherits":
+                inherit += values[0::2]  # keys of {"model": "field_id"}
+            else:
+                inherit += values
+        result.append((name, inherit))
+    return result
+
+
 def parse_fields(files):
     """{model: {field: (type, path)}} from Python sources (ast; regex for the
     files the running Python cannot parse, e.g. newer syntax)."""
@@ -131,6 +154,10 @@ def model_parents(files):
         try:
             tree = ast.parse(text)
         except SyntaxError:
+            for name, inherit in _regex_classes(text):
+                model = name or (inherit[0] if inherit else None)
+                if model:
+                    parents[model].update(i for i in inherit if i != model)
             continue
         for cls in ast.walk(tree):
             if not isinstance(cls, ast.ClassDef):
@@ -174,6 +201,9 @@ def target_fields(repos, ref_of):
     return {model: available_fields(model, fields, parents) for model in set(fields) | set(parents)}
 
 
+ADDED_FIELD_RE = re.compile(r"^\+\s+(\w+)\s*=\s*fields\.", re.M)
+
+
 def source_changes(repos, ref_from_of, ref_to_of, models_filter):
     """Removed fields and rename candidates by comparing the sources of all
     the repositories together (a field moved to enterprise is not removed)."""
@@ -191,6 +221,7 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
                 after[model][name] = (ftype, path, repo)
     # a field moved to a parent model / mixin still exists on the model
     parents = model_parents(after_files)
+    added_fields = {}  # (repo, sha): field names added by the commit
     removed, candidates = [], []
     for model, fields in sorted(before.items()):
         if not models_filter(model) or model not in after:
@@ -209,11 +240,10 @@ def source_changes(repos, ref_from_of, ref_to_of, models_filter):
             same_type = [n for n, info in new_fields.items() if info[0] == ftype]
             added_in_commit = []
             if sha and same_type:
-                diff = _git(repo, "show", "--format=", sha).decode("utf-8", "replace")
-                added_in_commit = [
-                    n for n in same_type
-                    if re.search(rf"^\+\s+{re.escape(n)}\s*=\s*fields\.", diff, re.M)
-                ]
+                if (repo, sha) not in added_fields:
+                    diff = _git(repo, "show", "--format=", sha).decode("utf-8", "replace")
+                    added_fields[repo, sha] = set(ADDED_FIELD_RE.findall(diff))
+                added_in_commit = [n for n in same_type if n in added_fields[repo, sha]]
             if len(added_in_commit) == 1:
                 candidates.append((model, name, added_in_commit[0], source))
             else:
@@ -279,6 +309,125 @@ def openupgrade_changes(openupgrade_git, ref, models_filter):
     renamed_model_names = {old for old, _new, _s in renamed_models}
     removed_models = [r for r in removed_models if r[0] not in renamed_model_names]
     return renamed_fields, renamed_models, removed_fields, removed_models
+
+
+MODEL_PATH_RE = re.compile(r"(^|/)(addons|models|wizards?|report)/.*\.py$")
+
+
+def defined_models(files):
+    """{model: path} of the models created (``_name`` different from every
+    ``_inherit``) in the Python sources."""
+    result = {}
+    for path, text in sorted(files.items()):
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            # newer syntax than the running Python (e.g. Odoo 20 with 3.11)
+            for name, inherit in _regex_classes(text):
+                if name and name not in inherit:
+                    result.setdefault(name, path)
+            continue
+        for cls in ast.walk(tree):
+            if not isinstance(cls, ast.ClassDef):
+                continue
+            name, inherit = None, []
+            for stmt in cls.body:
+                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) and stmt.value:
+                    target = stmt.target.id
+                elif (isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+                        and isinstance(stmt.targets[0], ast.Name)):
+                    target = stmt.targets[0].id
+                else:
+                    continue
+                if target == "_name":
+                    name = (_str_values(stmt.value) or [None])[0]
+                elif target == "_inherit":
+                    inherit = _str_values(stmt.value)
+            if name and name not in inherit:
+                result.setdefault(name, path)
+    return result
+
+
+ADDED_NAME_RE = re.compile(r"^\+\s+_name\s*(?::[^=\n]+)?=\s*['\"]([\w.]+)['\"]", re.M)
+
+
+def model_changes(repos, ref_from_of, ref_to_of, models_filter=lambda m: True):
+    """(removed, candidates) models between two branches of all the
+    repositories together (a model moved to another module still exists).
+
+    removed:    [(model, source)]
+    candidates: [(old_model, new_model, source)]: the commit that deletes the
+                model creates exactly one model having half of its fields at
+                least (rename to check by hand)."""
+    before, after = {}, {}
+    fields_before, fields_after = collections.defaultdict(dict), collections.defaultdict(dict)
+    where = {}
+    for repo in repos:
+        files = read_blobs(repo, ref_from_of(repo), MODEL_PATH_RE)
+        for model, path in defined_models(files).items():
+            before.setdefault(model, path)
+            where.setdefault(model, repo)
+        for model, flds in parse_fields(files).items():
+            fields_before[model].update(flds)
+        files = read_blobs(repo, ref_to_of(repo), MODEL_PATH_RE)
+        for model, path in defined_models(files).items():
+            after.setdefault(model, path)
+        for model, flds in parse_fields(files).items():
+            fields_after[model].update(flds)
+    new_models = set(after) - set(before)
+    created = {}  # (repo, sha): models whose _name is added by the commit
+    removed, candidates = [], []
+    for model in sorted(set(before) - set(after)):
+        if not models_filter(model):
+            continue
+        repo, path = where[model], before[model]
+        commit = ""
+        try:
+            commit = _git(
+                repo, "log", "-1", "--format=%h%x09%s",
+                rf"-G_name\s*(:[^=]+)?=\s*['\"]{re.escape(model)}['\"]",
+                f"{ref_from_of(repo)}..{ref_to_of(repo)}", "--", path,
+            ).decode("utf-8", "replace").strip()
+        except subprocess.CalledProcessError:
+            pass
+        sha, _, subject = commit.partition("\t")
+        source = f"{repo.name.removesuffix('.git')} {sha} {subject!r}" if sha else path
+        added = []
+        if sha:
+            if (repo, sha) not in created:
+                diff = _git(repo, "show", "--format=", sha).decode("utf-8", "replace")
+                created[repo, sha] = set(ADDED_NAME_RE.findall(diff))
+            old_fields = set(fields_before.get(model, ()))
+            for new in sorted(new_models & created[repo, sha]):
+                common = old_fields & set(fields_after.get(new, ()))
+                if old_fields and len(common) * 2 >= len(old_fields):
+                    added.append(new)
+        if len(added) == 1:
+            candidates.append((model, added[0], source))
+        else:
+            removed.append((model, source))
+    return removed, candidates
+
+
+def merge_changes(openupgrade, sources):
+    """Merge (renamed, removed) of OpenUpgrade with (renamed, removed,
+    candidates) of the sources, OpenUpgrade first, without duplicates.
+
+    A field renamed by one source is neither removed nor a candidate; a
+    candidate is not removed (it stays reported as candidate)."""
+    ou_renamed, ou_removed = openupgrade
+    src_renamed, src_removed, src_candidates = sources
+    renamed = dedupe(list(ou_renamed) + list(src_renamed), lambda r: (r[0], r[1]))
+    renamed_keys = {(r[0], r[1]) for r in renamed}
+    candidates = dedupe(
+        [c for c in src_candidates if (c[0], c[1]) not in renamed_keys], lambda r: (r[0], r[1])
+    )
+    skip = renamed_keys | {(c[0], c[1]) for c in candidates}
+    removed = dedupe(
+        [r for r in list(ou_removed) + list(src_removed) if (r[0], r[1]) not in skip],
+        lambda r: (r[0], r[1]),
+    )
+    return renamed, removed, candidates
 
 
 def dedupe(rows, key):

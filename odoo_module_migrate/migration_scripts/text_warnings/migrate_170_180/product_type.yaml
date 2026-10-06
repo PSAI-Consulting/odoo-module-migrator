@@ -1,0 +1,9 @@
+# Type de produit « product » supprimé en 18.0 (odoo 728d9f83f6d '[REF] stock: remove product type') :
+# 18.0 addons/product/models/product_template.py type = [consu, service, combo] et
+# addons/stock : is_storable = fields.Boolean() (les tests d'Odoo 18 écrivent 'is_storable': True).
+# Formes non traitées par python_scripts/migrate_170_180/product_storable.py (modèle inconnu :
+# signalé, pas remplacé). Repéré par tools/ground_truth.py (tests OCA 17 -> 18).
+.py:
+  '[''"](?:detailed_)?type[''"]\s*:\s*[''"]product[''"]': "[18] Product type 'product' was removed: use 'type': 'consu' with 'is_storable': True (odoo 728d9f83f6d)"
+.xml:
+  '<field\s+name=[''"](?:detailed_)?type[''"]\s*>\s*product\s*</field>': "[18] Product type 'product' was removed: use type consu and <field name=\"is_storable\" eval=\"True\"/> (odoo 728d9f83f6d)"

@@ -2,3 +2,91 @@
 # Do not edit: write corrections in another file of this folder.
 # Rename CANDIDATES found in the sources (field removed in the commit
 # that adds a field of the same type): check them, then uncomment.
+# - ["account.account", "l10n_au_kp_account_identifier", "employment_hero_account_identifier", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["account.account", "l10n_au_kp_enable", "employment_hero_enable", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["account.analytic.account", "crossovered_budget_line", "budget_line_ids", "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.asset", "l10n_in_fiscal_code", "country_code", "enterprise 83fca11a8ae '[IMP] account_asset,l10n_(in_asset,ro_saft): add company fiscal country'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.batch.payment", "sct_batch_booking", "iso20022_batch_booking", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]  # oui : curated.yaml
+# - ["account.batch.payment", "sct_generic", "iso20022_batch_booking", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.move", "l10n_au_kp_payrun_identifier", "employment_hero_payrun_identifier", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["account.move", "l10n_in_pos_session_ids", "pos_session_ids", "odoo 3813b09321c '[FIX] account: preserve Label for Payment Term Journal Items'"]  # oui : curated.yaml
+# - ["account.move", "made_sequence_hole", "made_sequence_gap", "odoo dcba5edf315 '[IMP] account: store if a move made a gap'"]  # non : calcul différent (premier mouvement qui casse la séquence, stocké)
+# - ["account.move", "preferred_payment_method_id", "preferred_payment_method_line_id", "odoo cdd15963a51 '[IMP] account, account_check_printing: Partner Payment Method'"]  # non : comodel différent (account.payment.method -> account.payment.method.line)
+# - ["account.move", "to_check", "checked", "odoo 242e1a04fc9 '[IMP] *: invert the logic of to check'"]  # non : logique inversée (checked == not to_check)
+# - ["account.payment", "l10n_latam_check_bank_id", "company_id", "odoo 9ef304be394 '[IMP] l10n_latam_checks: Pay with Multiples checks'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.payment", "l10n_latam_check_current_journal_id", "company_id", "odoo 9ef304be394 '[IMP] l10n_latam_checks: Pay with Multiples checks'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.payment", "l10n_latam_check_id", "company_id", "odoo 9ef304be394 '[IMP] l10n_latam_checks: Pay with Multiples checks'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.payment", "l10n_latam_check_issuer_vat", "name", "odoo 9ef304be394 '[IMP] l10n_latam_checks: Pay with Multiples checks'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.payment", "l10n_latam_check_number", "name", "odoo 9ef304be394 '[IMP] l10n_latam_checks: Pay with Multiples checks'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.payment", "l10n_latam_check_operation_ids", "l10n_latam_new_check_ids", "odoo 9ef304be394 '[IMP] l10n_latam_checks: Pay with Multiples checks'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.payment", "sepa_uetr", "iso20022_uetr", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.report", "footnotes_ids", "annotations_ids", "enterprise 11ebeb00c76 '[IMP] account_reports: Annotalypse'"]  # non : comodel différent (account.report.annotation)
+# - ["account.report.file.download.error.wizard", "file_generation_errors", "actionable_errors", "enterprise 855eb649126 '[IMP] account_reports: file_generation_error -> ActionableErrors'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["account.tax", "l10n_au_kp_enable", "employment_hero_enable", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["account.tax", "l10n_au_kp_tax_identifier", "employment_hero_tax_identifier", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["account.tax", "python_applicable", "formula", "odoo 53631898426 '[IMP] account_tax_python: Make python taxes working in JS for POS'"]  # non : syntaxe changée (formula)
+# - ["account.tax", "python_compute", "formula", "odoo 53631898426 '[IMP] account_tax_python: Make python taxes working in JS for POS'"]  # non : syntaxe changée (formula)
+# - ["hr.applicant", "applicant_skill_ids", "candidate_skill_ids", "odoo 75b385bae03 '[IMP] hr_recruitment: Introduce hr.candidate model'"]  # non : comodel différent (hr.candidate.skill)
+# - ["hr.applicant", "application_count", "other_applications_count", "odoo 75b385bae03 '[IMP] hr_recruitment: Introduce hr.candidate model'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.contract", "l10n_ae_number_of_days", "l10n_ae_number_of_leave_days", "enterprise 8973d4c773f '[IMP] l10n_ae_hr_payroll: Add additional rules and logic to structure'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.contract", "l10n_au_withholding_variation", "l10n_au_eligible_for_leave_loading", "enterprise ed9e7ef5881 '[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.contract", "l10n_au_withholding_variation_amount", "l10n_au_workplace_giving_employer", "enterprise ed9e7ef5881 '[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.contract.salary.benefit", "hide_description", "always_show_description", "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.contract.salary.benefit", "impacts_net_salary", "always_show_description", "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.contract.salary.benefit.value", "hide_description", "always_show_description", "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.employee", "applicant_id", "candidate_id", "odoo 75b385bae03 '[IMP] hr_recruitment: Introduce hr.candidate model'"]  # non : comodel différent (hr.candidate)
+# - ["hr.employee", "l10n_lu_tax_card_number", "l10n_lu_tax_id_number", "enterprise 256f551ae06 '[IMP] l10n_lu_hr_payroll: fix and improve Luxembourg loca'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.employee", "l10n_lu_travel_expense", "l10n_lu_tax_rate_no_classification", "enterprise 256f551ae06 '[IMP] l10n_lu_hr_payroll: fix and improve Luxembourg loca'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.employee.base", "name_work_location_display", "work_location_name", "odoo 7ccf39a0f2b '[IMP] mail,*: employee card from member list'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.payslip", "sepa_export", "payment_report", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]  # oui : curated.yaml
+# - ["hr.payslip", "sepa_export_date", "payment_report_date", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]  # oui : curated.yaml
+# - ["hr.payslip", "sepa_export_filename", "payment_report_filename", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]  # oui : curated.yaml
+# - ["hr.payslip", "sepa_uetr", "iso20022_uetr", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["hr.payslip.run", "sepa_export", "payment_report", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]  # oui : curated.yaml
+# - ["hr.payslip.run", "sepa_export_date", "payment_report_date", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]  # oui : curated.yaml
+# - ["hr.payslip.run", "sepa_export_filename", "payment_report_filename", "enterprise c40d486c722 '[IMP] hr_payroll*: uniformize payment report for payroll'"]  # oui : curated.yaml
+# - ["hr.salary.attachment", "deduction_type_id", "other_input_type_id", "enterprise 206f715b75b '[IMP] hr_payroll: Remove hr.salary.attachment.type model'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["mail.message", "show_audit_log", "account_audit_log_activated", "odoo af4384fc634 '[REF] account_audit_trail: slightly cleanup audit trail field usage'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["mrp.eco", "mrp_document_count", "document_count", "enterprise ec6b4717f49 '[IMP] mrp_plm: mrp document refactor'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["mrp.eco", "mrp_document_ids", "document_ids", "enterprise ec6b4717f49 '[IMP] mrp_plm: mrp document refactor'"]  # non : comodel différent (mrp.document -> product.document)
+# - ["mrp.production.schedule", "sequence", "mps_sequence", "enterprise becf2cb9fbb '[REF] mrp_mps: sequence and indirect demand'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["pos.config", "iface_customer_facing_display_background_image_1920", "customer_display_bg_img", "odoo acf78c27b12 '[ADD] pos_customer_display: create standalone app'"]  # oui : curated.yaml
+# - ["pos.session", "total_base_of_measure_tax_a", "correction_amount", "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["pos.session", "total_base_of_measure_tax_b", "correction_amount", "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["pos.session", "total_base_of_measure_tax_c", "correction_amount", "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["pos.session", "total_base_of_measure_tax_d", "correction_amount", "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["product.product", "ribbon_id", "variant_ribbon_id", "odoo 72af57f11c1 '[FIX] mrp: typo # Read Work Orders -> # Ready Work Orders'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["product.template", "description_self_order", "public_description", "odoo 9b1908eb989 '[IMP] point_of_sale,*: add sound and update field'"]  # oui : curated.yaml
+# - ["project.project", "shared_document_ids", "document_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["project.project", "total_planned_amount", "total_budget_amount", "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["project.project", "total_practical_amount", "total_budget_amount", "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.company", "account_journal_payment_credit_account_id", "expense_outstanding_account_id", "odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.company", "account_journal_payment_debit_account_id", "expense_outstanding_account_id", "odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.company", "l10n_au_kp_enable", "employment_hero_enable", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["res.company", "l10n_au_kp_journal_id", "employment_hero_journal_id", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["res.company", "l10n_au_kp_lock_date", "employment_hero_lock_date", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["res.company", "l10n_es_edi_facturae_certificate_id", "l10n_es_edi_facturae_certificate_ids", "odoo 78e43c0b3f0 '[ADD] certificate: Add a way to manage certificates and keys'"]  # non : comodel différent (certificate.certificate)
+# - ["res.company", "l10n_es_edi_tax_agency", "l10n_es_sii_tax_agency", "odoo 5c0d0f505dd '[IMP] l10n_es_edi_tbai: remove dependency to account_edi'"]  # oui : curated.yaml
+# - ["res.company", "product_tags", "product_tag_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]  # oui : curated.yaml
+# - ["res.company", "rule_type", "intercompany_document_state", "enterprise 6324a6bab04 '[IMP] {account,sale_purchase)_inter_company_rules: usability improvement'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.config.settings", "account_journal_payment_credit_account_id", "expense_outstanding_account_id", "odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.config.settings", "account_journal_payment_debit_account_id", "expense_outstanding_account_id", "odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.config.settings", "l10n_au_kp_enable", "employment_hero_enable", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["res.config.settings", "l10n_au_kp_journal_id", "employment_hero_journal_id", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["res.config.settings", "l10n_au_kp_lock_date", "employment_hero_lock_date", "enterprise 4edf846347d '[REF] l10n_au_keypay: remove au dependency'"]  # oui : curated.yaml
+# - ["res.config.settings", "l10n_es_edi_tax_agency", "l10n_es_sii_tax_agency", "odoo 5c0d0f505dd '[IMP] l10n_es_edi_tbai: remove dependency to account_edi'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_account_sepa", "module_account_iso20022", "odoo 087b3ed433c '[REF] account_sepa: rename module to account_iso20022'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_hr_payroll_account_sepa", "module_hr_payroll_account_iso20022", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]  # oui : curated.yaml
+# - ["res.config.settings", "module_website_sale_picking", "module_website_sale_collect", "odoo 087c48c4ed2 '[IMP] delivery, website_sale{_collect}, *: add Click & Collect'"]  # oui : curated.yaml
+# - ["res.config.settings", "pos_iface_customer_facing_display_background_image_1920", "pos_customer_display_bg_img", "odoo acf78c27b12 '[ADD] pos_customer_display: create standalone app'"]  # oui : curated.yaml
+# - ["res.config.settings", "pos_l10n_es_simplified_invoice_limit", "l10n_es_simplified_invoice_limit", "odoo 46096344cbb '[IMP] l10n_es*: enable pos orders to be sent to TBAI'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.config.settings", "product_tags", "product_tag_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]  # oui : curated.yaml
+# - ["res.config.settings", "rule_type", "intercompany_document_state", "enterprise 6324a6bab04 '[IMP] {account,sale_purchase)_inter_company_rules: usability improvement'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.partner", "account_peppol_verification_label", "peppol_verification_state", "odoo 8b8bc0724f7 '[IMP] account_peppol: refactor partner verification'"]  # oui : curated.yaml
+# - ["res.partner", "account_sepa_lei", "iso20022_lei", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["res.partner", "l10n_mx_edi_addenda", "l10n_mx_edi_addenda_id", "enterprise 6e54457bf94 '[REF] l10n_mx_edi: addenda'"]  # non : comodel différent (ir.ui.view -> l10n_mx_edi.addenda)
+# - ["sale.order", "access_point_address", "pickup_location_data", "odoo 6a28ecf201a '[IMP] delivery: add a new location selector for pickup points'"]  # non : non confirmé (sens ou présence en 18.0 différents)
+# - ["sale.order", "analytic_account_id", "project_account_id", "odoo 238a41e3528 '[IMP] project,sale,purchase,stock,mrp: analytic plans on projects'"]  # non : plans analytiques sur les projets (comodel / sens différent)
+# - ["sale.order.line", "option_line_ids", "linked_line_ids", "odoo 545d5875987 '[MOV] sale,website_sale: move linked line logic to sale'"]  # oui : curated.yaml
+# - ["sale.rental.schedule", "analytic_account_id", "project_id", "enterprise c2648d6ff4a '[IMP] industry_fsm,sale_renting,sale_subscription: analytic plans on projects'"]  # non : plans analytiques sur les projets (comodel / sens différent)
+# - ["sale.report", "analytic_account_id", "project_id", "odoo 238a41e3528 '[IMP] project,sale,purchase,stock,mrp: analytic plans on projects'"]  # non : plans analytiques sur les projets (comodel / sens différent)

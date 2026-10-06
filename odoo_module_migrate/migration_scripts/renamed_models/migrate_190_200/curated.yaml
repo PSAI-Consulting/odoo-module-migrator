@@ -1,0 +1,12 @@
+# Modèles renommés 19.0 -> 20.0 vérifiés à la main (candidates.yaml, sortie de
+# tools/extract_changes.py models). Renommage automatique ('ancien' -> 'nouveau',
+# model_ancien -> model_nouveau) seulement quand le modèle reste dans le même module
+# (le préfixe de module des xmlids ne change pas) et que le commit annonce le renommage.
+# Format : [ancien_modèle, nouveau_modèle, source]
+# odoo 6057e25f8c1 : « we renamed the field Contract Type to Employee Type » ; module hr,
+# champs name, code, sequence, country_id repris (hr_contract_type.py -> hr_employee_type.py)
+- ["hr.contract.type", "hr.employee.type", "odoo 6057e25f8c1 '[IMP] hr: Remove employee_type and use contract_type_id'"]
+# Enterprise (fork LBruyere/enterprise), même module, titre explicite :
+- ["hr.payroll.dashboard.warning", "hr.payroll.warning", "enterprise 0cf9abad259 '[IMP] hr_payroll: renamed `hr.payroll.dashboard.warning` to `hr.payroll.warning`'"]
+- ["voip.country.code.mixin", "voip.phone.country.mixin", "enterprise 8d5d31abeba '[CLN] voip: rename voip.country.code.mixin to voip.phone.country.mixin'"]
+- ["ai.topic", "ai.skill", "enterprise f9e2f8cec44 '[REF] ai, ai_app, *: rename topics to skills'"]

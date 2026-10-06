@@ -8,3 +8,141 @@
 - ["res.partner.bank", "acc_number", "account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
 - ["res.partner.bank", "sanitized_acc_number", "sanitized_account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
 - ["res.partner.bank", "acc_holder_name", "holder_name", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
+#
+# Candidats de candidates.yaml (et autres modèles des mêmes commits) vérifiés à la
+# main : git show <sha>, champs parsés avant / après le commit et dans la branche
+# 20.0 (ancien nom absent, nouveau présent, même type / comodel).
+# odoo 3852885f37aa '[IMP] uom: rename logistic fields' : message : « we decided to only keep uom_id as the only name for basic uom fields » ; Many2one uom.uom inchangé
+- ["mrp.bom", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["mrp.bom.byproduct", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["mrp.bom.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["mrp.consumption.warning.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["mrp.production", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["mrp.production.split", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["mrp.unbuild", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["mrp.workcenter.capacity", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["mrp.workorder", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["product.replenish", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["product.supplierinfo", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["purchase.order.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["purchase.report", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["purchase.requisition.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["repair.order", "product_uom", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["stock.lot", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["stock.move", "product_uom", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["stock.move.line", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["stock.quant", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["stock.storage.category.capacity", "product_uom_id", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+- ["stock.warehouse.orderpoint", "product_uom", "uom_id", "odoo 3852885f37aa '[IMP] uom: rename logistic fields'"]
+# odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location' : renommage annoncé par le titre ; Many2one stock.location inchangé
+- ["stock.move", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]
+- ["mrp.production", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]
+- ["purchase.order.line", "location_final_id", "forecasted_location_id", "odoo 2f2ae5e7b7d7 '[REF] stock: rename final location to forecasted location'"]
+# odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management' : hr.leave.type fusionné dans hr.work.entry.type (hr_holidays/models/hr_leave_type.py -> hr_work_entry_type.py, _inherit hr.work.entry.type, 29 champs sur 35 repris) ; même libellé « Time Off Type »
+- ["hr.leave", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave.allocation", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave.allocation.generate.multi.wizard", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave.generate.multi.wizard", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave.report", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave.report.calendar", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave.employee.report", "holiday_status_id", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave.employee.type.report", "leave_type", "work_entry_type_id", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave", "leave_type_increases_duration", "work_entry_type_increases_duration", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.leave.attendance.report", "leave_type_names", "work_entry_type_names", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["res.company", "l10n_fr_reference_leave_type", "l10n_fr_reference_work_entry_type", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["res.config.settings", "l10n_fr_reference_leave_type", "l10n_fr_reference_work_entry_type", "odoo d37cf89a6ff1 '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+# odoo 6057e25f8c12 '[IMP] hr: Remove employee_type and use contract_type_id' : message : « we renamed the field Contract Type to Employee Type » ; modèle hr.contract.type renommé hr.employee.type (mêmes champs name, code, sequence, country_id)
+- ["hr.employee", "contract_type_id", "employee_type_id", "odoo 6057e25f8c12 '[IMP] hr: Remove employee_type and use contract_type_id'"]
+- ["hr.job", "contract_type_id", "employee_type_id", "odoo 6057e25f8c12 '[IMP] hr: Remove employee_type and use contract_type_id'"]
+- ["hr.version", "contract_type_id", "employee_type_id", "odoo 6057e25f8c12 '[IMP] hr: Remove employee_type and use contract_type_id'"]
+# odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts' : même renommage que res.partner.bank.acc_number ; acc_type : mêmes clés de sélection (bank, iban...)
+- ["hr.bank.account.allocation.wizard.line", "acc_number", "account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
+- ["res.partner.bank", "acc_type", "account_type", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
+# odoo 7424f0da5137 '[IMP] mail,*: use Bookmark as the string for starred' : même calcul / recherche, libellé Starred -> Bookmarked ; Many2many res.partner
+- ["mail.message", "starred", "is_bookmarked", "odoo 7424f0da5137 '[IMP] mail,*: use Bookmark as the string for starred'"]
+- ["mail.message", "starred_partner_ids", "bookmarked_partner_ids", "odoo 7424f0da5137 '[IMP] mail,*: use Bookmark as the string for starred'"]
+# odoo 8a5b99545dfa '[CLN] (*_,)sale(,_*): rename `expense_policy` field to `reinvoice_policy`' : suite du renommage expense_policy -> reinvoice_policy (generated.yaml)
+- ["product.template", "visible_expense_policy", "visible_reinvoice_policy", "odoo 8a5b99545dfa '[CLN] (*_,)sale(,_*): rename `expense_policy` field to `reinvoice_policy`'"]
+# odoo cd6325d7476b '[IMP] sale, _*: add Services & Materials upselling view' : Many2one account.move « Invoice », déplacé de sale_timesheet vers sale
+- ["account.analytic.line", "timesheet_invoice_id", "reinvoice_move_id", "odoo cd6325d7476b '[IMP] sale, _*: add Services & Materials upselling view'"]
+- ["timesheets.analysis.report", "timesheet_invoice_id", "reinvoice_move_id", "odoo cd6325d7476b '[IMP] sale, _*: add Services & Materials upselling view'"]
+# odoo 343e0b7a4b9a '[IMP] hr_holidays: track time off balance in both days and hours' : renommage pur : même calcul et même inverse
+- ["hr.leave.allocation", "number_of_hours_display", "number_of_hours", "odoo 343e0b7a4b9a '[IMP] hr_holidays: track time off balance in both days and hours'"]
+# odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay' : même booléen (défaut True), étendu aux paiements par QR code
+- ["pos.config", "auto_validate_terminal_payment", "auto_validate_electronic_payment", "odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay'"]
+- ["res.config.settings", "pos_auto_validate_terminal_payment", "pos_auto_validate_electronic_payment", "odoo d7a627160372 '[ADD] pos_bancontact_pay: support QR code payments via Bancontact Pay'"]
+# odoo b1f17b6e6119 '[REF] point_of_sale, pos_*: receipt printer refactor' : même champ (libellé « Epson Printer IP Address » inchangé)
+- ["pos.printer", "epson_printer_ip", "printer_ip", "odoo b1f17b6e6119 '[REF] point_of_sale, pos_*: receipt printer refactor'"]
+# odoo ab3f0be23f5f '[REF] pos_loyalty, pos_*_loyalty: complete refactor of loyalty for pos' : Many2one loyalty.card, ondelete restrict, libellé Coupon -> Card
+- ["pos.order.line", "coupon_id", "card_id", "odoo ab3f0be23f5f '[REF] pos_loyalty, pos_*_loyalty: complete refactor of loyalty for pos'"]
+# odoo 0f477b2a47e5 '[IMP] website_sale: Adding followup via whatsapp for abandoned cart' : même booléen, relance étendue à WhatsApp
+- ["website", "send_abandoned_cart_email", "send_abandoned_cart_followup", "odoo 0f477b2a47e5 '[IMP] website_sale: Adding followup via whatsapp for abandoned cart'"]
+- ["res.config.settings", "send_abandoned_cart_email", "send_abandoned_cart_followup", "odoo 0f477b2a47e5 '[IMP] website_sale: Adding followup via whatsapp for abandoned cart'"]
+# odoo f70bd6edb04d '[IMP] website, *:  Prevent sales of product with category-based filter or zero-price' : URL du bouton « Contact us » (défaut /contactus)
+- ["website", "contact_us_button_url", "contact_us_link_url", "odoo f70bd6edb04d '[IMP] website, *:  Prevent sales of product with category-based filter or zero-price'"]
+- ["res.config.settings", "website_sale_contact_us_button_url", "contact_us_link_url", "odoo f70bd6edb04d '[IMP] website, *:  Prevent sales of product with category-based filter or zero-price'"]
+# odoo 7dda80b2aaa6 '[IMP] l10n_account_withholding_tax: add withholding on bills' : même booléen, étendu aux factures fournisseur
+- ["account.tax", "is_withholding_tax_on_payment", "is_withholding_tax", "odoo 7dda80b2aaa6 '[IMP] l10n_account_withholding_tax: add withholding on bills'"]
+# odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax' : même sélection (earnings, earnings_scale, iibb_untaxed, iibb_total)
+- ["account.tax", "l10n_ar_tax_type", "l10n_ar_withholding_tax_type", "odoo 758f521775cf '[REF] l10n_ar_withholding,*: depend on generic l10n_account_withholding_tax'"]
+# odoo 8aa9bfe16708 '[REF] *_fleet: merge plan_to_change car and bike into a same field' : deux booléens (voiture / vélo) fusionnés en un seul, même sens
+- ["fleet.vehicle", "plan_to_change_bike", "plan_to_change_vehicle", "odoo 8aa9bfe16708 '[REF] *_fleet: merge plan_to_change car and bike into a same field'"]
+- ["fleet.vehicle", "plan_to_change_car", "plan_to_change_vehicle", "odoo 8aa9bfe16708 '[REF] *_fleet: merge plan_to_change car and bike into a same field'"]
+# odoo 50b8bf4655b7 '[IMP] stock_account: remove is_valued_external' : même libellé « Is valued inside the company », même calcul et même recherche
+- ["stock.location", "is_valued_internal", "is_valued", "odoo 50b8bf4655b7 '[IMP] stock_account: remove is_valued_external'"]
+# odoo 2f03c9c3a78f '[IMP] l10n_vn_edi_viettel: flow improvements' : même comodel l10n_vn_edi_viettel.sinvoice.symbol (symbole par défaut)
+- ["res.config.settings", "l10n_vn_edi_default_symbol", "l10n_vn_edi_default_symbol_id", "odoo 2f03c9c3a78f '[IMP] l10n_vn_edi_viettel: flow improvements'"]
+# odoo cb719a7fbf9a '[FIX] hr,hr_attendance: company-specific attendance setting and reliable module installation' : module_hr_attendance était déjà related='company_id.hr_presence_control_attendance'
+- ["res.config.settings", "module_hr_attendance", "hr_presence_control_attendance", "odoo cb719a7fbf9a '[FIX] hr,hr_attendance: company-specific attendance setting and reliable module installation'"]
+# odoo 78b5ef88fb02 '[IMP] stock,*: move picking batch into stock' : stock_picking_batch fusionné dans stock : l'option devient un groupe (même libellé)
+- ["res.config.settings", "module_stock_picking_batch", "group_stock_picking_batch", "odoo 78b5ef88fb02 '[IMP] stock,*: move picking batch into stock'"]
+# odoo a2814d3f71fc '[REF] website_address_autocomplete: decouple autocomplete from eCommerce' : module website_sale_autocomplete renommé website_address_autocomplete
+- ["res.config.settings", "module_website_sale_autocomplete", "module_website_address_autocomplete", "odoo a2814d3f71fc '[REF] website_address_autocomplete: decouple autocomplete from eCommerce'"]
+#
+# Candidats Enterprise (fork LBruyere/enterprise, branches 19.0 / 20.0) vérifiés de la même façon :
+# enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules' : l10n_co_dian fusionné dans l10n_co_edi : mêmes champs préfixés l10n_co_edi_ (modèle l10n_co_dian.document -> l10n_co_edi.document)
+- ["account.journal", "l10n_co_dian_technical_key", "l10n_co_edi_technical_key", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["account.move", "l10n_co_dian_attachment_id", "l10n_co_edi_attachment_id", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["account.move", "l10n_co_dian_document_ids", "l10n_co_edi_document_ids", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["account.move", "l10n_co_dian_post_time", "l10n_co_edi_post_time", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["product.template", "l10n_co_dian_mandate_contract", "l10n_co_edi_mandate_contract", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+- ["res.partner", "l10n_co_dian_enable_update_data", "l10n_co_edi_enable_update_data", "enterprise 59e13fad4a5 '[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules'"]
+# enterprise 2fd3d96faae '[IMP] account_accountant: generalize end_to_end_uuid' : identifiant de transaction généralisé (Char), vérifié sur account.bank.statement.line seulement
+- ["account.bank.statement.line", "end_to_end_uuid", "transaction_uuid", "enterprise 2fd3d96faae '[IMP] account_accountant: generalize end_to_end_uuid'"]
+# enterprise 620d857d960 '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs' : partie Enterprise du renommage hr.contract.type -> hr.employee.type (odoo 6057e25f8c12)
+- ["esg.employee.report", "contract_type_id", "employee_type_id", "enterprise 620d857d960 '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs'"]
+- ["hr.contract.salary.offer", "contract_type_id", "employee_type_id", "enterprise 620d857d960 '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs'"]
+# enterprise a78e85496fb '[IMP] *: Improve UX of bank accounts' : partie Enterprise de acc_number -> account_number (odoo 113d77eb35aa)
+- ["account.return.payment.wizard", "acc_number", "account_number", "enterprise a78e85496fb '[IMP] *: Improve UX of bank accounts'"]
+# enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management' : codes employé des prestataires de paie (un seul module installé à la fois) regroupés dans hr.employee.external_code ; hr.leave.type fusionné dans hr.work.entry.type
+- ["hr.employee", "group_s_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "prisma_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "partena_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "sdworx_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "ucm_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "l10n_it_sdworx_code", "external_code", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.employee", "l10n_au_leave_loading_leave_types", "l10n_au_leave_loading_work_entry_types", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+- ["hr.version", "l10n_au_leave_loading_leave_types", "l10n_au_leave_loading_work_entry_types", "enterprise 8e1f2dece4b '[IMP] hr_work_entry: Refactor work entries / time off management'"]
+# enterprise fe8800e8214 '[IMP] l10n_sa_hr_payroll: 30-day pay schedule' : même related version_id.schedule_pay, déplacé dans hr_payroll
+- ["hr.payslip", "l10n_au_schedule_pay", "schedule_pay", "enterprise fe8800e8214 '[IMP] l10n_sa_hr_payroll: 30-day pay schedule'"]
+# enterprise 05188bb3d17 '[IMP] uom: rename logistic fields' : partie Enterprise de '[IMP] uom: rename logistic fields'
+- ["mrp.production.schedule", "product_uom_id", "uom_id", "enterprise 05188bb3d17 '[IMP] uom: rename logistic fields'"]
+# enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise' : même Many2many iot.device (scanners)
+- ["pos.config", "iface_scanner_ids", "iot_scanner_ids", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
+- ["res.config.settings", "pos_iface_scanner_ids", "pos_iot_scanner_ids", "enterprise 461f4df2bda '[REF] pos_iot: move IoT Box in PoS logic to enterprise'"]
+# enterprise 6a8c6d4e3a0 '[REF] l10n_se_pos: use iot http for fdm se' : même Many2one iot.device (fiscal data module)
+- ["pos.config", "iface_sweden_fiscal_data_module", "iot_fdm_se_id", "enterprise 6a8c6d4e3a0 '[REF] l10n_se_pos: use iot http for fdm se'"]
+- ["res.config.settings", "pos_iface_sweden_fiscal_data_module", "pos_iot_fdm_se_id", "enterprise 6a8c6d4e3a0 '[REF] l10n_se_pos: use iot http for fdm se'"]
+# enterprise 163154e54ef '[REF] account_accountant: settings from stock_accountant' : même related company_id.account_stock_journal_id
+- ["res.config.settings", "stock_journal", "stock_journal_id", "enterprise 163154e54ef '[REF] account_accountant: settings from stock_accountant'"]
+# enterprise ea597380a45 '[REF] equity: use birthday instead of ubo_birth_date' : titre : « use birthday instead of ubo_birth_date »
+- ["res.partner", "ubo_birth_date", "birth_date", "enterprise ea597380a45 '[REF] equity: use birthday instead of ubo_birth_date'"]
+# enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`' : même related iot_device_id.identifier
+- ["stock.put.in.pack", "iot_device_identifier", "device_identifier", "enterprise 85e792a2920 '[REF] iot,delivery_iot: remove `device_controller`'"]
+#
+# Renommage sans commit retrouvé (historique) : vérifié dans les fichiers 19.0 / 20.0.
+# 19.0 addons/l10n_ph/models/res_partner.py  branch_code = fields.Char(..., compute='_compute_branch_code', store=True)
+# 20.0 addons/l10n_ph/models/res_partner.py  l10n_ph_branch_code = fields.Char(..., compute='_compute_branch_code') ;
+#      res_company.py  l10n_ph_branch_code = fields.Char(related='partner_id.l10n_ph_branch_code') ; branch_code absent
+- ["res.partner", "branch_code", "l10n_ph_branch_code", "odoo 20.0 addons/l10n_ph/models/res_partner.py"]
+- ["res.company", "branch_code", "l10n_ph_branch_code", "odoo 20.0 addons/l10n_ph/models/res_company.py"]

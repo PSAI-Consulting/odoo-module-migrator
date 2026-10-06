@@ -11,3 +11,17 @@
   '\bodoo\.tools\.populate\b|\b_populate_factories\b': "[20] odoo.tools.populate was removed"
   '\bfrom odoo\.tools\.query import|\bodoo\.tools\.query\b': "[20] odoo.tools.query was moved to odoo.orm.query"
   '\bfrom odoo\.service\.(?:db|security) import|\bodoo\.service\.(?:db|security)\b': "[20] odoo.service.db / odoo.service.security were removed"
+  # odoo 0915e817f41 '[REM] orm: old check access methods' ; en 19.0 check_access_rights(op) valait
+  # self.browse().check_access(op), et avec raise_exception=False self.browse().has_access(op)
+  '\.check_access_rights\(': "[20] check_access_rights() was removed: use self.browse().check_access(op), or self.browse().has_access(op) for raise_exception=False"
+  # odoo 080bbf6153a '[IMP] orm: remove stuff deprecated since Odoo 19' (messages de dépréciation 19.0)
+  '\bcreate_unique_index\(': "[20] create_unique_index() was removed: use create_index(..., unique=True)"
+  '\.split_for_in_conditions\(': "[20] cr.split_for_in_conditions() was removed: use split_every(cr.IN_MAX, ids)"
+  '\bcheck_method_name\(': "[20] check_method_name() was removed: use odoo.service.model.get_public_method"
+  '\bfrom odoo\.(?:tools(?:\.misc)?|loglevels) import [^\n]*\b(?:ustr|get_encodings)\b|\btools\.ustr\(': "[20] ustr() / get_encodings() were removed: use str() / bytes.decode()"
+  '\bfrom odoo\.tools(?:\.misc)? import [^\n]*\bflatten\b|\btools\.flatten\(': "[20] tools.flatten() was removed (deprecated since 18.0)"
+  '\b(?:load_manifest|get_modules_with_version)\(': "[20] load_manifest() / get_modules_with_version() were removed: use odoo.modules.Manifest (Manifest.for_addon / all_addon_manifests)"
+  '\.manage_changes\(': "[20] manage_changes() was removed: use registry.signal_changes() and registry.reset_changes()"
+  '\bfrom odoo\.tests\.common import [^\n]*\bForm\b': "[20] odoo.tests.common.Form was removed: import Form from odoo.tests"
+  # odoo f371db62cc4 '[REF] core: remove pg_varchar()'
+  '\bpg_varchar\(': "[20] tools.sql.pg_varchar() was removed: write the SQL type ('VARCHAR' / 'VARCHAR(n)')"

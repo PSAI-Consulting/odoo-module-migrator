@@ -4,3 +4,19 @@
   #     return not self._has_cycle(parent)      (supprimé en 20.0)
   '\bnot\s+self\._check_(?:m2m_)?recursion\(': 'self._has_cycle('
   '\bself\._check_(?:m2m_)?recursion\(': 'not self._has_cycle('
+  # odoo 0915e817f41 '[REM] orm: old check access methods' ; en 19.0 (odoo/orm/models.py) :
+  #     def _filter_access_rules(self, operation): return self._filtered_access(operation)
+  #     def _filter_access_rules_python(self, operation): return self._filtered_access(operation)
+  #     def check_access_rule(self, operation): self.check_access(operation)
+  '\._filter_access_rules(?:_python)?\(': '._filtered_access('
+  '\.check_access_rule\(': '.check_access('
+  # odoo 080bbf6153a '[IMP] orm: remove stuff deprecated since Odoo 19' ; en 19.0 (odoo/orm/fields.py) :
+  #     attrs['aggregator'] = attrs.pop('group_operator')   (même règle qu'en 17→18)
+  '\bgroup_operator(\s*=)': 'aggregator\1'
+  # odoo 4f6f4efbad0 '[MOV] tests: test_reports is not a tool' : odoo/tools/test_reports.py ->
+  # odoo/tests/reports.py, try_report / try_report_action à signature identique
+  '\bodoo\.tools\.test_reports\b': 'odoo.tests.reports'
+  '\bfrom odoo\.tools import test_reports\b': 'from odoo.tests import reports as test_reports'
+  # odoo 080bbf6153a : odoo/tests/common.py __getattr__ « Since 18.0: odoo.tests.common.Form
+  # is deprecated, use odoo.tests.Form » (supprimé en 20.0)
+  '(?m)^(\s*)from odoo\.tests\.common import Form$': '\1from odoo.tests import Form'

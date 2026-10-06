@@ -142,3 +142,20 @@ def test_xml_renames():
     new, count = apply_renames(XML, xml_usages(XML), {("res.groups", "users"): "user_ids"})
     assert count == 1
     assert '<field name="user_ids" eval=' in new
+
+
+def test_xml_field_locator_children_belong_to_view_model():
+    from odoo_module_migrate.analysis import fields as af
+
+    xml = '''<odoo><record id="v" model="ir.ui.view">
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after"><field name="x_after"/></field>
+            <field name="order_line" position="inside"><field name="x_line"/></field>
+            <field name="order_line"><list><field name="x_sub"/></list></field>
+        </field>
+    </record></odoo>'''
+    found = {(u.model, u.field) for u in af.xml_usages(xml)}
+    assert ("sale.order", "x_after") in found
+    assert ("sale.order", "x_line") not in found  # inside the x2many sub-view
+    assert ("sale.order", "x_sub") not in found

@@ -4,3 +4,9 @@
   # odoo 18.0 odoo/fields.py : "Since Odoo 18, 'group_operator' is deprecated, use
   # 'aggregator' instead" ; Odoo fait lui-même attrs['aggregator'] = attrs.pop('group_operator')
   '\bgroup_operator(\s*=)': 'aggregator\1'
+  # BaseModel.user_has_groups (17.0 odoo/models.py) supprimé en 18.0 ; res.users.has_groups
+  # (18.0 odoo/addons/base/models/res_users.py) applique le même algorithme sur self.env.user
+  # (groupes « ! » exclus d'abord, un groupe positif suffit, base.group_no_one en debug seulement).
+  # self.user_has_groups(...) est traité par replace_user_has_groups (migrate_170_180.py) ;
+  # ici les autres receveurs (rec., self.sudo()., self.env['x']....)
+  '(?<!\bself)\.user_has_groups\(': '.env.user.has_groups('
