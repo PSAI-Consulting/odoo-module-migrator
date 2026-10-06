@@ -1,0 +1,25 @@
+# Champs supprimés 16.0 -> 17.0 : messages avec le remplaçant (prioritaires sur
+# generated.yaml). Vérifiés dans le commit de suppression (git log -S, git show) ;
+# le remplaçant n'est JAMAIS appliqué automatiquement (sémantique différente).
+# Format : [modèle, champ, message]
+#
+# odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor' : « all .*_amount become
+# *_amount_currency and .*_amount_company -> .*_amount » ; total_amount est réutilisé
+# (montant société), un renommage automatique ne serait pas idempotent.
+- ["hr.expense", "total_amount_company", "renamed total_amount (company currency); the 16.0 total_amount (expense currency) is now total_amount_currency - odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense", "reference", "removed (OCR-related, deprecated) - odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense", "same_currency", "is_multiple_currency, with the inverted logic - odoo 68fbdc964038"]
+# odoo e8c48f824e07 '[IMP] hr: Remove address_home_id field' : « Move all the private
+# information on the hr.employee record itself. »
+- ["hr.employee", "address_home_id", "the private address is now on the employee: private_street, private_street2, private_city, private_state_id, private_zip, private_country_id, private_email, private_phone (work_contact_id is the work contact) - odoo e8c48f824e07 '[IMP] hr: Remove address_home_id field'"]
+- ["res.users", "address_home_id", "the private address is now on the employee: private_street, private_city, ... (work_contact_id is the work contact) - odoo e8c48f824e07"]
+# odoo 2e78356f8219 '[IMP] project,*: create new task.state Selection field'
+- ["project.task", "kanban_state", "state (new selection: 01_in_progress, 02_changes_requested, 03_approved, 1_done, 1_canceled, 04_waiting_normal) - odoo 2e78356f8219 '[IMP] project,*: create new task.state Selection field'"]
+# odoo 9c134ec37981 '[IMP] account: simplify payment term usability'
+- ["account.payment.term.line", "days_after", "nb_days and delay_type (payment terms reworked) - odoo 9c134ec37981 '[IMP] account: simplify payment term usability'"]
+- ["account.payment.term.line", "months", "nb_days and delay_type (payment terms reworked) - odoo 9c134ec37981"]
+# odoo 9140ce06c370 "[REF] mail: better define 'keep log' fields of composer"
+- ["mail.compose.message", "auto_delete_message", "auto_delete_keep_log, with the inverted logic - odoo 9140ce06c370"]
+# odoo eaa6e1a08c3d '[REF] repair, *_repair: Separate Repair from Sales/Invoicing scopes'
+- ["repair.order", "operations", "move_ids (stock.move with repair_line_type) - odoo eaa6e1a08c3d '[REF] repair, *_repair: Separate Repair from Sales/Invoicing scopes'"]
+- ["repair.order", "fees_lines", "move_ids / sale order lines (repair.fee removed) - odoo eaa6e1a08c3d"]

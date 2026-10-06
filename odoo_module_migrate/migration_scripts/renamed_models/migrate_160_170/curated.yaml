@@ -1,0 +1,12 @@
+# Modèles renommés 16.0 -> 17.0 vérifiés à la main : prioritaires sur generated.yaml
+# (OpenUpgrade). Candidats de tools/extract_changes.py models vérifiés dans le commit :
+# odoo 90cb44e1e1b6 '[REF] mail, *: rename mail.channel to discuss.channel' : commit : « rename mail.channel to discuss.channel »
+- ["mail.channel", "discuss.channel", "odoo 90cb44e1e1b6 '[REF] mail, *: rename mail.channel to discuss.channel'"]
+- ["mail.channel.member", "discuss.channel.member", "odoo 90cb44e1e1b6 '[REF] mail, *: rename mail.channel to discuss.channel'"]
+- ["mail.channel.rtc.session", "discuss.channel.rtc.session", "odoo 90cb44e1e1b6 '[REF] mail, *: rename mail.channel to discuss.channel'"]
+# enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms' : advantage renommé benefit (champs advantage_ids -> benefit_ids)
+- ["hr.contract.salary.advantage", "hr.contract.salary.benefit", "enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms'"]
+# enterprise cbc468a8cb8 '[REF] *external_tax*: consolidate duplicated code' : mixin account.avatax renommé (account_avatax/models/account_avatax.py => account_external_tax_mixin.py)
+- ["account.avatax", "account.external.tax.mixin", "enterprise cbc468a8cb8 '[REF] *external_tax*: consolidate duplicated code'"]
+# enterprise 0bf1aa7b27e '[IMP] l10n_pl_reports: merge l10n_pl_reports_jpk' : module l10n_pl_reports_jpk fusionné dans l10n_pl_reports
+- ["l10n_pl_reports_jpk.periodic.vat.xml.export", "l10n_pl_reports.periodic.vat.xml.export", "enterprise 0bf1aa7b27e '[IMP] l10n_pl_reports: merge l10n_pl_reports_jpk'"]

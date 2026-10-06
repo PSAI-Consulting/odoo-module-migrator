@@ -1,0 +1,55 @@
+# Renommages 16.0 -> 17.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
+# Hors OpenUpgrade (tools/extract_changes.py fields --sources, odoo + fork Enterprise),
+# vérifiés modèle par modèle (champs avant / après le commit et en 17.0) :
+# odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor' : commit : « Rename fields according to account naming conventions » (*_amount -> *_amount_currency, *_amount_company -> *_amount, unit_amount -> price_unit, *number* -> nb_*) ; total_amount / total_amount_company échangent leur nom : pas de renommage automatique (non idempotent), voir removed_fields/curated.yaml
+- ["hr.expense", "unit_amount", "price_unit", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense", "amount_tax", "tax_amount_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense", "amount_tax_company", "tax_amount", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense", "untaxed_amount", "untaxed_amount_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense", "attachment_number", "nb_attachment", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense", "label_convert_rate", "label_currency_rate", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense", "sheet_is_editable", "is_editable", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+- ["hr.expense.sheet", "total_amount_taxes", "total_tax_amount", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]
+# odoo e8c48f824e07 '[IMP] hr: Remove address_home_id field' : même champ Char « Private Phone » (16.0 : related address_home_id.phone)
+- ["hr.employee", "phone", "private_phone", "odoo e8c48f824e07 '[IMP] hr: Remove address_home_id field'"]
+- ["res.users", "employee_phone", "private_phone", "odoo e8c48f824e07 '[IMP] hr: Remove address_home_id field'"]
+# odoo a844f37aacfb "[IMP] hr_timesheet,project: refactor 'planned_hours' field" : commit : « rename the 'planned_hours' to 'allocated_hours' »
+- ["project.task", "planned_hours", "allocated_hours", "odoo a844f37aacfb \"[IMP] hr_timesheet,project: refactor 'planned_hours' field\""]
+- ["project.task.burndown.chart.report", "planned_hours", "allocated_hours", "odoo a844f37aacfb \"[IMP] hr_timesheet,project: refactor 'planned_hours' field\""]
+- ["report.project.task.user", "planned_hours", "allocated_hours", "odoo a844f37aacfb \"[IMP] hr_timesheet,project: refactor 'planned_hours' field\""]
+# odoo 2e78356f8219 '[IMP] project,*: create new task.state Selection field' : même booléen (kanban_state remplacé par state)
+- ["project.task.type", "auto_validation_kanban_state", "auto_validation_state", "odoo 2e78356f8219 '[IMP] project,*: create new task.state Selection field'"]
+# odoo a5801a12b5ec '[IMP] l10n_hu, l10n_sa, account: delivery date + hu brush up' : même date de livraison, déplacée de l10n_sa vers account
+- ["account.move", "l10n_sa_delivery_date", "delivery_date", "odoo a5801a12b5ec '[IMP] l10n_hu, l10n_sa, account: delivery date + hu brush up'"]
+- ["account.move", "l10n_sa_show_delivery_date", "show_delivery_date", "odoo a5801a12b5ec '[IMP] l10n_hu, l10n_sa, account: delivery date + hu brush up'"]
+# odoo 1b512efdac4b '[IMP] holiday: improve UX holiday timeoff' : stress day renommé mandatory day (modèle hr.leave.mandatory.day, OpenUpgrade 17.0)
+- ["hr.leave", "has_stress_day", "has_mandatory_day", "odoo 1b512efdac4b '[IMP] holiday: improve UX holiday timeoff'"]
+# odoo ab358543c427 '[IMP] {test_}mail: honor notif type pref when adding follower' : même case à cocher (défaut True) : prévenir les abonnés ajoutés
+- ["mail.wizard.invite", "send_mail", "notify", "odoo ab358543c427 '[IMP] {test_}mail: honor notif type pref when adding follower'"]
+# odoo 6ffcda567700 '[IMP] l10n_it_edi: remove account_edi from depends' : préfixe l10n_it_edi_sdicoop_ -> l10n_it_edi_ (mêmes champs)
+- ["res.config.settings", "l10n_it_edi_sdicoop_demo_mode", "l10n_it_edi_demo_mode", "odoo 6ffcda567700 '[IMP] l10n_it_edi: remove account_edi from depends'"]
+- ["res.config.settings", "l10n_it_edi_sdicoop_register", "l10n_it_edi_register", "odoo 6ffcda567700 '[IMP] l10n_it_edi: remove account_edi from depends'"]
+# odoo 90cb44e1e1b6 '[REF] mail, *: rename mail.channel to discuss.channel' : mail.channel renommé discuss.channel
+- ["website.visitor", "mail_channel_ids", "discuss_channel_ids", "odoo 90cb44e1e1b6 '[REF] mail, *: rename mail.channel to discuss.channel'"]
+# enterprise c30b60c996c '[FIX] account_asset: wrong smart buttons on bills' : mêmes champs calculés (_compute_asset_ids)
+- ["account.move", "draft_asset_ids", "draft_asset_exists", "enterprise c30b60c996c '[FIX] account_asset: wrong smart buttons on bills'"]
+- ["account.move", "number_asset_ids", "count_asset", "enterprise c30b60c996c '[FIX] account_asset: wrong smart buttons on bills'"]
+# enterprise 5f4b3ef2c8f '[REF] l10n_mx_edi: Reword Mexican EDI independant of account_edi' : même Char « CFDI Origin »
+- ["account.move", "l10n_mx_edi_origin", "l10n_mx_edi_cfdi_origin", "enterprise 5f4b3ef2c8f '[REF] l10n_mx_edi: Reword Mexican EDI independant of account_edi'"]
+# enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms' : advantage renommé benefit (modèle hr.contract.salary.benefit)
+- ["hr.contract.salary.resume", "advantage_ids", "benefit_ids", "enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms'"]
+- ["hr.payroll.structure.type", "salary_advantage_ids", "salary_benefits_ids", "enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms'"]
+# enterprise a0baf1bab6c '[IMP] l10n_(be/lt)_hr_payroll: Move non-resident field to hr_payroll' : même booléen « Non-resident », déplacé de l10n_be_hr_payroll vers hr_payroll
+- ["hr.employee", "resident_bool", "is_non_resident", "enterprise a0baf1bab6c '[IMP] l10n_(be/lt)_hr_payroll: Move non-resident field to hr_payroll'"]
+- ["res.users", "resident_bool", "is_non_resident", "enterprise a0baf1bab6c '[IMP] l10n_(be/lt)_hr_payroll: Move non-resident field to hr_payroll'"]
+# enterprise 52a5d166873 '[IMP] l10n_in_hr_payroll: polish indian localization' : préfixe l10n_in_ ajouté (mêmes champs)
+- ["hr.contract", "driver_salay", "l10n_in_driver_salay", "enterprise 52a5d166873 '[IMP] l10n_in_hr_payroll: polish indian localization'"]
+- ["res.company", "dearness_allowance", "l10n_in_dearness_allowance", "enterprise 52a5d166873 '[IMP] l10n_in_hr_payroll: polish indian localization'"]
+# enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet' : « manager » remplacé par « approver » (mêmes champs)
+- ["res.company", "timesheet_mail_manager_allow", "timesheet_mail_allow", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
+- ["res.company", "timesheet_mail_manager_delay", "timesheet_mail_delay", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
+- ["res.company", "timesheet_mail_manager_interval", "timesheet_mail_interval", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
+- ["res.company", "timesheet_mail_manager_nextdate", "timesheet_mail_nextdate", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
+- ["res.config.settings", "reminder_manager_allow", "reminder_allow", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
+- ["res.config.settings", "reminder_manager_delay", "reminder_delay", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]
+- ["res.config.settings", "reminder_manager_interval", "reminder_interval", "enterprise 64b92f97de7 '[IMP] timesheet_grid: use the approver word instead of manager in timesheet'"]

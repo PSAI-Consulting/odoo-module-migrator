@@ -283,3 +283,52 @@ def test_core_api_160_170():
         "        record.display_name = record.name\n"
     )
     assert not _matching(errors, migrated) and not _matching(warnings, migrated)
+
+
+EXPENSE_PY = '''from odoo import api, fields, models
+
+
+class HrExpense(models.Model):
+    _inherit = "hr.expense"
+
+    x_total = fields.Float(compute="_compute_x_total")
+
+    @api.depends("unit_amount", "total_amount", "total_amount_company")
+    def _compute_x_total(self):
+        for expense in self:
+            expense.x_total = expense.unit_amount + expense.amount_tax
+
+
+class ProjectTask(models.Model):
+    _inherit = "project.task"
+
+    def _x(self):
+        return self.planned_hours
+'''
+
+
+def test_curated_renames_160_170(tmp_path, caplog):
+    import logging
+
+    from odoo_module_migrate.migration_scripts.migrate_160_170 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    module.mkdir()
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['hr_expense', 'project']}")
+    (module / "models.py").write_text(EXPENSE_PY)
+    script = MigrationScript()
+    script.parse_rules()
+    with caplog.at_level(logging.WARNING):
+        script.handle_fields(module)
+    py = (module / "models.py").read_text()
+    assert '@api.depends("price_unit", "total_amount", "total_amount_company")' in py
+    assert "expense.price_unit + expense.tax_amount_currency" in py
+    assert "return self.allocated_hours" in py
+    # name swap: total_amount kept, total_amount_company reported with its replacement
+    assert any(
+        "hr.expense.total_amount_company was removed" in r.getMessage()
+        and "renamed total_amount" in r.getMessage()
+        for r in caplog.records
+    )
+    script.handle_fields(module)
+    assert (module / "models.py").read_text() == py
