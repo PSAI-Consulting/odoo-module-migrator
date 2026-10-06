@@ -323,3 +323,30 @@ def test_openupgrade_rename_of_a_field_still_defined(repo, tmp_path):
     candidates = (out / "renamed_fields/migrate_190_200/candidates.yaml").read_text()
     assert '# - ["res.bank.institution", "bic", "swift"' in candidates
     assert "old field still defined in 20.0" in candidates
+
+
+def test_oldname_renames(tmp_path):
+    """Odoo <= 12.0 declares renames with oldname= (11.0 delivery.carrier:
+    free_over = fields.Boolean(..., oldname='free_if_more_than'))."""
+    repo = tmp_path / "odoo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "10.0")
+    v10 = (
+        "from odoo import fields, models\n\n\nclass Carrier(models.Model):\n"
+        "    _name = 'delivery.carrier'\n\n"
+        "    free_if_more_than = fields.Boolean()\n    old_kept = fields.Char()\n"
+    )
+    _commit(repo, {"addons/delivery/models/carrier.py": v10}, "init")
+    _git(repo, "checkout", "-q", "-b", "11.0")
+    v11 = (
+        "from odoo import fields, models\n\n\nclass Carrier(models.Model):\n"
+        "    _name = 'delivery.carrier'\n\n"
+        "    free_over = fields.Boolean(oldname='free_if_more_than')\n"
+        "    old_kept = fields.Char()\n    other = fields.Char(oldname='old_kept')\n"
+        "    ancient = fields.Char(oldname='never_in_10')\n"
+    )
+    _commit(repo, {"addons/delivery/models/carrier.py": v11}, "rename")
+    renames = ef.oldname_renames([repo], _refs("10.0"), _refs("11.0"), lambda m: True)
+    # old_kept still exists, never_in_10 did not exist in 10.0: not renames
+    assert [r[:3] for r in renames] == [("delivery.carrier", "free_if_more_than", "free_over")]
+    assert "oldname='free_if_more_than'" in renames[0][3]

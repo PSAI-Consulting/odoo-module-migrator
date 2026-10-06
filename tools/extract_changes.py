@@ -311,6 +311,13 @@ def extract_fields(args):
         )
         # "rename X to Y" in the commit message: confirmed
         confirmed, candidates = ef.promote_candidates(candidates)
+        # oldname='x' on a field of the target (Odoo <= 12.0): confirmed
+        confirmed = ef.oldname_renames(
+            repos,
+            lambda repo: resolve_ref(repo, args.from_version),
+            lambda repo: resolve_ref(repo, args.to_version),
+            models_filter,
+        ) + confirmed
         renamed_fields, removed_fields, candidates = ef.merge_changes(
             (renamed_fields, removed_fields), (confirmed, src_removed, candidates)
         )

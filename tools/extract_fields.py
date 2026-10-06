@@ -226,6 +226,64 @@ def target_fields(repos, ref_of):
     return {model: available_fields(model, fields, parents) for model in set(fields) | set(parents)}
 
 
+def _oldnames(files):
+    """[(model, oldname, field, path)] from fields declared with oldname='...'
+    (Odoo <= 12.0: the ORM renames the column of the old field)."""
+    result = []
+    for path, text in files.items():
+        if "oldname" not in text:
+            continue
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        for cls in ast.walk(tree):
+            if not isinstance(cls, ast.ClassDef):
+                continue
+            name, inherit, found = None, [], []
+            for stmt in cls.body:
+                if not (isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+                        and isinstance(stmt.targets[0], ast.Name)):
+                    continue
+                target = stmt.targets[0].id
+                if target == "_name":
+                    name = (_str_values(stmt.value) or [None])[0]
+                elif target == "_inherit":
+                    inherit = _str_values(stmt.value)
+                elif isinstance(stmt.value, ast.Call):
+                    for kw in stmt.value.keywords:
+                        if (kw.arg == "oldname" and isinstance(kw.value, ast.Constant)
+                                and isinstance(kw.value.value, str)):
+                            found.append((kw.value.value, target))
+            for model in ([name] if name else inherit[:1]):
+                result += [(model, old, new, path) for old, new in found]
+    return result
+
+
+def oldname_renames(repos, ref_from_of, ref_to_of, models_filter):
+    """Renames declared by oldname= in the target sources: the old field must
+    exist on the model before and not after (all repositories together)."""
+    path_re = re.compile(r"(^|/)(addons|models|wizards?|report)/.*\.py$")
+    before_files, after_files, sources = {}, {}, {}
+    for repo in repos:
+        before_files.update(read_blobs(repo, ref_from_of(repo), path_re))
+        files = read_blobs(repo, ref_to_of(repo), path_re)
+        after_files.update(files)
+        for path in files:
+            sources[path] = (repo, ref_to_of(repo))
+    before, after = parse_fields(before_files), parse_fields(after_files)
+    parents = model_parents(after_files)
+    renames = []
+    for model, old, new, path in _oldnames(after_files):
+        if not models_filter(model) or old == new:
+            continue
+        if old not in before.get(model, {}) or old in available_fields(model, after, parents):
+            continue
+        repo, ref = sources[path]
+        renames.append((model, old, new, f"{repo.name.removesuffix('.git')} {ref} {path} oldname='{old}'"))
+    return renames
+
+
 ADDED_FIELD_RE = re.compile(r"^\+\s+(\w+)\s*=\s*fields\.", re.M)
 
 
