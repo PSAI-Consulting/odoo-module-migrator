@@ -447,3 +447,20 @@ def test_rules_140_150():
     for path in sorted(glob.glob(f"{SCRIPTS}/renamed_fields/migrate_140_150/*.yaml")):
         rules += yaml.safe_load(open(path, encoding="utf-8")) or []
     assert ["crm.lead", "meeting_count", "calendar_event_count"] in [r[:3] for r in rules]
+
+
+def test_savepointcase_140_150():
+    text = (
+        "from odoo.tests.common import SavepointCase, TransactionCase\n"
+        "from odoo.tests import SavepointCase\n"
+        "class TestX(SavepointCase):\n"
+        "class TestY(HttpSavepointCase):\n"
+    )
+    new = _apply("text_replaces", "migrate_140_150", ".py", text)
+    assert new == (
+        "from odoo.tests.common import TransactionCase\n"
+        "from odoo.tests import TransactionCase\n"
+        "class TestX(TransactionCase):\n"
+        "class TestY(HttpSavepointCase):\n"
+    )
+    assert _apply("text_replaces", "migrate_140_150", ".py", new) == new
