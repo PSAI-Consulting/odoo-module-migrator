@@ -1,0 +1,8 @@
+# Source : tools/extract_changes.py api 12.0 -> 13.0, vérifié dans les sources : définis en 12.0,
+# absents de 13.0 (odoo/osv/orm.py supprimé, odoo/tools/image.py réécrit autour de
+# image_process(), odoo/tools/misc.py). html_escape existe toujours (défini dans un if) : pas de règle.
+.py:
+  '\bodoo\.osv\.orm\b|from\s+odoo\.osv\s+import\s+[^\n]*\borm\b': "[13] odoo.osv.orm was removed (setup_modifiers, transfer_node_to_modifiers...): adapt the code"
+  '\bsetup_modifiers\(': "[13] setup_modifiers() was removed with odoo.osv.orm: adapt the code"
+  '\bimage_resize_image(_big|_medium|_small)?\(|\bimage_resize_images\(|\bimage_get_resized_images\(|\bimage_resize_and_sharpen\(|\bimage_save_for_web\(|\bimage_colorize\(|\bcrop_image\(': "[13] This odoo.tools.image function was removed: use image_process() (odoo 13.0 odoo/tools/image.py)"
+  '\bget_user_companies\(': "[13] odoo.tools.misc.get_user_companies() was removed: use self.env.companies"

@@ -628,3 +628,10 @@ def test_blocked_rules_are_loaded():
     ):
         rows = yaml.safe_load(open(f"{SCRIPTS}/renamed_fields/{step}/curated.yaml", encoding="utf-8"))
         assert [r[2] for r in rows if r[:2] == key] == [None], (step, key)
+
+
+def test_core_api_120_130():
+    errors = _yaml_rules("text_errors", "migrate_120_130", ".py")
+    assert _matching(errors, "from odoo.osv.orm import setup_modifiers")
+    assert _matching(errors, "img = tools.image_resize_image_medium(data)")
+    assert not _matching(errors, "img = tools.image_process(data, size=(128, 128))")
