@@ -7,23 +7,24 @@ on:
   push:
     branches:
       - "master"
-      - "master-ocabot-*"
+      - "improve-migrator"
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
       - name: Install
         run: |
-          pip install pre-commit
+          git config --global user.name "test"
+          git config --global user.email "test@example.com"
           pip install -r test_requirements.txt
-          pip install .
+          pip install -e .
       - name: Run tests
-        run: coverage run --source odoo_module_migrate -m pytest -v tests
-      - uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+        run: python -m pytest -q tests

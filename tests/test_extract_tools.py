@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools" / "extract"))
 import extract_assets as ea  # noqa: E402
 import extract_changes as ec  # noqa: E402
 import extract_fields as ef  # noqa: E402
@@ -226,6 +226,7 @@ def test_regex_fallback_for_newer_syntax():
 
 
 def test_ground_truth_similarity(tmp_path):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools" / "bench"))
     import ground_truth as gt
 
     def module(name, text):

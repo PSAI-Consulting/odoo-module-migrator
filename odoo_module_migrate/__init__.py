@@ -1,1 +1,3 @@
-from . import migration_scripts
+__version__ = "0.6.0"
+
+from . import migration_scripts  # noqa: E402

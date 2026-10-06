@@ -1,95 +1,85 @@
-# Migrateur de Modules Odoo
+# odoo-module-migrator
 
-Outil de migration automatique des modules Odoo d'une version à l'autre, spécialisé pour la migration 16.0 → 18.0.
+Migre le **code source** de modules Odoo personnalisés d'une version à une
+autre, de **8.0 à 20.0**, en une seule commande.
 
-## 🎯 Fonctionnalités
+On lui donne un dossier de modules, la version de départ et la version
+cible. Il enchaîne les sauts de version (`17.0 → 18.0 → 19.0 → 20.0`) et :
 
-- **Migration automatique** : attrs/states deprecated → invisible/readonly/required
-- **Conversion tree → list** : Mise à jour des vues pour Odoo 17.0+
-- **Détection modules OCA** : Option --no-oca-modules pour ignorer les modules communautaires
-- **Génération documentation** : --oca-file-list pour créer OCA_MODULES.md
-- **Préservation du formatage** : Maintient l'indentation originale des fichiers XML
+- **réécrit** ce qui peut l'être sûrement : champs et modèles renommés,
+  dépendances de modules renommés ou fusionnés, imports déplacés, API
+  remplacées, vues (`tree` → `list`, `attrs` → `invisible`…), sécurité
+  (`ir.access` en 20.0), version du manifest… ;
+- lance les **scripts officiels d'Odoo** (`odoo/upgrade_code`) quand les
+  sources Odoo cibles sont fournies ;
+- **signale** tout le reste dans un rapport par module, avec `fichier:ligne`,
+  la cause et le remplaçant quand il existe : ce qu'il faut corriger à la main.
 
-## 🚀 Installation
+Chaque règle provient du code d'Odoo (commit cité) ou d'OpenUpgrade : aucune
+règle n'est devinée, et l'outil ne contient rien de propre à un client.
+
+## Installation
+
+Python 3.11 ou plus récent.
 
 ```bash
+git clone https://github.com/PSAI-Consulting/odoo-module-migrator.git
 cd odoo-module-migrator
-python setup.py sdist
-pip install ./dist/odoo_module_migrator-0.5.0.tar.gz
+python -m venv .venv
+.venv/Scripts/pip install -e .        # Windows  (Linux / macOS : .venv/bin/pip)
 ```
 
-## 📖 Usage
+La commande `odoo-module-migrate` est alors disponible dans le venv.
 
-### Migration complète d'un projet
+## Démarrage rapide
 
 ```bash
-# Migrer tous les modules 16.0 → 18.0 (sans commit)
-odoo-module-migrate --init-version-name 16.0 --target-version-name 18.0 --no-commit
+# 1. Voir ce qui changerait, sans rien écrire
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --dry-run
 
-# Migrer en ignorant les modules OCA
-odoo-module-migrate --init-version-name 16.0 --target-version-name 18.0 --no-commit --no-oca-modules
+# 2. Migrer (sur une branche git ou une copie du dossier)
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit \
+    --odoo-root D:/Odoo/odoo/20.0 --odoo-python D:/Odoo/venv20/Scripts/python.exe
+
+# 3. Lire mon_module/MIGRATION_REPORT.md et traiter les TODO
 ```
 
-### Migration de modules spécifiques
+`--odoo-root` est facultatif mais recommandé : il active les scripts
+officiels d'Odoo et la vérification des vues et des modèles contre l'Odoo
+cible.
+
+## Documentation
+
+| Document | Contenu |
+|---|---|
+| [docs/COMMANDES.md](docs/COMMANDES.md) ([PDF](docs/COMMANDES.pdf)) | Toutes les commandes et options, avec des exemples |
+| [docs/FONCTIONNEMENT.md](docs/FONCTIONNEMENT.md) | Comment l'outil travaille, organisation des règles, ajouter une règle |
+| [tools/README.md](tools/README.md) | Outils de mainteneur : régénérer les règles, bancs d'essai sur Odoo |
+| [CHANGELOG.md](CHANGELOG.md) | Historique des versions |
+
+## Organisation du dépôt
+
+```
+odoo_module_migrate/          le paquet installé (la commande odoo-module-migrate)
+├── migration_scripts/        les règles, par type et par saut de version
+├── analysis/                 analyse des champs, vues, modèles, imports
+└── upgrade_code/             orchestration des scripts officiels d'Odoo
+tools/                        outils de mainteneur (non installés)
+├── extract/                  régénérer les règles depuis les sources Odoo
+└── bench/                    bancs d'essai : migrer et installer sur Odoo
+tests/                        tests (pytest)
+docs/                         documentation
+```
+
+## Tests
 
 ```bash
-# Migrer uniquement certains modules
-odoo-module-migrate -i 16.0 -t 18.0 --no-commit --modules module1,module2,module3
+.venv/Scripts/pip install -r test_requirements.txt
+.venv/Scripts/python -m pytest -q tests
 ```
 
-### Génération documentation OCA
+## Origine et licence
 
-```bash
-# Créer la liste des modules OCA dans OCA_MODULES.md
-odoo-module-migrate --init-version-name 16.0 --oca-file-list
-```
-
-## ⚙️ Options principales
-
-| Option                     | Description                                                               |
-|----------------------------|---------------------------------------------------------------------------|
-| `-i, --init-version-name`  | Version source (ex: 16.0)                                                 |
-| `-t, --target-version-name` | Version cible (ex: 18.0)                                                  |
-| `-m, --modules`            | Modules à migrer (séparés par virgule)                                    |
-| `--no-commit`              | Ne pas créer de commits git                                               |
-| `--no-oca-modules`         | Ignorer les modules OCA                                                   |
-| `--oca-file-list`          | Générer OCA_MODULES.md                                                    |
-| `-d, --directory`          | Répertoire cible (défaut: ./)                                             |
-| `-ll, --log-level`         | Niveau de Log (défaut: INFO)                                              |
-| `-lp, --log-path`          | Fichier de log (défaut: (vide))                                           |
-| `-lpwo, --log-path-warninglevelonly`          | Fichier de log pour stocker WARNING et ERROR en markdown (défaut: (vide)) |
-
-## 🔍 Types de logs
-
-- **INFO** ✅ : Migration automatique appliquée
-- **WARNING** ⚠️ : Vérification manuelle recommandée  
-- **ERROR** ❌ : Action manuelle requise
-
-## 🎯 Migration 16.0 → 18.0
-
-Cette version est spécialement optimisée pour la migration vers Odoo 18.0 :
-
-### ✅ Conversions automatiques
-
-- `attrs="{'invisible': [('field', '=', 'value')]}"` → `invisible="field == 'value'"`
-- `states="draft,done"` → `invisible="state not in ('draft','done')"`
-- `<tree>` → `<list>` (vues)
-- `tree_view_ref` → `list_view_ref`
-- `invisible` → `column_invisible` (dans les arbres)
-- Suppression `unaccent=False` parameter
-- `kanban-box/card` → `card`
-- `<div class="oe_chatter">` → `<chatter/>`
-
-### 🤖 Détection intelligente
-
-- Convertit les domaines Odoo en expressions Python
-- Support des opérateurs : `=`, `!=`, `in`, `not in`, `>`, `>=`, `<`, `<=`
-- Gestion des opérateurs logiques : `&` (and), `|` (or), `!` (not)
-
-## 📜 Licence
-
-AGPL-3.0
-
----
-
-*Version optimisée pour la migration Odoo 16.0 → 18.0 | Maintient le formatage XML original*
+Fork de [OCA/odoo-module-migrator](https://github.com/OCA/odoo-module-migrator)
+(GRAP, Sylvain Le Gal et contributeurs OCA), maintenu par PSAI Consulting.
+Licence AGPL-3.0 ou ultérieure.

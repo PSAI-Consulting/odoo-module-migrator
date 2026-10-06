@@ -2,8 +2,8 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 """Install migrated modules on a throw-away copy of a blank Odoo database.
 
-    python tools/bench_install.py <modules_dir> --config odoo20.conf \\
-        --template STOF-20-VIERGE --odoo-root D:/Odoo/odoo/20.0 \\
+    python tools/bench/bench_install.py <modules_dir> --config odoo20.conf \\
+        --template MY_BLANK_DB --odoo-root D:/Odoo/odoo/20.0 \\
         --odoo-python D:/.../venv/Scripts/python.exe --name after
 
 * the database ``migrator_bench_<name>`` is created with

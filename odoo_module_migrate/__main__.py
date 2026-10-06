@@ -4,13 +4,19 @@ import argparse
 import argcomplete
 import sys
 
-from . import tools
+from . import __version__, tools
 from .log import setup_logger, _close_handlers
 from .migration import Migration
 
 
 def get_parser():
-    main_parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    main_parser = argparse.ArgumentParser(
+        prog="odoo-module-migrate",
+        description="Migrate the source code of Odoo modules from a version to another"
+                    " (8.0 -> 20.0). Documentation: docs/COMMANDES.md",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    main_parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     main_parser.add_argument(
         "-d", "--directory", default="./", type=str,

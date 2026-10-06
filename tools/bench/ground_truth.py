@@ -6,7 +6,7 @@ For each module present (installable) in both branches of an OCA repository,
 the FROM version is exported, migrated with odoo_module_migrate, and compared
 with the TO version written by the OCA contributors:
 
-    python tools/ground_truth.py --from 17.0 --to 18.0 \\
+    python tools/bench/ground_truth.py --from 17.0 --to 18.0 \\
         --repo /tmp/odoo-src/sale-workflow --repo /tmp/odoo-src/partner-contact \\
         --limit 15 --work /tmp/gt --output /tmp/gt/RESULTS.md
 
@@ -30,7 +30,7 @@ import subprocess
 import sys
 import tarfile
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+ROOT = pathlib.Path(__file__).resolve().parents[2]  # repository root
 SUFFIXES = (".py", ".xml", ".csv", ".js")
 SKIP_RE = re.compile(r"(^|/)(i18n|i18n_extra|static/description|readme|README[^/]*)(/|$)")
 

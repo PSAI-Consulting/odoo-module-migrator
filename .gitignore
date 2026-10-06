@@ -118,6 +118,9 @@ validation_report.txt
 tests/data_tmp/
 .ruff_cache/
 # Sorties des outils de banc d'essai (tools/), si écrites dans le dépôt
-bench/
+/bench/
 *.bench.json
 .claude/
+# Bancs locaux (chemins et modules de clients) : jamais dans le dépôt
+tools/bench/benches/*.yaml
+!tools/bench/benches/example_*.yaml

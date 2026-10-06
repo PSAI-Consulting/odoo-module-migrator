@@ -1,0 +1,18 @@
+# Exemple de banc : modules OCA 17.0 -> 20.0 (branches 17.0 de dépôts OCA clonés en local, lues sans checkout).
+# Copier ce fichier (ex. mon_banc.yaml, ignoré par git) et adapter les chemins.
+name: oca_17_20
+from: "17.0"
+to: "20.0"
+odoo_root: D:/Odoo/odoo/20.0
+odoo_python: D:/chemin/vers/venv-odoo20/Scripts/python.exe   # Python capable de lancer Odoo 20
+db_config: D:/chemin/vers/odoo20.conf   # utilisé seulement pour l'accès PostgreSQL (db_host, db_user...)
+blank_template: migrator_bench_blank_20
+sources:
+  - {git: D:/chemin/vers/OCA/sale-workflow, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/chemin/vers/OCA/purchase-workflow, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/chemin/vers/OCA/partner-contact, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/chemin/vers/OCA/stock-logistics-workflow, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/chemin/vers/OCA/account-invoicing, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/chemin/vers/OCA/server-ux, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/chemin/vers/OCA/web, ref: origin/17.0, modules: auto, limit: 6}
+  - {git: D:/chemin/vers/OCA/l10n-france, ref: origin/17.0, modules: auto, limit: 6}

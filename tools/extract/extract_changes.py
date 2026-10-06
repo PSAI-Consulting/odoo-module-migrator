@@ -6,7 +6,7 @@ Re-run it for each new Odoo version (21.0...): it only reads local bare
 repositories (``git show`` / ``git log``, no checkout) and writes YAML files
 in the format of ``odoo_module_migrate/migration_scripts/<type>/migrate_XXX_YYY``.
 
-    python tools/extract_changes.py modules --from 19.0 --to 20.0 \\
+    python tools/extract/extract_changes.py modules --from 19.0 --to 20.0 \\
         --repo D:/Odoo/.repos/odoo.git@addons \\
         --repo D:/Odoo/.repos/enterprise.git \\
         --repo D:/Odoo/.repos/design-themes.git \\
@@ -630,6 +630,15 @@ def main(argv=None):
     mm.add_argument("--to", dest="to_version", required=True)
     mm.add_argument("--repo", action="append", required=True, help="bare repository, repeatable")
     mm.add_argument("--output", required=True)
+    sub.add_parser("tools-exports", add_help=False,
+                   help="names that 'from odoo.tools import X' cannot import anymore"
+                        " (options: see extract_tools_exports.py --help)")
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["tools-exports"]:
+        sys.path.insert(0, str(pathlib.Path(__file__).parent))
+        import extract_tools_exports
+
+        return extract_tools_exports.main(argv[1:])
     args = parser.parse_args(argv)
     if args.command == "modules":
         if args.output and not args.curated:

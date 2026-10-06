@@ -2,17 +2,24 @@
 # @author: Sylvain LE GAL (https://twitter.com/legalsylvain)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+import re
+
 import setuptools
+
+VERSION = re.search(
+    r'__version__ = "([^"]+)"', open("odoo_module_migrate/__init__.py", encoding="utf-8").read()
+).group(1)
 
 setuptools.setup(
     name="odoo-module-migrator",
-    version="0.5.7",
+    version=VERSION,
     author="GRAP, Groupement Régional Alimentaire de Proximité",
     author_email="informatique@grap.coop",
-    description="Small tools to migrate Odoo modules from a version" " to another",
+    maintainer="PSAI Consulting",
+    description="Migrate the source code of Odoo modules from a version to another (8.0 -> 20.0)",
     long_description=open("README.md", encoding='utf-8').read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/OCA/odoo-module-migrator",
+    url="https://github.com/PSAI-Consulting/odoo-module-migrator",
     # tools/ and tests/ are development tools: not shipped in the package
     packages=setuptools.find_packages(include=["odoo_module_migrate", "odoo_module_migrate.*"]),
     include_package_data=True,
