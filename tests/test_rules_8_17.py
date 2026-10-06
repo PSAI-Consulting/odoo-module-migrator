@@ -418,3 +418,11 @@ def test_field_rules_follow_renamed_model_150_160(tmp_path):
     assert "return self.trigger, self.max_usage" in text
     script.handle_fields(module)
     assert (module / "models.py").read_text() == text
+
+
+def test_removed_api_160_170():
+    errors = _yaml_rules("text_errors", "migrate_160_170", ".py")
+    assert _matching(errors, "from odoo.exceptions import UserError, Warning")
+    assert _matching(errors, "raise exceptions.except_orm('x')")
+    assert not _matching(errors, "from odoo.exceptions import UserError, ValidationError")
+    assert not _matching(errors, "import warnings\nwarnings.warn('x', UserWarning)")

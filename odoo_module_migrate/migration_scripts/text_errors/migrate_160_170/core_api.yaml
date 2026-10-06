@@ -5,7 +5,13 @@
 # supported. » (paramètre states= des champs ignoré)
 # Source : odoo ba565758c6e9 '[REM] core: remove deprecated methods of models.py'
 # (flush, recompute, refresh, invalidate_cache supprimés)
+# Source : tools/extract_changes.py api 16.0 -> 17.0 (odoo/exceptions.py, odoo/models.py,
+# odoo/tools/cache.py, odoo/tools/geoipresolver.py de 16.0 absents en 17.0)
 .py:
+  'from\s+odoo\.exceptions\s+import\s+[^\n]*\b(except_orm|Warning)\b|exceptions\.(except_orm|Warning)\b': "[17] odoo.exceptions.except_orm / Warning were removed (deprecated aliases of UserError): use UserError"
+  '\._patch_method\(|\._revert_method\(': "[17] _patch_method() / _revert_method() were removed from BaseModel: override the method in a model inheriting it"
+  '\bormcache_multi\b': "[17] odoo.tools.ormcache_multi was removed: use ormcache"
+  'odoo\.tools\.geoipresolver|\bGeoIPResolver\b': "[17] odoo.tools.geoipresolver was removed: use request.geoip (odoo.http)"
   '\bself(?:\.env\[[^\]\n]+\]|\.\w+)*\.(?:flush|recompute)\(': "[17] flush() / recompute() were removed (odoo ba565758c6e9): use flush_model(), flush_recordset() or env.flush_all()"
   '\bself(?:\.env\[[^\]\n]+\]|\.\w+)*\.(?:refresh|invalidate_cache)\(': "[17] refresh() / invalidate_cache() were removed (odoo ba565758c6e9): use invalidate_model(), invalidate_recordset() or env.invalidate_all()"
   '\bdef name_get\(': "[17] name_get() is no longer called since 17.0 (odoo 3c62ca1eb96d): compute display_name in _compute_display_name() instead"
