@@ -328,6 +328,16 @@ class Migration:
             ):
                 logger.error("%s. File %s:%s" % (message, path, line))
 
+        # names imported from the addons of the target Odoo
+        from .analysis import imports
+
+        import_index = imports.ImportIndex(reference)
+        for module_migration in self._module_migrations:
+            for path, line, message in imports.check_module(
+                module_migration._module_path, import_index
+            ):
+                logger.error("%s. File %s:%s" % (message, path, line))
+
     def _run_upgrade_code(self):
         init_version = self._migration_steps[0]["init_version_name"]
         target_version = self._migration_steps[-1]["target_version_name"]
