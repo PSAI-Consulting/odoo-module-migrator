@@ -21,6 +21,10 @@ CLASS_RE = re.compile(r"^class\s+\w+\s*\(([^)]*)\)\s*:")
 NAME_RE = re.compile(r"^\s{4}_name\s*=\s*['\"]([\w.]+)['\"]")
 INHERIT_RE = re.compile(r"^\s{4}_inherit\s*=\s*(?:\[\s*)?['\"]([\w.]+)['\"]")
 FIELD_RE = re.compile(r"^\s{4}(\w+)\s*(?::[^=\n]+)?=\s*fields\.(\w+)\(")
+# OpenUpgrade variable names: _field_renames (14.0+), _fields_renames / _models_renames
+# (16.0, 17.0), field_renames_l10n_dk_bookkeeping (18.0), renamed_fields...
+FIELD_RENAMES_RE = re.compile(r"(^|_)(renamed_fields|fields?_renames)(_|$)")
+MODEL_RENAMES_RE = re.compile(r"(^|_)(renamed_models|models?_renames)(_|$)")
 ANALYSIS_RE = re.compile(
     r"^(?P<module>\w+)\s*/\s*(?P<model>[\w.]+)\s*/\s*(?P<field>\w+)\s*\((?P<type>\w+)\)\s*:\s*DEL\b(?P<rest>.*)$"
 )
@@ -314,13 +318,15 @@ def openupgrade_changes(openupgrade_git, ref, models_filter):
                     value = ast.literal_eval(node.value)
                 except ValueError:
                     continue
-                if name.endswith("renamed_fields") or name.endswith("field_renames"):
+                # _field_renames, _fields_renames, field_renames_l10n_dk..., renamed_fields
+                if FIELD_RENAMES_RE.search(name) and isinstance(value, (list, tuple)):
                     for item in value:
-                        if len(item) == 4:
+                        if isinstance(item, (list, tuple)) and len(item) == 4:
                             renamed_fields.append((item[0], item[2], item[3], source))
-                elif name.endswith("renamed_models") or name.endswith("model_renames"):
+                elif MODEL_RENAMES_RE.search(name) and isinstance(value, (list, tuple)):
                     for item in value:
-                        renamed_models.append((item[0], item[1], source))
+                        if isinstance(item, (list, tuple)) and len(item) == 2:
+                            renamed_models.append((item[0], item[1], source))
         else:
             for line in text.splitlines():
                 match = ANALYSIS_RE.match(line.strip())

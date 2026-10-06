@@ -282,3 +282,21 @@ def test_openupgrade_old_layout(tmp_path):
     assert [r[:3] for r in ren] == [("sale.order", "a", "b")]
     assert [r[:2] for r in removed] == [("sale.order", "x_old")]
     assert [r[0] for r in removed_models] == ["sale.old"]
+
+
+def test_openupgrade_rename_variable_names(tmp_path):
+    """OpenUpgrade 16.0 / 17.0 also name the lists _fields_renames and
+    _models_renames (loyalty: coupon.program -> loyalty.program)."""
+    ou = tmp_path / "ou"
+    ou.mkdir()
+    _git(ou, "init", "-q", "-b", "16.0")
+    _commit(ou, {
+        "openupgrade_scripts/scripts/loyalty/16.0.1.0/pre-migration.py":
+            "_fields_renames = [('coupon.program', 'coupon_program', 'a', 'b')]\n"
+            "_models_renames = [('coupon.program', 'loyalty.program')]\n"
+            "_field_renames_event_sale = [('event.event', 'event_event', 'c', 'd')]\n"
+            "_column_renames = {'x': [('e', 'f')]}\n",
+    }, "init")
+    ren, ren_models, _removed, _removed_models = ef.openupgrade_changes(ou, "16.0", lambda m: True)
+    assert sorted(r[:3] for r in ren) == [("coupon.program", "a", "b"), ("event.event", "c", "d")]
+    assert [r[:2] for r in ren_models] == [("coupon.program", "loyalty.program")]
