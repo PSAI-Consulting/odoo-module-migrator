@@ -1,0 +1,16 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise du fork LBruyere/enterprise).
+#
+# Modules marqués « removed » dans modules.yaml alors que le commit les fusionne :
+# odoo 6182b45fb800 '[REM] mrp_operations' : « This module will be integrated into the new MRP. »
+- ["mrp_operations", "merged", "mrp"]
+# odoo 16bf40f7c482 '[IMP] hr_timesheet: Timesheet entries are now related to projects' :
+# « Remove project_timesheet module as all its functionalities are moved to hr_timesheet »
+- ["project_timesheet", "merged", "hr_timesheet"]
+# odoo b391c8d49450 '[REM] sale_layout: removed' : 10.0 sale définit sale.layout_category
+# (addons/sale/models/sale_layout.py)
+- ["sale_layout", "merged", "sale"]
+# Modules de la branche stable 9.0 dont le contenu est dans account en 10.0
+# (10.0 account_move.py : full_reconcile_id, tax_exigible)
+- ["account_full_reconcile", "merged", "account"]
+- ["account_tax_exigible", "merged", "account"]

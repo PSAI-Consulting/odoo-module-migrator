@@ -744,3 +744,10 @@ def test_core_api_100_110():
     assert _matching(errors, "invoice.signal_workflow('invoice_open')")
     assert _matching(errors, "from odoo.tools import amount_to_text_en")
     assert not _matching(errors, "text = self.currency_id.amount_to_text(self.amount_total)")
+
+
+def test_module_rules_090_100():
+    rules = _module_rules("migrate_090_100")
+    new, messages = manifest.apply_module_rules(["hr_equipment", "project_timesheet", "sale_layout", "sale"], rules)
+    assert new == ["maintenance", "hr_timesheet", "sale"]
+    assert all(level == "info" for level, _msg in messages), messages

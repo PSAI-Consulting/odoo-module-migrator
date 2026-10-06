@@ -13,32 +13,8 @@ _TEXT_REPLACES = {
     },
 }
 
-_DEPRECATED_MODULES = [
-    ("account_extra_reports", "removed"),
-    ("account_full_reconcile", "removed"),
-    ("account_tax_adjustments", "removed"),
-    ("account_tax_exigible", "removed"),
-    ("claim_from_delivery", "removed"),
-    ("crm_claim", "removed"),
-    ("crm_partner_assign", "removed"),
-    ("im_odoo_support", "merged", "im_livechat"),
-    ("mail_tip", "merged", "mail"),
-    ("marketing", "merged", "marketing_campaign"),
-    ("mrp_operations", "merged", "mrp"),
-    ("product_uos", "removed"),
-    ("product_visible_discount", "removed"),
-    ("project_timesheet", "merged", "hr_timesheet"),
-    ("report_webkit", "removed"),
-    ("sale_layout", "merged", "sale"),
-    ("sale_service", "merged", "sale_timesheet"),
-    ("warning", "removed"),
-    ("web_analytics", "removed"),
-    ("web_tip", "removed"),
-    ("web_view_editor", "removed"),
-    ("website_crm_claim", "removed"),
-]
+# Modules: deprecated_modules/migrate_090_100/*.yaml
 
 
 class MigrationScript(BaseMigrationScript):
     _TEXT_REPLACES = _TEXT_REPLACES
-    _DEPRECATED_MODULES = _DEPRECATED_MODULES
