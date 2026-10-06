@@ -510,3 +510,38 @@ def test_module_rules_130_140():
     new, messages = manifest.apply_module_rules(["l10n_cn_standard", "ocn_client", "sale"], rules)
     assert new == ["l10n_cn", "mail_mobile", "sale"]
     assert manifest.apply_module_rules(new, rules) == (new, [])
+
+
+def test_blocked_swaps_130_140(tmp_path, caplog):
+    import logging
+
+    from odoo_module_migrate.migration_scripts.migrate_130_140 import MigrationScript
+
+    module = tmp_path / "x_mod"
+    module.mkdir()
+    (module / "__manifest__.py").write_text("{'name': 'x', 'depends': ['crm', 'account']}")
+    text = (
+        "from odoo import models\n\n\nclass Lead(models.Model):\n"
+        '    _inherit = "crm.lead"\n\n    def _x(self):\n'
+        "        return self.planned_revenue, self.expected_revenue\n\n\n"
+        "class Move(models.Model):\n"
+        '    _inherit = "account.move"\n\n    def _y(self):\n'
+        "        return self.type, self.invoice_payment_state\n"
+    )
+    (module / "models.py").write_text(text)
+    script = MigrationScript()
+    script.parse_rules()
+    with caplog.at_level(logging.WARNING):
+        script.handle_fields(module)
+    new = (module / "models.py").read_text()
+    assert "return self.planned_revenue, self.expected_revenue\n" in new
+    assert "return self.move_type, self.payment_state\n" in new
+    assert any("crm.lead.planned_revenue was removed" in r.getMessage() for r in caplog.records)
+    script.handle_fields(module)
+    assert (module / "models.py").read_text() == new
+
+
+def test_core_api_130_140():
+    errors = _yaml_rules("text_errors", "migrate_130_140", ".py")
+    assert _matching(errors, "lines = self.resolve_2many_commands('line_ids', cmds)")
+    assert not _matching(errors, "lines = self.line_ids")

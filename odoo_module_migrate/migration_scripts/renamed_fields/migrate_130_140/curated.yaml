@@ -1,0 +1,21 @@
+# Renommages 13.0 -> 14.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
+# Vérifiés modèle par modèle (champs avant / après le commit et en 14.0) :
+# odoo d675dbaa4c71 '[IMP] account,* : Change type field to move_type in account.move' : commit : « Change type field to move_type in account.move » (ancienne règle account.yaml)
+- ["account.move", "type", "move_type", "odoo d675dbaa4c71 '[IMP] account,* : Change type field to move_type in account.move'"]
+# odoo 8e4158af810b "[IMP] account: add 'partial' and 'reversed' payment states to invoices" : même Selection, valeurs partial / reversed ajoutées (ancienne règle account.yaml)
+- ["account.move", "invoice_payment_state", "payment_state", "odoo 8e4158af810b \"[IMP] account: add 'partial' and 'reversed' payment states to invoices\""]
+- ["account.invoice.report", "invoice_payment_state", "payment_state", "odoo 8e4158af810b \"[IMP] account: add 'partial' and 'reversed' payment states to invoices\""]
+# odoo caeb782841fc '[IMP] account,*: Improve bank statements/payments workflow' : mêmes champs (ancienne règle account.yaml pour invoice_sent)
+- ["account.move", "invoice_sent", "is_move_sent", "odoo caeb782841fc '[IMP] account,*: Improve bank statements/payments workflow'"]
+- ["account.move", "invoice_payment_ref", "payment_reference", "odoo caeb782841fc '[IMP] account,*: Improve bank statements/payments workflow'"]
+# odoo efafadc3ee27 '[IMP] crm_iap_lead(_website): improve field naming' : commit : « improve field naming » (leads_count -> lead_count)
+- ["crm.iap.lead.mining.request", "leads_count", "lead_count", "odoo efafadc3ee27 '[IMP] crm_iap_lead(_website): improve field naming'"]
+- ["crm.reveal.rule", "leads_count", "lead_count", "odoo efafadc3ee27 '[IMP] crm_iap_lead(_website): improve field naming'"]
+# odoo 4cf9fa928e25 '[IMP] account: redo the tour' : même état d'onboarding
+- ["res.company", "account_onboarding_sample_invoice_state", "account_onboarding_create_invoice_state", "odoo 4cf9fa928e25 '[IMP] account: redo the tour'"]
+# odoo 0ea9254c81ea '[IMP] account: fusion wizards for automatic entries' : assistants fusionnés (account.automatic.entry.wizard), même journal par défaut
+- ["res.company", "accrual_default_journal_id", "automatic_entry_default_journal_id", "odoo 0ea9254c81ea '[IMP] account: fusion wizards for automatic entries'"]
+# odoo be2ee7707a4b '[IMP] inter_company_rules: split sale/purchase and account' : module inter_company_rules renommé account_inter_company_rules
+- ["res.config.settings", "module_inter_company_rules", "module_account_inter_company_rules", "odoo be2ee7707a4b '[IMP] inter_company_rules: split sale/purchase and account'"]
+# enterprise 76f611ff8b3 '[IMP] planning: generic improvements' : même Many2one planning.role
+- ["hr.employee", "planning_role_id", "default_planning_role_id", "enterprise 76f611ff8b3 '[IMP] planning: generic improvements'"]
