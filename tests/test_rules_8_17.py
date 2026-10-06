@@ -332,3 +332,10 @@ def test_curated_renames_160_170(tmp_path, caplog):
     )
     script.handle_fields(module)
     assert (module / "models.py").read_text() == py
+
+
+def test_removed_views_160_170():
+    errors = _yaml_rules("text_errors", "migrate_160_170", ".xml")
+    old = '<field name="inherit_id" ref="account.account_invoice_onboarding_panel"/>'
+    assert len(_matching(errors, old)) == 1
+    assert not _matching(errors, '<field name="inherit_id" ref="account.view_move_form"/>')
