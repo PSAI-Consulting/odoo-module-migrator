@@ -70,7 +70,7 @@ def test_other_anchors_templates_and_xmlids(tmp_path):
 
 
 def test_anchor_added_by_a_previous_spec_of_the_same_view(tmp_path):
-    # account_payment_order / aep_standard: a spec anchored on an element added
+    # a spec anchored on an element added
     # by a previous spec of the same view is valid (specs applied in order)
     ref, custom = tmp_path / "odoo", tmp_path / "custom"
     _module(ref, "base", [], _view("form", None, '<form><field name="name"/></form>', "res.partner"))
@@ -96,9 +96,9 @@ def test_anchor_added_by_a_previous_spec_of_the_same_view(tmp_path):
 
 
 def test_dependency_outside_the_addons_paths(tmp_path):
-    # psai_cliche depends on psai_bom, absent from the addons paths: its own
-    # dependencies (product...) are unknown and it may add any anchor
-    # (aep_standard -> partner_prospect...): anchors and dependencies of the
+    # my_mod depends on unknown_module, absent from the addons paths: its own
+    # dependencies (product...) are unknown and it may add any anchor:
+    # anchors and dependencies of the
     # XML ids are not checked, what must exist in Odoo itself still is
     ref, custom = tmp_path / "odoo", tmp_path / "custom"
     _module(ref, "base", [], "")

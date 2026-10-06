@@ -35,15 +35,15 @@ def test_missing_models(tmp_path):
 
 
 def test_dependency_outside_the_addons_paths(tmp_path):
-    # l10n_fr_intrastat_product depends on intrastat_product, absent from the
-    # addons paths, which defines intrastat.unit...: nothing can be reported
+    # my_mod depends on other_addon, absent from the addons paths, which may
+    # define other.unit...: nothing can be reported
     ref, custom = tmp_path / "odoo", tmp_path / "custom"
     _module(ref, "base", [], "class P(Model):\n    _name = 'res.partner'\n")
-    mod = _module(custom, "my_mod", ["base", "intrastat_product"], (
+    mod = _module(custom, "my_mod", ["base", "other_addon"], (
         "class A(models.Model):\n"
-        "    _inherit = 'intrastat.unit'\n"
-        "    partner_id = fields.Many2one('intrastat.region')\n"
+        "    _inherit = 'other.unit'\n"
+        "    partner_id = fields.Many2one('other.region')\n"
     ))
     index = models.ModelIndex.build([ref, custom])
-    assert index.unknown_dependencies("my_mod") == ["intrastat_product"]
+    assert index.unknown_dependencies("my_mod") == ["other_addon"]
     assert list(models.check_module(mod, index)) == []

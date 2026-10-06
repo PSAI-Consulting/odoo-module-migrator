@@ -7,61 +7,95 @@ import re
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
 
+IMPORT_EXPRESSION_RE = re.compile(r"^([ \t]*)from odoo\.osv import expression[ \t]*$", re.M)
+IMPORT_AND_OR_RE = re.compile(
+    r"^([ \t]*)from odoo\.osv\.expression import \(?[ \t]*(AND|OR)[ \t]*(?:,[ \t]*(AND|OR)[ \t]*)?,?[ \t]*\)?[ \t]*$",
+    re.M
+)
+
+
+def _code_names(text):
+    """(start offset, name, previous significant token, next token) of the
+    NAME tokens of Python code (strings and comments excluded)."""
+    import io
+    import tokenize
+
+    lines = text.splitlines(keepends=True)
+    starts = [0]
+    for line in lines:
+        starts.append(starts[-1] + len(line))
+    result = []
+    tokens = [
+        t for t in tokenize.generate_tokens(io.StringIO(text).readline)
+        if t.type not in (tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT, tokenize.INDENT, tokenize.DEDENT)
+    ]
+    for index, token in enumerate(tokens):
+        if token.type == tokenize.NAME:
+            previous = tokens[index - 1].string if index else ""
+            following = tokens[index + 1].string if index + 1 < len(tokens) else ""
+            following2 = tokens[index + 2].string if index + 2 < len(tokens) else ""
+            following3 = tokens[index + 3].string if index + 3 < len(tokens) else ""
+            offset = starts[token.start[0] - 1] + token.start[1]
+            result.append((offset, token.string, previous, following, following2, following3))
+    return result
+
+
+def convert_expression_to_domain(text):
+    """odoo.osv.expression AND / OR -> odoo.fields.Domain.AND / OR (odoo.osv
+    was removed in 20.0). Only done when every use of the import is a call of
+    AND / OR: other functions (normalize_domain, TRUE_DOMAIN...) have no
+    direct equivalent and are left (reported by the 20.0 rules)."""
+    try:
+        names = _code_names(text)
+    except Exception:  # noqa: BLE001 - tokenize errors: left as is
+        return text
+    edits = []  # (start, end, replacement)
+    module_import = IMPORT_EXPRESSION_RE.search(text)
+    if module_import:
+        uses = [n for n in names if n[1] == "expression" and n[2] != "." and n[0] > module_import.end()]
+        if uses and all(n[3] == "." and n[4] in ("AND", "OR") and n[5] == "(" for n in uses):
+            for offset, *_ in uses:
+                edits.append((offset, offset + len("expression"), "Domain"))
+            edits.append((module_import.start(), module_import.end(),
+                          f"{module_import.group(1)}from odoo.fields import Domain"))
+    names_import = IMPORT_AND_OR_RE.search(text)
+    if names_import:
+        imported = {names_import.group(2), names_import.group(3)} - {None}
+        uses = [n for n in names if n[1] in imported and n[2] != "."
+                and n[0] > names_import.end()]
+        if uses and all(n[3] == "(" for n in uses):
+            for offset, name, *_ in uses:
+                edits.append((offset, offset + len(name), f"Domain.{name}"))
+            edits.append((names_import.start(), names_import.end(),
+                          f"{names_import.group(1)}from odoo.fields import Domain"))
+    if not edits:
+        return text
+    for start, end, replacement in sorted(edits, reverse=True):
+        text = text[:start] + replacement + text[end:]
+    # one import of Domain is enough
+    seen = False
+    lines = []
+    for line in text.split("\n"):
+        if line.strip() == "from odoo.fields import Domain":
+            if seen:
+                continue
+            seen = True
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def migrate_expression_to_domain(
     logger, module_path, module_name, manifest_path, migration_steps, tools
 ):
-    """Convert odoo.osv.expression usage to odoo.fields.Domain"""
-    files_to_process = tools.get_files(module_path, (".py",))
-
-    for file in files_to_process:
-        try:
-            content = tools._read_content(file)
-            original_content = content
-
-            content = re.sub(
-                r"from odoo\.osv import expression",
-                "from odoo.fields import Domain",
-                content,
-            )
-
-            content = re.sub(
-                r"from odoo\.osv\.expression import (AND|OR|AND, OR|OR, AND)",
-                "from odoo.fields import Domain",
-                content,
-            )
-
-            content = re.sub(r"expression\.AND\(", "Domain.AND(", content)
-            content = re.sub(r"expression\.OR\(", "Domain.OR(", content)
-
-            content = re.sub(r"(?<!\.)AND\(", "Domain.AND(", content)
-            content = re.sub(r"(?<!\.)OR\(", "Domain.OR(", content)
-
-            content = re.sub(
-                r"from odoo\.fields import Domain, (AND|OR|AND, OR|OR, AND)",
-                "from odoo.fields import Domain",
-                content,
-            )
-
-            lines = content.split("\n")
-            seen_domain_import = False
-            cleaned_lines = []
-
-            for line in lines:
-                if line.strip() == "from odoo.fields import Domain":
-                    if not seen_domain_import:
-                        cleaned_lines.append(line)
-                        seen_domain_import = True
-                else:
-                    cleaned_lines.append(line)
-
-            content = "\n".join(cleaned_lines)
-
-            if content != original_content:
-                tools._write_content(file, content)
-                logger.info(f"Migrated expression imports to Domain in: {file}")
-
-        except Exception as e:
-            logger.error(f"Error processing file {file}: {str(e)}")
+    """Convert odoo.osv.expression AND / OR to odoo.fields.Domain"""
+    for file in tools.get_files(module_path, (".py",)):
+        content = tools._read_content(file)
+        if "odoo.osv" not in content:
+            continue
+        new_content = convert_expression_to_domain(content)
+        if new_content != content:
+            tools._write_content(file, new_content)
+            logger.info(f"Migrated expression imports to Domain in: {file}")
 
 
 def upgrade_sql_constraints(

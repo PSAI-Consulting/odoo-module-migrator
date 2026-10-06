@@ -519,10 +519,43 @@ def test_access_records_left_to_upgrade_code():
     assert any(r"account\.group" in p for p in xml)  # 19.3-00-account-groups.py is not run
 
 
+def test_expression_to_domain_only_calls_of_and_or():
+    """odoo.osv.expression -> Domain: AND / OR calls only, never in strings,
+    other names (MY_AND), osv.expression.OR or other functions."""
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import (
+        convert_expression_to_domain as convert,
+    )
+
+    text = (
+        "from odoo.osv import expression\n\n"
+        "def f(a, b):\n"
+        "    sql = 'SELECT 1 WHERE x AND(y) OR(z)'  # AND( in a comment\n"
+        "    return str(expression.OR([a, b])), expression.AND([a, b]), MY_AND(a)\n"
+    )
+    new = convert(text)
+    assert new == text.replace("from odoo.osv import expression", "from odoo.fields import Domain").replace(
+        "expression.OR([", "Domain.OR([").replace("expression.AND([", "Domain.AND([")
+    assert convert(new) == new
+    # another function of the module: no equivalent, left (reported in 20.0)
+    other = "from odoo.osv import expression\nx = expression.AND([a]) + expression.normalize_domain(b)\n"
+    assert convert(other) == other
+    names = (
+        "from odoo.osv.expression import AND, OR\n"
+        "x = AND([a, b]) or OR([c])\ny = 'AND(' + MY_AND(c) + obj.AND(d)\n"
+    )
+    assert convert(names) == (
+        "from odoo.fields import Domain\n"
+        "x = Domain.AND([a, b]) or Domain.OR([c])\ny = 'AND(' + MY_AND(c) + obj.AND(d)\n"
+    )
+    # osv.expression.OR(...) of `from odoo import osv`: left (was osv.Domain.OR)
+    pkg = "from odoo import models, osv\nx = osv.expression.OR([a, b])\n"
+    assert convert(pkg) == pkg
+
+
 def test_search_group_attrs_removed_in_place():
     """<group expand string> of search views (not allowed by common.rng in
     19.0): only these attributes change, the file is not serialized again
-    (auditlog: 249 lines reformatted, an XML declaration rewritten...)."""
+    (multi-line attributes joined, XML declaration rewritten...)."""
     from odoo_module_migrate.migration_scripts.migrate_180_190 import remove_search_group_attrs
 
     text = (
