@@ -1,0 +1,4 @@
+# Source : odoo 3c62ca1eb96d '[REM] core: remove `name_get` API' (17.0 : name_get()
+# déprécié, « Since 17.0, deprecated method, read display_name instead »)
+.py:
+  '\.name_get\(\)': "[17] name_get() is deprecated since 17.0 (odoo 3c62ca1eb96d): read display_name instead"
