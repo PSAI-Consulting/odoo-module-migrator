@@ -32,3 +32,18 @@ def test_missing_models(tmp_path):
     # stock.valuation.layer removed; mail.thread and other.model not in the
     # dependencies (other is not a dependency of my_mod)
     assert found == [(5, "stock.valuation.layer"), (6, "mail.thread"), (6, "other.model")]
+
+
+def test_dependency_outside_the_addons_paths(tmp_path):
+    # l10n_fr_intrastat_product depends on intrastat_product, absent from the
+    # addons paths, which defines intrastat.unit...: nothing can be reported
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "class P(Model):\n    _name = 'res.partner'\n")
+    mod = _module(custom, "my_mod", ["base", "intrastat_product"], (
+        "class A(models.Model):\n"
+        "    _inherit = 'intrastat.unit'\n"
+        "    partner_id = fields.Many2one('intrastat.region')\n"
+    ))
+    index = models.ModelIndex.build([ref, custom])
+    assert index.unknown_dependencies("my_mod") == ["intrastat_product"]
+    assert list(models.check_module(mod, index)) == []

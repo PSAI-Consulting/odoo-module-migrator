@@ -97,15 +97,26 @@ def test_anchor_added_by_a_previous_spec_of_the_same_view(tmp_path):
 
 def test_dependency_outside_the_addons_paths(tmp_path):
     # psai_cliche depends on psai_bom, absent from the addons paths: its own
-    # dependencies (product...) are unknown, every view of the tree counts
+    # dependencies (product...) are unknown and it may add any anchor
+    # (aep_standard -> partner_prospect...): anchors and dependencies of the
+    # XML ids are not checked, what must exist in Odoo itself still is
     ref, custom = tmp_path / "odoo", tmp_path / "custom"
     _module(ref, "base", [], "")
     _module(ref, "product", ["base"], _view("form", None, '<form><field name="name"/></form>')
             + '<record id="menu_p" model="ir.ui.menu"><field name="name">p</field></record>')
     _module(ref, "other", ["product"], _view("form_x", "product.form",
             '<field name="name" position="after"><field name="default_code"/></field>'))
-    mod = _module(custom, "my_mod", ["unknown_module"], _view(
-        "v1", "product.form", "<xpath expr=\"//field[@name='default_code']\" position=\"after\"/>")
-        + '<record id="product.menu_p" model="ir.ui.menu"><field name="active" eval="False"/></record>')
+    mod = _module(custom, "my_mod", ["unknown_module"], "".join([
+        _view("v1", "product.form", "<xpath expr=\"//field[@name='default_code']\" position=\"after\"/>"),
+        _view("v2", "product.form", "<xpath expr=\"//field[@name='custom_field']\" position=\"after\"/>"),
+        _view("v3", "product.gone", "<xpath expr=\"//field[@name='name']\" position=\"after\"/>"),
+        '<record id="product.menu_p" model="ir.ui.menu"><field name="active" eval="False"/></record>',
+        '<record id="product.menu_gone" model="ir.ui.menu"><field name="active" eval="False"/></record>',
+    ]))
     index = views.ViewIndex.build([ref, custom])
-    assert list(views.check_module(mod, index, {"base", "product", "other"})) == []
+    assert index.unknown_dependencies("my_mod") == ["unknown_module"]
+    messages = sorted(msg for _p, _l, msg in views.check_module(mod, index, {"base", "product", "other"}))
+    assert messages == [
+        "XML id product.menu_gone does not exist in the target Odoo",
+        "parent view product.gone does not exist in the target Odoo",
+    ]

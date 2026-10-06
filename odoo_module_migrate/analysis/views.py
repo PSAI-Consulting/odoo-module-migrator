@@ -192,12 +192,10 @@ class ViewIndex:
                 todo.extend(self.depends.get(name, ()))
         return result
 
-    def known_closure(self, module):
-        """closure() when every module of it is known (indexed), else None:
-        the views / XML ids of the dependencies of an unknown module (not in
-        the addons paths) cannot be listed, so nothing can be excluded."""
-        result = self.closure(module)
-        return result if result <= set(self.depends) else None
+    def unknown_dependencies(self, module):
+        """Dependencies (direct or not) of the module absent from the indexed
+        addons paths: what they add (views, XML ids, models) is unknown."""
+        return sorted(self.closure(module) - set(self.depends))
 
     def available(self, xid, modules=None, exclude=(), _seen=None):
         """Anchor keys of the view and of the views extending it; only the
@@ -260,7 +258,9 @@ def _describe(key):
 def check_module(module, index, reference_modules):
     """Yield (path, line, message) for the anchors and XML ids not found."""
     module = pathlib.Path(module)
-    closure = index.known_closure(module.name)
+    # a dependency outside the addons paths may add any anchor, XML id or
+    # dependency: only what must exist in the target Odoo itself is checked
+    closure = None if index.unknown_dependencies(module.name) else index.closure(module.name)
     for path in _data_files(module):
         root = _parse(path)
         if root is None:
@@ -273,6 +273,8 @@ def check_module(module, index, reference_modules):
                     yield path, report_node.sourceline, (
                         f"parent view {parent} does not exist in the target Odoo"
                     )
+                continue
+            if closure is None:
                 continue
             # the view itself does not count: it holds the anchors
             available = index.available(index.root(parent), closure, exclude={xid})

@@ -306,6 +306,14 @@ class Migration:
         )
         reference_modules = {m.name for m in views._module_dirs(reference)}
         for module_migration in self._module_migrations:
+            unknown = index.unknown_dependencies(module_migration._module_name)
+            if unknown:
+                logger.warning(
+                    "[view] Dependencies not found in the addons paths (%s): the anchors of the"
+                    " inherited views and the models used are not checked (give --context-path)."
+                    " File %s:1"
+                    % (", ".join(unknown), module_migration._module_path / "__manifest__.py")
+                )
             for path, line, message in views.check_module(
                 module_migration._module_path, index, reference_modules
             ):
