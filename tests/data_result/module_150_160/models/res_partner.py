@@ -12,7 +12,7 @@ class ResPartner(models.Model):
         return self.get_external_id()[self.id]
 
     def test_loop_through_fields(self):
-        group_fields = [f for f in self._fields if f.startswith("group_")]
+        group_fields = [f for f in list(self._fields) if f.startswith("group_")]
         for group_field in group_fields:
             print(group_field)
 
