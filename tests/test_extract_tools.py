@@ -350,3 +350,12 @@ def test_oldname_renames(tmp_path):
     # old_kept still exists, never_in_10 did not exist in 10.0: not renames
     assert [r[:3] for r in renames] == [("delivery.carrier", "free_if_more_than", "free_over")]
     assert "oldname='free_if_more_than'" in renames[0][3]
+
+
+def test_api_module_name_openerp():
+    """9.0 has openerp/, 10.0 odoo/: both are named odoo.* to be compared."""
+    import extract_api
+
+    assert extract_api._module_name("openerp/tools/misc.py") == "odoo.tools.misc"
+    assert extract_api._module_name("odoo/tools/misc.py") == "odoo.tools.misc"
+    assert extract_api._module_name("openerp/addons/base/res/res_partner.py") is None
