@@ -68,6 +68,12 @@ def _adapt_version_format(current_version, target_version_name):
             return current_version  # already migrated: keep it (idempotence)
         return f"{target_version_name}.1.0.0"
 
+    # The serie alone ('17.0'): '20.0' is refused by Odoo 20.0 ("incompatible
+    # version": adapt_version() no longer prefixes a version starting with the
+    # serie, and check_version() wants '20.0.' + something)
+    if re.fullmatch(r"\d+\.0", current_version) and 8 <= int(version_parts[0]) <= 20:
+        return f"{target_version_name}.1.0.0"
+
     if len(version_parts) >= 2:
         first_part = version_parts[0]
         

@@ -68,3 +68,15 @@ def test_leading_indentation_accepted():
 def test_comments_are_not_rewritten():
     with pytest.raises(m.ManifestError):
         m.rewrite_depends("{'depends': [\n  'a',  # comment\n]}", ["b"])
+
+
+def test_bump_version_formats():
+    from odoo_module_migrate.migration_scripts.python_scripts.migrate_allways.smart_bump_version import (
+        _adapt_version_format as bump,
+    )
+
+    assert bump("17.0", "20.0") == "20.0.1.0.0"  # '20.0' alone is refused by Odoo 20
+    assert bump("17.0.1.0.0", "20.0") == "20.0.1.0.0"
+    assert bump("20.0.1.0.0", "20.0") == "20.0.1.0.0"
+    assert bump("17.0.1", "20.0") == "20.0.1"
+    assert bump("0.1", "20.0") == "20.0.0.1"
