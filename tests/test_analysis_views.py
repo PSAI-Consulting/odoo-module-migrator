@@ -67,3 +67,42 @@ def test_other_anchors_templates_and_xmlids(tmp_path):
     assert "XML id web.menu_gone does not exist" in messages[0]
     assert messages[1].startswith("button[@name='action_gone'] not found")
     assert messages[2].startswith("t[@t-set='gone'] not found")
+
+
+def test_bare_tag_anchors(tmp_path):
+    """<header position="inside"> and //header need such an element in the
+    target view (product.product_normal_form_view has no <header> in 20.0,
+    odoo 4c8bf7a7a90f); what the view inserts itself counts."""
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(ref, "product", ["base"], _view(
+        "form", None, '<form><sheet><group name="g"><field name="name"/></group></sheet></form>'))
+    mod = _module(custom, "my_mod", ["product"], "".join([
+        _view("v1", "product.form", '<header position="inside"><field name="x"/></header>'),
+        _view("v3", "product.form", '<xpath expr="//form[1]/sheet[1]/group[2]" position="after"/>'),
+        _view("v4", "product.form", '<sheet position="inside"><div class="x"/></sheet>'),
+        # inserted by the view itself, then used as an anchor
+        _view("v5", "product.form",
+              '<sheet position="before"><footer><button name="b"/></footer></sheet>'
+              '<xpath expr="//footer/button[@name=\'b\']" position="after"/>'),
+        _view("v6", "product.form", "<xpath expr=\"//div[hasclass('x')]/..\" position=\"after\"/>"),
+    ]))
+    mod2 = _module(custom, "my_mod2", ["product"],
+                   _view("v2", "product.form", '<xpath expr="//header" position="inside"/>'))
+    index = views.ViewIndex.build([ref, custom])
+    for module in (mod, mod2):
+        messages = [msg for _p, _l, msg in views.check_module(module, index, {"base", "product"})]
+        assert [m.split(" ")[0] for m in messages] == ["<header>"], messages
+
+
+def test_bare_tag_anchors_templates(tmp_path):
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(ref, "web", ["base"], '<template id="layout"><div><span/></div></template>')
+    mod = _module(custom, "my_web", ["web"], "".join([
+        '<template id="t1" inherit_id="web.layout"><xpath expr="/t/div/span" position="after"/></template>',
+        '<template id="t2" inherit_id="web.layout"><xpath expr="//h2" position="replace"/></template>',
+    ]))
+    index = views.ViewIndex.build([ref, custom])
+    messages = [msg for _p, _l, msg in views.check_module(mod, index, {"base", "web"})]
+    assert len(messages) == 1 and messages[0].startswith("<h2> not found"), messages
