@@ -46,6 +46,14 @@ def resolve_ref(repo, branch):
     raise SystemExit(f"Branch {branch} not found in {repo}")
 
 
+def step_name(version_from, version_to):
+    """migrate_090_100 (versions on 3 digits, as the migration scripts)."""
+    def code(version):
+        return version.replace(".", "").zfill(3)
+
+    return f"migrate_{code(version_from)}_{code(version_to)}"
+
+
 def list_modules(repo, ref, prefix):
     """{module_name: module_path} of the modules (dirs with a manifest)."""
     args = ["ls-tree", "-r", "--name-only", ref]
@@ -260,7 +268,7 @@ def extract_fields(args):
     def models_filter(model):
         return model.startswith(prefixes)
 
-    step = f"migrate_{args.from_version.replace('.', '')}_{args.to_version.replace('.', '')}"
+    step = step_name(args.from_version, args.to_version)
     out = pathlib.Path(args.output_dir)
     renamed_fields, renamed_models, removed_fields, removed_models = [], [], [], []
     candidates, ou_candidates = [], []
@@ -370,7 +378,7 @@ def extract_models(args):
     sources (for the versions OpenUpgrade does not cover yet)."""
     import extract_fields as ef
 
-    step = f"migrate_{args.from_version.replace('.', '')}_{args.to_version.replace('.', '')}"
+    step = step_name(args.from_version, args.to_version)
     out = pathlib.Path(args.output_dir)
     prefixes = tuple(args.models.split(",")) if args.models else None
     repos = [pathlib.Path(spec.partition("@")[0]) for spec in args.repo]
@@ -430,7 +438,7 @@ def _write_text_rules(path, header, sections):
 
 
 def _step(args):
-    return f"migrate_{args.from_version.replace('.', '')}_{args.to_version.replace('.', '')}"
+    return step_name(args.from_version, args.to_version)
 
 
 def extract_js(args):

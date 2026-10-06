@@ -377,3 +377,8 @@ def test_modules_with_openerp_manifest(tmp_path):
     assert ec.list_modules(repo, "10.0", "addons") == {"sale": "addons/sale"}
     sha, subject = ec.deletion_commit(repo, "9.0", "10.0", "addons/web_tip")
     assert subject == "[REM] web_tip: remove"
+
+
+def test_step_name():
+    assert ec.step_name("9.0", "10.0") == "migrate_090_100"
+    assert ec.step_name("16.0", "17.0") == "migrate_160_170"
