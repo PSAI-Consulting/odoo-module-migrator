@@ -426,3 +426,13 @@ def test_removed_api_160_170():
     assert _matching(errors, "raise exceptions.except_orm('x')")
     assert not _matching(errors, "from odoo.exceptions import UserError, ValidationError")
     assert not _matching(errors, "import warnings\nwarnings.warn('x', UserWarning)")
+
+
+def test_module_rules_140_150():
+    rules = _module_rules("migrate_140_150")
+    new, messages = manifest.apply_module_rules(
+        ["helpdesk_sale_timesheet_edit", "l10n_ch_qriban", "website_calendar", "sale"], rules
+    )
+    assert new == ["helpdesk_sale_timesheet", "l10n_ch", "website_appointment", "sale"]
+    assert all(level == "info" for level, _msg in messages), messages
+    assert manifest.apply_module_rules(new, rules) == (new, [])

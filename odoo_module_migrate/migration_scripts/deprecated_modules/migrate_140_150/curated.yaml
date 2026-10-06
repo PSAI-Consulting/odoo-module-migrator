@@ -1,0 +1,13 @@
+# Règles vérifiées à la main : prioritaires sur modules.yaml (généré, avec
+# des données Enterprise du fork LBruyere/enterprise).
+#
+# Modules marqués « removed » dans modules.yaml alors que le commit les fusionne :
+# enterprise 74ebd3a79a1 '[IMP] helpdesk_sale_timesheet: merge helpdesk_sale_timesheet_edit'
+- ["helpdesk_sale_timesheet_edit", "merged", "helpdesk_sale_timesheet"]
+# enterprise f39e03dc9bb '[MOV] l10n_be_hr_payroll_impulsion: Merge into l10n_be_hr_payroll'
+- ["l10n_be_hr_payroll_impulsion", "merged", "l10n_be_hr_payroll"]
+#
+# Laissés « removed » après vérification : payment_odoo_by_adyen (odoo 471a1f39f549 le renomme
+# payment_odoo, lui-même supprimé avant 15.0 avec adyen_platforms, odoo fbfd99e68054) ;
+# account_plaid / account_ponto / account_yodlee (remplacés par account_online_synchronization,
+# pas fusionnés) ; l10n_be_hr_payroll_variable_revenue (pas de commit de fusion trouvé).
