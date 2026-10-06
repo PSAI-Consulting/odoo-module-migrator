@@ -23,7 +23,8 @@ import re
 import subprocess
 import sys
 
-MANIFEST_RE = re.compile(r"^(?:(?P<prefix>.+)/)?(?P<module>[^/]+)/__manifest__\.py$")
+# __openerp__.py up to 9.0, __manifest__.py from 10.0
+MANIFEST_RE = re.compile(r"^(?:(?P<prefix>.+)/)?(?P<module>[^/]+)/__(?:manifest|openerp)__\.py$")
 
 
 def git(repo, *args):
@@ -61,7 +62,7 @@ def list_modules(repo, ref, prefix):
 def deletion_commit(repo, ref_from, ref_to, module_path):
     out = git(
         repo, "log", "--diff-filter=D", "--format=%h%x09%s", "-1",
-        f"{ref_from}..{ref_to}", "--", f"{module_path}/__manifest__.py",
+        f"{ref_from}..{ref_to}", "--", f"{module_path}/__manifest__.py", f"{module_path}/__openerp__.py",
     )
     if not out.strip():
         return None, ""

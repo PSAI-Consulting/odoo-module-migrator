@@ -53,7 +53,8 @@ def modules(repo, ref):
     result = {}
     for path in git(repo, "ls-tree", "--name-only", "-r", ref).splitlines():
         parts = path.split("/")
-        if len(parts) == 2 and parts[1] == "__manifest__.py":
+        # __openerp__.py up to 9.0
+        if len(parts) == 2 and parts[1] in ("__manifest__.py", "__openerp__.py"):
             try:
                 manifest = ast.literal_eval(git(repo, "show", f"{ref}:{path}").lstrip())
             except (ValueError, SyntaxError, subprocess.CalledProcessError):

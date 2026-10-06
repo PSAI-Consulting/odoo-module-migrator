@@ -359,3 +359,21 @@ def test_api_module_name_openerp():
     assert extract_api._module_name("openerp/tools/misc.py") == "odoo.tools.misc"
     assert extract_api._module_name("odoo/tools/misc.py") == "odoo.tools.misc"
     assert extract_api._module_name("openerp/addons/base/res/res_partner.py") is None
+
+
+def test_modules_with_openerp_manifest(tmp_path):
+    """Up to 9.0 the manifest is __openerp__.py: removed modules must be seen."""
+    repo = tmp_path / "odoo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "9.0")
+    _commit(repo, {
+        "addons/sale/__openerp__.py": "{'name': 'sale'}",
+        "addons/web_tip/__openerp__.py": "{'name': 'web_tip'}",
+    }, "init")
+    _git(repo, "checkout", "-q", "-b", "10.0")
+    _commit(repo, {"addons/sale/__manifest__.py": "{'name': 'sale'}"}, "[REM] web_tip: remove",
+            delete=["addons/web_tip/__openerp__.py", "addons/sale/__openerp__.py"])
+    assert ec.list_modules(repo, "9.0", "addons") == {"sale": "addons/sale", "web_tip": "addons/web_tip"}
+    assert ec.list_modules(repo, "10.0", "addons") == {"sale": "addons/sale"}
+    sha, subject = ec.deletion_commit(repo, "9.0", "10.0", "addons/web_tip")
+    assert subject == "[REM] web_tip: remove"

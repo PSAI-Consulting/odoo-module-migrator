@@ -90,7 +90,7 @@ def js_changes(repos, ref_from_of, ref_to_of):
     return moved, removed
 
 
-MANIFEST_RE = re.compile(r"^(?:.*/)?addons/(?P<module>\w+)/__manifest__\.py$")
+MANIFEST_RE = re.compile(r"^(?:.*/)?addons/(?P<module>\w+)/__(?:manifest|openerp)__\.py$")
 XML_RE = re.compile(r"(?:^|/)addons/(?P<module>\w+)/(?!static/|tests?/).*\.xml$")
 RECORD_RE = re.compile(r"<record\b(?P<attrs>[^>]*)>", re.S)
 TEMPLATE_RE = re.compile(r"<template\b(?P<attrs>[^>]*)>", re.S)
@@ -121,12 +121,12 @@ def view_changes(repos, ref_from_of, ref_to_of):
     before, after, modules_before, modules_after, where = {}, {}, set(), set(), {}
     for repo in repos:
         ref_from, ref_to = ref_from_of(repo), ref_to_of(repo)
-        files = read_blobs(repo, ref_from, re.compile(r"\.xml$|__manifest__\.py$"))
+        files = read_blobs(repo, ref_from, re.compile(r"\.xml$|__(?:manifest|openerp)__\.py$"))
         modules_before |= {m["module"] for m in map(MANIFEST_RE.search, files) if m}
         for xmlid, path in _xml_views(files).items():
             before.setdefault(xmlid, path)
             where.setdefault(xmlid, (repo, ref_from, ref_to))
-        files = read_blobs(repo, ref_to, re.compile(r"\.xml$|__manifest__\.py$"))
+        files = read_blobs(repo, ref_to, re.compile(r"\.xml$|__(?:manifest|openerp)__\.py$"))
         modules_after |= {m["module"] for m in map(MANIFEST_RE.search, files) if m}
         after.update({x: p for x, p in _xml_views(files).items() if x not in after})
     removed = []
