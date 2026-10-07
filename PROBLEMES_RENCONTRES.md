@@ -594,6 +594,47 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `easi_account`. `wiz.message_html += "</br> - %s" % ...` : la valeur lue est un `Markup`, le texte ajouté est **échappé**. Existait en 17.
 - **Correction proposée** : signaler (🟡) les `+=` sur un champ `fields.Html` ; proposer de construire la chaîne puis d'affecter une fois. Signaler aussi la balise `</br>`.
 
+## 52. 🔴 `product_uom` non vu dans une expression génératrice
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — les générateurs et
+> compréhensions propagent maintenant le modèle de leur itérable, y compris via
+> un alias de `self.filtered(...)`. `_origin` conserve également le modèle du
+> record. Les deux accès du cas réel sont renommés en `uom_id`.
+
+- Module : `easi_no_recompute_on_polines`. `rec.product_uom == rec._origin.product_uom for rec in draft_lines` (dans `purchase.order.line`, `draft_lines = self.filtered(...)`) : rapport « Risque aucun ».
+- La règle du n° 34 ne suit pas le type de `rec` dans une expression génératrice ni à travers `self.filtered(...)`.
+- **Correction proposée** : dans une classe `_inherit = "purchase.order.line"`, les variables issues de `self`, `self.filtered(...)`, `for x in self` (et les générateurs) sont du même modèle ; à défaut, signaler tout `.product_uom` dans un module qui dépend de `purchase`/`sale`/`stock`.
+
+## 53. 🟡 Surcharge d'un calcul standard dont les dépendances ont changé
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — l'index cible
+> conserve les dépendances de chaque méthode. Une surcharge `_compute_*` dont
+> les `@api.depends` diffèrent de la méthode cible liste les dépendances
+> manquantes et supplémentaires pour revue.
+
+- Module : `easi_no_recompute_on_polines`. `_compute_price_unit_and_date_planned_and_name` dépend en 20 de `order_id.partner_id` (et gère `technical_price_unit`) : la surcharge bloque ce nouveau recalcul, sans erreur.
+- **Correction proposée** : quand une méthode `_compute_*` surchargée a des `@api.depends` différents entre source et cible, TODO 🟡 avec la différence.
+
+## 54. 🟡 En-têtes de licence / copyright gardés sur les modules internes
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — hors OCA, les en-têtes
+> `Copyright`, `License`, `@author` et `Part of Odoo` sont retirés au début des
+> fichiers Python et du manifest. Le contenu des modules OCA reste intact.
+
+- Module : `easi_no_recompute_on_polines`. `# License AGPL-3.0 or later (...)` reste en tête de `__manifest__.py` et des `__init__.py`. Même cas avant : en-têtes Akretion (`easi_account_payment_term_bank`, `easi_account`), « Part of Odoo » (`easi_document_on_line`), « Copyright 2026 ST OF » (`sale_order_block_duplicate_product`), retirés à la main.
+- Règle de l'équipe : pas d'en-tête de licence ni de copyright dans les modules internes (la licence est dans le manifest).
+- **Correction proposée** : option (activée par défaut hors OCA) qui retire les commentaires `# Copyright …`, `# License …`, `# @author …`, `# Part of Odoo …` en tête des fichiers Python et du manifest. Jamais sur les modules OCA.
+
+## 55. 🟡 Lignes vides en trop après le retrait d'un import
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — le nettoyage Ruff applique
+> aussi les règles d'imports, puis un passage final retire les lignes vides en
+> tête et limite les blocs vides consécutifs. Deux lignes restent entre imports
+> et classe, conformément au format Python.
+
+- Module : `easi_no_recompute_on_polines`. Après le retrait de `from itertools import groupby`, il reste 3 lignes vides entre l'en-tête et `from odoo import models` ; `ruff format` ne les réduit pas.
+- **Correction proposée** : après le retrait d'imports inutilisés, réduire les lignes vides consécutives du bloc d'imports (au plus 1 entre deux groupes), ou lancer `ruff check --select I --fix` avant `ruff format`.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -620,6 +661,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_document_on_line` | Dossiers proposés comme documents (refonte de `documents` en 18) ; faux positif sur `default_get` ; champ lu sur un modèle dynamique | 44 à 46 |
 | `easi_supplierinfo` | Assistant déclaré en `models.Model` (tout le reste signalé) | 47, 48 |
 | `easi_account` | Manifest non mis au modèle (fausse erreur de syntaxe), `precision_get('Product Unit of Measure')`, `+=` sur un champ HTML | 49 à 51 |
+| `easi_no_recompute_on_polines` | `product_uom` dans une expression génératrice ; dépendances du calcul standard changées ; en-têtes de licence gardés, lignes vides en trop | 52 à 55 |
 
 ---
 

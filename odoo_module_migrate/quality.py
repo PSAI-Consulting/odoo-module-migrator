@@ -152,12 +152,44 @@ def clean_init_blank_lines(text):
     return "\n".join(lines) + ("\n" if lines else "")
 
 
+_INTERNAL_HEADER = re.compile(
+    r"^#\s*(?:Copyright\b|License\b|@author\b|Part of Odoo\b)", re.I
+)
+
+
+def remove_internal_headers(text):
+    """Drop leading legal boilerplate from non-OCA internal modules."""
+    lines = text.splitlines(keepends=True)
+    index = 0
+    matched = False
+    while index < len(lines):
+        stripped = lines[index].strip()
+        if not stripped:
+            index += 1
+        elif _INTERNAL_HEADER.match(stripped):
+            matched = True
+            index += 1
+        elif re.match(r"^#.*coding[:=]", stripped):
+            index += 1
+        else:
+            break
+    return "".join(lines[index:]) if matched else text
+
+
+def clean_python_spacing(text):
+    """Normalize blank space that can remain after Ruff removes an import."""
+    text = text.lstrip("\r\n")
+    return re.sub(r"\n(?:[ \t]*\n){3,}", "\n\n\n", text)
+
+
 def finish_module(
     module, cosmetic=True, original_data=(), manifest_layout=False, default_website=""
 ):
     manifest = module / "__manifest__.py"
     if manifest.exists():
         text = tools._read_content(manifest)
+        if cosmetic:
+            text = remove_internal_headers(text)
         try:
             data = ast.literal_eval(text)
             from .manifest import inspect_keys
@@ -227,7 +259,7 @@ def finish_module(
         text = tools._read_content(path)
         check_python(path, text)
         if cosmetic:
-            new = readable_strings(text).lstrip("\r\n")
+            new = clean_python_spacing(remove_internal_headers(readable_strings(text)))
             if path.name == "__init__.py":
                 new = clean_init_blank_lines(new)
             if new and not new.endswith("\n"):

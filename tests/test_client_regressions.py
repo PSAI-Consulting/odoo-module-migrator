@@ -154,6 +154,14 @@ class Uom(Model):
             for line in order.order_line:
                 seller = line.product_id._select_seller(uom_id=line.product_uom)
                 label = line.name
+
+class Line(Model):
+    _inherit = 'purchase.order.line'
+    def unchanged(self):
+        draft_lines = self.filtered(lambda rec: rec.order_id)
+        return all(
+            rec.product_uom == rec._origin.product_uom for rec in draft_lines
+        )
 """,
         '<span t-esc="order_line.name"/>',
     )
@@ -163,8 +171,9 @@ class Uom(Model):
         mod, index, {("purchase.order.line", "product_uom"): "uom_id"}
     )
 
-    assert len(changed) == 1
+    assert len(changed) == 3
     assert "uom_id=line.uom_id" in (mod / "models.py").read_text()
+    assert "rec.uom_id == rec._origin.uom_id" in (mod / "models.py").read_text()
     messages = [
         message
         for *_prefix, message in python_checks.check_module(mod, index, 20)
@@ -275,7 +284,13 @@ def test_quality_and_manifest_access_order(tmp_path, caplog):
 
 
 def test_oca_cosmetics_are_preserved(tmp_path):
-    mod = addon(tmp_path, "oca", code='\nname = "caf\\u00e9"\n')
+    mod = addon(
+        tmp_path,
+        "oca",
+        code='# Copyright OCA Contributors\n# License AGPL-3.0 or later\n\nname = "caf\\u00e9"\n',
+    )
+    manifest = mod / "__manifest__.py"
+    manifest.write_text("# Copyright OCA Contributors\n" + manifest.read_text())
     before = tools.hash_tree(mod)
     quality.finish_module(mod, cosmetic=False)
     assert tools.hash_tree(mod) == before
@@ -740,6 +755,37 @@ def test_super_call_to_removed_parent_method_is_reported(tmp_path):
     assert "_prepare_customer_values" in messages[0]
 
 
+def test_compute_override_reports_changed_target_dependencies(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "purchase",
+        ["base"],
+        """class Line(Model):
+    _name = 'purchase.order.line'
+    @api.depends('product_qty', 'uom_id', 'company_id', 'order_id.partner_id')
+    def _compute_price_unit_and_date_planned_and_name(self):
+        pass
+""",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["purchase"],
+        """class Line(Model):
+    _inherit = 'purchase.order.line'
+    @api.depends('product_qty', 'uom_id', 'company_id')
+    def _compute_price_unit_and_date_planned_and_name(self):
+        return
+""",
+    )
+    index = models.ModelIndex.build([tmp_path])
+    messages = [issue[-1] for issue in python_checks.check_module(mod, index)]
+    changed = [message for message in messages if "different @api.depends" in message]
+    assert len(changed) == 1
+    assert "missing order_id.partner_id" in changed[0]
+
+
 def test_dynamic_document_records_and_base_default_get_are_checked(tmp_path):
     addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
     addon(
@@ -847,8 +893,10 @@ def test_unused_import_cleanup_preserves_initializers_and_noqa(tmp_path):
     mod = addon(
         tmp_path,
         "custom",
-        code='from odoo import api, models\nclass Partner(models.Model):\n    _inherit = "res.partner"\n',
+        code='# License AGPL-3.0 or later\n\nfrom itertools import groupby\n\nfrom odoo import api, models\n\n\nclass Partner(models.Model):\n    _inherit = "res.partner"\n',
     )
+    manifest = mod / "__manifest__.py"
+    manifest.write_text("# Copyright Example\n# @author Someone\n\n" + manifest.read_text())
     (mod / "__init__.py").write_text("from . import models\n")
     (mod / "hook.py").write_text("import registration  # noqa: F401\n")
     migration = Migration(
@@ -860,9 +908,12 @@ def test_unused_import_cleanup_preserves_initializers_and_noqa(tmp_path):
         pre_commit=False,
         clean_imports=True,
     )
+    quality.finish_module(mod, cosmetic=True)
     migration._format_changed_files()
-    assert "from odoo import models" in (mod / "models.py").read_text()
-    assert "api" not in (mod / "models.py").read_text()
+    source = (mod / "models.py").read_text()
+    assert source.startswith("from odoo import models\n")
+    assert "api" not in source and "groupby" not in source
+    assert "Copyright" not in manifest.read_text() and "@author" not in manifest.read_text()
     assert (mod / "__init__.py").read_text() == "from . import models\n"
     assert "import registration" in (mod / "hook.py").read_text()
 

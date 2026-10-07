@@ -185,7 +185,8 @@ def source_summary(path):
         return [dict(model=m, name=m if m in NAME_RE.findall(text) else None,
                      parents=list(models - {m}), bases=[],
                      fields=dict.fromkeys(FIELD_ASSIGN_RE.findall(text)),
-                     methods=re.findall(r"^    (?:async )?def (\w+)\(", text, re.M), types={}, company=[])
+                     methods=re.findall(r"^    (?:async )?def (\w+)\(", text, re.M),
+                     method_depends={}, types={}, company=[])
                 for m in sorted(models)]
     result = []
     for cls in ast.walk(tree):
@@ -195,7 +196,7 @@ def source_summary(path):
         if not infos:
             continue
         model, name, parents, bases, fields, _ = infos[0]
-        kinds, company = {}, []
+        kinds, company, method_depends = {}, [], {}
         for stmt in cls.body:
             target = stmt.target if isinstance(stmt, ast.AnnAssign) else (
                 stmt.targets[0] if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 else None)
@@ -205,10 +206,26 @@ def source_summary(path):
                 if any(k.arg == "company_dependent" and isinstance(k.value, ast.Constant)
                        and k.value.value is True for k in call.keywords):
                     company.append(target.id)
+            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                dependencies = []
+                for decorator in stmt.decorator_list:
+                    if not (
+                        isinstance(decorator, ast.Call)
+                        and _call_name(decorator) == "depends"
+                    ):
+                        continue
+                    dependencies.extend(
+                        arg.value
+                        for arg in decorator.args
+                        if isinstance(arg, ast.Constant)
+                        and isinstance(arg.value, str)
+                    )
+                if dependencies:
+                    method_depends[stmt.name] = dependencies
         result.append(dict(model=model, name=name, parents=sorted(parents), bases=sorted(bases),
                            fields=fields, methods=[s.name for s in cls.body
                            if isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))],
-                           types=kinds, company=company))
+                           method_depends=method_depends, types=kinds, company=company))
     return result
 
 
@@ -226,6 +243,7 @@ class ModelIndex:
         self.field_owners = collections.defaultdict(set)
         self.methods = collections.defaultdict(set)
         self.method_owners = collections.defaultdict(set)
+        self.method_depends = collections.defaultdict(set)
         self.field_types = collections.defaultdict(set)
         self.company_fields = set()
         self.renamed_methods = {}
@@ -284,6 +302,8 @@ class ModelIndex:
             for method in info["methods"]:
                 self.methods[model].add(method)
                 self.method_owners[model, method].add(owner)
+            for method, dependencies in info.get("method_depends", {}).items():
+                self.method_depends[model, method, owner].update(dependencies)
             self.methods[model].update(BASE_METHODS)
             for method in BASE_METHODS:
                 self.method_owners[model, method].add("base")

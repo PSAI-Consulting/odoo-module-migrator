@@ -354,7 +354,7 @@ class Migration:
                     if not self._clean_imports:
                         continue
                     paths = [p for p in tools.get_files(item._module_path, (".py",)) if p.name != "__init__.py"]
-                    prefix = [ruff, "check", "--isolated", "--fix", "--select", "F401", "--no-unsafe-fixes"]
+                    prefix = [ruff, "check", "--isolated", "--fix", "--select", "F401,I", "--no-unsafe-fixes"]
                 else:
                     if not self._format_code:
                         continue
@@ -367,6 +367,14 @@ class Migration:
                     result = subprocess.run(command, cwd=self._directory_path, capture_output=True, text=True)
                     if result.returncode:
                         logger.warning("Ruff: %s. File %s:1", (result.stderr or result.stdout).strip(), batch[0])
+                    if operation == "check":
+                        from .quality import clean_python_spacing
+
+                        for path in batch:
+                            text = tools._read_content(path)
+                            cleaned = clean_python_spacing(text)
+                            if cleaned != text:
+                                tools._write_content(path, cleaned)
 
     def _check_access_records_left(self):
         """ir.rule / ir.model.access left in XML once converted (by Odoo's

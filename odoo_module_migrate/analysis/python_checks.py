@@ -28,6 +28,8 @@ class Uses(ast.NodeVisitor):
             return model
         if isinstance(node, ast.Attribute):
             model = self.receiver(node.value)
+            if node.attr == "_origin":
+                return model
             candidates = (
                 set().union(
                     *(
@@ -97,6 +99,32 @@ class Uses(ast.NodeVisitor):
         for stmt in node.body + node.orelse:
             self.visit(stmt)
         self.aliases = saved
+
+    def _visit_comprehension(self, node, values):
+        saved = self.aliases.copy()
+        for generator in node.generators:
+            self.visit(generator.iter)
+            model = self.receiver(generator.iter)
+            if isinstance(generator.target, ast.Name):
+                self.aliases.pop(generator.target.id, None)
+                if model:
+                    self.aliases[generator.target.id] = model
+            else:
+                self.visit(generator.target)
+            for condition in generator.ifs:
+                self.visit(condition)
+        for value in values:
+            self.visit(value)
+        self.aliases = saved
+
+    def visit_GeneratorExp(self, node):
+        self._visit_comprehension(node, [node.elt])
+
+    visit_ListComp = visit_GeneratorExp
+    visit_SetComp = visit_GeneratorExp
+
+    def visit_DictComp(self, node):
+        self._visit_comprehension(node, [node.key, node.value])
 
     def visit_Attribute(self, node):
         model = self.receiver(node.value)
@@ -663,6 +691,48 @@ def check_module(module, index, target_version=20, precision_names=None):
                 if isinstance(
                     stmt, (ast.FunctionDef, ast.AsyncFunctionDef)
                 ):
+                    local_dependencies = {
+                        arg.value
+                        for decorator in stmt.decorator_list
+                        if isinstance(decorator, ast.Call)
+                        and isinstance(decorator.func, ast.Attribute)
+                        and decorator.func.attr == "depends"
+                        for arg in decorator.args
+                        if isinstance(arg, ast.Constant)
+                        and isinstance(arg.value, str)
+                    }
+                    inherited_dependencies = set().union(
+                        *(
+                            index.method_depends.get((ancestor, stmt.name, owner), set())
+                            for ancestor in ancestors
+                            for owner in index.method_owners.get(
+                                (ancestor, stmt.name), set()
+                            )
+                            if owner not in {module.name, "base"}
+                            and owner in closure
+                        )
+                    )
+                    if stmt.name.startswith("_compute_") and inherited_dependencies:
+                        missing_dependencies = inherited_dependencies - local_dependencies
+                        extra_dependencies = local_dependencies - inherited_dependencies
+                        if missing_dependencies or extra_dependencies:
+                            differences = []
+                            if missing_dependencies:
+                                differences.append(
+                                    "missing " + ", ".join(sorted(missing_dependencies))
+                                )
+                            if extra_dependencies:
+                                differences.append(
+                                    "additional " + ", ".join(sorted(extra_dependencies))
+                                )
+                            yield (
+                                path,
+                                stmt.lineno,
+                                "warning",
+                                f"{model}.{stmt.name} overrides a target compute method with"
+                                f" different @api.depends ({'; '.join(differences)}); review"
+                                " whether the custom early-return still handles target recomputations",
+                            )
                     inherited_owners = set().union(
                         *(
                             index.method_owners.get((m, stmt.name), set())

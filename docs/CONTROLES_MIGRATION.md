@@ -39,6 +39,10 @@ configuration.
 | 49 | La remise en ordre de `security/ir.access.csv` supporte les listes où le script officiel a ajouté le premier élément directement après `[`. Le manifest final reste valide et sa normalisation s'exécute. |
 | 50 | Le renommage de précision UoM couvre `digits=`, `precision_get(...)`, `dp.get_precision(...)` et les enregistrements XML `decimal.precision`, en laissant les libellés métier homonymes intacts. |
 | 51 | Un `+=` sur un champ indexé comme `fields.Html` est signalé car la valeur `Markup` échappe une chaîne ordinaire. `</br>` est également signalé comme balise incorrecte. |
+| 52 | Le typage des recordsets traverse les alias de `self.filtered(...)`, les générateurs, les compréhensions et `_origin`. Les renommages de champs résolus s'appliquent donc aussi dans ces expressions. |
+| 53 | Les `@api.depends` des méthodes cibles sont indexés. Une surcharge `_compute_*` qui emploie un ensemble différent reçoit un avertissement détaillant les dépendances manquantes et supplémentaires. |
+| 54 | Pour les modules internes, les en-têtes légaux redondants sont retirés des fichiers Python et du manifest. Les modules reconnus comme OCA conservent leurs en-têtes. |
+| 55 | Après la suppression des imports inutilisés, Ruff corrige aussi les groupes d'imports et un nettoyage final normalise les blocs de lignes vides. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans
