@@ -136,6 +136,22 @@ def check_python(path, text):
                     )
 
 
+def clean_init_blank_lines(text):
+    """Remove empty lines from import-only package initializers.
+
+    A non-import statement may contain meaningful multiline text or deliberate
+    spacing, so those files keep the regular leading/trailing cleanup only.
+    """
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return text
+    if not all(isinstance(node, (ast.Import, ast.ImportFrom)) for node in tree.body):
+        return text
+    lines = [line for line in text.splitlines() if line.strip()]
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
 def finish_module(
     module, cosmetic=True, original_data=(), manifest_layout=False, default_website=""
 ):
@@ -196,6 +212,8 @@ def finish_module(
         check_python(path, text)
         if cosmetic:
             new = readable_strings(text).lstrip("\r\n")
+            if path.name == "__init__.py":
+                new = clean_init_blank_lines(new)
             if new and not new.endswith("\n"):
                 new += "\n"
             if new != text:

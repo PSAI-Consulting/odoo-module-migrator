@@ -44,7 +44,7 @@ OWL3_SCRIPT = "owl3-migration.py"
 def _decode(raw):
     bom = raw.startswith(codecs.BOM_UTF8)
     if bom:
-        raw = raw[len(codecs.BOM_UTF8):]
+        raw = raw[len(codecs.BOM_UTF8) :]
     try:
         text, encoding = raw.decode("utf-8"), "utf-8"
     except UnicodeDecodeError:
@@ -119,12 +119,17 @@ def patch_file_manager(uc, missing):
     original_get_file = uc.FileManager.get_file
 
     def iter_files(self):
-        return iter([
-            f for f in self._files.values()
-            if not (f.dirty and getattr(f, "_content", "") is None)
-            and (not hasattr(self, "_target_roots") or any(
-                f.path.is_relative_to(t) for t in self._target_roots))
-        ])
+        return iter(
+            [
+                f
+                for f in self._files.values()
+                if not (f.dirty and getattr(f, "_content", "") is None)
+                and (
+                    not hasattr(self, "_target_roots")
+                    or any(f.path.is_relative_to(t) for t in self._target_roots)
+                )
+            ]
+        )
 
     def get_file(self, module, file_name=None):
         if file_name is None:  # Odoo 18/19 use an absolute path argument.
@@ -133,7 +138,7 @@ def patch_file_manager(uc, missing):
             aliases = getattr(self, "_module_aliases", {})
             if module in aliases:
                 stub = _StubManifest(Path(module) / file_name)
-                stub.content = repr({'depends': [aliases[module]], 'data': []})
+                stub.content = repr({"depends": [aliases[module]], "data": []})
                 return stub
             missing.add(module)
             return _StubManifest(Path(module) / file_name)
@@ -147,19 +152,31 @@ def build_file_manager(uc, addons_path, context_path, targets, aliases=None):
     """A FileManager that sees the reference modules (odoo, enterprise...),
     the targets and their custom dependencies, but only lists target files."""
     file_manager = uc.FileManager(
-        list(dict.fromkeys(addons_path + context_path)), glob="__odoo_module_migrate_none__"
+        list(dict.fromkeys(addons_path + context_path)),
+        glob="__odoo_module_migrate_none__",
     )
     file_manager._target_roots = tuple(targets)
     file_manager._module_aliases = aliases or {}
+
     def modules(manager, paths):
         if hasattr(manager, "_modules"):
             return manager._modules
-        return {p.name: p for root in paths for p in Path(root).iterdir()
-                if p.is_dir() and (p / "__manifest__.py").is_file()}
-    file_manager._modules = modules(file_manager, list(dict.fromkeys(addons_path + context_path)))
-    reference = modules(uc.FileManager(addons_path, glob="__odoo_module_migrate_none__"), addons_path)
+        return {
+            p.name: p
+            for root in paths
+            for p in Path(root).iterdir()
+            if p.is_dir() and (p / "__manifest__.py").is_file()
+        }
+
+    file_manager._modules = modules(
+        file_manager, list(dict.fromkeys(addons_path + context_path))
+    )
+    reference = modules(
+        uc.FileManager(addons_path, glob="__odoo_module_migrate_none__"), addons_path
+    )
     custom = {
-        name: path for name, path in file_manager._modules.items()
+        name: path
+        for name, path in file_manager._modules.items()
         if name not in reference
     }
     # targets win over a module of the same name elsewhere
@@ -186,7 +203,9 @@ def build_file_manager(uc, addons_path, context_path, targets, aliases=None):
             continue
         needed.add(name)
         todo.extend(_manifest_depends(Path(all_modules[name]) / "__manifest__.py"))
-    file_manager._modules = {name: path for name, path in all_modules.items() if name in needed}
+    file_manager._modules = {
+        name: path for name, path in all_modules.items() if name in needed
+    }
     for target in targets:
         addon = file_manager._modules.get(target.name)
         if addon is None or Path(addon).resolve() != target.resolve():
@@ -239,7 +258,9 @@ def _dependency_closure(file_manager, targets):
         if name in result or name not in file_manager._modules:
             continue
         result.add(name)
-        todo.extend(_manifest_depends(Path(file_manager._modules[name]) / "__manifest__.py"))
+        todo.extend(
+            _manifest_depends(Path(file_manager._modules[name]) / "__manifest__.py")
+        )
     return result
 
 
@@ -270,8 +291,12 @@ def patch_ir_access(scripts, targets):
                         content = _decode(path.read_bytes())[0]
                     except OSError:
                         continue
-                    for model_name in _module.extract_model_names(SimpleNamespace(content=content)):
-                        result.setdefault(_module.model_xmlid(addon_name, model_name), model_name)
+                    for model_name in _module.extract_model_names(
+                        SimpleNamespace(content=content)
+                    ):
+                        result.setdefault(
+                            _module.model_xmlid(addon_name, model_name), model_name
+                        )
             return result
 
         upgrade.get_model_xids = functools.cache(get_model_xids)
@@ -280,40 +305,107 @@ def patch_ir_access(scripts, targets):
             # The upstream line-based regex misses valid one-line manifests.
             # Locate the data list with AST and insert without changing comments.
             import ast
+
             file = self.file_manager.get_file(module_name, "__manifest__.py")
             content = file.content
             tree = ast.parse(content)
             mapping = tree.body[0].value
-            node = next(v for k, v in zip(mapping.keys, mapping.values)
-                        if isinstance(k, ast.Constant) and k.value == "data")
+            node = next(
+                v
+                for k, v in zip(mapping.keys, mapping.values)
+                if isinstance(k, ast.Constant) and k.value == "data"
+            )
             if not isinstance(node, ast.List):
                 raise ValueError("Manifest data must be a literal list")
             manifest = self.get_manifest(module_name)
-            if file_name in manifest['data']:
+            if file_name in manifest["data"]:
                 return
             lines = content.splitlines(keepends=True)
+
             def offset(line, col):
-                return sum(map(len, lines[:line - 1])) + len(lines[line - 1].encode('utf-8')[:col].decode('utf-8'))
+                return sum(map(len, lines[: line - 1])) + len(
+                    lines[line - 1].encode("utf-8")[:col].decode("utf-8")
+                )
+
             start = offset(node.lineno, node.col_offset) + 1
             # Prepending needs no knowledge of a last item's trailing comma.
             file.content = content[:start] + repr(file_name) + ", " + content[start:]
-            manifest['data'].insert(0, file_name)
+            manifest["data"].insert(0, file_name)
 
         upgrade.add_to_manifest = add_to_manifest
+
+        def remove_from_manifest(self, module_name, file_name):
+            """Remove one data entry without the upstream multiline regex.
+
+            The official regex can consume separators around an entry and leave
+            a temporarily invalid list. AST positions let us remove the exact
+            element while retaining a valid comma from either neighbour.
+            """
+            import ast
+
+            file = self.file_manager.get_file(module_name, "__manifest__.py")
+            content = file.content
+            tree = ast.parse(content)
+            mapping = tree.body[0].value
+            node = next(
+                value
+                for key, value in zip(mapping.keys, mapping.values)
+                if isinstance(key, ast.Constant) and key.value == "data"
+            )
+            if not isinstance(node, ast.List):
+                raise ValueError("Manifest data must be a literal list")
+            index = next(
+                i
+                for i, element in enumerate(node.elts)
+                if isinstance(element, ast.Constant) and element.value == file_name
+            )
+            lines = content.splitlines(keepends=True)
+
+            def offset(line, column):
+                return sum(map(len, lines[: line - 1])) + len(
+                    lines[line - 1].encode("utf-8")[:column].decode("utf-8")
+                )
+
+            element = node.elts[index]
+            if len(node.elts) == 1:
+                start = offset(node.lineno, node.col_offset) + 1
+                end = offset(node.end_lineno, node.end_col_offset) - 1
+            elif index + 1 < len(node.elts):
+                following = node.elts[index + 1]
+                start = offset(element.lineno, element.col_offset)
+                end = offset(following.lineno, following.col_offset)
+            else:
+                previous = node.elts[index - 1]
+                start = offset(previous.end_lineno, previous.end_col_offset)
+                end = offset(element.end_lineno, element.end_col_offset)
+            file.content = content[:start] + content[end:]
+            self.get_manifest(module_name)["data"].remove(file_name)
+
+        upgrade.remove_from_manifest = remove_from_manifest
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--odoo-root", required=True)
-    parser.add_argument("--addons-path", required=True,
-                        help="reference addons (odoo, enterprise...), comma separated")
-    parser.add_argument("--context-path", default="",
-                        help="custom addons: only dependencies of the targets are read")
+    parser.add_argument(
+        "--addons-path",
+        required=True,
+        help="reference addons (odoo, enterprise...), comma separated",
+    )
+    parser.add_argument(
+        "--context-path",
+        default="",
+        help="custom addons: only dependencies of the targets are read",
+    )
     parser.add_argument("--modules", required=True, help="comma separated paths")
     parser.add_argument("--from", dest="from_version", required=True)
     parser.add_argument("--to", dest="to_version", required=True)
-    parser.add_argument("--script", action="append", default=[],
-                        help="run only these scripts (repeatable)")
+    parser.add_argument(
+        "--script",
+        action="append",
+        default=[],
+        help="run only these scripts (repeatable)",
+    )
     parser.add_argument("--owl3", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--output", required=True)
@@ -333,7 +425,9 @@ def main(argv=None):
         if parent not in context_path:
             context_path.append(parent)
 
-    file_manager = build_file_manager(uc, addons_path, context_path, targets, json.loads(args.module_aliases))
+    file_manager = build_file_manager(
+        uc, addons_path, context_path, targets, json.loads(args.module_aliases)
+    )
     scripts = select_scripts(uc, args.from_version, args.to_version, args.owl3)
     if args.script:
         scripts = [s for s in scripts if s[0] in args.script]
@@ -354,12 +448,14 @@ def main(argv=None):
                 module.upgrade(file_manager)
         except Exception:  # noqa: BLE001 - reported, the other scripts still run
             error = traceback.format_exc()
-        report["scripts"].append({
-            "name": name,
-            "error": error,
-            "logs": collector.records,
-            "stdout": stdout.getvalue(),
-        })
+        report["scripts"].append(
+            {
+                "name": name,
+                "error": error,
+                "logs": collector.records,
+                "stdout": stdout.getvalue(),
+            }
+        )
 
     for file in sorted(file_manager._files.values(), key=lambda f: str(f.path)):
         if not file.dirty:

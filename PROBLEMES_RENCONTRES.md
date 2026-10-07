@@ -343,6 +343,18 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Cause probable : les commentaires entre les clés, ou l'espace en fin de ligne dans la description.
 - **Correction proposée** : parser avec `ast` (les commentaires sont ignorés) et réécrire selon le modèle. Les commentaires « scaffold » connus peuvent être supprimés sans risque.
 
+## 29. 🟠 Manifest lu pendant une étape intermédiaire
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — le retrait d'une entrée
+> `data` par le convertisseur officiel utilise désormais les positions AST et
+> laisse toujours une liste valide. Le manifeste final est ensuite relu et mis
+> au modèle normalement.
+
+- Module : `easi_oekotex`. Rapport : « Manifest could not be inspected (SyntaxError: closing parenthesis '}' does not match opening parenthesis '[' on line 26) ».
+- Le manifest final est pourtant **valide** : l'erreur vient d'un état intermédiaire, après le retrait de la ligne `security/ir.model.access.csv` (scripts officiels `upgrade_code`).
+- Conséquence : la mise au modèle (A20) est sautée et le rapport affiche un TODO trompeur.
+- **Correction proposée** : relire le manifest à la fin du pipeline avant de conclure ; si la lecture réussit, appliquer le modèle et retirer le TODO. Vérifier aussi que le retrait d'une ligne de liste ne laisse pas le fichier invalide.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -361,6 +373,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `stof_product` | `digits` (encore), `self._context`, `_` non importé, méthode de recherche inexistante, surcharge accidentelle de `_search_free_qty`, fichier en double dans le manifest | 15, 21 à 25 |
 | `stof_product_composition` | `<header>` disparu (signalé en 🟠 seulement), `detailed_type` dans les vues, manifest non mis au modèle | 26, 27, 28 |
 | `stof_wms_fields` | Dépendance `stof_customer_lead_time` manquante (`move.partner_id.customer_lead`, champ ajouté sur `res.partner` par ce module) | 3 |
+| `easi_oekotex` | Manifest jugé illisible à tort (état intermédiaire), donc non mis au modèle | 29 |
 
 ---
 

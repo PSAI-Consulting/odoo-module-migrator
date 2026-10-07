@@ -445,6 +445,32 @@ def test_unused_import_cleanup_preserves_initializers_and_noqa(tmp_path):
     assert "import registration" in (mod / "hook.py").read_text()
 
 
+def test_import_only_initializers_have_no_blank_lines(tmp_path):
+    mod = addon(tmp_path, "custom")
+    models = mod / "models"
+    models.mkdir()
+    initializer = models / "__init__.py"
+    initializer.write_text(
+        "\nfrom . import partner\n\n\n# models grouped before\n\nfrom . import product\n\n",
+        encoding="utf-8",
+    )
+    quality.finish_module(mod)
+    assert initializer.read_text(encoding="utf-8") == (
+        "from . import partner\n# models grouped before\nfrom . import product\n"
+    )
+
+
+def test_initializer_with_runtime_code_keeps_internal_spacing(tmp_path):
+    mod = addon(tmp_path, "custom")
+    initializer = mod / "__init__.py"
+    initializer.write_text(
+        "\nVALUE = '''first\n\nsecond'''\n\nregister(VALUE)\n",
+        encoding="utf-8",
+    )
+    quality.finish_module(mod)
+    assert "first\n\nsecond" in initializer.read_text(encoding="utf-8")
+
+
 def test_transitive_merged_dependencies_are_resolved(tmp_path):
     addon(tmp_path, "custom", ["bridge"])
     migration = Migration(

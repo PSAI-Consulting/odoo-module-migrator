@@ -6,7 +6,7 @@ configuration.
 
 | Problèmes signalés | Traitement |
 |---|---|
-| 1, 2 | Après les scripts officiels : échappements Unicode rendus lisibles uniquement si la valeur Python reste identique ; lignes vides initiales retirées. Chaînes brutes, bytes et f-strings conservées. |
+| 1, 2 | Après les scripts officiels : échappements Unicode rendus lisibles uniquement si la valeur Python reste identique ; lignes vides initiales retirées. Dans les `__init__.py` composés uniquement d'imports, toutes les lignes vides sont retirées. Chaînes brutes, bytes et f-strings conservées. |
 | 3, 14 | Avec les sources cibles : usages Python de modèles, champs, relations, variables de boucle et dictionnaires `create`/`write`. Le rapport nomme les modules fournisseurs et détecte une dépendance circulaire ; il recommande alors de déplacer le code ou de créer un module de liaison. |
 | 4 | Nouveau type de règles `field_types`. Détection des lectures/affectations, redéfinitions et méthodes `_compute_<champ>`. Règle vérifiée pour `sale.order.line.customer_lead` en 20.0 ; aucune conversion automatique de données. |
 | 5 | Après `upgrade_code`, `security/ir.access.csv` retrouve la position de l'ancien `security/ir.model.access.csv`, sans réordonner les autres fichiers. |
