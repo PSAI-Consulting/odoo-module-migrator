@@ -33,14 +33,42 @@ La commande `odoo-module-migrate` est alors disponible dans le venv.
 
 ## Démarrage rapide
 
+Commande complète recommandée sous PowerShell :
+
 ```bash
-# 1. Voir ce qui changerait, sans rien écrire
-odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --dry-run
+.\.venv\Scripts\python.exe -m odoo_module_migrate `
+    --directory "D:\Odoo\local-addons\Stof\stof" `
+    --modules "stof_partner_backorder_strategy" `
+    --init-version-name 17.0 `
+    --target-version-name 20.0 `
+    --default-website "https://www.easi-soft.fr" `
+    --format `
+    --report-dir "D:\Odoo\local-addons\Stof\migration-reports" `
+    --no-commit `
+    --no-pre-commit
+```
 
-# 2. Migrer (sur une branche git ou une copie du dossier)
+Remplacez seulement le nom passé à `--modules`. Cette commande utilise les
+sources Community et les scripts officiels embarqués, cherche les dépendances
+custom dans le dossier donné à `--directory`, normalise le manifeste, retire
+les imports inutilisés et écrit le rapport hors du module.
+
+Pour prévisualiser exactement la même migration sans modifier les sources,
+ajoutez `--dry-run`.
+
+Exemple portable minimal :
+
+```bash
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit
+```
 
-# 3. Lire mon_module/MIGRATION_REPORT.md et traiter les TODO
+Déroulement conseillé :
+
+```bash
+# 1. Prévisualiser
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit --dry-run
+
+# 2. Retirer --dry-run pour appliquer, puis lire MIGRATION_REPORT.md
 ```
 
 Les scripts officiels et les références Odoo Community 18, 19 et 20 sont
@@ -59,7 +87,7 @@ Options : `--default-website URL`, `--keep-unused-imports`, `--no-manifest-forma
 
 | Document | Contenu |
 |---|---|
-| [docs/COMMANDES.md](docs/COMMANDES.md) ([PDF](docs/COMMANDES.pdf)) | Toutes les commandes et options, avec des exemples |
+| [docs/COMMANDES.md](docs/COMMANDES.md) | Toutes les commandes et options, avec des exemples |
 | [docs/FONCTIONNEMENT.md](docs/FONCTIONNEMENT.md) | Comment l'outil travaille, organisation des règles, ajouter une règle |
 | [docs/CONTROLES_MIGRATION.md](docs/CONTROLES_MIGRATION.md) | Contrôles Python/XML, cache, formatage et limites de l'analyse |
 | [tools/README.md](tools/README.md) | Outils de mainteneur : régénérer les règles, bancs d'essai sur Odoo |

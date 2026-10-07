@@ -18,22 +18,30 @@ sont organisées et comment en ajouter une.
 
 ## Déroulement d'une migration
 
-Pour chaque module, et pour chaque saut de version (`17.0 → 18.0`, puis
-`18.0 → 19.0`…) :
+Pour chaque module, l'outil exécute d'abord ses règles pour chaque saut de
+version (`17.0 → 18.0`, puis `18.0 → 19.0`…), puis les étapes globales :
 
 1. **Règles du saut** (`migration_scripts/`) : renommages de fichiers,
    remplacements de texte, dépendances du manifest, scripts Python, puis
    champs et modèles selon leur modèle.
-2. **Scripts officiels d'Odoo** (`odoo/upgrade_code`, embarqués par défaut) :
-   `--odoo-root` permet de choisir d'autres sources ; ils n'écrivent que dans les
-   modules migrés.
-3. **Vérifications contre l'Odoo cible** (références embarquées ou `--odoo-root`) : ancres des
-   vues héritées, XML ids, modèles, chemins `@api.depends` / `related=`,
-   imports `odoo.addons.*`.
-4. **Rapport** `MIGRATION_REPORT.md` : TODO (`fichier:ligne`), transformations,
-   fichiers modifiés.
+2. **Scripts officiels d'Odoo** (`odoo/upgrade_code`) : les scripts et sources
+   Community 18/19/20 sont embarqués et utilisés par défaut. `--odoo-root`
+   permet de les remplacer par une autre copie des sources. Seuls les modules
+   sélectionnés sont modifiés ; les dépendances restent en lecture seule.
+3. **Vérifications contre l'Odoo cible** : ancres des vues héritées, modèles,
+   champs et méthodes, chemins `@api.depends` / `related=`, dépendances Python,
+   précisions décimales, XML ids et imports `odoo.addons.*`.
+4. **Finitions** : manifeste normalisé, licence par défaut, chaînes Unicode
+   rendues lisibles et imports F401 inutilisés retirés avec Ruff. `--format`
+   ajoute le formatage des fichiers Python modifiés. Ces finitions sont ignorées
+   pour les modules reconnus OCA.
+5. **Rapport** `MIGRATION_REPORT.md` : TODO (`fichier:ligne`), transformations,
+   fichiers modifiés et niveau de risque. Une vérification incomplète donne un
+   risque `inconnu` plutôt que de masquer l'incertitude.
 
-Une étape qui échoue est journalisée et n'arrête pas les suivantes.
+Une étape qui échoue est journalisée dans les rapports concernés et n'arrête
+pas les suivantes. Les résumés Python/XML de l'Odoo cible sont mis en cache
+hors du dépôt afin d'accélérer les exécutions suivantes.
 
 ## Organisation du code
 
@@ -46,8 +54,9 @@ odoo_module_migrate/
 ├── manifest.py            lecture / réécriture du manifest (AST)
 ├── report.py              rapport par module et récapitulatif
 ├── tools.py               lecture / écriture des fichiers (format conservé)
-├── analysis/              où un champ, une vue, un modèle, un import est utilisé
-├── upgrade_code/          scripts officiels d'Odoo (runner + préparation)
+├── quality.py             contrôles et finitions génériques après migration
+├── analysis/              vues, modèles, champs, méthodes, imports et cache
+├── upgrade_code/          scripts officiels embarqués, runner et préparation
 └── migration_scripts/     les règles (voir ci-dessous)
 ```
 

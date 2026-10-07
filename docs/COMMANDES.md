@@ -41,6 +41,41 @@ Voir [les contrôles et limites](CONTROLES_MIGRATION.md).
 
 ## 2. Migrer un module : les trois étapes
 
+### Commande complète recommandée
+
+Sous PowerShell, pour migrer un module Stof de 17.0 à 20.0 :
+
+```powershell
+.\.venv\Scripts\python.exe -m odoo_module_migrate `
+    --directory "D:\Odoo\local-addons\Stof\stof" `
+    --modules "stof_partner_backorder_strategy" `
+    --init-version-name 17.0 `
+    --target-version-name 20.0 `
+    --default-website "https://www.easi-soft.fr" `
+    --format `
+    --report-dir "D:\Odoo\local-addons\Stof\migration-reports" `
+    --no-commit `
+    --no-pre-commit
+```
+
+Remplacez `stof_partner_backorder_strategy` par le module à migrer. Plusieurs
+modules peuvent être séparés par des virgules. Cette commande :
+
+- utilise les scripts officiels et les sources Community 20 embarqués ;
+- lit les autres modules du dossier Stof pour résoudre les dépendances ;
+- conserve un `website` existant et complète seulement ceux qui n'en ont pas ;
+- normalise les manifestes et retire les imports F401 inutilisés ;
+- applique Ruff aux fichiers Python effectivement modifiés ;
+- écrit les rapports dans `D:\Odoo\local-addons\Stof\migration-reports` ;
+- laisse la création du commit et l'exécution de pre-commit à l'utilisateur.
+
+Les sources Enterprise ne sont pas incluses dans le paquet. Si le module en
+dépend, ajoutez par exemple :
+
+```powershell
+    --addons-path "D:\Odoo\enterprise\20.0,D:\Odoo\design-themes\20.0"
+```
+
 ### Étape 1 — Prévisualiser (rien n'est écrit)
 
 ```bash
@@ -59,7 +94,8 @@ modifie les fichiers sur place.
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit
 ```
 
-Version recommandée, avec les sources de l'Odoo cible :
+Version avec une copie locale de l'Odoo cible, utile pour remplacer les
+références Community embarquées :
 
 ```bash
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit \
@@ -67,7 +103,7 @@ odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit \
     --odoo-python D:/Odoo/venv20/Scripts/python.exe
 ```
 
-Avec `--odoo-root`, l'outil :
+Avec ou sans `--odoo-root`, l'outil :
 
 - lance les **scripts officiels d'Odoo** (`odoo/upgrade_code` : `ir.access`,
   OWL 3, contraintes SQL…) ;
@@ -76,9 +112,11 @@ Avec `--odoo-root`, l'outil :
 - vérifie les chemins `@api.depends` / `related=` et les imports
   `odoo.addons.*`.
 
-`--odoo-python` est le Python capable d'importer l'Odoo cible (Odoo 20 :
-Python 3.12 ou plus). Les dossiers `enterprise/20.0` et `design-themes/20.0`
-voisins de `--odoo-root` sont trouvés automatiquement (sinon : `--addons-path`).
+Sans `--odoo-root`, le Python courant et les archives Community embarquées
+sont utilisés. Avec `--odoo-root`, `--odoo-python` choisit le Python du lanceur
+officiel ; par défaut, l'outil utilise le Python courant s'il est compatible.
+Les dossiers `enterprise/20.0` et `design-themes/20.0` voisins des sources
+locales sont trouvés automatiquement. Sinon, utilisez `--addons-path`.
 
 ### Étape 3 — Lire le rapport
 
@@ -109,8 +147,15 @@ odoo-module-migrate -d ./mes_modules -i 17.0 -t 20.0 --no-commit --report-dir ./
 
 # Les dépendances sont dans un autre dossier (lu seulement, jamais modifié)
 odoo-module-migrate -d ./projet -m mon_module -i 17.0 -t 20.0 --no-commit \
-    --odoo-root D:/Odoo/odoo/20.0 --odoo-python D:/Odoo/venv20/Scripts/python.exe \
     --context-path ./autres_modules
+
+# Références Enterprise en plus des références Community embarquées
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit \
+    --addons-path D:/Odoo/enterprise/20.0,D:/Odoo/design-themes/20.0
+
+# Conserver la présentation du manifeste et les imports inutilisés
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit \
+    --no-manifest-format --keep-unused-imports
 
 # Ignorer les modules OCA présents dans le dossier
 odoo-module-migrate -d ./mes_modules -i 17.0 -t 20.0 --no-commit --no-oca-modules
@@ -145,14 +190,15 @@ Relancer la migration sur un module déjà migré ne change rien
 | `-nrmf`, `--no-remove-migration-folder` | Garder les dossiers `migrations/` des modules (supprimés par défaut) |
 | `--set-installable` | Forcer `'installable': True` (par défaut, un module désactivé exprès reste désactivé et c'est signalé) |
 
-### Odoo cible (recommandé à partir de 18.0)
+### Scripts officiels et sources de référence (cibles 18.0 à 20.0)
 
 | Option | Rôle |
 |---|---|
-| `--odoo-root` | Sources de l'Odoo **cible** (ex. `D:/Odoo/odoo/20.0`) |
-| `--odoo-python` | Python capable d'importer cet Odoo |
-| `--addons-path` | Addons de référence, séparés par des virgules (défaut : `enterprise` et `design-themes` voisins) |
+| `--odoo-root` | Remplacer les sources Community embarquées par les sources de l'Odoo cible |
+| `--odoo-python` | Python utilisé par le lanceur officiel avec `--odoo-root` |
+| `--addons-path` | Addons de référence supplémentaires, séparés par des virgules, notamment Enterprise |
 | `--context-path` | Autres dossiers de modules où chercher les dépendances (lecture seule) |
+| `--no-upgrade-code` | Désactiver les scripts officiels et les contrôles contre les sources cibles |
 
 ### Rapport et journal
 
@@ -168,6 +214,10 @@ Relancer la migration sur un module déjà migré ne change rien
 
 | Option | Rôle |
 |---|---|
+| `--format` | Formater avec Ruff les fichiers Python modifiés, selon la configuration du projet |
+| `--keep-unused-imports` | Désactiver le nettoyage F401 automatique hors `__init__.py` |
+| `--no-manifest-format` | Conserver la présentation d'origine du manifeste |
+| `--default-website URL` | Compléter le site uniquement lorsqu'il est absent ; ne remplace jamais une valeur existante |
 | `--no-oca-modules` | Ne pas migrer les modules OCA trouvés dans le dossier |
 | `--oca-file-list` | Écrire `OCA_MODULES.md` : liste des modules OCA du projet |
 | `-fp`, `--format-patch` | Récupérer le module depuis la branche de la version précédente du dépôt (`git format-patch`, un seul module) |
@@ -196,6 +246,17 @@ tous les sauts.
 **Mes fichiers changent-ils d'encodage ou de fins de ligne ?**
 Non : l'encodage, le BOM et les fins de ligne (CRLF / LF) de chaque fichier
 sont conservés.
+
+**Faut-il installer Odoo pour utiliser les scripts officiels ?**
+Non pour les versions cibles 18, 19 et 20 : les scripts et références Community
+sont embarqués. Python 3.12+ suffit. Fournissez `--addons-path` si l'analyse doit
+aussi voir Enterprise ou d'autres sources de référence.
+
+**Pourquoi l'outil ne transforme-t-il pas tous les `invisible` en
+`column_invisible` ?** Les deux attributs n'ont pas la même portée :
+`invisible` peut dépendre de la ligne, tandis que `column_invisible` masque une
+colonne entière sans le contexte de chaque ligne. Seules les conversions dont
+le contexte est prouvé sont appliquées.
 
 ---
 
@@ -228,6 +289,8 @@ python tools/extract/extract_changes.py modules --from 19.0 --to 20.0 \
 | `views` | vues supprimées (héritages cassés) |
 | `model-modules` | module qui définit chaque modèle |
 | `tools-exports` | noms que `from odoo.tools import X` ne fournit plus |
+| `field-types` | changements de type des champs entre deux versions |
+| `decimal-precisions` | inventaires des précisions décimales des deux versions |
 
 Détail des options : `python tools/extract/extract_changes.py <sous-commande> --help`.
 Les fichiers produits s'appellent `generated.yaml` ; les corrections faites à
