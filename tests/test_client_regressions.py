@@ -1057,3 +1057,64 @@ def test_accessible_dependency_files_not_iterated_by_official_scripts(tmp_path):
     }
     assert list(manager) == [manager._files["custom"]]
     assert manager.get_file("base", "models.py") is manager._files["base"]
+
+
+def test_sql_style_apostrophes_are_reported_before_formatting(tmp_path, caplog):
+    mod = addon(tmp_path, "custom", code="""from odoo import models
+
+class Input(models.AbstractModel):
+    _name = "custom.input"
+    _description = 'Interface for l''envoi'
+""")
+    (mod / "__manifest__.py").write_text(
+        "{'name': 'Custom', 'summary': 'Méthodes d''entrée', 'depends': ['base']}\n",
+        encoding="utf-8",
+    )
+
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate"):
+        quality.finish_module(mod, manifest_layout=True)
+
+    warnings = [
+        record.message for record in caplog.records if "apostrophe" in record.message
+    ]
+    assert len(warnings) == 2
+    assert any("Méthodes d" in message and "entrée" in message for message in warnings)
+    assert any(
+        "Interface for l" in message and "envoi" in message for message in warnings
+    )
+
+
+def test_access_rows_on_abstract_models_are_reported_in_both_csv_formats(tmp_path):
+    mod = addon(tmp_path, "custom", code="""from odoo import models
+
+class Input(models.AbstractModel):
+    _name = "custom.input"
+    _description = "Input"
+
+class Concrete(models.Model):
+    _name = "custom.concrete"
+    _description = "Concrete"
+""")
+    security = mod / "security"
+    security.mkdir()
+    (security / "ir.access.csv").write_text(
+        "id,name,model_id,group_id/id,operation,domain\n"
+        "abstract,abstract,custom.input,base.group_user,read,\n"
+        "concrete,concrete,custom.concrete,base.group_user,read,\n",
+        encoding="utf-8",
+    )
+    index = models.ModelIndex.build([tmp_path])
+    issues = list(models.check_abstract_access(mod, index))
+    assert len(issues) == 1
+    assert issues[0][1] == 2
+    assert "custom.input" in issues[0][2]
+
+    (security / "ir.access.csv").unlink()
+    (security / "ir.model.access.csv").write_text(
+        "id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink\n"
+        "abstract,abstract,model_custom_input,base.group_user,1,0,0,0\n",
+        encoding="utf-8",
+    )
+    issues = list(models.check_abstract_access(mod, index))
+    assert len(issues) == 1
+    assert "custom.input" in issues[0][2]

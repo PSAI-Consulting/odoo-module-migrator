@@ -45,6 +45,8 @@ configuration.
 | 55 | Après la suppression des imports inutilisés, Ruff corrige aussi les groupes d'imports et un nettoyage final normalise les blocs de lignes vides. |
 | 56 | Une variable issue de `super().<méthode>(...)` et ensuite itérée est traitée comme un recordset du modèle courant. Les chemins relationnels imbriqués et leurs renommages sont alors résolus. |
 | 57 | Pour une méthode cible remplacée sans `super()`, le rapport cherche les points d'extension `_prepare_*`, `_affects_*` et `_get_*_domain` appelés directement ou à un niveau, puis propose ces hooks pour limiter la surcharge. |
+| 58 | Avant le formatage, deux littéraux Python accolés sans espace dont la jointure relie deux lettres sont signalés : une apostrophe doublée façon SQL (`'d''entrée'`) concatène les chaînes et perd l'apostrophe en Python. |
+| 59 | Les droits visant un `AbstractModel` sont signalés dans l'ancien `ir.model.access.csv` comme dans le nouvel `ir.access.csv`. Les noms techniques et XML IDs `model_*` sont résolus par l'index des modèles. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans

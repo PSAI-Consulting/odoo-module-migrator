@@ -11,8 +11,10 @@ a model is reported only when it is defined nowhere there.
 
 import ast
 import collections
+import csv
 import pathlib
 import re
+
 from .cache import cached_summary
 
 RELATIONAL = {"Many2one", "One2many", "Many2many", "Many2oneReference"}
@@ -461,6 +463,44 @@ def check_module(module, index):
                         f"[model] '{comodel}' (comodel of a relational field) does not exist"
                         f" in the target Odoo, nor in the dependencies of the module"
                     )
+
+
+def check_abstract_access(module, index):
+    """Yield access rows that target an AbstractModel and therefore do nothing."""
+    module = pathlib.Path(module)
+    for filename in ("ir.access.csv", "ir.model.access.csv"):
+        path = module / "security" / filename
+        if not path.exists():
+            continue
+        try:
+            with path.open(encoding="utf-8-sig", newline="") as stream:
+                rows = csv.DictReader(stream)
+                for line, row in enumerate(rows, 2):
+                    raw = next(
+                        (
+                            row.get(column, "").strip()
+                            for column in ("model_id", "model_id/id", "model_id:id")
+                            if row.get(column, "").strip()
+                        ),
+                        "",
+                    )
+                    local = raw.rsplit(".", 1)[-1]
+                    model = raw if raw in index.abstract else next(
+                        (
+                            candidate
+                            for candidate in index.abstract
+                            if local == "model_" + candidate.replace(".", "_")
+                        ),
+                        None,
+                    )
+                    if model:
+                        yield path, line, (
+                            f"[access] Access rights target abstract model '{model}'; "
+                            "AbstractModel has no records of its own, so this row "
+                            "has no effect"
+                        )
+        except (OSError, csv.Error, UnicodeError):
+            continue
 
 
 def check_field_paths(module, index):

@@ -56,7 +56,53 @@ def readable_strings(text):
     return text
 
 
+def check_adjacent_string_apostrophes(path, text):
+    """Warn when SQL-style doubled quotes concatenate two Python strings."""
+    previous = None
+    try:
+        tokens = tokenize.generate_tokens(io.StringIO(text).readline)
+        for token in tokens:
+            if token.type == tokenize.STRING:
+                if previous is not None and previous.end == token.start:
+                    try:
+                        left = ast.literal_eval(previous.string)
+                        right = ast.literal_eval(token.string)
+                    except (SyntaxError, ValueError):
+                        pass
+                    else:
+                        if (
+                            isinstance(left, str)
+                            and isinstance(right, str)
+                            and left
+                            and right
+                            and left[-1].isalpha()
+                            and right[0].isalpha()
+                        ):
+                            logger.warning(
+                                "[quality] Adjacent Python string literals join %r and %r; "
+                                "an apostrophe is probably missing (use an escaped apostrophe "
+                                "or the other quote style). File %s:%s",
+                                left,
+                                right,
+                                path,
+                                token.start[0],
+                            )
+                previous = token
+            elif token.type not in (
+                tokenize.ENCODING,
+                tokenize.NL,
+                tokenize.NEWLINE,
+                tokenize.INDENT,
+                tokenize.DEDENT,
+                tokenize.COMMENT,
+            ):
+                previous = None
+    except (tokenize.TokenError, IndentationError):
+        return
+
+
 def check_python(path, text):
+    check_adjacent_string_apostrophes(path, text)
     try:
         tree = ast.parse(text)
         symbols = symtable.symtable(text, str(path), "exec")
@@ -188,6 +234,9 @@ def finish_module(
     manifest = module / "__manifest__.py"
     if manifest.exists():
         text = tools._read_content(manifest)
+        # Run this before manifest formatting: formatting sees only the already
+        # concatenated runtime value and can no longer recover the token split.
+        check_adjacent_string_apostrophes(manifest, text)
         if cosmetic:
             text = remove_internal_headers(text)
         try:
@@ -257,7 +306,8 @@ def finish_module(
             )
     for path in tools.get_files(module, (".py",)):
         text = tools._read_content(path)
-        check_python(path, text)
+        if path != manifest:
+            check_python(path, text)
         if cosmetic:
             new = clean_python_spacing(remove_internal_headers(readable_strings(text)))
             if path.name == "__init__.py":

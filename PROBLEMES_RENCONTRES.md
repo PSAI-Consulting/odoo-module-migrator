@@ -659,6 +659,26 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Le TODO 🟠 sur les `@api.depends` (n° 53) est bien sorti, mais sans proposer le point d'extension.
 - **Correction proposée** : quand une surcharge ne fait pas `super()` et que la cible a un « hook » documenté (`_affects_*`, `_prepare_*`, `_get_*_domain`…), le citer dans le TODO.
 
+## 58. 🟡 Apostrophe doublée façon SQL dans une chaîne Python
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — avant toute
+> normalisation, le flux de tokens repère les littéraux accolés sans espace dont
+> les deux côtés se rejoignent sur des lettres. Le diagnostic montre les deux
+> fragments et conseille une apostrophe échappée ou l'autre style de guillemets.
+
+- Module : `edi_data_model`. `'méthodes d''entrée'`, `'l''envoi'` : Python colle les deux chaînes (« dentrée », « lenvoi »). Le migrator a bien gardé la valeur réelle en réécrivant les guillemets, mais sans le signaler.
+- **Correction proposée** : avec `tokenize`, repérer deux chaînes collées dont la première se termine par une lettre et la seconde commence par une lettre (`'d''e'`) ; TODO 🟡 « apostrophe probablement perdue ».
+
+## 59. 🟡 Droits sur des modèles abstraits
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — les fichiers
+> `ir.model.access.csv` historiques et `ir.access.csv` Odoo 20 sont comparés à
+> l'index des modèles. Une ligne visant un `AbstractModel` est signalée, avec
+> prise en charge du nom technique et de l'XML ID `model_*`.
+
+- Module : `edi_data_model`. `ir.access` sur `edi.model.input` et `edi.model.output`, qui sont des `AbstractModel` : sans effet.
+- **Correction proposée** : signaler (🟡) les lignes de droits sur un `AbstractModel`.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -687,6 +707,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_account` | Manifest non mis au modèle (fausse erreur de syntaxe), `precision_get('Product Unit of Measure')`, `+=` sur un champ HTML | 49 à 51 |
 | `easi_no_recompute_on_polines` | `product_uom` dans une expression génératrice ; dépendances du calcul standard changées ; en-têtes de licence gardés, lignes vides en trop | 52 à 55 |
 | `stof_account_reversal` | 2 `product_uom` sur 6 (valeur renvoyée par `super()`) ; point d'extension `_affects_qty_invoiced` non proposé | 56, 57 |
+| `edi_data_model` | Rien de bloquant ; apostrophes doublées façon SQL, droits sur des modèles abstraits | 58, 59 |
 
 ---
 
