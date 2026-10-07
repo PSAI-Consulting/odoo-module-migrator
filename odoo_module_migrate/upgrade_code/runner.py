@@ -35,6 +35,8 @@ SKIPPED_SCRIPTS = {
     "17.5-00-example.py",
     # Internal to Odoo: rewrites the charts of accounts of Odoo's l10n_* modules
     "19.3-00-account-groups.py",
+    # The migrator's AST-based equivalent preserves comments and strings.
+    "18.5-00-deprecated-properties.py",
 }
 OWL3_SCRIPT = "owl3-migration.py"
 
@@ -56,7 +58,7 @@ def patch_file_accessor(uc):
     """Make FileAccessor keep the encoding, BOM and line endings of files."""
 
     def get_content(self):
-        if not hasattr(self, "_content"):
+        if not hasattr(self, "_format"):
             try:
                 self._content, self._format = _decode(self.path.read_bytes())
             except FileNotFoundError:
@@ -120,10 +122,19 @@ def patch_file_manager(uc, missing):
         return iter([
             f for f in self._files.values()
             if not (f.dirty and getattr(f, "_content", "") is None)
+            and (not hasattr(self, "_target_roots") or any(
+                f.path.is_relative_to(t) for t in self._target_roots))
         ])
 
-    def get_file(self, module, file_name):
+    def get_file(self, module, file_name=None):
+        if file_name is None:  # Odoo 18/19 use an absolute path argument.
+            return original_get_file(self, module)
         if module not in self._modules and file_name == "__manifest__.py":
+            aliases = getattr(self, "_module_aliases", {})
+            if module in aliases:
+                stub = _StubManifest(Path(module) / file_name)
+                stub.content = repr({'depends': [aliases[module]], 'data': []})
+                return stub
             missing.add(module)
             return _StubManifest(Path(module) / file_name)
         return original_get_file(self, module, file_name)
@@ -132,13 +143,21 @@ def patch_file_manager(uc, missing):
     uc.FileManager.get_file = get_file
 
 
-def build_file_manager(uc, addons_path, context_path, targets):
+def build_file_manager(uc, addons_path, context_path, targets, aliases=None):
     """A FileManager that sees the reference modules (odoo, enterprise...),
     the targets and their custom dependencies, but only lists target files."""
     file_manager = uc.FileManager(
-        addons_path + context_path, glob="__odoo_module_migrate_none__"
+        list(dict.fromkeys(addons_path + context_path)), glob="__odoo_module_migrate_none__"
     )
-    reference = uc.FileManager(addons_path, glob="__odoo_module_migrate_none__")._modules
+    file_manager._target_roots = tuple(targets)
+    file_manager._module_aliases = aliases or {}
+    def modules(manager, paths):
+        if hasattr(manager, "_modules"):
+            return manager._modules
+        return {p.name: p for root in paths for p in Path(root).iterdir()
+                if p.is_dir() and (p / "__manifest__.py").is_file()}
+    file_manager._modules = modules(file_manager, list(dict.fromkeys(addons_path + context_path)))
+    reference = modules(uc.FileManager(addons_path, glob="__odoo_module_migrate_none__"), addons_path)
     custom = {
         name: path for name, path in file_manager._modules.items()
         if name not in reference
@@ -153,7 +172,21 @@ def build_file_manager(uc, addons_path, context_path, targets):
             continue
         visible[name] = custom[name]
         todo.extend(_manifest_depends(custom[name] / "__manifest__.py"))
-    file_manager._modules = {**reference, **visible}
+    all_modules = {**reference, **visible}
+    # Only installed dependencies can contribute security groups. Loading all
+    # reference modules here needlessly parses every Odoo application's XML.
+    needed, todo = set(), [t.name for t in targets] + ["base"]
+    while todo:
+        name = todo.pop()
+        seen_aliases = set()
+        while name in file_manager._module_aliases and name not in seen_aliases:
+            seen_aliases.add(name)
+            name = file_manager._module_aliases[name]
+        if name in needed or name not in all_modules:
+            continue
+        needed.add(name)
+        todo.extend(_manifest_depends(Path(all_modules[name]) / "__manifest__.py"))
+    file_manager._modules = {name: path for name, path in all_modules.items() if name in needed}
     for target in targets:
         addon = file_manager._modules.get(target.name)
         if addon is None or Path(addon).resolve() != target.resolve():
@@ -243,6 +276,31 @@ def patch_ir_access(scripts, targets):
 
         upgrade.get_model_xids = functools.cache(get_model_xids)
 
+        def add_to_manifest(self, module_name, file_name):
+            # The upstream line-based regex misses valid one-line manifests.
+            # Locate the data list with AST and insert without changing comments.
+            import ast
+            file = self.file_manager.get_file(module_name, "__manifest__.py")
+            content = file.content
+            tree = ast.parse(content)
+            mapping = tree.body[0].value
+            node = next(v for k, v in zip(mapping.keys, mapping.values)
+                        if isinstance(k, ast.Constant) and k.value == "data")
+            if not isinstance(node, ast.List):
+                raise ValueError("Manifest data must be a literal list")
+            manifest = self.get_manifest(module_name)
+            if file_name in manifest['data']:
+                return
+            lines = content.splitlines(keepends=True)
+            def offset(line, col):
+                return sum(map(len, lines[:line - 1])) + len(lines[line - 1].encode('utf-8')[:col].decode('utf-8'))
+            start = offset(node.lineno, node.col_offset) + 1
+            # Prepending needs no knowledge of a last item's trailing comma.
+            file.content = content[:start] + repr(file_name) + ", " + content[start:]
+            manifest['data'].insert(0, file_name)
+
+        upgrade.add_to_manifest = add_to_manifest
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
@@ -259,6 +317,7 @@ def main(argv=None):
     parser.add_argument("--owl3", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--module-aliases", default="{}")
     args = parser.parse_args(argv)
 
     sys.path.insert(0, str(Path(args.odoo_root).resolve()))
@@ -274,7 +333,7 @@ def main(argv=None):
         if parent not in context_path:
             context_path.append(parent)
 
-    file_manager = build_file_manager(uc, addons_path, context_path, targets)
+    file_manager = build_file_manager(uc, addons_path, context_path, targets, json.loads(args.module_aliases))
     scripts = select_scripts(uc, args.from_version, args.to_version, args.owl3)
     if args.script:
         scripts = [s for s in scripts if s[0] in args.script]
@@ -312,7 +371,7 @@ def main(argv=None):
         report["deleted" if file.content is None else "updated"].append(str(path))
         if not args.dry_run:
             file._save()
-    report["summary"] = list(file_manager._summary)
+    report["summary"] = list(getattr(file_manager, "_summary", []))
     report["missing_modules"] = sorted(missing)
 
     Path(args.output).write_text(json.dumps(report, indent=1), encoding="utf-8")

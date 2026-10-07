@@ -253,4 +253,5 @@ def get_files(module_path, extensions):
     file_paths = []
     for ext in extensions:
         file_paths.extend(module_dir.rglob(f"*{ext}"))
-    return file_paths
+    return [p for p in file_paths if not {".git", "__pycache__", "node_modules"}.intersection(p.relative_to(module_dir).parts)
+            and not p.relative_to(module_dir).as_posix().startswith(("static/lib/", "static/libs/"))]

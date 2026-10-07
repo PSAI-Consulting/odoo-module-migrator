@@ -240,19 +240,9 @@ def replace_attrs_and_states(logger, module_path, module_name, manifest_path, mi
             
             content = re.sub(states_pattern, replace_states, content)
             
-            # 4. Handle invisible -> column_invisible in tree/list views
-            def replace_invisible_in_trees(match):
-                nonlocal modifications_made
-                view_content = match.group(0)
-                field_pattern = r'(<field[^>]*?\s)invisible(\s*=\s*["\'][^"\']*["\'])'
-                new_content = re.sub(field_pattern, r'\1column_invisible\2', view_content)
-                if new_content != view_content:
-                    modifications_made = True
-                    logger.debug(f"Converted invisible to column_invisible in tree/list view in {file_path}")
-                return new_content
-            
-            tree_list_pattern = r'<(tree|list)[^>]*>.*?</\1>'
-            content = re.sub(tree_list_pattern, replace_invisible_in_trees, content, flags=re.DOTALL)
+            # invisible is a per-record modifier; column_invisible evaluates
+            # without the row. Converting it blindly changes behavior and can
+            # reference names unavailable in the column evaluation context.
             
             # Only write if actual modifications were made
             if modifications_made and content != original_content:

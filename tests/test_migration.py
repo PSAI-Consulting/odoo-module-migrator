@@ -38,6 +38,9 @@ class TestMigration(unittest.TestCase):
                 "--log-path",
                 str(self._working_path / "test_log.log"),
                 "--no-commit",
+                "--no-upgrade-code",  # these fixtures exercise the migrator's own rules
+                "--keep-unused-imports",
+                "--no-manifest-format",
                 "--set-installable",
             ]
         )

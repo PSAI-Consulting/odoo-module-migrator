@@ -8,8 +8,8 @@ sont organisées et comment en ajouter une.
 1. **Aucune règle devinée.** Chaque règle cite sa source : commit Odoo
    (`odoo <sha> '<titre>'`), fichier d'une branche, ou OpenUpgrade. Ce qui ne
    peut pas être prouvé reste un avertissement, jamais une réécriture.
-2. **Zéro faux positif.** Un champ n'est renommé ou signalé que là où son
-   modèle est certain (analyse Python et XML, pas une recherche de texte).
+2. **Analyse structurée.** Les contrôles s'appuient sur les modèles Python et
+   XML résolus. Les diagnostics heuristiques restent des avertissements à relire.
 3. **Idempotence.** Relancer sur un module déjà migré ne change rien.
 4. **Rien de propre à un client.** Les modules des clients servent de bancs
    d'essai ; les règles ne viennent que d'Odoo.
@@ -24,10 +24,10 @@ Pour chaque module, et pour chaque saut de version (`17.0 → 18.0`, puis
 1. **Règles du saut** (`migration_scripts/`) : renommages de fichiers,
    remplacements de texte, dépendances du manifest, scripts Python, puis
    champs et modèles selon leur modèle.
-2. **Scripts officiels d'Odoo** (`odoo/upgrade_code`, avec `--odoo-root`) :
-   lancés par le Python de l'Odoo cible ; ils n'écrivent que dans les
+2. **Scripts officiels d'Odoo** (`odoo/upgrade_code`, embarqués par défaut) :
+   `--odoo-root` permet de choisir d'autres sources ; ils n'écrivent que dans les
    modules migrés.
-3. **Vérifications contre l'Odoo cible** (avec `--odoo-root`) : ancres des
+3. **Vérifications contre l'Odoo cible** (références embarquées ou `--odoo-root`) : ancres des
    vues héritées, XML ids, modèles, chemins `@api.depends` / `related=`,
    imports `odoo.addons.*`.
 4. **Rapport** `MIGRATION_REPORT.md` : TODO (`fichier:ligne`), transformations,
@@ -65,6 +65,7 @@ Le dossier `migrate_allways` s'applique à toutes les migrations.
 | `removed_fields` | `[modèle, champ, "remplaçant — source"]` | signale ; retire l'affichage `<field/>` des vues du modèle |
 | `renamed_models` | `[ancien, nouveau, source]` | renomme le modèle |
 | `removed_models` | `[modèle, "message — source"]` | signale |
+| `field_types` | `[modèle, champ, ancien type, nouveau type, source]` | signale les usages et redéfinitions à revoir |
 | `text_replaces` | `{extension: {regex: remplacement}}` | remplace (seulement si l'équivalence est prouvée) |
 | `text_errors` | `{extension: {regex: message}}` | signale une erreur 🔴 |
 | `text_warnings` | `{extension: {regex: message}}` | signale un point à vérifier 🟠 |

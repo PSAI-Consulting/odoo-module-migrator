@@ -8,7 +8,7 @@ outils de mainteneur (régénérer les règles, bancs d'essai).
 
 ## 1. Installer
 
-Il faut Python 3.11 ou plus récent et git.
+Il faut Python 3.12 ou plus récent et git.
 
 ```bash
 git clone https://github.com/PSAI-Consulting/odoo-module-migrator.git
@@ -24,6 +24,18 @@ Vérifier :
 ```bash
 odoo-module-migrate --version
 ```
+
+Les scripts officiels Community 18/19/20 sont embarqués et actifs par défaut.
+Le manifeste suit le modèle commun et les imports inutilisés sont nettoyés
+(hors `__init__.py` et modules OCA). Options utiles :
+
+- `--format` : formater les fichiers Python modifiés selon la configuration Ruff du projet.
+- `--default-website URL` : compléter un site absent, sans remplacer un site existant.
+- `--keep-unused-imports` : conserver les imports inutilisés.
+- `--no-manifest-format` : conserver la mise en forme du manifeste.
+- `--no-upgrade-code` : utiliser uniquement les règles internes.
+
+Voir [les contrôles et limites](CONTROLES_MIGRATION.md).
 
 ---
 

@@ -23,6 +23,7 @@ setuptools.setup(
     # tools/ and tests/ are development tools: not shipped in the package
     packages=setuptools.find_packages(include=["odoo_module_migrate", "odoo_module_migrate.*"]),
     include_package_data=True,
+    python_requires=">=3.12",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Framework :: Odoo",

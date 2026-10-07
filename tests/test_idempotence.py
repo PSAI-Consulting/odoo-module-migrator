@@ -31,6 +31,7 @@ def _migrate(directory, module, init, target):
         "--directory", str(directory), "--modules", module,
         "--init-version-name", init, "--target-version-name", target,
         "--no-commit", "--no-pre-commit", "--set-installable", "--log-level", "ERROR",
+        "--no-upgrade-code",
     ])
 
 

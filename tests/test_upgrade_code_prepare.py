@@ -78,6 +78,7 @@ def test_access_records_left_reported_after_conversion(tmp_path):
         "--directory", str(tmp_path), "--modules", "a_module,b_module",
         "--init-version-name", "19.0", "--target-version-name", "20.0",
         "--no-commit", "--no-pre-commit", "--log-level", "INFO",
+        "--no-upgrade-code",  # explicitly verify the fallback conversion
         "--report-dir", str(tmp_path / "reports"),
     ])
     for name in ("a_module", "b_module"):

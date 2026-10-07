@@ -122,6 +122,16 @@ def run_upgrade_code(options, module_paths, from_version, to_version, dry_run=Fa
             "--to", to_version,
             "--output", str(output),
         ]
+        import yaml
+        aliases = {}
+        rules_root = pathlib.Path(__file__).parent.parent / "migration_scripts/deprecated_modules"
+        for major in range(int(float(from_version)), int(float(to_version))):
+            step = rules_root / f"migrate_{major * 10:03d}_{(major + 1) * 10:03d}"
+            for rule_file in sorted(step.glob("*.yaml")):
+                for row in yaml.safe_load(rule_file.read_text(encoding="utf-8")) or []:
+                    if len(row) > 2 and row[1] in {"merged", "renamed"} and row[2]:
+                        aliases.setdefault(row[0], row[2])
+        args += ["--module-aliases", json.dumps(aliases)]
         if target_major >= 20:
             args.append("--owl3")
         if dry_run:
@@ -131,11 +141,17 @@ def run_upgrade_code(options, module_paths, from_version, to_version, dry_run=Fa
             from_version, to_version, len(module_paths),
         )
         env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
-        process = subprocess.run(args, capture_output=True, env=env)
+        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        while True:
+            try:
+                stdout, stderr = process.communicate(timeout=30)
+                break
+            except subprocess.TimeoutExpired:
+                logger.info("Odoo upgrade_code is still running on %d selected module(s)...", len(module_paths))
         if process.returncode != 0 or not output.exists():
             raise RuntimeError(
                 "upgrade_code runner failed:\n"
-                + process.stderr.decode("utf-8", errors="replace")[-4000:]
+                + stderr.decode("utf-8", errors="replace")[-4000:]
             )
         data = json.loads(output.read_text(encoding="utf-8"))
 

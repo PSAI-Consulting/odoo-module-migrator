@@ -25,8 +25,11 @@ import csv
 import io
 import pathlib
 import re
+import copy
 
 from lxml import etree
+from functools import lru_cache
+from .cache import cached_summary
 
 # attributes that identify an element in an anchor
 ANCHOR_ATTRS = ("name", "id", "t-set", "t-call", "t-name", "string", "for", "t-as")
@@ -39,12 +42,15 @@ GENERATED_PREFIXES = ("model_", "field_", "selection__", "module_", "access_", "
 
 
 def _module_dirs(paths):
-    for base in paths:
+    # Last path wins (dry-run copies override the original context module).
+    modules = {}
+    for base in dict.fromkeys(pathlib.Path(p).resolve() for p in paths):
         base = pathlib.Path(base)
         if not base.is_dir():
             continue
         for manifest in base.glob("*/__manifest__.py"):
-            yield manifest.parent
+            modules[manifest.parent.name] = manifest.parent
+    yield from modules.values()
 
 
 def _manifest(module):
@@ -68,9 +74,57 @@ def _qualify(ref, module):
 
 def _parse(path):
     try:
-        return etree.parse(str(path)).getroot()
+        stat = path.stat()
+        return _parse_cached(str(path.resolve()), stat.st_mtime_ns, stat.st_size)
     except (etree.XMLSyntaxError, OSError):
         return None
+
+
+@lru_cache(maxsize=4096)
+def _parse_cached(path, modified, size):
+    # Indexing and checking read the same XML files; callers never mutate this tree.
+    return etree.parse(path).getroot()
+
+
+def check_duplicate_fields(module, index):
+    """Review-only warning: repeated fields are legal and sometimes intended."""
+    for path in _data_files(module):
+        root = _parse(path)
+        if root is None:
+            continue
+        for xid, parent, arch, _ in _views(root, module.name):
+            if not parent or arch is None:
+                continue
+            # Only dependencies; sibling views of this module cannot establish
+            # that a field is already present in the standard target.
+            combined = index.combined(parent, index.closure(module.name) - {module.name}, xid)
+            if combined is None:
+                continue
+            for spec in _specs(arch):
+                if spec.get("position", "inside") not in {"before", "after", "inside"}:
+                    continue
+                try:
+                    anchors = _locate(combined, spec)
+                except etree.XPathError:
+                    continue
+                for child in spec:
+                    for field in child.iter("field"):
+                        name = field.get("name")
+                        if not name or field.get("position"):
+                            continue
+                        matches = [n for n in combined.iter("field") if n.get("name") == name]
+                        if not matches:
+                            continue
+                        # Limit to a common named container when one is supplied.
+                        containers = [(n.tag, n.get("name")) for n in field.iterancestors()
+                                      if n is not spec and n.get("name") and n.tag in {"group", "div", "page"}]
+                        if anchors:
+                            if not containers:
+                                containers = [(n.tag, n.get("name")) for n in anchors[0].iterancestors()
+                                              if n.get("name") and n.tag in {"group", "div", "page"}]
+                            if not containers or not any(any((a.tag, a.get("name")) in containers for a in n.iterancestors()) for n in matches):
+                                continue
+                        yield path, field.sourceline, f"Field {name} is already displayed by target view {parent}; review a possibly redundant block (intentional duplicates are valid)"
 
 
 def _views(root, module):
@@ -135,6 +189,35 @@ def _steps(expr):
     return result
 
 
+def _view_summary(path, module):
+    result = {"xmlids": [], "precisions": [], "views": []}
+    root = _parse(path)
+    if root is None:
+        return result
+    for record in root.iter("record"):
+        if record.get("model") == "decimal.precision":
+            name = record.find("field[@name='name']")
+            if name is not None and name.text:
+                result["precisions"].append(name.text)
+    for node in root.iter("record", "template", "menuitem", "report", "act_window"):
+        xid = node.get("id")
+        if xid and ("." not in xid or xid.startswith(module + ".")):
+            result["xmlids"].append(_qualify(xid, module))
+    for xid, parent, arch, _ in _views(root, module):
+        priority = 16
+        if arch is not None and arch.getparent() is not None:
+            value = arch.getparent().find("field[@name='priority']")
+            if value is not None:
+                try:
+                    priority = int(value.get("eval") or value.text)
+                except (TypeError, ValueError):
+                    pass
+        result["views"].append(dict(xid=xid, parent=parent, priority=priority,
+                                    arch=etree.tostring(arch, encoding="unicode", with_tail=False) if arch is not None else None,
+                                    keys=sorted(_keys(arch)) if arch is not None else []))
+    return result
+
+
 class ViewIndex:
     def __init__(self):
         self.keys = collections.defaultdict(set)      # view -> (tag, attr, value)
@@ -145,6 +228,11 @@ class ViewIndex:
         self.depends = {}                             # module -> depends
         self.xmlids = set()                           # all the XML ids of data files
         self.modules = set()
+        self.arches = {}
+        self.priorities = {}
+        self.precisions = set()
+        self.order = {}
+        self.incomplete_combinations = set()
 
     def add_module(self, module):
         name = module.name
@@ -154,22 +242,21 @@ class ViewIndex:
             if path.suffix == ".csv":
                 self._add_csv(path, name)
                 continue
-            root = _parse(path)
-            if root is None:
-                continue
-            for node in root.iter("record", "template", "menuitem", "report", "act_window"):
-                xid = node.get("id")
-                # an XML id is created by its own module (others only update it)
-                if xid and ("." not in xid or xid.startswith(name + ".")):
-                    self.xmlids.add(_qualify(xid, name))
-            for xid, parent, arch, _node in _views(root, name):
+            summary = cached_summary(path, lambda p: _view_summary(p, name))
+            self.precisions.update(summary["precisions"])
+            self.xmlids.update(summary["xmlids"])
+            for item in summary["views"]:
+                xid, parent = item["xid"], item["parent"]
                 self.views.add(xid)
                 self.view_modules[xid].add(name)
                 if parent:
                     self.children[parent].add(xid)
                     self.parent[xid] = parent
-                if arch is not None:
-                    self.keys[xid] |= _keys(arch)
+                if item["arch"] is not None:
+                    self.keys[xid].update(tuple(key) for key in item["keys"])
+                    self.arches[xid] = etree.fromstring(item["arch"].encode())
+                    self.order.setdefault(xid, len(self.order))
+                    self.priorities[xid] = item["priority"]
 
     def _add_csv(self, path, module):
         try:
@@ -231,6 +318,115 @@ class ViewIndex:
             result |= self.available(child, modules, exclude, seen)
         return result
 
+    def combined(self, parent, modules, exclude):
+        root = self.root(parent)
+        arch = self.arches.get(root)
+        if arch is None:
+            return None
+        if arch.tag == "template":
+            result = etree.Element("t")
+            result.extend(copy.deepcopy(list(arch)))
+        elif len(arch) == 1:
+            result = copy.deepcopy(arch[0])
+        else:
+            result = etree.Element("data")
+            result.extend(copy.deepcopy(list(arch)))
+        seen = {root}
+
+        def extend(xid):
+            for child in sorted(self.children.get(xid, ()), key=lambda x: (
+                self.priorities.get(x, 16), len(self.closure(x.split(".")[0])),
+                self.order.get(x, 0))):
+                if child in seen or child == exclude or not self.view_modules[child] & modules:
+                    continue
+                seen.add(child)
+                for spec in _specs(self.arches.get(child, ())):
+                    if _apply_spec(result, spec) is not True and child.split(".")[0] != exclude.split(".")[0]:
+                        self.incomplete_combinations.add((parent, frozenset(modules), exclude))
+                extend(child)
+        extend(root)
+        return result
+
+
+def _locate(arch, spec):
+    if spec.tag == "xpath":
+        return arch.xpath(spec.get("expr", ""), extensions={
+            (None, "hasclass"): lambda ctx, *names: all(
+                name in ctx.context_node.get("class", "").split() for name in names)
+        })
+    for node in arch.iter(spec.tag):
+        if spec.tag == "field":
+            if node.get("name") == spec.get("name"):
+                return [node]
+        elif all(node.get(k) == v for k, v in spec.attrib.items() if k not in ("position", "version")):
+            return [node]
+    return []
+
+
+def _apply_spec(arch, spec):
+    try:
+        matches = _locate(arch, spec)
+    except etree.XPathError:
+        return None  # custom XPath extension: cannot evaluate statically
+    if not matches:
+        return False
+    node = matches[0]
+    if not isinstance(node, etree._Element):
+        return None
+    position = spec.get("position", "inside")
+    if position == "attributes":
+        for attr in spec:
+            if attr.tag != "attribute" or not attr.get("name"):
+                continue
+            name = attr.get("name")
+            if attr.get("add") is not None or attr.get("remove") is not None:
+                sep = attr.get("separator", ",")
+                values = node.get(name, "").split(sep)
+                values = [v for v in values if v and v not in attr.get("remove", "").split(sep)]
+                values.extend(v for v in attr.get("add", "").split(sep) if v)
+                node.set(name, sep.join(values))
+            elif attr.text is None:
+                node.attrib.pop(name, None)
+            else:
+                node.set(name, attr.text)
+        return True
+    children = []
+    for child in spec:
+        if not isinstance(child.tag, str):
+            continue
+        if child.get("position") == "move":
+            try:
+                moved = _locate(arch, child)
+            except etree.XPathError:
+                return None
+            if not moved or moved[0].getparent() is None:
+                return None
+            moved[0].getparent().remove(moved[0])
+            children.append(moved[0])
+        else:
+            if "$0" in "".join(child.itertext()):
+                return None
+            children.append(copy.deepcopy(child))
+    if position == "inside":
+        node.extend(children)
+    elif position in ("before", "after", "replace") and node.getparent() is not None:
+        parent = node.getparent()
+        offset = parent.index(node) + (position == "after")
+        for child in children:
+            parent.insert(offset, child)
+            offset += 1
+        if position == "replace":
+            parent.remove(node)
+    elif position == "replace" and node is arch and len(children) == 1:
+        replacement = children[0]
+        arch.clear()
+        arch.tag, arch.text = replacement.tag, replacement.text
+        arch.attrib.update(replacement.attrib)
+        arch.extend(list(replacement))
+    else:
+        return None
+    return True
+
 
 def _specs(arch):
     """Specs of an inheriting arch, in the order Odoo applies them: the
@@ -290,6 +486,13 @@ def check_module(module, index, reference_modules):
         root = _parse(path)
         if root is None:
             continue
+        if index.precisions:
+            for node in root.iter():
+                if not isinstance(node.tag, str):
+                    continue
+                digits = node.get("digits")
+                if digits and re.fullmatch(r"[A-Za-z][A-Za-z0-9 _-]*", digits) and digits not in index.precisions:
+                    yield path, node.sourceline, f"Unknown target decimal precision {digits!r} in XML digits"
         for xid, parent, arch, report_node in _views(root, module.name):
             if parent is None or arch is None:
                 continue
@@ -299,10 +502,8 @@ def check_module(module, index, reference_modules):
                         f"parent view {parent} does not exist in the target Odoo"
                     )
                 continue
-            if not complete:
-                continue
             owner = parent.split(".")[0]
-            if owner in index.modules and owner not in closure:
+            if complete and owner in index.modules and owner not in closure:
                 # its anchors cannot be found: the real error is the dependency
                 # (installed only if another module happens to install it first)
                 yield path, report_node.sourceline, _missing_depends(
@@ -310,14 +511,38 @@ def check_module(module, index, reference_modules):
                 )
                 continue
             # the view itself does not count: it holds the anchors
-            available = index.available(index.root(parent), closure, exclude={xid})
+            available = index.available(index.root(parent), closure if complete else index.modules, exclude={xid})
+            combined = index.combined(parent, closure if complete else index.modules, xid)
+            partial_arch = (parent, frozenset(closure if complete else index.modules), xid) in index.incomplete_combinations
+            reported = set()
             for node, key, added in _anchors(arch):
+                if combined is not None:
+                    continue  # exact evaluation also accounts for attribute edits
                 if key not in available and key not in added:
+                    if id(node) in reported:
+                        continue
+                    reported.add(id(node))
                     yield path, node.sourceline, (
                         f"{_describe(key)} not found in the view {parent} of the target"
                         f" Odoo (nor in any view of its inheritance tree): the view will"
                         f" not install"
                     )
+            if combined is not None:
+                for node in _specs(arch):
+                    valid = _apply_spec(combined, node)
+                    if valid is None:
+                        yield path, node.sourceline, f"[incomplete] Selector or inheritance operation in {parent} requires runtime validation"
+                    if valid is False and id(node) not in reported:
+                        selector = node.get("expr") if node.tag == "xpath" else etree.tostring(node, encoding="unicode").split(">")[0] + ">"
+                        keys = [key for spec, key, _ in _anchors(arch) if spec is node]
+                        if keys and any(key not in _keys(combined) for key in keys):
+                            selector = _describe(next(key for key in keys if key not in _keys(combined)))
+                        else:
+                            selector = "Exact selector " + selector
+                        yield path, node.sourceline, (
+                            ("[incomplete] " if partial_arch else "") + f"{selector} not found in the combined view {parent}"
+                            + (" (incomplete dependencies; verify with the missing modules)" if not complete else "")
+                        )
         yield from _check_xmlids(
             path, root, module.name, index, reference_modules, closure if complete else None
         )

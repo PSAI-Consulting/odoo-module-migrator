@@ -40,6 +40,12 @@ class ModuleMigration:
 
         self._formats = snapshot_formats(self._module_path)
         self._hashes_before = hash_tree(self._module_path)
+        import ast
+        from .tools import _read_content
+        try:
+            self._original_data = ast.literal_eval(_read_content(self._get_manifest_path())).get("data", [])
+        except (ValueError, SyntaxError):
+            self._original_data = []
 
         # Apply migration script
         for migration_script in self._migration._migration_scripts:
@@ -65,8 +71,6 @@ class ModuleMigration:
     def commit(self):
         # Run pre-commit before final commit to format any changes made
         # during migration scripts execution
-        self._migration._run_pre_commit_if_configured()
-
         self._commit_changes(
             "[MIG] %s: Migration to %s"
             % (
@@ -90,10 +94,10 @@ class ModuleMigration:
         if not self._migration._commit_enabled:
             return
         directory = self._migration._directory_path
-        if not _run(["git", "status", "--porcelain", "--", "."], path=directory):
+        if not _run(["git", "status", "--porcelain", "--", self._module_name], path=directory):
             return
         logger.info(
             "Commit changes for %s. commit name '%s'" % (self._module_name, commit_name)
         )
-        _run(["git", "add", "--all", "."], path=directory)
-        _run(["git", "commit", "--no-verify", "-m", commit_name], path=directory)
+        _run(["git", "add", "--all", "--", self._module_name], path=directory)
+        _run(["git", "commit", "--no-verify", "-m", commit_name, "--", self._module_name], path=directory)

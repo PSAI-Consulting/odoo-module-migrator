@@ -1,5 +1,19 @@
 # Historique des versions
 
+## Non publié
+
+- Python 3.12 minimum ; scripts officiels Community 18/19/20 et références
+  intégrés pour une utilisation hors ligne, avec provenance et empreintes.
+- Modèle générique de manifeste et nettoyage des imports inutilisés par défaut ;
+  formatage Ruff optionnel, respect des modules OCA et des métadonnées client.
+- Contrôles supplémentaires des dépendances Python, méthodes de champs,
+  changements de types, précisions, traductions et héritages de vues.
+- Correction des faux positifs XPath et retrait de la conversion globale
+  `invisible` vers `column_invisible`.
+- Cache des analyses, parcours limité aux dépendances utiles et commandes Git
+  limitées aux modules sélectionnés.
+- Voir `docs/CONTROLES_MIGRATION.md` pour la couverture et les limites.
+
 ## 0.6.0 — octobre 2026
 
 Refonte du fork pour en faire l'outil de référence de migration du code

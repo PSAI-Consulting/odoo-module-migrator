@@ -10,8 +10,8 @@ cible. Il enchaîne les sauts de version (`17.0 → 18.0 → 19.0 → 20.0`) et 
   dépendances de modules renommés ou fusionnés, imports déplacés, API
   remplacées, vues (`tree` → `list`, `attrs` → `invisible`…), sécurité
   (`ir.access` en 20.0), version du manifest… ;
-- lance les **scripts officiels d'Odoo** (`odoo/upgrade_code`) quand les
-  sources Odoo cibles sont fournies ;
+- lance les **scripts officiels d'Odoo** (`odoo/upgrade_code`) intégrés pour
+  les cibles 18, 19 et 20, ou ceux des sources cibles fournies ;
 - **signale** tout le reste dans un rapport par module, avec `fichier:ligne`,
   la cause et le remplaçant quand il existe : ce qu'il faut corriger à la main.
 
@@ -20,12 +20,12 @@ règle n'est devinée, et l'outil ne contient rien de propre à un client.
 
 ## Installation
 
-Python 3.11 ou plus récent.
+Python 3.12 ou plus récent (requis par les scripts officiels intégrés).
 
 ```bash
 git clone https://github.com/PSAI-Consulting/odoo-module-migrator.git
 cd odoo-module-migrator
-python -m venv .venv
+python -m venv .venv                 # Python 3.12+ ; Windows : py -3.12 -m venv .venv
 .venv/Scripts/pip install -e .        # Windows  (Linux / macOS : .venv/bin/pip)
 ```
 
@@ -38,15 +38,22 @@ La commande `odoo-module-migrate` est alors disponible dans le venv.
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --dry-run
 
 # 2. Migrer (sur une branche git ou une copie du dossier)
-odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit \
-    --odoo-root D:/Odoo/odoo/20.0 --odoo-python D:/Odoo/venv20/Scripts/python.exe
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 --no-commit
 
 # 3. Lire mon_module/MIGRATION_REPORT.md et traiter les TODO
 ```
 
-`--odoo-root` est facultatif mais recommandé : il active les scripts
-officiels d'Odoo et la vérification des vues et des modèles contre l'Odoo
-cible.
+Les scripts officiels et les références Odoo Community 18, 19 et 20 sont
+embarqués et utilisés par défaut, sans serveur Odoo ni téléchargement au moment
+de la migration. La première utilisation prépare un cache local.
+
+`--odoo-root` permet de choisir d'autres sources cibles. `--addons-path` ajoute
+notamment les sources Enterprise et `--context-path` les autres modules métier.
+`--no-upgrade-code` limite l'exécution aux règles du migrateur.
+
+Le modèle de manifeste et le nettoyage des imports inutilisés sont appliqués
+par défaut aux modules hors OCA. `--format` ajoute le formatage Ruff du projet.
+Options : `--default-website URL`, `--keep-unused-imports`, `--no-manifest-format`.
 
 ## Documentation
 
@@ -54,6 +61,7 @@ cible.
 |---|---|
 | [docs/COMMANDES.md](docs/COMMANDES.md) ([PDF](docs/COMMANDES.pdf)) | Toutes les commandes et options, avec des exemples |
 | [docs/FONCTIONNEMENT.md](docs/FONCTIONNEMENT.md) | Comment l'outil travaille, organisation des règles, ajouter une règle |
+| [docs/CONTROLES_MIGRATION.md](docs/CONTROLES_MIGRATION.md) | Contrôles Python/XML, cache, formatage et limites de l'analyse |
 | [tools/README.md](tools/README.md) | Outils de mainteneur : régénérer les règles, bancs d'essai sur Odoo |
 | [CHANGELOG.md](CHANGELOG.md) | Historique des versions |
 

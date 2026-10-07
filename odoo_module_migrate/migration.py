@@ -37,6 +37,14 @@ class Migration:
         write_report=True,
         set_installable=False,
         report_dir=None,
+        format_code=False,
+        format_config_root=None,
+        use_bundled_upgrade=False,
+        context_paths=(),
+        reference_paths=(),
+        clean_imports=False,
+        manifest_layout=False,
+        default_website="",
     ):
         if not module_names:
             module_names = []
@@ -50,6 +58,11 @@ class Migration:
         self._report = write_report
         self._set_installable = set_installable
         self._report_dir = pathlib.Path(report_dir).resolve() if report_dir else None
+        self._format_code = format_code
+        self._clean_imports = clean_imports
+        self._manifest_layout = manifest_layout
+        self._default_website = default_website
+        self._format_config_root = pathlib.Path(format_config_root).resolve() if format_config_root else None
         self.report_collector = None
         self._migration_steps = []
         self._migration_scripts = []
@@ -76,6 +89,9 @@ class Migration:
 
         root_path = pathlib.Path(relative_directory_path)
         self._directory_path = pathlib.Path(root_path.resolve(strict=True))
+        if use_bundled_upgrade and not self._upgrade_code_options and float(target_version_name) >= 18:
+            from .upgrade_code.bundled import options
+            self._upgrade_code_options = options(target_version_name, [*context_paths, self._directory_path], reference_paths)
 
         if format_patch:
             if not (root_path / module_names[0]).is_dir():
@@ -126,7 +142,11 @@ class Migration:
         if not self._has_pre_commit_config():
             return
         try:
-            _run(["pre-commit", "run", "-a"], path=self._directory_path, check=False)
+            files = [str(p.relative_to(self._directory_path))
+                     for m in self._module_migrations for p in m._module_path.rglob("*")
+                     if p.is_file() and not {".git", "__pycache__"}.intersection(p.parts)]
+            if files:
+                _run(["pre-commit", "run", "--files", *files], path=self._directory_path, check=False)
         except FileNotFoundError:
             logger.warning("pre-commit is not installed: skipping it")
 
@@ -135,12 +155,12 @@ class Migration:
         self._run_pre_commit_if_configured()
         if self._commit_enabled:
             logger.info("Stage and commit changes done by pre-commit")
-            _run(["git", "add", "-A"], path=self._directory_path)
+            _run(["git", "add", "-A", "--", *module_names], path=self._directory_path)
             # Don't fail if there is nothing to commit
             _run(
                 [
                     "git", "commit", "--no-verify", "-m",
-                    "[IMP] %s: pre-commit execution" % ", ".join(module_names),
+                    "[IMP] %s: pre-commit execution" % ", ".join(module_names), "--", *module_names,
                 ],
                 path=self._directory_path,
                 check=False,
@@ -259,10 +279,21 @@ class Migration:
                     try:
                         step()
                     except Exception as e:  # noqa: BLE001 - reported, the rest goes on
-                        logger.error("%s failed: %s: %s" % (step.__name__, type(e).__name__, e))
+                        for item in self._module_migrations:
+                            logger.error("[incomplete] %s failed: %s: %s. File %s:1",
+                                         step.__name__, type(e).__name__, e,
+                                         item._module_path / "__manifest__.py")
                         logger.debug(traceback.format_exc())
+            from .quality import finish_module
+            for item in self._module_migrations:
+                finish_module(item._module_path, cosmetic=not self._is_oca_module(item._module_path),
+                              original_data=item._original_data, manifest_layout=self._manifest_layout,
+                              default_website=self._default_website)
+            if self._format_code or self._clean_imports:
+                self._format_changed_files()
             if float(init_version) < 20 <= float(target_version):
                 self._check_access_records_left()
+            self._run_pre_commit_if_configured()
             for module_migration in self._module_migrations:
                 module_migration.restore()
             if self.report_collector:
@@ -296,6 +327,47 @@ class Migration:
                 report.render_summary(reports, init_version, target_version), encoding="utf-8"
             )
 
+    def _format_changed_files(self):
+        import shutil
+        import sys
+
+        ruff = shutil.which("ruff")
+        if not ruff:
+            candidate = pathlib.Path(sys.executable).parent / ("ruff.exe" if os.name == "nt" else "ruff")
+            ruff = str(candidate) if candidate.exists() else None
+        if not ruff:
+            raise ConfigException("--format requires ruff: install it with python -m pip install ruff")
+        config_args = []
+        root = self._format_config_root or self._directory_path
+        for directory in [root, *root.parents]:
+            config = next((directory / name for name in (".ruff.toml", "ruff.toml", "pyproject.toml")
+                           if (directory / name).is_file() and
+                           (name != "pyproject.toml" or "[tool.ruff" in (directory / name).read_text(encoding="utf-8"))), None)
+            if config:
+                config_args = ["--config", str(config)]
+                break
+        for item in self._module_migrations:
+            if self._is_oca_module(item._module_path):
+                continue
+            for operation in ("check", "format"):
+                if operation == "check":
+                    if not self._clean_imports:
+                        continue
+                    paths = [p for p in tools.get_files(item._module_path, (".py",)) if p.name != "__init__.py"]
+                    prefix = [ruff, "check", "--isolated", "--fix", "--select", "F401", "--no-unsafe-fixes"]
+                else:
+                    if not self._format_code:
+                        continue
+                    paths = [item._module_path / change.removesuffix(" (ajouté)") for change in item.changed_files()]
+                    paths = [p for p in paths if p.is_file() and p.suffix == ".py"]
+                    prefix = [ruff, "format", *config_args]
+                for offset in range(0, len(paths), 32):
+                    batch = paths[offset:offset + 32]
+                    command = prefix + [str(p) for p in batch]
+                    result = subprocess.run(command, cwd=self._directory_path, capture_output=True, text=True)
+                    if result.returncode:
+                        logger.warning("Ruff: %s. File %s:1", (result.stderr or result.stdout).strip(), batch[0])
+
     def _check_access_records_left(self):
         """ir.rule / ir.model.access left in XML once converted (by Odoo's
         19.4-00-ir-access.py or by the fallback of migrate_190_200)."""
@@ -316,36 +388,50 @@ class Migration:
             reference + list(options.context_path) + [self._directory_path]
         )
         reference_modules = {m.name for m in views._module_dirs(reference)}
+        self._resolve_index_dependencies(index)
         for module_migration in self._module_migrations:
             unknown = index.unknown_dependencies(module_migration._module_name)
             if unknown:
                 logger.warning(
-                    "[view] Dependencies not found in the addons paths (%s): the anchors of the"
-                    " inherited views and the models used are not checked (give --context-path)."
+                    "[incomplete] Dependencies not found in the addons paths (%s): checks continue"
+                    " against available sources; risk unknown (give --context-path)."
                     " File %s:1"
                     % (", ".join(unknown), module_migration._module_path / "__manifest__.py")
                 )
             for path, line, message in views.check_module(
                 module_migration._module_path, index, reference_modules
             ):
-                logger.error("[view] %s. File %s:%s" % (message, path, line))
+                (logger.warning if unknown or "[incomplete]" in message else logger.error)("[view] %s. File %s:%s" % (message, path, line))
+            for path, line, message in views.check_duplicate_fields(module_migration._module_path, index):
+                logger.warning("[view] %s. File %s:%s", message, path, line)
 
         # models inherited / used as comodel that do not exist in the target
         from .analysis import models
 
+        logger.info("Indexing target models and Python dependencies (cached source summaries)...")
         model_index = models.ModelIndex.build(
             reference + list(options.context_path) + [self._directory_path]
         )
+        self._resolve_index_dependencies(model_index)
+        from .analysis import python_checks
         for module_migration in self._module_migrations:
+            logger.info("Checking Python and field callbacks: %s", module_migration._module_name)
+            log_model = logger.warning if model_index.unknown_dependencies(module_migration._module_name) else logger.error
+            for path, line, level, message in python_checks.check_module(
+                module_migration._module_path, model_index,
+                float(self._migration_steps[-1]["target_version_name"]),
+                precision_names=index.precisions,
+            ):
+                getattr(logger, level)("%s. File %s:%s", message, path, line)
             for path, line, message in models.check_module(
                 module_migration._module_path, model_index
             ):
-                logger.error("%s. File %s:%s" % (message, path, line))
+                log_model("%s. File %s:%s" % (message, path, line))
             # paths of @api.depends / related= through fields that do not exist
             for path, line, message in models.check_field_paths(
                 module_migration._module_path, model_index
             ):
-                logger.error("%s. File %s:%s" % (message, path, line))
+                log_model("%s. File %s:%s" % (message, path, line))
 
         # names imported from the addons of the target Odoo
         from .analysis import imports
@@ -356,6 +442,15 @@ class Migration:
                 module_migration._module_path, import_index
             ):
                 logger.error("%s. File %s:%s" % (message, path, line))
+
+    def _resolve_index_dependencies(self, index):
+        rules = []
+        for script in self._migration_scripts:
+            script.parse_rules()
+            rules.extend(r for r in script._DEPRECATED_MODULES if len(r) > 2 and r[1] in ("merged", "renamed"))
+        from .manifest import apply_module_rules
+        for name, dependencies in index.depends.items():
+            index.depends[name] = apply_module_rules(dependencies, rules)[0]
 
     def _run_upgrade_code(self):
         init_version = self._migration_steps[0]["init_version_name"]
@@ -380,3 +475,12 @@ class Migration:
             init_version,
             target_version,
         )
+        # Global script failures otherwise have no module path and disappear
+        # from the per-module reports after the rule phase.
+        for script in self.upgrade_code_result.scripts:
+            failures = ([script["error"].strip().splitlines()[-1]] if script["error"] else [])
+            failures += [r["message"] for r in script["logs"] if r["level"] in {"ERROR", "CRITICAL"}]
+            for failure in failures:
+                for item in self._module_migrations:
+                    logger.error("[incomplete] upgrade_code %s: %s. File %s:1",
+                                 script["name"], failure, item._module_path / "__manifest__.py")

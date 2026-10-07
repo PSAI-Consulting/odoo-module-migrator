@@ -4,3 +4,5 @@ colorama
 lxml
 pyyaml
 requests
+polib
+ruff

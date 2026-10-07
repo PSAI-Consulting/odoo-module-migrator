@@ -53,7 +53,7 @@ def test_model_of_a_module_outside_depends(tmp_path):
     messages = [msg for _p, _l, msg in models.check_module(mod, index)]
     assert len(messages) == 1 and "defined by the module(s) x_product" in messages[0], messages
     messages = [msg for _p, _l, msg in models.check_module(mod2, index)]
-    assert messages == [], messages
+    assert len(messages) == 1 and "[incomplete]" in messages[0], messages
 
 
 FIELDS_PY = '''from odoo import api, fields, models
@@ -132,7 +132,8 @@ def test_field_paths(tmp_path):
     # name of res.partner, display_name, message_ids (parent): found; the
     # transient model on a regular one and the mixin are not checked
     assert found == [(9, "partner_id.gone", "gone"), (11, "line_ids.blocked", "blocked")], found
-    assert not list(models.check_field_paths(mod_unknown, index))
+    partial = list(models.check_field_paths(mod_unknown, index))
+    assert partial and all("verification is incomplete" in m for _, _, m in partial)
 
 
 def test_dependency_outside_the_addons_paths(tmp_path):
@@ -147,4 +148,5 @@ def test_dependency_outside_the_addons_paths(tmp_path):
     ))
     index = models.ModelIndex.build([ref, custom])
     assert index.unknown_dependencies("my_mod") == ["other_addon"]
-    assert list(models.check_module(mod, index)) == []
+    partial = list(models.check_module(mod, index))
+    assert len(partial) == 2 and all("[incomplete]" in m for _, _, m in partial)

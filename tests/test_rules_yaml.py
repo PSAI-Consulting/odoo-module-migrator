@@ -12,6 +12,7 @@ SCRIPTS = pathlib.Path(__file__).resolve().parent.parent / "odoo_module_migrate"
 
 # type of rule -> minimum length of an entry (list types)
 LIST_TYPES = {
+    "field_types": 5,
     "deprecated_modules": 2,   # [module, state, (new module)]
     "renamed_fields": 3,       # [model, old, new (or null), (source)]
     "removed_fields": 2,       # [model, field, (message)]

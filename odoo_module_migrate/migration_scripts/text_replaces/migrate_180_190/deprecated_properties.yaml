@@ -1,2 +1,0 @@
-.py:
-  \._(cr|uid|context)\b: .env.\1

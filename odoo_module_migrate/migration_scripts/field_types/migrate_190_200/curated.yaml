@@ -1,0 +1,2 @@
+# Source: Odoo 19.0 and 20.0 addons/sale/models/sale_order_line.py.
+- ["sale.order.line", "customer_lead", "Float", "Integer", "Odoo 19.0 -> 20.0 addons/sale/models/sale_order_line.py"]

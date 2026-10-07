@@ -63,10 +63,11 @@ def test_other_anchors_templates_and_xmlids(tmp_path):
     ]))
     index = views.ViewIndex.build([ref, custom])
     messages = sorted(msg for _p, _l, msg in views.check_module(mod, index, {"base", "web"}))
-    assert len(messages) == 3, messages
-    assert "XML id web.menu_gone does not exist" in messages[0]
-    assert messages[1].startswith("button[@name='action_gone'] not found")
-    assert messages[2].startswith("t[@t-set='gone'] not found")
+    assert len(messages) == 4, messages
+    assert "Exact selector //div[@name='buttons']/button" in messages[0]
+    assert "XML id web.menu_gone does not exist" in messages[1]
+    assert messages[2].startswith("button[@name='action_gone'] not found")
+    assert messages[3].startswith("t[@t-set='gone'] not found")
 
 
 def test_bare_tag_anchors(tmp_path):
@@ -92,7 +93,8 @@ def test_bare_tag_anchors(tmp_path):
     index = views.ViewIndex.build([ref, custom])
     for module in (mod, mod2):
         messages = [msg for _p, _l, msg in views.check_module(module, index, {"base", "product"})]
-        assert [m.split(" ")[0] for m in messages] == ["<header>"], messages
+        expected = ["<header>", "Exact"] if module == mod else ["<header>"]
+        assert [m.split(" ")[0] for m in messages] == expected, messages
 
 
 def test_bare_tag_anchors_templates(tmp_path):
@@ -155,13 +157,13 @@ def test_anchor_added_by_a_previous_spec_of_the_same_view(tmp_path):
         "<xpath expr=\"//field[@name='renamed']\" position=\"after\"/>"
         # the children of a <data> are applied after the other specs
         '<data><field name="z" position="after"/></data>'
-        '<field name="late" position="after"><field name="z"/></field>'
+        '<field name="renamed" position="after"><field name="z"/></field>'
     ), "res.partner"))
     index = views.ViewIndex.build([ref, custom])
     messages = [msg for _p, _l, msg in views.check_module(mod, index, {"base"})]
-    assert len(messages) == 2, messages
+    assert len(messages) == 1, messages
     assert messages[0].startswith("field[@name='late'] not found")
-    assert messages[1].startswith("field[@name='renamed'] not found")
+    # Attribute edits change subsequent selectors; renamed now exists.
 
 
 def test_dependency_outside_the_addons_paths(tmp_path):
@@ -187,5 +189,7 @@ def test_dependency_outside_the_addons_paths(tmp_path):
     messages = sorted(msg for _p, _l, msg in views.check_module(mod, index, {"base", "product", "other"}))
     assert messages == [
         "XML id product.menu_gone does not exist in the target Odoo",
+        "field[@name='custom_field'] not found in the combined view product.form"
+        " (incomplete dependencies; verify with the missing modules)",
         "parent view product.gone does not exist in the target Odoo",
     ]

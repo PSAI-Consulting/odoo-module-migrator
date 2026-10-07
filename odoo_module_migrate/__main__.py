@@ -17,6 +17,13 @@ def get_parser():
         formatter_class=argparse.RawTextHelpFormatter,
     )
     main_parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    main_parser.add_argument("--format", dest="format_code", action="store_true",
+                             help="Format changed non-OCA Python files with Ruff using the project configuration.")
+    main_parser.add_argument("--no-upgrade-code", action="store_true",
+                             help="Use migration rules only; disable the bundled official scripts and target checks.")
+    main_parser.add_argument("--keep-unused-imports", action="store_true", help="Disable safe F401 cleanup outside __init__.py (enabled by default for non-OCA modules).")
+    main_parser.add_argument("--no-manifest-format", action="store_true", help="Keep original manifest layout instead of the standard key order and multiline lists.")
+    main_parser.add_argument("--default-website", default="", help="Website to use only when absent; existing module values are preserved.")
 
     main_parser.add_argument(
         "-d", "--directory", default="./", type=str,
@@ -154,12 +161,19 @@ def main(args=None):
         module_names = [x.strip() for x in (args.modules or "").split(",") if x.strip()]
 
         upgrade_code_options = None
-        if args.odoo_root:
+        if args.odoo_root and not args.no_upgrade_code:
             from .upgrade_code import UpgradeCodeOptions
             context = ",".join(filter(None, [args.context_path, args.directory]))
             upgrade_code_options = UpgradeCodeOptions.from_args(
                 args.odoo_root, args.odoo_python, args.addons_path, context
             )
+        if args.no_upgrade_code:
+            upgrade_code_options = None
+        elif upgrade_code_options is None and float(args.target_version_name) >= 18:
+            from .upgrade_code.bundled import options
+            upgrade_code_options = options(args.target_version_name,
+                                           [p for p in (args.context_path or "").split(",") if p] + [args.directory],
+                                           [p for p in (args.addons_path or "").split(",") if p])
 
         if args.dry_run:
             from .dry_run import run_dry
@@ -181,6 +195,10 @@ def main(args=None):
             write_report=args.write_report,
             report_dir=args.report_dir,
             set_installable=args.set_installable,
+            format_code=args.format_code,
+            clean_imports=not args.keep_unused_imports,
+            manifest_layout=not args.no_manifest_format,
+            default_website=args.default_website,
         )
 
         # run Migration

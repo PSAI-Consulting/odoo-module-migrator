@@ -1,0 +1,113 @@
+# Contrôles supplémentaires des migrations
+
+Les reproductions dans `tests/test_client_regressions.py` utilisent des modules
+fictifs. Aucune règle ne dépend du nom d'un client, d'un chemin client ou de sa
+configuration.
+
+| Problèmes signalés | Traitement |
+|---|---|
+| 1, 2 | Après les scripts officiels : échappements Unicode rendus lisibles uniquement si la valeur Python reste identique ; lignes vides initiales retirées. Chaînes brutes, bytes et f-strings conservées. |
+| 3, 14 | Avec les sources cibles : usages Python de modèles, champs, relations, variables de boucle et dictionnaires `create`/`write`. Le rapport nomme les modules fournisseurs et détecte une dépendance circulaire ; il recommande alors de déplacer le code ou de créer un module de liaison. |
+| 4 | Nouveau type de règles `field_types`. Détection des lectures/affectations, redéfinitions et méthodes `_compute_<champ>`. Règle vérifiée pour `sale.order.line.customer_lead` en 20.0 ; aucune conversion automatique de données. |
+| 5 | Après `upgrade_code`, `security/ir.access.csv` retrouve la position de l'ancien `security/ir.model.access.csv`, sans réordonner les autres fichiers. |
+| 6, 11 | Imports inutilisés supprimés par défaut (F401, hors `__init__.py`, respecte `noqa`). `--format` ajoute le formatage Ruff des fichiers Python effectivement modifiés, avec la configuration du projet. |
+| 7 | Ajout de la licence LGPL-3 par défaut si absente ; avertissement pour `_name` sans `_description`. La description métier reste à renseigner. |
+| 8, 9 | Chemins de contexte dédoublonnés ; priorité à la copie migrée ; cache disque JSON dans SQLite pour les métadonnées Python/XML ; expressions régulières compilées une fois ; itération des scripts officiels limitée aux modules sélectionnés. Les dépendances restent accessibles en lecture explicite. |
+| 10 | Avertissement uniquement si le champ invisible est utilisé par une expression de la même architecture de vue. |
+| 12, 17 | Évaluation des XPath complets sur une architecture reconstruite : axes enfant/descendant, indices, attributs, modifications successives. Réécritures limitées aux vues standard concernées : colonne `price_unit`, état de facture `status_in_payment`, groupes de recherche sans `expand`. |
+| 13 | Références Python `uom.uom_categ_*` signalées ; `uom.uom.category_id` signalé lorsque le modèle est résolu par l'index cible. Piste : `_has_common_reference(other_uom)`. |
+| 15 | `digits='Product Unit of Measure'` devient `Product Unit` au saut 18→19. Les précisions Python inconnues de l'index cible sont signalées. |
+| 16 | Les dépendances transitives renommées/fusionnées sont résolues pour les contrôles. Une dépendance introuvable n'annule plus les analyses ; le rapport affiche un risque inconnu si les vérifications sont incomplètes et qu'aucune erreur certaine ne justifie un risque élevé. |
+| 18, 19 | Avertissements pour `.po` hors de `i18n/` et f-string passée à une fonction de traduction. Aucun déplacement de traductions ni changement automatique de texte source. |
+| 20 | Avertissement de doublon potentiel avec la vue cible, en privilégiant un conteneur commun ou une ancre disparue. Les doublons étant parfois voulus, aucun bloc n'est supprimé automatiquement. |
+| 21 | Migration des raccourcis d'environnement sur les accès Python identifiés comme appartenant à un modèle ; commentaires et textes conservés. |
+| 22, 23 | Contrôle des méthodes `compute`, `inverse`, `search` nommées par une chaîne ; avertissement pour une surcharge `_compute_*` / `_search_*` sans `super()` ni référence au champ correspondant. |
+| 24, 25 | Diagnostics pour `_` global utilisé sans définition/import et pour les fichiers répétés dans `data`. Les chargements répétés ne sont pas supprimés automatiquement. |
+
+Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
+signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans
+les méthodes de calcul.
+
+## Formatage
+
+```shell
+odoo-module-migrate -d ./addons -m mon_module -i 17.0 -t 20.0 --no-commit --format
+```
+
+Ruff utilise `.ruff.toml`, `ruff.toml` ou `[tool.ruff]` dans `pyproject.toml`.
+Le mode `--dry-run --format` utilise également la configuration du projet
+d'origine. Ruff est installé avec l'outil. Le migrateur applique les corrections
+sûres F401 par défaut (`--keep-unused-imports` pour les désactiver), puis
+`ruff format` si demandé. Il n'applique pas toutes les corrections d'un `select = ["ALL"]` :
+celles-ci pourraient changer des chaînes traduisibles ou ajouter des en-têtes.
+Les nettoyages cosmétiques et ce formatage sont ignorés pour les modules OCA.
+
+## Modèle de manifeste
+
+Le modèle est intégré au code, sans dépendance à Obsidian : ordre des clés,
+listes une valeur par ligne, suppression des valeurs par défaut et des
+commentaires scaffold, `website` et `license` présents. Les valeurs métier,
+clés personnalisées, commentaires de l'auteur et descriptions non vides sont
+conservés. Un site absent reste vide, ou reçoit `--default-website URL`.
+`--no-manifest-format` conserve la présentation d'origine.
+
+L'ordre des fichiers `data` reste inchangé : certains fichiers de sécurité
+dépendent de données chargées avant eux. Seul le remplacement d'un fichier ACL
+par `ir.access.csv` reprend sa position initiale. Aucune identité client n'est
+inscrite dans le modèle commun.
+
+## Scripts officiels embarqués
+
+Les archives Community 18/19/20 sont incluses dans le paquet (environ 45 Mo),
+avec licence, révision Git, empreintes et provenance. Python 3.12+ suffit ;
+aucun serveur Odoo ni téléchargement n'est nécessaire à l'exécution.
+Les références Enterprise restent à fournir par `--addons-path`.
+`--odoo-root` remplace les sources embarquées ; `--no-upgrade-code` désactive
+les scripts officiels et les analyses contre les sources cibles.
+
+Les adaptations du lanceur concernent les accès fichiers, les dépendances et
+les manifestes. Les scripts embarqués eux-mêmes sont conservés tels quels.
+Le script d'exemple, la conversion interne de plan comptable et le remplacement
+textuel des raccourcis d'environnement sont exclus ; ce dernier est remplacé
+par la transformation Python structurée du migrateur.
+Pour actualiser une archive depuis les sources Community :
+
+```shell
+python tools/vendor_upgrade_code.py --source /repos/odoo/20.0 --version 20.0
+```
+
+## Extraire de nouvelles règles
+
+```shell
+python tools/extract/extract_changes.py field-types --from 19.0 --to 20.0 --repo /repos/odoo.git --output /tmp/types.yaml
+python tools/extract/extract_changes.py decimal-precisions --from 18.0 --to 19.0 --repo /repos/odoo.git --output /tmp/precisions.yaml
+```
+
+Après relecture, les règles de types peuvent être placées sous
+`migration_scripts/field_types/migrate_XXX_YYY/`. Chaque ligne porte le modèle,
+le champ, l'ancien type, le nouveau et sa provenance. L'extraction des précisions
+produit deux inventaires par XML id, avec le nom et la source de chaque version.
+
+## Limites et choix de conservation
+
+L'analyse reste statique : elle ne remplace pas une installation Odoo ni les
+tests métier. Les méthodes fabriquées dynamiquement, les accès via `getattr`,
+certains alias et héritages complexes ne sont pas complètement résolus.
+Une expression XPath ou opération d'héritage non prise en charge est indiquée
+comme incomplète. La détection de doublons est une aide à la revue, pas une
+preuve historique de déplacement entre deux versions.
+
+Le cache utilise les chemins absolus, la version de son schéma, celle de Python
+et les métadonnées des fichiers. Il tient compte des fichiers modifiés hors
+commit ; aucun cache n'est écrit dans le dépôt client. Il est facultatif : un
+cache inaccessible n'empêche pas l'analyse.
+
+Les propositions cosmétiques qui changent potentiellement le comportement
+(ordre général de chargement de la sécurité, commandes x2many, renommage de
+variables, suppression de code commenté, dédoublonnage des chargements) ne sont
+pas appliquées arbitrairement. Le modèle de manifeste commun n'impose aucune
+valeur d'auteur, de nom ou de site d'une équipe à un autre client.
+
+`invisible` et `column_invisible` sont conservés distincts : le premier peut
+dépendre des valeurs de la ligne, le second masque la colonne entière sans ce
+contexte. La conversion globale de l'un vers l'autre a été retirée.

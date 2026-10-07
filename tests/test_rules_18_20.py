@@ -632,5 +632,9 @@ def test_auto_added_fields_notice_only_from_17():
         script.parse_rules()
         return script._file_rules(".xml")["warnings"]
 
-    assert any("137031" in m for m in warnings(M18).values())
+    # The notice is now an XML-aware pass, not a match on every invisible=1.
+    script = M18()
+    script.parse_rules()
+    assert any(f.__name__ == "check_invisible_fields" for f in script._GLOBAL_FUNCTIONS)
+    assert not any("137031" in m for m in warnings(M18).values())
     assert not any("137031" in m for m in warnings(M19).values())

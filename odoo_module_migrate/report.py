@@ -69,6 +69,8 @@ class ModuleReport:
     def risk(self):
         if self.errors:
             return "élevé"
+        if any("[incomplete]" in e.message for e in self.entries):
+            return "inconnu"
         if len(self.todos) > 5:
             return "moyen"
         if self.todos:

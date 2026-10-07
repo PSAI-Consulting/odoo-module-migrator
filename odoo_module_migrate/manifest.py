@@ -2,6 +2,67 @@
 """Manifest edition that keeps the formatting of the file."""
 
 import ast
+import io
+import json
+import tokenize
+
+KEY_ORDER = ("name", "summary", "description", "version", "category", "author", "website", "license",
+             "depends", "external_dependencies", "data", "demo", "assets")
+SCAFFOLD_COMMENTS = ("categories can be used", "any module necessary", "always loaded",
+                     "only loaded in demonstration", "check https://github.com/odoo/odoo")
+
+
+def format_manifest(text, default_website="", keep_installable=False):
+    """Canonical layout without importing another client's metadata.
+
+    Keep list order, unknown keys, nonempty descriptions and authored comments.
+    Missing website is empty unless the caller explicitly supplies a default.
+    """
+    data = ast.literal_eval(text)
+    tree = ast.parse(text)
+    if not isinstance(data, dict) or len(tree.body) != 1 or not isinstance(tree.body[0].value, ast.Dict):
+        raise ManifestError("Manifest must contain one literal dictionary")
+    mapping = tree.body[0].value
+    pos = _Positions(text)
+    start, end = pos(mapping.lineno, mapping.col_offset), pos(mapping.end_lineno, mapping.end_col_offset)
+    data.setdefault("website", default_website)
+    data.setdefault("license", "LGPL-3")
+    if isinstance(data.get("description"), str) and not data["description"].strip():
+        data.pop("description")
+    for key, default in (("installable", True), ("application", False), ("auto_install", False)):
+        if key in data and data[key] is default and not (key == "installable" and keep_installable):
+            data.pop(key)
+    comments = {}
+    keys = [(k.lineno, k.value) for k in mapping.keys if isinstance(k, ast.Constant)]
+    for token in tokenize.generate_tokens(io.StringIO(text).readline):
+        if token.type != tokenize.COMMENT or not (mapping.lineno <= token.start[0] <= mapping.end_lineno):
+            continue
+        if any(phrase in token.string.lower() for phrase in SCAFFOLD_COMMENTS):
+            continue
+        owner = next((key for line, key in reversed(keys) if line <= token.start[0]), None)
+        comments.setdefault(owner, []).append(token.string)
+
+    def render(value, indent):
+        pad = " " * indent
+        if isinstance(value, (list, tuple)):
+            opening, closing = ("[", "]") if isinstance(value, list) else ("(", ")")
+            return opening + ("\n" + "".join(pad + "    " + render(v, indent + 4) + ",\n" for v in value) + pad if value else "") + closing
+        if isinstance(value, dict):
+            return "{" + ("\n" + "".join(pad + "    " + render(k, 0) + ": " + render(v, indent + 4) + ",\n" for k, v in value.items()) + pad if value else "") + "}"
+        if isinstance(value, str):
+            return json.dumps(value, ensure_ascii=False)
+        return repr(value)
+
+    ordered = [key for key in KEY_ORDER if key in data] + [key for key in data if key not in KEY_ORDER]
+    lines = ["{"]
+    lines.extend("    " + c for c in comments.pop(None, []))
+    for key in ordered:
+        lines.extend("    " + c for c in comments.pop(key, []))
+        lines.append("    " + render(key, 0) + ": " + render(data[key], 4) + ",")
+    for remaining in comments.values():
+        lines.extend("    " + c for c in remaining)
+    lines.append("}")
+    return text[:start] + "\n".join(lines) + text[end:]
 
 
 class ManifestError(ValueError):
@@ -50,7 +111,11 @@ def rewrite_depends(text, new_depends):
     The quote style, the one-line / one-item-per-line layout, the indentation
     and the trailing comma of the original list are kept.
     """
-    node = _find_key(text, "depends")
+    return rewrite_list(text, "depends", new_depends)
+
+
+def rewrite_list(text, key, new_depends):
+    node = _find_key(text, key)
     if not isinstance(node, (ast.List, ast.Tuple)):
         raise ManifestError("'depends' is not a literal list")
     pos = _Positions(text)

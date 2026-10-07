@@ -44,3 +44,29 @@ def test_resolve_chains():
     assert ec.resolve_chains(rules) == [
         ("a", "merged", "c", ""), ("b", "merged", "c", ""), ("d", "removed", None, ""),
     ]
+
+
+def test_metadata_extractors(tmp_path, monkeypatch):
+    import extract_fields as ef
+    import yaml
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(ec, "resolve_ref", lambda repo, version: version)
+    monkeypatch.setattr(ec, "git", lambda *args: "a" * 40)
+    def blobs(repo, ref, pattern):
+        if pattern.search("model.py"):
+            kind = "Float" if ref == "19.0" else "Integer"
+            return {"addons/sale/models/line.py": f"class Line(Model):\n    _name = 'sale.order.line'\n    customer_lead = fields.{kind}()\n"}
+        name = "Product Unit of Measure" if ref == "19.0" else "Product Unit"
+        return {"addons/uom/data/uom.xml": f'<odoo><record id="precision" model="decimal.precision"><field name="name">{name}</field></record></odoo>'}
+    monkeypatch.setattr(ef, "read_blobs", blobs)
+    output = tmp_path / "types.yaml"
+    args = SimpleNamespace(repo=["odoo"], from_version="19.0", to_version="20.0", output=str(output))
+    ec.extract_field_types(args)
+    rows = yaml.safe_load(output.read_text())
+    assert rows[0][:4] == ["sale.order.line", "customer_lead", "Float", "Integer"]
+    assert "addons/sale/models/line.py" in rows[0][4]
+    ec.extract_decimal_precisions(args)
+    snapshots = yaml.safe_load(output.read_text())
+    assert snapshots["from"]["uom.precision"]["name"] == "Product Unit of Measure"
+    assert snapshots["to"]["uom.precision"]["name"] == "Product Unit"

@@ -83,6 +83,12 @@ def run_dry(args, module_names, upgrade_code_options=None, out=None):
             upgrade_code_options=upgrade_code_options,
             write_report=bool(args.report_dir),
             report_dir=args.report_dir,
+            set_installable=getattr(args, "set_installable", False),
+            format_code=getattr(args, "format_code", False),
+            format_config_root=source,
+            clean_imports=not getattr(args, "keep_unused_imports", True),
+            manifest_layout=not getattr(args, "no_manifest_format", True),
+            default_website=getattr(args, "default_website", ""),
         )
         migration.run()
         for name in module_names:

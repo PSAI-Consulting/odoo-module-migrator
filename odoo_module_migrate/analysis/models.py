@@ -13,6 +13,7 @@ import ast
 import collections
 import pathlib
 import re
+from .cache import cached_summary
 
 RELATIONAL = {"Many2one", "One2many", "Many2many", "Many2oneReference"}
 
@@ -158,6 +159,46 @@ def _class_infos(tree):
         yield model, name, parents, bases, fields, paths
 
 
+def source_summary(path):
+    """JSON-compatible model metadata; one parse per source revision."""
+    text = path.read_bytes()
+    if b"_name" not in text and b"_inherit" not in text:
+        return []
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        text = text.decode("utf-8", "replace")
+        models = {m for decl in MODEL_DECL_RE.findall(text) for m in QUOTED_MODEL_RE.findall(decl)}
+        return [dict(model=m, name=m if m in NAME_RE.findall(text) else None,
+                     parents=list(models - {m}), bases=[],
+                     fields=dict.fromkeys(FIELD_ASSIGN_RE.findall(text)),
+                     methods=re.findall(r"^    (?:async )?def (\w+)\(", text, re.M), types={}, company=[])
+                for m in sorted(models)]
+    result = []
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef):
+            continue
+        infos = list(_class_infos(ast.Module(body=[cls], type_ignores=[])))
+        if not infos:
+            continue
+        model, name, parents, bases, fields, _ = infos[0]
+        kinds, company = {}, []
+        for stmt in cls.body:
+            target = stmt.target if isinstance(stmt, ast.AnnAssign) else (
+                stmt.targets[0] if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 else None)
+            call = getattr(stmt, "value", None)
+            if isinstance(target, ast.Name) and target.id in fields and isinstance(call, ast.Call):
+                kinds[target.id] = _call_name(call)
+                if any(k.arg == "company_dependent" and isinstance(k.value, ast.Constant)
+                       and k.value.value is True for k in call.keywords):
+                    company.append(target.id)
+        result.append(dict(model=model, name=name, parents=sorted(parents), bases=sorted(bases),
+                           fields=fields, methods=[s.name for s in cls.body
+                           if isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))],
+                           types=kinds, company=company))
+    return result
+
+
 class ModelIndex:
     def __init__(self):
         self.models = collections.defaultdict(set)  # module -> models it defines
@@ -169,8 +210,13 @@ class ModelIndex:
         self.defined = set()                            # models with a _name
         self.transient = set()
         self.abstract = set()
+        self.field_owners = collections.defaultdict(set)
+        self.methods = collections.defaultdict(set)
+        self.method_owners = collections.defaultdict(set)
+        self.field_types = collections.defaultdict(set)
+        self.company_fields = set()
 
-    def _add_fields(self, path):
+    def _add_fields(self, path, owner=""):
         text = path.read_bytes()
         try:
             tree = ast.parse(text)
@@ -196,6 +242,30 @@ class ModelIndex:
             for field, comodel in fields.items():
                 if comodel:
                     self.comodels[(model, field)].add(comodel)
+
+    def _add_summary(self, path, owner):
+        summary = cached_summary(path, source_summary)
+        for info in summary:
+            model = info["model"]
+            if info["name"]:
+                self.models[owner].add(info["name"])
+                self.defined.add(info["name"])
+            self.parents[model].update(info["parents"])
+            if "TransientModel" in info["bases"]:
+                self.transient.add(model)
+            if "AbstractModel" in info["bases"]:
+                self.abstract.add(model)
+            self.fields[model].update(info["fields"])
+            for field, comodel in info["fields"].items():
+                self.field_owners[model, field].add(owner)
+                if comodel:
+                    self.comodels[model, field].add(comodel)
+            for method in info["methods"]:
+                self.methods[model].add(method)
+                self.method_owners[model, method].add(owner)
+            for field, kind in info["types"].items():
+                self.field_types[model, field].add(kind)
+            self.company_fields.update((model, f) for f in info["company"])
 
     def ancestors(self, model):
         result, todo = set(), [model]
@@ -248,21 +318,14 @@ class ModelIndex:
             manifest = {}
         self.depends[module.name] = manifest.get("depends", [])
         for path in _python_files(module):
-            for _line, name, inherit, _inherits, _comodels in _classes(path):
-                # a model is defined by _name; _inherit with one name and no
-                # _name extends it (it exists in a dependency)
-                if name:
-                    self.models[module.name].add(name)
-            self._add_fields(path)
+            self._add_summary(path, module.name)
 
     @classmethod
     def build(cls, paths):
         index = cls()
-        for base in paths:
-            base = pathlib.Path(base)
-            if base.is_dir():
-                for manifest in base.glob("*/__manifest__.py"):
-                    index.add_module(manifest.parent)
+        from .views import _module_dirs
+        for module in _module_dirs(paths):
+            index.add_module(module)
         return index
 
     def unknown_dependencies(self, module):
@@ -305,15 +368,19 @@ def check_module(module, index):
     available = index.available(module.name)
     if not index.models.get("base"):
         return  # no reference addons indexed: nothing can be checked
-    if index.unknown_dependencies(module.name):
-        return  # a dependency outside the addons paths may define any model
     # all the dependencies indexed: a model defined by another module is known
     # for sure to be outside the dependencies
     complete = all(name in index.depends for name in closure)
 
     def missing(model, what):
-        owners = index.owners(model) if complete else []
+        owners = index.owners(model)
+        if not complete and not owners:
+            return (f"[incomplete] Model '{model}' ({what}) not found in available sources;"
+                    " supply missing dependencies to verify it")
         if owners:
+            if not complete:
+                return (f"[incomplete] Model '{model}' ({what}) is provided by {', '.join(owners)};"
+                        " verify the dependency chain when missing addons are supplied")
             return (
                 f"[model] '{model}' ({what}) is defined by the module(s) {', '.join(owners)},"
                 f" not in the dependencies of the module: add one of them to 'depends'"
@@ -343,9 +410,8 @@ def check_field_paths(module, index):
     module = pathlib.Path(module)
     if not index.models.get("base"):
         return
+    incomplete = bool(index.unknown_dependencies(module.name))
     # a field may come from a dependency that is not indexed
-    if not all(name in index.depends for name in index.closure(module.name)):
-        return
     for path in _python_files(module):
         try:
             tree = ast.parse(path.read_bytes())
@@ -361,5 +427,5 @@ def check_field_paths(module, index):
                 yield path, line, (
                     f"[model] {what} '{dotted}' of {model}: the field '{field}' does not exist"
                     f" on {field_model} in the target Odoo (nor in any indexed module): the"
-                    f" registry will not load"
+                    + (" verification is incomplete: supply missing dependencies" if incomplete else " registry will not load")
                 )

@@ -32,6 +32,7 @@ class BaseMigrationScript:
     _RENAMED_MODELS: List[Tuple] = []
     _REMOVED_MODELS: List[Tuple] = []
     _GLOBAL_FUNCTIONS: List[Any] = []  # [function_object]
+    _FIELD_TYPES: List[Any] = []
     # {(model, field): source} removed fields whose values in <record> are
     # dropped, as Odoo did in its own data files (handle_fields)
     _DROPPED_RECORD_FIELDS: Dict[Tuple[str, str], str] = {}
@@ -51,6 +52,7 @@ class BaseMigrationScript:
         self._RENAMED_MODELS = copy.deepcopy(getattr(self, '_RENAMED_MODELS', []))
         self._REMOVED_MODELS = copy.deepcopy(getattr(self, '_REMOVED_MODELS', []))
         self._GLOBAL_FUNCTIONS = copy.deepcopy(getattr(self, '_GLOBAL_FUNCTIONS', []))
+        self._FIELD_TYPES = copy.deepcopy(getattr(self, '_FIELD_TYPES', []))
         self._module_path = ""
         self._rules_parsed = False
 
@@ -68,6 +70,7 @@ class BaseMigrationScript:
         TYPE_DICT = "TYPE_DICT"
         TYPE_DICT_OF_DICT = "TYPE_DICT_OF_DICT"
         rules = {
+            "_FIELD_TYPES": {"type": TYPE_ARRAY, "doc": []},
             # {filetype: {regex: replacement}}
             "_TEXT_REPLACES": {
                 "type": TYPE_DICT_OF_DICT,
@@ -227,6 +230,42 @@ class BaseMigrationScript:
         # After the dedicated transformations (e.g. res.groups privileges):
         # only what is left is renamed / reported
         self.handle_fields(module_path)
+        self.handle_field_types(module_path)
+
+    def handle_field_types(self, module_path):
+        import ast
+
+        if not self._FIELD_TYPES:
+            return
+        rules = {}
+        for model, name, old, new, source in self._FIELD_TYPES:
+            rules.setdefault((model, name), (old, new, source))
+        rules = analysis_fields.with_delegation(rules)
+        for path in tools.get_files(module_path, (".py",)):
+            text = _read_content(path)
+            usages, _ = analysis_fields.python_usages(text)
+            found = {(u.model, u.field, u.line) for u in usages if (u.model, u.field) in rules}
+            try:
+                tree = ast.parse(text)
+            except SyntaxError:
+                continue
+            for cls in ast.walk(tree):
+                if not isinstance(cls, ast.ClassDef):
+                    continue
+                for model in analysis_fields._class_models(cls):
+                    for stmt in cls.body:
+                        name = None
+                        if isinstance(stmt, ast.FunctionDef) and stmt.name.startswith("_compute_"):
+                            name = stmt.name[len("_compute_"):]
+                        elif isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 and isinstance(stmt.targets[0], ast.Name):
+                            name = stmt.targets[0].id
+                        elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                            name = stmt.target.id
+                        if (model, name) in rules:
+                            found.add((model, name, stmt.lineno))
+            for model, name, line in sorted(found):
+                old, new, source = rules[model, name]
+                logger.warning("Field %s.%s changed %s -> %s: review computations, related custom field types and stored data before aligning them (%s). File %s:%s", model, name, old, new, source, path, line)
 
     def process_file(
         self, 
@@ -253,7 +292,13 @@ class BaseMigrationScript:
             absolute_file_path = os.path.join(root, new_name)
             filename = new_name # ensure filename is updated for subsequent checks
 
-        rules = self._file_rules(extension)
+        compiled = self.__dict__.setdefault("_compiled_file_rules", {})
+        if extension not in compiled:
+            compiled[extension] = {
+                kind: {re.compile(pattern): value for pattern, value in patterns.items()}
+                for kind, patterns in self._file_rules(extension).items()
+            }
+        rules = compiled[extension]
         new_text = _replace_in_file(
             absolute_file_path, rules["replaces"], "Change file content of %s" % filename
         )
@@ -261,7 +306,7 @@ class BaseMigrationScript:
         # Report obsolete patterns still present, with their first line
         for level, patterns in (("error", rules["errors"]), ("warning", rules["warnings"])):
             for pattern, message in patterns.items():
-                match = re.search(pattern, new_text)
+                match = pattern.search(new_text)
                 if match:
                     line = new_text.count("\n", 0, match.start()) + 1
                     getattr(logger, level)(

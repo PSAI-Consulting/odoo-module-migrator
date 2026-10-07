@@ -586,9 +586,70 @@ def extract_model_modules(args):
     print(f"{len(rows)} models written to {args.output}", file=sys.stderr)
 
 
+def extract_field_types(args):
+    """Extract type changes with exact source paths and revision provenance."""
+    import extract_fields as ef
+    before, after = {}, {}
+    for spec in args.repo:
+        repo = pathlib.Path(spec)
+        old_ref, new_ref = resolve_ref(repo, args.from_version), resolve_ref(repo, args.to_version)
+        old = ef.parse_fields(ef.read_blobs(repo, old_ref, re.compile(r"\.py$")))
+        new = ef.parse_fields(ef.read_blobs(repo, new_ref, re.compile(r"\.py$")))
+        revision = git(repo, "rev-parse", new_ref).strip()
+        for model, fields in old.items():
+            for field, (kind, path) in fields.items():
+                before[model, field] = kind
+        for model, fields in new.items():
+            for field, (kind, path) in fields.items():
+                after[model, field] = (kind, f"{repo.name} {revision} {path}")
+    rows = [(model, field, before[model, field], kind, source)
+            for (model, field), (kind, source) in sorted(after.items())
+            if (model, field) in before and before[model, field] != kind]
+    _write_rules(pathlib.Path(args.output),
+                 [f"Field type changes {args.from_version} -> {args.to_version}; review before applying."],
+                 rows, lambda row: "- [" + ", ".join(_q(v) for v in row) + "]")
+
+
+def extract_decimal_precisions(args):
+    """Names and XML ids, including renames and removals, without guessing."""
+    import extract_fields as ef
+    from lxml import etree
+    import yaml
+    snapshots = []
+    for version in (args.from_version, args.to_version):
+        result = {}
+        for spec in args.repo:
+            repo = pathlib.Path(spec)
+            ref = resolve_ref(repo, version)
+            revision = git(repo, "rev-parse", ref).strip()
+            for path, text in ef.read_blobs(repo, ref, re.compile(r"\.xml$")).items():
+                match = re.match(r"(?:addons/|odoo/addons/)?([^/]+)/", path)
+                if not match:
+                    continue
+                try:
+                    root = etree.fromstring(text.encode())
+                except etree.XMLSyntaxError:
+                    continue
+                for node in root.iter("record"):
+                    name = node.find("field[@name='name']")
+                    if node.get("model") == "decimal.precision" and node.get("id") and name is not None:
+                        xid = node.get("id")
+                        if "." not in xid:
+                            xid = match[1] + "." + xid
+                        result[xid] = {"name": name.text, "source": f"{repo.name} {revision} {path}"}
+        snapshots.append(result)
+    pathlib.Path(args.output).write_text(yaml.safe_dump({"from": snapshots[0], "to": snapshots[1]}, allow_unicode=True, sort_keys=True), encoding="utf-8")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
+    for name in ("field-types", "decimal-precisions"):
+        cmd = sub.add_parser(name, help="compare field metadata / decimal precision records")
+        cmd.add_argument("--from", dest="from_version", required=True)
+        cmd.add_argument("--to", dest="to_version", required=True)
+        cmd.add_argument("--repo", action="append", required=True)
+        cmd.add_argument("--output", required=True)
     api = sub.add_parser("api", help="core API candidates (methods, functions, modules)")
     api.add_argument("--from", dest="from_version", required=True)
     api.add_argument("--to", dest="to_version", required=True)
@@ -653,6 +714,7 @@ def main(argv=None):
         {
             "fields": extract_fields, "api": extract_api, "models": extract_models,
             "js": extract_js, "views": extract_views, "model-modules": extract_model_modules,
+            "field-types": extract_field_types, "decimal-precisions": extract_decimal_precisions,
         }[args.command](args)
 
 
