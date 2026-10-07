@@ -24,6 +24,9 @@ configuration.
 | 22, 23 | Contrôle des méthodes `compute`, `inverse`, `search` nommées par une chaîne ; avertissement pour une surcharge `_compute_*` / `_search_*` sans `super()` ni référence au champ correspondant. |
 | 24, 25 | Diagnostics pour `_` global utilisé sans définition/import et pour les fichiers répétés dans `data`. Les chargements répétés ne sont pas supprimés automatiquement. |
 | 33 | Pour un parent de menu standard supprimé, proposition des nouveaux parents des anciens enfants qui existent encore dans la cible. Si les enfants ont été répartis, toutes les destinations sont affichées avec leur preuve et aucun remplacement ambigu n'est appliqué. |
+| 34 | Les renommages de champs sont aussi appliqués avec l'index relationnel cible : les alias imbriqués comme `order.order_line` → `line` sont résolus et les renommages successifs restent ordonnés. Un accès résolu à un champ absent de la cible devient une erreur. |
+| 35, 37 | Un appel à `_select_seller()` en 20 dont le résultat n'est pas extrait via `supplierinfo` est signalé car il renvoie désormais un dictionnaire. L'absence de `quantity` ajoute un avertissement sur le nouveau défaut `min_qty = 1`. |
+| 36 | Avertissement sur `.name` des lignes de vente, achat et facture lorsque le code attend le nom du produit, en Python résolu et dans les expressions QWeb aux variables de ligne explicites. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans

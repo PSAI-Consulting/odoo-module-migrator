@@ -404,6 +404,50 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Il faut ensuite chercher à la main où sont passés les enfants du menu en 17 (`menu_product_product_categories` → `account.account_invoicing_menu`).
 - **Correction proposée** : quand un `parent` de `menuitem` disparaît, lister les menus enfants de la 17 et leur nouveau parent en 20, et proposer ce parent dans le TODO.
 
+## 34. 🔴 Unité des lignes renommée non détectée (`product_uom`)
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — le passage tardif utilise
+> l'index des relations de la cible pour suivre les alias imbriqués
+> (`order.order_line` → `line`) et applique les renommages successifs de chaque
+> saut. Un champ résolu mais absent de la cible est aussi signalé en erreur.
+
+- Module : `easi_purchase_minimum`. `uom_id=line.product_uom` sur `purchase.order.line` : rapport « Risque aucun », erreur à la confirmation de commande.
+- En 20 : `sale.order.line.product_uom` → `product_uom_id`, `purchase.order.line.product_uom` → `uom_id`, `stock.move.product_uom` → `uom_id`. ~180 occurrences dans Stof.
+- **Correction proposée** : renommer quand le modèle est connu (`line`, `order_line`, `move_ids`, vues de ces modèles) ; sinon TODO 🔴. Le contrôle des champs contre la cible aurait dû le voir : à vérifier pourquoi il ne l'a pas fait (variable de boucle `line` sur `order.order_line`).
+
+## 35. 🔴 `_select_seller()` renvoie un dictionnaire
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — chaque appel
+> dont le résultat n'est pas encore extrait via la clé `supplierinfo` est
+> signalé en erreur, avec un recordset vide sûr comme valeur de repli. La
+> transformation reste manuelle car le résultat peut être consommé de plusieurs
+> façons ; le code déjà adapté n'est pas signalé.
+
+- Module : `easi_purchase_minimum`. `seller.field_verify` → `AttributeError: 'dict' object has no attribute 'field_verify'`.
+- Commit Odoo `ab29b56cb6be` : la ligne fournisseur est dans `["supplierinfo"]`, `{}` si aucune.
+- **Correction proposée** : TODO 🔴 sur chaque `_select_seller(`, avec la conversion `x = ..._select_seller(...).get("supplierinfo", env["product.supplierinfo"])` quand le résultat est utilisé comme enregistrement.
+
+## 36. 🟠 Libellé de ligne sans le nom du produit
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — usages Python
+> résolus sur les lignes de vente, achat et facture, ainsi que les expressions
+> QWeb dont le nom de variable désigne explicitement une ligne. Le rapport
+> propose `product_id.display_name` sans modifier les textes traduisibles.
+
+- Module : `easi_purchase_minimum`. Message d'erreur avec `line.name` → nom du produit vide, **sans erreur**.
+- Commit Odoo `c5037bbe0789` : `name` des lignes de vente, d'achat et de facture ne contient plus le nom du produit.
+- **Correction proposée** : TODO 🟠 sur `line.name` / `.order_line.name` / `invoice_line_ids.name` (Python et QWeb), en proposant `product_id.display_name`.
+
+## 37. 🟡 Valeur par défaut changée (`min_qty` 0 → 1)
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — un appel à
+> `_select_seller()` sans argument `quantity` est signalé avec l'impact du
+> nouveau défaut de `product.supplierinfo.min_qty`. Le contrôle est lié au
+> comportement affecté plutôt qu'à tous les changements de valeurs par défaut.
+
+- Module : `easi_purchase_minimum`. `_select_seller()` sans `quantity` écarte les lignes fournisseur dont `min_qty` > 0 ; en 20, les nouvelles lignes ont `min_qty = 1`.
+- **Correction proposée** : signaler les `_select_seller(` sans `quantity` (🟠), et plus généralement comparer les `default=` des champs standard entre source et cible.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -424,6 +468,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `stof_wms_fields` | Dépendance `stof_customer_lead_time` manquante (`move.partner_id.customer_lead`, champ ajouté sur `res.partner` par ce module) | 3 |
 | `easi_oekotex` | Manifest jugé illisible à tort (état intermédiaire), donc non mis au modèle | 29 |
 | `easi_account_validation_automatic` | Tâche planifiée qui appelle une méthode absente du module (celle de l'OCR) ; manifest au modèle incomplet | 30, 31 |
+| `easi_purchase_minimum` | `product_uom` → `uom_id`, `_select_seller` renvoie un dict, `line.name` sans produit, `min_qty` par défaut à 1 | 34 à 37 |
 
 ---
 

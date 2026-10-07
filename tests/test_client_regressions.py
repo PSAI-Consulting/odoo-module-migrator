@@ -15,6 +15,9 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.view_a
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.bank_account_fields import (
     migrate_bank_account_fields,
 )
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.line_descriptions import (
+    check_line_descriptions,
+)
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.invisible_fields import (
     check_invisible_fields,
 )
@@ -113,6 +116,77 @@ def test_callbacks_inherited_methods_override_and_precision(tmp_path):
     assert any("accidental override" in m for m in messages)
     assert any("decimal precision" in m for m in messages)
     assert not any("_compute_name" in m for m in messages)
+
+
+def test_relational_alias_rename_and_purchase_api_diagnostics(tmp_path, caplog):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "purchase",
+        ["base"],
+        """class Order(Model):
+    _name = 'purchase.order'
+    order_line = fields.One2many('purchase.order.line', 'order_id')
+class Line(Model):
+    _name = 'purchase.order.line'
+    order_id = fields.Many2one('purchase.order')
+    uom_id = fields.Many2one('uom.uom')
+    name = fields.Text()
+    product_id = fields.Many2one('product.product')
+class Product(Model):
+    _name = 'product.product'
+    display_name = fields.Char()
+class Uom(Model):
+    _name = 'uom.uom'
+""",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["purchase"],
+        """class Order(Model):
+    _inherit = 'purchase.order'
+    def confirm(self):
+        for order in self:
+            for line in order.order_line:
+                seller = line.product_id._select_seller(uom_id=line.product_uom)
+                label = line.name
+""",
+        '<span t-esc="order_line.name"/>',
+    )
+    index = models.ModelIndex.build([tmp_path])
+
+    changed = python_checks.apply_field_renames(
+        mod, index, {("purchase.order.line", "product_uom"): "uom_id"}
+    )
+
+    assert len(changed) == 1
+    assert "uom_id=line.uom_id" in (mod / "models.py").read_text()
+    messages = [
+        message
+        for *_prefix, message in python_checks.check_module(mod, index, 20)
+    ]
+    assert any("returns a dict" in message for message in messages)
+    assert any("without quantity" in message for message in messages)
+    assert any("no longer includes the product name" in message for message in messages)
+    caplog.set_level(logging.WARNING)
+    check_line_descriptions(
+        module_path=mod, tools=tools, logger=logging.getLogger("test")
+    )
+    assert "line .name no longer includes" in caplog.text
+
+    corrected = (mod / "models.py").read_text().replace(
+        "seller = line.product_id._select_seller(uom_id=line.uom_id)",
+        "seller_info = line.product_id._select_seller(uom_id=line.uom_id)\n"
+        "                seller = seller_info.get('supplierinfo', self.env['product.supplierinfo'])",
+    )
+    (mod / "models.py").write_text(corrected)
+    corrected_messages = [
+        message
+        for *_prefix, message in python_checks.check_module(mod, index, 20)
+    ]
+    assert not any("returns a dict" in message for message in corrected_messages)
+    assert any("without quantity" in message for message in corrected_messages)
 
 
 def test_unicode_semantics_and_raw_strings():

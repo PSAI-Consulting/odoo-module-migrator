@@ -420,6 +420,22 @@ class Migration:
         self._resolve_index_dependencies(model_index)
         from .analysis import python_checks
         for module_migration in self._module_migrations:
+            # The model index resolves relational aliases that the standalone
+            # migration scripts cannot know (order.order_line -> line). Apply
+            # each step in order so chained renames remain chained.
+            for script in self._migration_scripts:
+                renames = {}
+                for rule in script._RENAMED_FIELDS:
+                    if len(rule) > 2 and rule[2]:
+                        renames.setdefault((rule[0], rule[1]), rule[2])
+                changes = python_checks.apply_field_renames(
+                    module_migration._module_path, model_index, renames
+                )
+                for changed_path, changed_line, model, old, new in changes:
+                    logger.info(
+                        "Renamed resolved field %s.%s -> %s. File %s:%s",
+                        model, old, new, changed_path, changed_line,
+                    )
             logger.info("Checking Python and field callbacks: %s", module_migration._module_name)
             log_model = logger.warning if model_index.unknown_dependencies(module_migration._module_name) else logger.error
             for path, line, level, message in python_checks.check_module(

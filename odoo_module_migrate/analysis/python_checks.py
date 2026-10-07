@@ -17,6 +17,7 @@ class Uses(ast.NodeVisitor):
         self.aliases = {}
         self.usages = []
         self.model_uses = []
+        self.called = set()
 
     def receiver(self, node):
         if isinstance(node, ast.Name):
@@ -98,7 +99,7 @@ class Uses(ast.NodeVisitor):
 
     def visit_Attribute(self, node):
         model = self.receiver(node.value)
-        if model:
+        if model and id(node) not in self.called:
             self.usages.append((node, model, node.attr))
         self.generic_visit(node)
 
@@ -110,6 +111,7 @@ class Uses(ast.NodeVisitor):
 
     def visit_Call(self, node):
         if isinstance(node.func, ast.Attribute):
+            self.called.add(id(node.func))
             model = self.receiver(node.func.value)
             if model and node.func.attr in {"write", "create", "update"} and node.args:
                 arg = node.args[0]
@@ -126,12 +128,83 @@ class Uses(ast.NodeVisitor):
         self.generic_visit(node)
 
 
+def apply_field_renames(module, index, renames):
+    """Apply field renames where the target index proves the receiver model.
+
+    This late pass complements the standalone rule engine with relation aliases
+    such as ``order -> order.order_line -> line``. It remains conservative:
+    only attribute accesses with one resolved model are changed.
+    """
+    changed = []
+    for path in models._python_files(Path(module)):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        try:
+            tree = ast.parse(text)
+        except (SyntaxError, ValueError):
+            continue
+        visitor = Uses(index)
+        visitor.visit(tree)
+        positions = fields._Positions(text)
+        edits = set()
+        for node, model, field in visitor.usages:
+            replacement = renames.get((model, field))
+            if not replacement or Path(module).name in index.field_owners.get(
+                (model, field), set()
+            ):
+                continue
+            end = positions.offset(node.end_lineno, node.end_col_offset)
+            edits.add((end - len(field), end, replacement, model, field, node.lineno))
+        if not edits:
+            continue
+        for start, end, replacement, _model, _field, _line in sorted(
+            edits, reverse=True
+        ):
+            text = text[:start] + replacement + text[end:]
+        path.write_text(text, encoding="utf-8")
+        changed.extend(
+            (path, line, model, field, replacement)
+            for _start, _end, replacement, model, field, line in edits
+        )
+    return changed
+
+
 def dependency_message(index, module, what, owners):
     owners = sorted(owners)
     circular = [owner for owner in owners if module in index.closure(owner)]
     if len(circular) == len(owners):
         return f"{what}: circular dependency; move this code into {', '.join(circular)} (field/model provider) or a bridge module"
     return f"{what}: add a provider to 'depends': {', '.join(o for o in owners if o not in circular)}"
+
+
+def _seller_info_extracted(call, tree):
+    """Whether an Odoo 20 _select_seller result is already unwrapped."""
+    assigned = {
+        target.id
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Assign, ast.AnnAssign))
+        and node.value is call
+        for target in (node.targets if isinstance(node, ast.Assign) else [node.target])
+        if isinstance(target, ast.Name)
+    }
+    for node in ast.walk(tree):
+        receiver = None
+        key = None
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "get"
+            and node.args
+        ):
+            receiver, key = node.func.value, node.args[0]
+        elif isinstance(node, ast.Subscript):
+            receiver, key = node.value, node.slice
+        if not isinstance(key, ast.Constant) or key.value != "supplierinfo":
+            continue
+        if receiver is call or (
+            isinstance(receiver, ast.Name) and receiver.id in assigned
+        ):
+            return True
+    return False
 
 
 def check_module(module, index, target_version=20, precision_names=None):
@@ -195,6 +268,20 @@ def check_module(module, index, target_version=20, precision_names=None):
                         index, module.name, f"Field {model}.{field}", owners
                     ),
                 )
+            elif (
+                not owners
+                and complete
+                and ancestors <= index.defined
+                and not field.startswith("_")
+                and field not in {"env", "ids"}
+                and not any(field in index.methods.get(m, set()) for m in ancestors)
+            ):
+                yield (
+                    path,
+                    node.lineno,
+                    "error",
+                    f"Field {model}.{field} does not exist in the indexed target",
+                )
             if target_version >= 19 and model == "uom.uom" and field == "category_id":
                 yield (
                     path,
@@ -220,6 +307,44 @@ def check_module(module, index, target_version=20, precision_names=None):
                         node.lineno,
                         "warning",
                         "Product sale_delay is now company_dependent and Integer: review with_company(record.company_id) when computing delays per line (Odoo 20 addons/sale/models/product_template.py)",
+                    )
+            if (
+                target_version >= 20
+                and field == "name"
+                and model
+                in {"sale.order.line", "purchase.order.line", "account.move.line"}
+            ):
+                yield (
+                    path,
+                    node.lineno,
+                    "warning",
+                    f"{model}.name no longer includes the product name in Odoo 20; use product_id.display_name when the product label is required (odoo c5037bbe0789)",
+                )
+        if target_version >= 20:
+            for call in ast.walk(tree):
+                if not (
+                    isinstance(call, ast.Call)
+                    and isinstance(call.func, ast.Attribute)
+                    and call.func.attr == "_select_seller"
+                ):
+                    continue
+                if not _seller_info_extracted(call, tree):
+                    yield (
+                        path,
+                        call.lineno,
+                        "error",
+                        "_select_seller() returns a dict in Odoo 20; retrieve the record with result.get('supplierinfo', env['product.supplierinfo']) (odoo ab29b56cb6be)",
+                    )
+                positional_quantity = len(call.args) >= 2
+                keyword_quantity = any(
+                    keyword.arg == "quantity" for keyword in call.keywords
+                )
+                if not positional_quantity and not keyword_quantity:
+                    yield (
+                        path,
+                        call.lineno,
+                        "warning",
+                        "_select_seller() called without quantity while product.supplierinfo.min_qty now defaults to 1 in Odoo 20; pass the quantity explicitly",
                     )
         for cls in ast.walk(tree):
             if not isinstance(cls, ast.ClassDef):
