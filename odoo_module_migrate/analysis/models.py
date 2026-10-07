@@ -90,6 +90,19 @@ def _classes(path):
 # fields every model has (odoo/orm/models.py: id, display_name, log access)
 MAGIC_FIELDS = {"id", "display_name", "create_uid", "create_date", "write_uid", "write_date",
                 "__last_update"}
+# Public ORM methods inherited by every regular, abstract and transient model.
+# The core ``odoo/orm/models.py`` is not an addon and is therefore absent from
+# normal addons-path indexing (bundled mode has no core checkout either).
+BASE_METHODS = {
+    "browse", "check_access", "check_access_rights", "check_access_rule",
+    "copy", "copy_data", "create", "default_get", "ensure_one", "exists",
+    "fields_get", "filtered", "filtered_domain", "flush_model",
+    "flush_recordset", "get_metadata", "invalidate_model",
+    "invalidate_recordset", "mapped", "modified", "name_create", "read",
+    "read_group", "search", "search_count", "search_fetch", "search_read",
+    "sorted", "sudo", "unlink", "update", "with_company", "with_context",
+    "with_env", "with_prefetch", "with_user", "write",
+}
 # fields added at run time: custom fields, reified groups of res.users (<= 18.0)
 DYNAMIC_FIELD_RE = re.compile(r"^(x_|in_group_|sel_groups_)")
 # regex fallback (newer Python syntax): over-approximation, every field of the
@@ -228,6 +241,9 @@ class ModelIndex:
             for model in models:
                 self.fields[model] |= names | MAGIC_FIELDS
                 self.parents[model] |= models - {model}
+                self.methods[model].update(BASE_METHODS)
+                for method in BASE_METHODS:
+                    self.method_owners[model, method].add("base")
             # models defined by _name only can't be told apart: all are defined
             self.defined |= set(NAME_RE.findall(text))
             return
@@ -240,6 +256,9 @@ class ModelIndex:
                 self.abstract.add(model)
             self.parents[model] |= parents
             self.fields[model] |= set(fields) | MAGIC_FIELDS
+            self.methods[model].update(BASE_METHODS)
+            for method in BASE_METHODS:
+                self.method_owners[model, method].add("base")
             for field, comodel in fields.items():
                 if comodel:
                     self.comodels[(model, field)].add(comodel)
@@ -265,6 +284,9 @@ class ModelIndex:
             for method in info["methods"]:
                 self.methods[model].add(method)
                 self.method_owners[model, method].add(owner)
+            self.methods[model].update(BASE_METHODS)
+            for method in BASE_METHODS:
+                self.method_owners[model, method].add("base")
             for field, kind in info["types"].items():
                 self.field_types[model, field].add(kind)
             self.company_fields.update((model, f) for f in info["company"])

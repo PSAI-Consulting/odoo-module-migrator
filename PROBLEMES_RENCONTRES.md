@@ -509,6 +509,38 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `additional_salesperson`. « filter[@name='my_sale_orders_filter'] not found in the combined view sale.view_sales_order_filter » : le filtre existe dans la vue de base ; seule la vue fille `sale_order_view_search_inherit_quotation` le remplace.
 - **Correction proposée** : valider l'ancre sur la vue héritée **seule** (plus les vues dont le module dépend), pas sur la vue combinée avec toutes les vues filles.
 
+## 44. 🟡 Faux positif : `default_get()` « sans méthode parente »
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — les méthodes publiques de
+> base de l'ORM, dont `default_get`, sont héritées par tous les modèles indexés.
+> Les méthodes des mixins d'addons restent obtenues depuis leurs sources.
+
+- Module : `easi_document_on_line`. « document.widgets.default_get() calls super(), but no parent method with that name exists in the indexed target ».
+- `default_get` est une méthode de `BaseModel` : le nouveau contrôle (n° 42) n'indexe pas les méthodes de `BaseModel` / `Model` / `TransientModel` / `AbstractModel`.
+- **Correction proposée** : ajouter les méthodes de `odoo/orm/models.py` (et des mixins de base, `mail.thread`…) aux parents connus de chaque modèle.
+
+## 45. 🟠 `documents.document` : les dossiers sont des documents depuis la 18
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — à partir de
+> la 18, un `Many2one` ou `Many2many` vers `documents.document` sans domaine
+> portant sur `type` est signalé. Les références au modèle supprimé
+> `documents.folder` restent couvertes par le contrôle générique des modèles.
+
+- Module : `easi_document_on_line`. Un `Many2one("documents.document")` propose aussi les dossiers en 20 (`type = 'folder'`), sans erreur.
+- **Correction proposée** : TODO 🟠 sur les `Many2one` / `Many2many` vers `documents.document` sans domaine sur `type`, et sur les usages de `documents.folder` (supprimé).
+
+## 46. 🟡 Champ lu sur un modèle dynamique (`self.env[active_model]`)
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — l'accès par
+> attribut à un champ d'un recordset issu de `env[<expression dynamique>]` est
+> signalé avec la forme `record["champ"]`. Une mise à jour `x2many += record`
+> recommande une collecte des identifiants suivie d'un unique `Command.set`.
+> Ces cas restent des avertissements car le modèle et le type du champ ne sont
+> pas connaissables statiquement dans le cas général.
+
+- Module : `easi_document_on_line`. `self.env[context["active_model"]].browse(...).document_ids` et `rec.document_ids += doc.file_id` : avertissements PyCharm (« Unresolved attribute reference for class 'BaseModel' », signature x2many).
+- **Correction proposée** : sur un enregistrement issu de `self.env[<variable>]`, proposer `record["champ"]` ; remplacer `x2many += record` (dans une boucle, après `Command.clear()`) par un seul `[Command.set(ids)]`.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -532,6 +564,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_purchase_minimum` | `product_uom` → `uom_id`, `_select_seller` renvoie un dict, `line.name` sans produit, `min_qty` par défaut à 1 | 34 à 37 |
 | `sale_order_block_duplicate_product` | `_()` dans une expression génératrice (texte non traduit) ; 3 faux positifs sur `id` | 38, 39 |
 | `additional_salesperson` | Clé `Salesversion` (virgule manquante), surcharge de `_create_lead_partner_data` inexistante ; plantage du rapport | 40 à 43 |
+| `easi_document_on_line` | Dossiers proposés comme documents (refonte de `documents` en 18) ; faux positif sur `default_get` ; champ lu sur un modèle dynamique | 44 à 46 |
 
 ---
 

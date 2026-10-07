@@ -208,6 +208,106 @@ def _seller_info_extracted(call, tree):
     return False
 
 
+def _dynamic_record(node):
+    """Whether an expression is a recordset from env[<dynamic model>]."""
+    while isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+        node = node.func.value
+    if not isinstance(node, ast.Subscript):
+        return False
+    value = node.value
+    return (
+        isinstance(value, ast.Attribute)
+        and value.attr == "env"
+        and not (
+            isinstance(node.slice, ast.Constant)
+            and isinstance(node.slice.value, str)
+        )
+    )
+
+
+def _dynamic_model_issues(tree):
+    """Attribute accesses on records whose model name is only known at runtime."""
+    aliases = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Assign, ast.AnnAssign)) and _dynamic_record(node.value):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            aliases.update(target.id for target in targets if isinstance(target, ast.Name))
+    parents = {
+        child: parent
+        for parent in ast.walk(tree)
+        for child in ast.iter_child_nodes(parent)
+    }
+    seen = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Attribute) or node.attr.startswith("_"):
+            continue
+        receiver_dynamic = (
+            isinstance(node.value, ast.Name) and node.value.id in aliases
+        ) or _dynamic_record(node.value)
+        if not receiver_dynamic:
+            continue
+        parent = parents.get(node)
+        if isinstance(parent, ast.Call) and parent.func is node:
+            continue  # browse(), filtered()... are recordset methods, not fields
+        augmented = isinstance(parent, ast.AugAssign) and parent.target is node
+        # One ordinary access and one update warning per field is enough; a
+        # dynamic record is commonly read several times in the same method.
+        key = ("update" if augmented else "access", node.attr)
+        if key in seen:
+            continue
+        seen.add(key)
+        if augmented:
+            message = (
+                f"Dynamic-model x2many update .{node.attr} += ...: collect ids and assign"
+                f" record[{node.attr!r}] = [Command.set(ids)] once"
+            )
+        else:
+            message = (
+                f"Field .{node.attr} is accessed on a record from env[<dynamic model>];"
+                f" use record[{node.attr!r}] so the dynamic field access is explicit"
+            )
+        yield node.lineno, message
+
+
+def _document_relation_issues(tree, target_version):
+    if target_version < 18:
+        return
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef) or not fields._class_models(cls):
+            continue
+        for stmt in cls.body:
+            call = getattr(stmt, "value", None)
+            target = stmt.target if isinstance(stmt, ast.AnnAssign) else (
+                stmt.targets[0]
+                if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+                else None
+            )
+            if not (
+                isinstance(target, ast.Name)
+                and isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Attribute)
+                and call.func.attr in {"Many2one", "Many2many"}
+                and call.args
+                and isinstance(call.args[0], ast.Constant)
+                and call.args[0].value == "documents.document"
+            ):
+                continue
+            domain = next((kw.value for kw in call.keywords if kw.arg == "domain"), None)
+            mentions_type = domain is not None and any(
+                isinstance(node, ast.Constant) and node.value == "type"
+                for node in ast.walk(domain)
+            )
+            if not mentions_type:
+                yield (
+                    target.lineno,
+                    (
+                        f"{target.id} links to documents.document without a domain on type;"
+                        " since Odoo 18 folders are documents with type='folder', add a domain"
+                        " excluding folders when this field must select files only"
+                    ),
+                )
+
+
 def check_module(module, index, target_version=20, precision_names=None):
     module = Path(module)
     closure = index.closure(module.name)
@@ -219,6 +319,10 @@ def check_module(module, index, target_version=20, precision_names=None):
             continue
         visitor = Uses(index)
         visitor.visit(tree)
+        for line, message in _dynamic_model_issues(tree):
+            yield path, line, "warning", message
+        for line, message in _document_relation_issues(tree, target_version) or ():
+            yield path, line, "warning", message
         if precision_names:
             for node in ast.walk(tree):
                 if (

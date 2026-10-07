@@ -685,6 +685,59 @@ def test_super_call_to_removed_parent_method_is_reported(tmp_path):
     assert "_prepare_customer_values" in messages[0]
 
 
+def test_dynamic_document_records_and_base_default_get_are_checked(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "documents",
+        ["base"],
+        """class Document(Model):
+    _name = 'documents.document'
+    type = fields.Selection([])
+""",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["documents"],
+        """class DocumentWizard(TransientModel):
+    _name = 'document.widgets'
+    file_id = fields.Many2one('documents.document')
+    safe_file_id = fields.Many2one(
+        'documents.document', domain=[('type', '!=', 'folder')]
+    )
+
+    def default_get(self, fields_list):
+        values = super().default_get(fields_list)
+        active = self.env[self.env.context.get('active_model')].browse(
+            self.env.context.get('active_id')
+        )
+        if active.document_ids:
+            active.document_ids = [(5, 0, 0)]
+        for document in self:
+            active.document_ids += document.file_id
+        return values
+""",
+    )
+
+    index = models.ModelIndex.build([tmp_path])
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index, target_version=20
+        )
+    ]
+
+    assert not [message for message in messages if "default_get() calls super" in message]
+    folder_messages = [message for message in messages if "folders are documents" in message]
+    assert len(folder_messages) == 1
+    assert folder_messages[0].startswith("file_id links")
+    assert len([message for message in messages if "dynamic field access" in message]) == 1
+    updates = [message for message in messages if "Dynamic-model x2many update" in message]
+    assert len(updates) == 1
+    assert "Command.set(ids)" in updates[0]
+
+
 def test_product_view_detailed_type_values_are_migrated(tmp_path):
     xml = """<record id="form" model="ir.ui.view">
 <field name="model">product.template</field>
