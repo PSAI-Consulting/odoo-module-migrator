@@ -389,6 +389,10 @@ class Migration:
         )
         reference_modules = {m.name for m in views._module_dirs(reference)}
         self._resolve_index_dependencies(index)
+        menu_parent_hints = []
+        for script in self._migration_scripts:
+            script.parse_rules()
+            menu_parent_hints.extend(script._MENU_PARENT_HINTS)
         for module_migration in self._module_migrations:
             unknown = index.unknown_dependencies(module_migration._module_name)
             if unknown:
@@ -399,7 +403,8 @@ class Migration:
                     % (", ".join(unknown), module_migration._module_path / "__manifest__.py")
                 )
             for path, line, message in views.check_module(
-                module_migration._module_path, index, reference_modules
+                module_migration._module_path, index, reference_modules,
+                menu_parent_hints,
             ):
                 (logger.warning if unknown or "[incomplete]" in message else logger.error)("[view] %s. File %s:%s" % (message, path, line))
             for path, line, message in views.check_duplicate_fields(module_migration._module_path, index):

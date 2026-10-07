@@ -33,6 +33,10 @@ class BaseMigrationScript:
     _REMOVED_MODELS: List[Tuple] = []
     _GLOBAL_FUNCTIONS: List[Any] = []  # [function_object]
     _FIELD_TYPES: List[Any] = []
+    # [(removed parent xmlid, former child xmlid, child's target parent xmlid,
+    #   evidence), ...]. Used to suggest placements without guessing a single
+    # replacement when the children of a removed menu were split.
+    _MENU_PARENT_HINTS: List[Any] = []
     # {(model, field): source} removed fields whose values in <record> are
     # dropped, as Odoo did in its own data files (handle_fields)
     _DROPPED_RECORD_FIELDS: Dict[Tuple[str, str], str] = {}
@@ -53,6 +57,7 @@ class BaseMigrationScript:
         self._REMOVED_MODELS = copy.deepcopy(getattr(self, '_REMOVED_MODELS', []))
         self._GLOBAL_FUNCTIONS = copy.deepcopy(getattr(self, '_GLOBAL_FUNCTIONS', []))
         self._FIELD_TYPES = copy.deepcopy(getattr(self, '_FIELD_TYPES', []))
+        self._MENU_PARENT_HINTS = copy.deepcopy(getattr(self, '_MENU_PARENT_HINTS', []))
         self._module_path = ""
         self._rules_parsed = False
 
@@ -71,6 +76,7 @@ class BaseMigrationScript:
         TYPE_DICT_OF_DICT = "TYPE_DICT_OF_DICT"
         rules = {
             "_FIELD_TYPES": {"type": TYPE_ARRAY, "doc": []},
+            "_MENU_PARENT_HINTS": {"type": TYPE_ARRAY, "doc": []},
             # {filetype: {regex: replacement}}
             "_TEXT_REPLACES": {
                 "type": TYPE_DICT_OF_DICT,

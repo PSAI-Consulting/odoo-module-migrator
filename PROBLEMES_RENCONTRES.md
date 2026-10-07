@@ -393,6 +393,17 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Renommé en saas-19.2, donc en 20. Utilisé par `edi_bi_generic_import` (Python, ×8) et `account_payment_partner` (OCA, rapport QWeb, ×3).
 - **Correction proposée** : renommer `acc_number` → `account_number` en Python, XML et QWeb quand le modèle est `res.partner.bank` (ou `partner_bank_id.` / `bank_ids.`) ; sinon TODO 🔴.
 
+## 33. 🟡 Menu parent disparu : signalé, mais sans piste de remplacement
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — les déplacements des anciens
+> enfants standards sont utilisés comme preuves pour proposer les parents
+> cibles encore présents. Plusieurs candidats sont affichés lorsque les enfants
+> ont été répartis, sans remplacement automatique ambigu.
+
+- Module : `psai_refund_type`. Rapport : 🔴 « XML id account.account_management_menu does not exist in the target Odoo ». Bien détecté.
+- Il faut ensuite chercher à la main où sont passés les enfants du menu en 17 (`menu_product_product_categories` → `account.account_invoicing_menu`).
+- **Correction proposée** : quand un `parent` de `menuitem` disparaît, lister les menus enfants de la 17 et leur nouveau parent en 20, et proposer ce parent dans le TODO.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module

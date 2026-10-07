@@ -475,7 +475,7 @@ def _describe(key):
     return f"{tag}[@{attr}='{value}']" if attr else f"<{tag}>"
 
 
-def check_module(module, index, reference_modules):
+def check_module(module, index, reference_modules, menu_parent_hints=()):
     """Yield (path, line, message) for the anchors and XML ids not found."""
     module = pathlib.Path(module)
     closure = index.closure(module.name)
@@ -544,7 +544,8 @@ def check_module(module, index, reference_modules):
                             + (" (incomplete dependencies; verify with the missing modules)" if not complete else "")
                         )
         yield from _check_xmlids(
-            path, root, module.name, index, reference_modules, closure if complete else None
+            path, root, module.name, index, reference_modules,
+            closure if complete else None, menu_parent_hints,
         )
 
 
@@ -555,7 +556,27 @@ def _missing_depends(what, owner):
     )
 
 
-def _check_xmlids(path, root, module_name, index, reference_modules, closure=None):
+def _menu_parent_message(ref, hints, index):
+    """Explain where surviving children of a removed standard menu moved."""
+    moves = []
+    for old_parent, child, new_parent, evidence in hints:
+        if old_parent == ref and child in index.xmlids and new_parent in index.xmlids:
+            moves.append((new_parent, child, evidence))
+    if not moves:
+        return f"XML id {ref} does not exist in the target Odoo"
+    details = "; ".join(
+        f"{new_parent} (former child {child})" + (f" [{evidence}]" if evidence else "")
+        for new_parent, child, evidence in sorted(set(moves))
+    )
+    return (
+        f"menu parent {ref} does not exist in the target Odoo; possible target parents"
+        f" inferred from its surviving former children: {details}. Review the intended"
+        " functional section before replacing the parent"
+    )
+
+
+def _check_xmlids(path, root, module_name, index, reference_modules, closure=None,
+                  menu_parent_hints=()):
     seen = set()
     for node in root.iter():
         if not isinstance(node.tag, str):
@@ -586,7 +607,11 @@ def _check_xmlids(path, root, module_name, index, reference_modules, closure=Non
                 # only the target Odoo is known for sure (an XML id of another
                 # custom module may be created by its code)
                 if module in reference_modules:
-                    yield path, node.sourceline, f"XML id {ref} does not exist in the target Odoo"
+                    if node.tag == "menuitem" and node.get("parent") == ref:
+                        message = _menu_parent_message(ref, menu_parent_hints, index)
+                    else:
+                        message = f"XML id {ref} does not exist in the target Odoo"
+                    yield path, node.sourceline, message
             elif closure is not None and module not in closure:
                 # works only if another module happens to install it first
                 yield path, node.sourceline, _missing_depends(f"XML id {ref}", module)

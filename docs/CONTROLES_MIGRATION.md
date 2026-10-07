@@ -23,6 +23,7 @@ configuration.
 | 21 | Migration des raccourcis d'environnement sur les accès Python identifiés comme appartenant à un modèle ; commentaires et textes conservés. |
 | 22, 23 | Contrôle des méthodes `compute`, `inverse`, `search` nommées par une chaîne ; avertissement pour une surcharge `_compute_*` / `_search_*` sans `super()` ni référence au champ correspondant. |
 | 24, 25 | Diagnostics pour `_` global utilisé sans définition/import et pour les fichiers répétés dans `data`. Les chargements répétés ne sont pas supprimés automatiquement. |
+| 33 | Pour un parent de menu standard supprimé, proposition des nouveaux parents des anciens enfants qui existent encore dans la cible. Si les enfants ont été répartis, toutes les destinations sont affichées avec leur preuve et aucun remplacement ambigu n'est appliqué. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans

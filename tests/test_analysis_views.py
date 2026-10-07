@@ -70,6 +70,41 @@ def test_other_anchors_templates_and_xmlids(tmp_path):
     assert messages[3].startswith("t[@t-set='gone'] not found")
 
 
+def test_removed_menu_parent_suggests_destinations_from_moved_children(tmp_path):
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(
+        ref, "account", ["base"],
+        '<menuitem id="account_account_menu"/>'
+        '<menuitem id="account_invoicing_menu"/>'
+        '<menuitem id="menu_action_rounding_form_view"/>'
+        '<menuitem id="menu_product_product_categories"/>',
+    )
+    mod = _module(
+        custom, "my_mod", ["account"],
+        '<menuitem id="refund_type" parent="account.account_management_menu"/>',
+    )
+    hints = [
+        ("account.account_management_menu", "account.menu_product_product_categories",
+         "account.account_invoicing_menu", "18 -> 19"),
+        ("account.account_management_menu", "account.menu_action_rounding_form_view",
+         "account.account_account_menu", "18 -> 19"),
+    ]
+
+    messages = [
+        message for _path, _line, message
+        in views.check_module(
+            mod, views.ViewIndex.build([ref, custom]), {"base", "account"}, hints
+        )
+    ]
+
+    assert len(messages) == 1
+    assert "possible target parents" in messages[0]
+    assert "account.account_invoicing_menu (former child account.menu_product_product_categories)" in messages[0]
+    assert "account.account_account_menu (former child account.menu_action_rounding_form_view)" in messages[0]
+    assert "Review the intended functional section" in messages[0]
+
+
 def test_bare_tag_anchors(tmp_path):
     """<header position="inside"> and //header need such an element in the
     target view (product.product_normal_form_view has no <header> in 20.0,
