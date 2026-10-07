@@ -89,6 +89,7 @@ def run_dry(args, module_names, upgrade_code_options=None, out=None):
             clean_imports=not getattr(args, "keep_unused_imports", True),
             manifest_layout=not getattr(args, "no_manifest_format", True),
             default_website=getattr(args, "default_website", ""),
+            default_author=getattr(args, "default_author", ""),
         )
         migration.run()
         for name in module_names:

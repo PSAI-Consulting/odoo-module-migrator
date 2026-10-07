@@ -45,11 +45,13 @@ SCAFFOLD_COMMENTS = (
 )
 
 
-def format_manifest(text, default_website="", keep_installable=False):
+def format_manifest(
+    text, default_website="", keep_installable=False, default_author=""
+):
     """Canonical layout without importing another client's metadata.
 
     Keep list order, unknown keys, nonempty descriptions and authored comments.
-    Missing website is empty unless the caller explicitly supplies a default.
+    Missing website/author are filled only from explicit caller defaults.
     """
     data = ast.literal_eval(text)
     tree = ast.parse(text)
@@ -66,6 +68,8 @@ def format_manifest(text, default_website="", keep_installable=False):
         pos(mapping.end_lineno, mapping.end_col_offset),
     )
     data.setdefault("website", default_website)
+    if default_author and not data.get("author"):
+        data["author"] = default_author
     data.setdefault("license", "LGPL-3")
     for key in ("summary", "description"):
         if isinstance(data.get(key), str) and not data[key].strip():
@@ -177,7 +181,17 @@ def format_manifest(text, default_website="", keep_installable=False):
         lines.append(
             "    " + render(key, 0) + ": " + render_entry(key, data[key]) + ","
         )
-    for remaining in comments.values():
+    for owner, remaining in comments.items():
+        if owner not in data:
+            # The comment documented an entry removed above (empty or default
+            # value): kept alone it would describe nothing.
+            from .log import logger
+
+            for comment in remaining:
+                logger.info(
+                    "Manifest comment removed with its dropped key %r: %s", owner, comment
+                )
+            continue
         lines.extend("    " + c for c in remaining)
     lines.append("}")
     return text[:start] + "\n".join(lines) + text[end:]

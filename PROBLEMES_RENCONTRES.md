@@ -704,11 +704,22 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 
 > **État du migrateur (07/10/2026)** : ✅ Détection — `tracking=`
 > sur un modèle dont toute la lignée est connue de l'index et n'hérite pas de
-> `mail.thread` est signalé. Un manifest sans `author` est signalé ; aucune
-> valeur n'est inventée (l'outil reste neutre vis-à-vis du client).
+> `mail.thread` est signalé. Un manifest sans `author` est complété avec
+> `--default-author "…"` (jamais une valeur existante remplacée) ; sans cette
+> option, il est seulement signalé.
 
 - Vu au chargement : `account.payment.term.partner_bank_id: unknown parameter 'tracking'` (`easi_account_payment_term_bank`, modèle sans `mail.thread`) ; `Missing 'author' key` (`sale_order_block_duplicate_product`).
 - **Correction proposée** : signaler `tracking=` sur un champ dont le modèle n'hérite pas de `mail.thread` ; ajouter `author` (valeur par défaut de l'équipe) quand il manque.
+
+## 63. 🟡 Commentaire orphelin après le retrait d'une clé vide
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — les commentaires attachés
+> à une clé retirée par la normalisation (au-dessus ou sur la même ligne) sont
+> retirés avec elle et repris dans le journal ; les autres commentaires métier
+> restent en place.
+
+- Module : `edi_webservice_data_model`. `# se poser peut être la question de impacket plutôt que pysmb` était au-dessus de `external_dependencies` (vide) ; la clé est retirée, le commentaire reste seul avant `}`.
+- **Correction proposée** : quand une clé est retirée, retirer aussi les commentaires qui lui sont attachés (lignes juste au-dessus).
 
 ---
 
@@ -740,6 +751,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `stof_account_reversal` | 2 `product_uom` sur 6 (valeur renvoyée par `super()`) ; point d'extension `_affects_qty_invoiced` non proposé | 56, 57 |
 | `edi_data_model` | Rien de bloquant ; apostrophes doublées façon SQL, droits sur des modèles abstraits | 58, 59 |
 | `edi_ftp_data_model` | `\.` invalide en Python 3.12 ; clés vides du manifest | 60, 61 |
+| `edi_webservice_data_model` | Rien de bloquant ; commentaire orphelin dans le manifest | 63 |
 
 ---
 

@@ -1204,3 +1204,40 @@ class Unknown(models.Model):
     issues = list(models.check_tracking_without_mail(mod, index))
     names = sorted(message.split("'")[1] for _path, _line, message in issues)
     assert names == ["custom.plain.code", "custom.plain.name"]
+
+
+def test_manifest_comment_of_dropped_key_is_removed(tmp_path):
+    mod = addon(tmp_path, "custom")
+    (mod / "__manifest__.py").write_text(
+        "{\n"
+        "    'name': 'Custom',\n"
+        "    # business note on dependencies\n"
+        "    'depends': ['base'],\n"
+        "    # question about an alternative library\n"
+        "    'external_dependencies': {\n"
+        "    },\n"
+        "    'data': [],  # inline note\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    quality.finish_module(mod, manifest_layout=True)
+    text = (mod / "__manifest__.py").read_text(encoding="utf-8")
+    assert "# business note on dependencies" in text
+    assert "alternative library" not in text
+    assert "inline note" not in text
+
+
+def test_default_author_fills_only_missing_author(tmp_path, caplog):
+    mod = addon(tmp_path, "custom")
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate"):
+        quality.finish_module(mod, manifest_layout=True, default_author="Team")
+    data = ast.literal_eval((mod / "__manifest__.py").read_text(encoding="utf-8"))
+    assert data["author"] == "Team"
+    assert not any("'author'" in r.message for r in caplog.records)
+
+    (mod / "__manifest__.py").write_text(
+        "{'name': 'Custom', 'author': 'Original'}\n", encoding="utf-8"
+    )
+    quality.finish_module(mod, manifest_layout=True, default_author="Team")
+    data = ast.literal_eval((mod / "__manifest__.py").read_text(encoding="utf-8"))
+    assert data["author"] == "Original"

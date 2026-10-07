@@ -31,6 +31,7 @@ Le manifeste suit le modèle commun et les imports inutilisés sont nettoyés
 
 - `--format` : formater les fichiers Python modifiés selon la configuration Ruff du projet.
 - `--default-website URL` : compléter un site absent, sans remplacer un site existant.
+- `--default-author NOM` : compléter un auteur absent, sans remplacer un auteur existant.
 - `--keep-unused-imports` : conserver les imports inutilisés.
 - `--no-manifest-format` : conserver la mise en forme du manifeste.
 - `--no-upgrade-code` : utiliser uniquement les règles internes.
@@ -51,6 +52,7 @@ Sous PowerShell, pour migrer un module Stof de 17.0 à 20.0 :
     --modules "stof_partner_backorder_strategy" `
     --init-version-name 17.0 `
     --target-version-name 20.0 `
+    --default-author "EaSI" `
     --default-website "https://www.easi-soft.fr" `
     --format `
     --report-dir "D:\Odoo\local-addons\Stof\migration-reports" `
@@ -218,6 +220,7 @@ Relancer la migration sur un module déjà migré ne change rien
 | `--keep-unused-imports` | Désactiver le nettoyage F401 automatique hors `__init__.py` |
 | `--no-manifest-format` | Conserver la présentation d'origine du manifeste |
 | `--default-website URL` | Compléter le site uniquement lorsqu'il est absent ; ne remplace jamais une valeur existante |
+| `--default-author NOM` | Compléter l'auteur uniquement lorsqu'il est absent ; ne remplace jamais une valeur existante |
 | `--no-oca-modules` | Ne pas migrer les modules OCA trouvés dans le dossier |
 | `--oca-file-list` | Écrire `OCA_MODULES.md` : liste des modules OCA du projet |
 | `-fp`, `--format-patch` | Récupérer le module depuis la branche de la version précédente du dépôt (`git format-patch`, un seul module) |

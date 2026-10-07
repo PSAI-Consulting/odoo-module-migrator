@@ -41,6 +41,7 @@ Commande complète recommandée sous PowerShell :
     --modules "stof_partner_backorder_strategy" `
     --init-version-name 17.0 `
     --target-version-name 20.0 `
+    --default-author "EaSI" `
     --default-website "https://www.easi-soft.fr" `
     --format `
     --report-dir "D:\Odoo\local-addons\Stof\migration-reports" `
@@ -81,7 +82,7 @@ notamment les sources Enterprise et `--context-path` les autres modules métier.
 
 Le modèle de manifeste et le nettoyage des imports inutilisés sont appliqués
 par défaut aux modules hors OCA. `--format` ajoute le formatage Ruff du projet.
-Options : `--default-website URL`, `--keep-unused-imports`, `--no-manifest-format`.
+Options : `--default-website URL`, `--default-author NOM`, `--keep-unused-imports`, `--no-manifest-format`.
 
 ## Documentation
 

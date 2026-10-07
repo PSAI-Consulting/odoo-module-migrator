@@ -332,7 +332,8 @@ def clean_python_spacing(text):
 
 
 def finish_module(
-    module, cosmetic=True, original_data=(), manifest_layout=False, default_website=""
+    module, cosmetic=True, original_data=(), manifest_layout=False, default_website="",
+    default_author="",
 ):
     manifest = module / "__manifest__.py"
     if manifest.exists():
@@ -361,7 +362,9 @@ def finish_module(
                     "[quality] Manifest key %r is made of adjacent string literals; a comma is probably missing. File %s:%s",
                     key, manifest, line,
                 )
-            if not data.get("author"):
+            if not data.get("author") and not (
+                default_author and cosmetic and manifest_layout
+            ):
                 logger.warning(
                     "[quality] Manifest has no 'author' key; Odoo 20 logs "
                     "\"Missing 'author' key\". File %s:1",
@@ -395,6 +398,7 @@ def finish_module(
                 text = format_manifest(
                     text,
                     default_website,
+                    default_author=default_author,
                     keep_installable=tools.RUN_CONTEXT.get("set_installable", False),
                 )
             elif cosmetic and "license" not in data:

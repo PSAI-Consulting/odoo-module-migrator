@@ -23,6 +23,7 @@ def get_parser():
                              help="Use migration rules only; disable the bundled official scripts and target checks.")
     main_parser.add_argument("--keep-unused-imports", action="store_true", help="Disable safe F401 cleanup outside __init__.py (enabled by default for non-OCA modules).")
     main_parser.add_argument("--no-manifest-format", action="store_true", help="Keep original manifest layout instead of the standard key order and multiline lists.")
+    main_parser.add_argument("--default-author", default="", help="Author to use only when absent; existing module values are preserved.")
     main_parser.add_argument("--default-website", default="", help="Website to use only when absent; existing module values are preserved.")
 
     main_parser.add_argument(
@@ -199,6 +200,7 @@ def main(args=None):
             clean_imports=not args.keep_unused_imports,
             manifest_layout=not args.no_manifest_format,
             default_website=args.default_website,
+            default_author=args.default_author,
         )
 
         # run Migration

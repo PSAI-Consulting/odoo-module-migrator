@@ -49,7 +49,8 @@ configuration.
 | 59 | Les droits visant un `AbstractModel` sont signalés dans l'ancien `ir.model.access.csv` comme dans le nouvel `ir.access.csv`. Les noms techniques et XML IDs `model_*` sont résolus par l'index des modèles. |
 | 60 | Une chaîne dont toutes les séquences d'échappement sont invalides (`"\."`, `SyntaxWarning` en Python 3.12) devient une chaîne brute de valeur identique. Un mélange de séquences valides et invalides est signalé. |
 | 61 | La normalisation du manifest retire aussi `data` vide et les entrées vides de `external_dependencies` (puis la clé si elle ne contient plus rien). |
-| 62 | `tracking=` sur un champ d'un modèle sans `mail.thread` (lignée entièrement connue) est signalé ; un manifest sans `author` est signalé sans inventer de valeur. |
+| 62 | `tracking=` sur un champ d'un modèle sans `mail.thread` (lignée entièrement connue) est signalé. Un `author` absent est complété par `--default-author`, sinon signalé. |
+| 63 | Les commentaires d'une clé retirée par la normalisation du manifest (clé vide ou valeur par défaut) disparaissent avec elle et sont tracés dans le journal. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans
@@ -85,8 +86,9 @@ commentaires scaffold, `website` et `license` présents. Les valeurs métier,
 clés personnalisées, commentaires de l'auteur et descriptions non vides sont
 conservés. Les descriptions multilignes gardent leurs triples guillemets. Les
 clés optionnelles vides (`summary`, `description`, `external_dependencies`,
-`demo`, `assets`) sont retirées. Un site absent reste vide, ou reçoit
-`--default-website URL`.
+`data`, `demo`, `assets`) sont retirées, avec leurs commentaires. Un site
+absent reste vide, ou reçoit `--default-website URL` ; un auteur absent reçoit
+`--default-author NOM`, sinon il est signalé.
 `--no-manifest-format` conserve la présentation d'origine.
 
 L'ordre des fichiers `data` reste inchangé : certains fichiers de sécurité

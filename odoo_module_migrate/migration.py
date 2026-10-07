@@ -45,6 +45,7 @@ class Migration:
         clean_imports=False,
         manifest_layout=False,
         default_website="",
+        default_author="",
     ):
         if not module_names:
             module_names = []
@@ -62,6 +63,7 @@ class Migration:
         self._clean_imports = clean_imports
         self._manifest_layout = manifest_layout
         self._default_website = default_website
+        self._default_author = default_author
         self._format_config_root = pathlib.Path(format_config_root).resolve() if format_config_root else None
         self.report_collector = None
         self._migration_steps = []
@@ -288,7 +290,8 @@ class Migration:
             for item in self._module_migrations:
                 finish_module(item._module_path, cosmetic=not self._is_oca_module(item._module_path),
                               original_data=item._original_data, manifest_layout=self._manifest_layout,
-                              default_website=self._default_website)
+                              default_website=self._default_website,
+                              default_author=self._default_author)
             if self._format_code or self._clean_imports:
                 self._format_changed_files()
             if float(init_version) < 20 <= float(target_version):
