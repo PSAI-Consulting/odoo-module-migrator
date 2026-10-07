@@ -36,6 +36,9 @@ configuration.
 | 45, 47 | À partir de la 18, les relations `Many2one` et `Many2many` vers `documents.document` utilisées comme sélecteurs dans une vue et sans domaine portant sur `type` sont signalées : les dossiers sont désormais des documents de type `folder`. Les sous-vues relationnelles et les domaines XML sont pris en compte ; les relations de stockage non affichées ne sont pas signalées. |
 | 46 | Les champs lus sur un recordset provenant de `env[<modèle dynamique>]` sont signalés avec la forme explicite `record["champ"]`. Pour `x2many += record`, le rapport conseille de collecter les identifiants puis d'utiliser une seule commande `Command.set`. |
 | 48 | Un modèle persistant explicitement nommé qui ressemble fortement à un assistant est signalé : action formulaire `target="new"` avec `default_get()`, ou relation `One2many` vers un modèle transitoire. Une fenêtre modale seule ne déclenche rien. |
+| 49 | La remise en ordre de `security/ir.access.csv` supporte les listes où le script officiel a ajouté le premier élément directement après `[`. Le manifest final reste valide et sa normalisation s'exécute. |
+| 50 | Le renommage de précision UoM couvre `digits=`, `precision_get(...)`, `dp.get_precision(...)` et les enregistrements XML `decimal.precision`, en laissant les libellés métier homonymes intacts. |
+| 51 | Un `+=` sur un champ indexé comme `fields.Html` est signalé car la valeur `Markup` échappe une chaîne ordinaire. `</br>` est également signalé comme balise incorrecte. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans

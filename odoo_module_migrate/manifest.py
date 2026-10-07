@@ -286,9 +286,17 @@ def rewrite_list(text, key, new_depends):
 
     if node.lineno != node.end_lineno and node.elts:
         # one item per line
-        first = node.elts[0]
-        indent = text[pos(first.lineno, 0) : pos(first.lineno, first.col_offset)]
         closing_indent = text[pos(node.end_lineno, 0) : end - 1]
+        # An official script may prepend the first item directly after ``[``
+        # while the remaining items stay on separate lines. In that case the
+        # text before the first element contains the dict key, not indentation.
+        multiline = next((elt for elt in node.elts if elt.lineno > node.lineno), None)
+        if multiline is not None:
+            indent = text[
+                pos(multiline.lineno, 0) : pos(multiline.lineno, multiline.col_offset)
+            ]
+        else:
+            indent = closing_indent + "    "
         body = "".join(f"\n{indent}{item}," for item in items)
         new = f"{opening}{body}\n{closing_indent}{closing}"
     else:

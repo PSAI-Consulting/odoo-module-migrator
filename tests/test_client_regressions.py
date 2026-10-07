@@ -292,8 +292,13 @@ class P(Model):
     qty = fields.Float(digits = 'Product Unit of Measure')
     def run(self):
         self.env.ref('uom.uom_categ_length')
+        self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        dp.get_precision("Product Unit of Measure")
         return self._context, self._cr, self._uid
 """,
+        xml="""<record id="uom_precision" model="decimal.precision">
+<field name="name">Product Unit of Measure</field><field name="digits">5</field>
+</record><record id="other" model="x"><field name="name">Product Unit of Measure</field></record>""",
     )
     args = dict(
         module_path=mod, tools=tools, logger=logging.getLogger("odoo_module_migrate")
@@ -301,11 +306,16 @@ class P(Model):
     migrate_compatibility(**args)
     text = (mod / "models.py").read_text()
     assert "digits = 'Product Unit'" in text
+    assert "precision_get('Product Unit')" in text
+    assert 'get_precision("Product Unit")' in text
     assert "return self.env.context, self.env.cr, self.env.uid" in text
     assert (
         "# self._context" in text and '"Product Unit of Measure self._context"' in text
     )
     assert "categories removed" in caplog.text
+    xml = (mod / "view.xml").read_text()
+    assert '<field name="name">Product Unit</field>' in xml
+    assert '<record id="other"' in xml and "Product Unit of Measure" in xml
     migrate_compatibility(**args)
     assert (mod / "models.py").read_text() == text
 
@@ -547,6 +557,51 @@ def test_manifest_template_preserves_customer_values_and_load_order():
     assert "installable" not in data and "description" not in data
     assert "# Copyright Example" in result and "# business ordering matters" in result
     assert format_manifest(result) == result
+
+
+def test_manifest_list_rewrite_handles_first_item_on_opening_line():
+    from odoo_module_migrate.manifest import format_manifest, rewrite_list
+
+    intermediate = """{
+    'name': 'x',
+    'data': ['security/ir.access.csv',
+        'views/first.xml',
+        'views/last.xml',
+    ],
+}
+"""
+    rewritten = rewrite_list(
+        intermediate,
+        "data",
+        ["views/first.xml", "views/last.xml", "security/ir.access.csv"],
+    )
+    assert ast.literal_eval(rewritten)["data"][-1] == "security/ir.access.csv"
+    assert ast.literal_eval(format_manifest(rewritten))["data"][-1] == (
+        "security/ir.access.csv"
+    )
+
+
+def test_html_field_append_and_malformed_break_are_reported(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["base"],
+        """class Wizard(TransientModel):
+    _name = 'custom.wizard'
+    message_html = fields.Html()
+    message_text = fields.Char()
+
+    def compute_message(self):
+        for wizard in self:
+            wizard.message_html += '</br> - %s' % wizard.display_name
+            wizard.message_text += 'safe plain text'
+""",
+    )
+    index = models.ModelIndex.build([tmp_path])
+    messages = [issue[-1] for issue in python_checks.check_module(mod, index)]
+    assert len([message for message in messages if "extended with +=" in message]) == 1
+    assert len([message for message in messages if "Malformed HTML" in message]) == 1
 
 
 def test_manifest_scaffold_comments_removed_business_comments_preserved():

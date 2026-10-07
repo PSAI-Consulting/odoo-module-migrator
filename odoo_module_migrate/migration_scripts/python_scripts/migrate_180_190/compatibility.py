@@ -22,6 +22,14 @@ def migrate_compatibility(**kwargs):
                 ),
                 text,
             )
+            new = re.sub(
+                r"(<record\b[^>]*\bmodel\s*=\s*([\"'])decimal\.precision\2[^>]*>"
+                r"(?:(?!</record>)[\s\S])*?"
+                r"<field\b[^>]*\bname\s*=\s*([\"'])name\3[^>]*>\s*)"
+                r"Product Unit of Measure(\s*</field>)",
+                r"\1Product Unit\4",
+                new,
+            )
         else:
             try:
                 tree = ast.parse(text)
@@ -44,6 +52,22 @@ def migrate_compatibility(**kwargs):
                     and node.value.value == "Product Unit of Measure"
                 ):
                     value = node.value
+                    start, end = (
+                        pos.offset(value.lineno, value.col_offset),
+                        pos.offset(value.end_lineno, value.end_col_offset),
+                    )
+                    edits[start, end] = text[start:end].replace(
+                        "Product Unit of Measure", "Product Unit"
+                    )
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr in {"precision_get", "get_precision"}
+                    and node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and node.args[0].value == "Product Unit of Measure"
+                ):
+                    value = node.args[0]
                     start, end = (
                         pos.offset(value.lineno, value.col_offset),
                         pos.offset(value.end_lineno, value.end_col_offset),

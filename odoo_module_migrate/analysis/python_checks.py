@@ -431,6 +431,49 @@ def _persistent_wizard_issues(tree, index, modal_models):
         )
 
 
+def _html_field_issues(tree, index):
+    """Markup-sensitive updates and malformed break tags in model code."""
+    seen_breaks = set()
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and "</br>" in node.value.lower()
+            and node.lineno not in seen_breaks
+        ):
+            seen_breaks.add(node.lineno)
+            yield (
+                node.lineno,
+                "Malformed HTML closing tag </br>; use <br> or <br/> for a line break",
+            )
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef):
+            continue
+        class_models = fields._class_models(cls)
+        if not class_models:
+            continue
+        html_fields = {
+            field
+            for model in index.ancestors(class_models[0])
+            for field in index.fields.get(model, set())
+            if "Html" in index.field_types.get((model, field), set())
+        }
+        if not html_fields:
+            continue
+        for node in ast.walk(cls):
+            if (
+                isinstance(node, ast.AugAssign)
+                and isinstance(node.target, ast.Attribute)
+                and node.target.attr in html_fields
+            ):
+                yield (
+                    node.lineno,
+                    f"HTML field {node.target.attr} is extended with +=; its current value is"
+                    " Markup, so a plain string is escaped. Build one Markup template with"
+                    " escaped interpolated values and assign the field once",
+                )
+
+
 def check_module(module, index, target_version=20, precision_names=None):
     module = Path(module)
     closure = index.closure(module.name)
@@ -451,6 +494,8 @@ def check_module(module, index, target_version=20, precision_names=None):
         ) or ():
             yield path, line, "warning", message
         for line, message in _persistent_wizard_issues(tree, index, modal_models):
+            yield path, line, "warning", message
+        for line, message in _html_field_issues(tree, index):
             yield path, line, "warning", message
         if precision_names:
             for node in ast.walk(tree):

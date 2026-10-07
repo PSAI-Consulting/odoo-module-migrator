@@ -563,6 +563,37 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `easi_supplierinfo`. `supplierinfo.document` (bouton `maj_line`, action `target="new"`, lignes en `TransientModel`) est un `models.Model` : une ligne reste en base à chaque ouverture.
 - **Correction proposée** : signaler en 🟡 un `models.Model` utilisé seulement par une action `target="new"`, ou qui a des `One2many` vers des `TransientModel`.
 
+## 49. 🔴 Manifest « illisible » : le n° 29 revient quand la sécurité passe en tête
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — la réécriture d'une liste
+> multiligne accepte désormais qu'un script officiel ait ajouté le premier
+> élément directement après `[`. `ir.access.csv` retrouve sa position d'origine
+> et le modèle de manifest est ensuite appliqué sur le contenu final valide.
+
+- Module : `easi_account`. « Manifest could not be inspected (SyntaxError: closing parenthesis '}' does not match opening parenthesis '[' on line 28) ». Manifest final valide, mais **non mis au modèle** (commentaires « scaffold », `summary` vide, listes sur une ligne).
+- Cas : `security/ir.model.access.csv` était le **dernier** élément de `data` (sans virgule finale) ; après déplacement/conversion, l'état intermédiaire est invalide.
+- **Correction proposée** : faire la conversion `ir.access` sur l'AST (ou relire le manifest après conversion) ; appliquer le modèle sur le manifest final.
+
+## 50. 🟠 `precision_get('Product Unit of Measure')` non converti
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé automatiquement — le renommage
+> couvre maintenant `precision_get(...)`, `dp.get_precision(...)` et le champ
+> `name` des enregistrements XML `decimal.precision`, sans modifier les textes
+> homonymes d'autres modèles.
+
+- Module : `easi_account`. La règle n° 15 convertit `digits='Product Unit of Measure'`, pas `precision_get('Product Unit of Measure')`. En 20, le nom n'existe plus : `precision_get` renvoie **2 par défaut**, sans erreur.
+- **Correction proposée** : même renommage dans `precision_get(...)`, `dp.get_precision(...)` et `decimal.precision` en XML.
+
+## 51. 🟡 Champ HTML complété par `+=` avec du texte
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — un `+=` sur
+> un champ réellement indexé comme `fields.Html` avertit du comportement de
+> `Markup` et recommande une construction unique avec échappement des valeurs.
+> La balise incorrecte `</br>` est signalée séparément avec `<br>` / `<br/>`.
+
+- Module : `easi_account`. `wiz.message_html += "</br> - %s" % ...` : la valeur lue est un `Markup`, le texte ajouté est **échappé**. Existait en 17.
+- **Correction proposée** : signaler (🟡) les `+=` sur un champ `fields.Html` ; proposer de construire la chaîne puis d'affecter une fois. Signaler aussi la balise `</br>`.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -588,6 +619,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `additional_salesperson` | Clé `Salesversion` (virgule manquante), surcharge de `_create_lead_partner_data` inexistante ; plantage du rapport | 40 à 43 |
 | `easi_document_on_line` | Dossiers proposés comme documents (refonte de `documents` en 18) ; faux positif sur `default_get` ; champ lu sur un modèle dynamique | 44 à 46 |
 | `easi_supplierinfo` | Assistant déclaré en `models.Model` (tout le reste signalé) | 47, 48 |
+| `easi_account` | Manifest non mis au modèle (fausse erreur de syntaxe), `precision_get('Product Unit of Measure')`, `+=` sur un champ HTML | 49 à 51 |
 
 ---
 
