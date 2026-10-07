@@ -503,6 +503,47 @@ def check_abstract_access(module, index):
             continue
 
 
+def check_tracking_without_mail(module, index):
+    """Yield fields declaring tracking= on a model that does not inherit
+    mail.thread: Odoo 20 ignores the parameter and logs 'unknown parameter'."""
+    for path in _python_files(pathlib.Path(module)):
+        try:
+            tree = ast.parse(path.read_bytes())
+        except (SyntaxError, ValueError):
+            continue
+        for cls in ast.walk(tree):
+            if not isinstance(cls, ast.ClassDef):
+                continue
+            infos = list(_class_infos(ast.Module(body=[cls], type_ignores=[])))
+            if not infos:
+                continue
+            model, _name, parents, _bases, _fields, _paths = infos[0]
+            lineage = index.ancestors(model) | parents
+            for parent in parents:
+                lineage |= index.ancestors(parent)
+            # Only conclude when every model of the lineage is known.
+            if "mail.thread" in lineage or any(m not in index.defined for m in lineage):
+                continue
+            for stmt in cls.body:
+                if not (
+                    isinstance(stmt, ast.Assign)
+                    and isinstance(stmt.value, ast.Call)
+                    and isinstance(stmt.targets[0], ast.Name)
+                ):
+                    continue
+                field = stmt.targets[0].id
+                for kw in stmt.value.keywords:
+                    if kw.arg == "tracking" and not (
+                        isinstance(kw.value, ast.Constant) and not kw.value.value
+                    ):
+                        yield path, kw.value.lineno, (
+                            f"[model] Field '{model}.{field}' "
+                            "uses tracking= but the model does not inherit mail.thread; "
+                            "Odoo ignores it and logs 'unknown parameter'. Remove it or "
+                            "inherit mail.thread"
+                        )
+
+
 def check_field_paths(module, index):
     """Yield (path, line, message) for the paths of @api.depends / related=
     of the module going through a field that does not exist: Odoo does not

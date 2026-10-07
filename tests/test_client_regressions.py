@@ -1059,12 +1059,14 @@ def test_accessible_dependency_files_not_iterated_by_official_scripts(tmp_path):
     assert manager.get_file("base", "models.py") is manager._files["base"]
 
 
-def test_sql_style_apostrophes_are_reported_before_formatting(tmp_path, caplog):
+def test_sql_style_apostrophes_are_repaired_and_other_joins_reported(tmp_path, caplog):
     mod = addon(tmp_path, "custom", code="""from odoo import models
 
 class Input(models.AbstractModel):
     _name = "custom.input"
     _description = 'Interface for l''envoi'
+    _help = "Glued""text"
+    _spaced = 'kept' 'as is'
 """)
     (mod / "__manifest__.py").write_text(
         "{'name': 'Custom', 'summary': 'Méthodes d''entrée', 'depends': ['base']}\n",
@@ -1074,14 +1076,15 @@ class Input(models.AbstractModel):
     with caplog.at_level(logging.WARNING, logger="odoo_module_migrate"):
         quality.finish_module(mod, manifest_layout=True)
 
-    warnings = [
-        record.message for record in caplog.records if "apostrophe" in record.message
-    ]
-    assert len(warnings) == 2
-    assert any("Méthodes d" in message and "entrée" in message for message in warnings)
-    assert any(
-        "Interface for l" in message and "envoi" in message for message in warnings
+    assert "Méthodes d'entrée" in (mod / "__manifest__.py").read_text(encoding="utf-8")
+    code = (mod / "models.py").read_text(encoding="utf-8")
+    assert ast.literal_eval(code.split("_description = ")[1].splitlines()[0]) == (
+        "Interface for l'envoi"
     )
+    assert "'kept' 'as is'" in code
+    # Only the ambiguous double-quoted join is left as a diagnostic.
+    warnings = [r.message for r in caplog.records if "Adjacent" in r.message]
+    assert len(warnings) == 1 and "Glued" in warnings[0]
 
 
 def test_access_rows_on_abstract_models_are_reported_in_both_csv_formats(tmp_path):
@@ -1118,3 +1121,86 @@ class Concrete(models.Model):
     issues = list(models.check_abstract_access(mod, index))
     assert len(issues) == 1
     assert "custom.input" in issues[0][2]
+
+
+def test_invalid_escape_sequences_become_raw_strings(tmp_path, caplog):
+    mod = addon(tmp_path, "custom", code="""from odoo import fields, models
+
+class Input(models.Model):
+    _name = "custom.input"
+    _description = "Input"
+
+    pattern = fields.Char(help='Ex: ^commande.*\\.txt$')
+    mixed = fields.Char(help='a\\.b\\n')
+    valid = fields.Char(help='a\\nb')
+""")
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate"):
+        quality.finish_module(mod)
+    text = (mod / "models.py").read_text(encoding="utf-8")
+    assert "help=r'Ex: ^commande.*\\.txt$'" in text
+    assert "help='a\\.b\\n'" in text
+    assert "help='a\\nb'" in text
+    assert any("mixes valid and invalid" in r.message for r in caplog.records)
+
+
+def test_manifest_drops_empty_data_and_dependency_dicts(tmp_path, caplog):
+    mod = addon(tmp_path, "custom")
+    (mod / "__manifest__.py").write_text(
+        "{'name': 'Custom', 'depends': ['base'], 'data': [],"
+        " 'external_dependencies': {'python': [], 'bin': ['wkhtmltopdf']},"
+        " 'demo': [], 'assets': {}}\n",
+        encoding="utf-8",
+    )
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate"):
+        quality.finish_module(mod, manifest_layout=True)
+    data = ast.literal_eval((mod / "__manifest__.py").read_text(encoding="utf-8"))
+    assert "data" not in data and "demo" not in data and "assets" not in data
+    assert data["external_dependencies"] == {"bin": ["wkhtmltopdf"]}
+    assert any("no 'author' key" in r.message for r in caplog.records)
+
+    (mod / "__manifest__.py").write_text(
+        "{'name': 'Custom', 'author': 'Me', 'external_dependencies': {'python': []}}\n",
+        encoding="utf-8",
+    )
+    quality.finish_module(mod, manifest_layout=True)
+    data = ast.literal_eval((mod / "__manifest__.py").read_text(encoding="utf-8"))
+    assert "external_dependencies" not in data
+
+
+def test_tracking_without_mail_thread_is_reported(tmp_path):
+    addon(tmp_path, "mail", code="""from odoo import models
+
+class Thread(models.AbstractModel):
+    _name = "mail.thread"
+    _description = "Thread"
+""")
+    mod = addon(tmp_path, "custom", ["mail"], code="""from odoo import fields, models
+
+class Plain(models.Model):
+    _name = "custom.plain"
+    _description = "Plain"
+
+    name = fields.Char(tracking=True)
+    other = fields.Char(tracking=False)
+
+class Tracked(models.Model):
+    _name = "custom.tracked"
+    _inherit = ["mail.thread"]
+    _description = "Tracked"
+
+    name = fields.Char(tracking=True)
+
+class Extended(models.Model):
+    _inherit = "custom.plain"
+
+    code = fields.Char(tracking=10)
+
+class Unknown(models.Model):
+    _inherit = "outside.model"
+
+    code = fields.Char(tracking=True)
+""")
+    index = models.ModelIndex.build([tmp_path])
+    issues = list(models.check_tracking_without_mail(mod, index))
+    names = sorted(message.split("'")[1] for _path, _line, message in issues)
+    assert names == ["custom.plain.code", "custom.plain.name"]

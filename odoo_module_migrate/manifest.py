@@ -70,8 +70,14 @@ def format_manifest(text, default_website="", keep_installable=False):
     for key in ("summary", "description"):
         if isinstance(data.get(key), str) and not data[key].strip():
             data.pop(key)
-    for key in ("external_dependencies", "demo", "assets"):
-        if key in data and not data[key]:
+    for key in ("external_dependencies", "data", "demo", "assets"):
+        value = data.get(key)
+        if isinstance(value, dict):
+            # {"python": []} declares nothing either
+            value = {k: v for k, v in value.items() if v}
+            if value:
+                data[key] = value
+        if key in data and not value:
             data.pop(key)
     for key, default in (
         ("installable", True),

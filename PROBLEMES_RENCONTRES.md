@@ -661,10 +661,11 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 
 ## 58. 🟡 Apostrophe doublée façon SQL dans une chaîne Python
 
-> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — avant toute
-> normalisation, le flux de tokens repère les littéraux accolés sans espace dont
-> les deux côtés se rejoignent sur des lettres. Le diagnostic montre les deux
-> fragments et conseille une apostrophe échappée ou l'autre style de guillemets.
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — la forme non ambiguë
+> (deux littéraux `'…'` simples collés sans espace, lettre de part et d'autre)
+> est réécrite en `'d\'entrée'` dans le manifest et le code Python, avant la
+> normalisation : le manifest affiche bien « d'entrée » et non plus « dentrée ».
+> Les autres jonctions (guillemets doubles, préfixes) restent signalées.
 
 - Module : `edi_data_model`. `'méthodes d''entrée'`, `'l''envoi'` : Python colle les deux chaînes (« dentrée », « lenvoi »). Le migrator a bien gardé la valeur réelle en réécrivant les guillemets, mais sans le signaler.
 - **Correction proposée** : avec `tokenize`, repérer deux chaînes collées dont la première se termine par une lettre et la seconde commence par une lettre (`'d''e'`) ; TODO 🟡 « apostrophe probablement perdue ».
@@ -678,6 +679,36 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 
 - Module : `edi_data_model`. `ir.access` sur `edi.model.input` et `edi.model.output`, qui sont des `AbstractModel` : sans effet.
 - **Correction proposée** : signaler (🟡) les lignes de droits sur un `AbstractModel`.
+
+## 60. 🟡 Séquence d'échappement invalide (`"\."`)
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — une chaîne sans
+> préfixe dont toutes les séquences `\x` sont invalides devient brute (`r"…"`),
+> après contrôle que la valeur est identique. Si elle mélange séquences valides
+> et invalides, elle est signalée.
+
+- Module : `edi_ftp_data_model`. `help="… ^commande.*\.txt$"` : `SyntaxWarning: invalid escape sequence '\.'` en Python 3.12 (erreur dans une future version).
+- **Correction proposée** : passer en chaîne brute (`r"…"`) toute chaîne contenant une séquence invalide, sans autre `\` valide (`\n`, `\t`…) ; sinon TODO 🟡. Vérifiable avec `compile(..., warnings as errors)`.
+
+## 61. 🟡 Clés vides gardées dans le manifest
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — `data` vide est
+> retiré comme `demo`/`assets`, et les entrées vides d'un dictionnaire
+> (`external_dependencies: {"python": []}`) sont retirées ; le dictionnaire
+> disparaît s'il ne reste rien.
+
+- Module : `edi_ftp_data_model`. `"external_dependencies": {"python": []}` et `"data": []` gardés (règle du modèle : clés vides absentes ; voir n° 30).
+- **Correction proposée** : retirer aussi les dictionnaires dont toutes les listes sont vides.
+
+## 62. 🟡 Paramètres de champ sans effet, avertis par Odoo 20
+
+> **État du migrateur (07/10/2026)** : ✅ Détection — `tracking=`
+> sur un modèle dont toute la lignée est connue de l'index et n'hérite pas de
+> `mail.thread` est signalé. Un manifest sans `author` est signalé ; aucune
+> valeur n'est inventée (l'outil reste neutre vis-à-vis du client).
+
+- Vu au chargement : `account.payment.term.partner_bank_id: unknown parameter 'tracking'` (`easi_account_payment_term_bank`, modèle sans `mail.thread`) ; `Missing 'author' key` (`sale_order_block_duplicate_product`).
+- **Correction proposée** : signaler `tracking=` sur un champ dont le modèle n'hérite pas de `mail.thread` ; ajouter `author` (valeur par défaut de l'équipe) quand il manque.
 
 ---
 
@@ -708,6 +739,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_no_recompute_on_polines` | `product_uom` dans une expression génératrice ; dépendances du calcul standard changées ; en-têtes de licence gardés, lignes vides en trop | 52 à 55 |
 | `stof_account_reversal` | 2 `product_uom` sur 6 (valeur renvoyée par `super()`) ; point d'extension `_affects_qty_invoiced` non proposé | 56, 57 |
 | `edi_data_model` | Rien de bloquant ; apostrophes doublées façon SQL, droits sur des modèles abstraits | 58, 59 |
+| `edi_ftp_data_model` | `\.` invalide en Python 3.12 ; clés vides du manifest | 60, 61 |
 
 ---
 

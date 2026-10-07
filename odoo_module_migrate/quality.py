@@ -5,6 +5,7 @@ import io
 import re
 import symtable
 import tokenize
+import warnings
 
 from . import tools
 from .log import logger
@@ -99,6 +100,108 @@ def check_adjacent_string_apostrophes(path, text):
                 previous = None
     except (tokenize.TokenError, IndentationError):
         return
+
+
+def _offsets(text):
+    starts = [0]
+    for line in text.splitlines(keepends=True):
+        starts.append(starts[-1] + len(line))
+    return lambda row, col: starts[row - 1] + col
+
+
+def repair_sql_apostrophes(path, text):
+    r"""Turn SQL-style ``'d''entrée'`` into ``'d\'entrée'``.
+
+    Two plain single-quoted literals glued without any space, both letters
+    around the junction, are never an intended concatenation: Python silently
+    produces ``dentrée``. Only this unambiguous form is rewritten.
+    """
+    edits = []
+    previous = None
+    try:
+        for token in tokenize.generate_tokens(io.StringIO(text).readline):
+            if token.type != tokenize.STRING:
+                previous = None
+                continue
+            plain = (
+                token.string[:1] == "'"
+                and not token.string.startswith("'''")
+                and len(token.string) >= 3
+            )
+            if (
+                previous is not None
+                and previous.end == token.start
+                and plain
+                and token.string[1].isalpha()
+                and previous.string[-2].isalpha()
+            ):
+                edits.append((previous.end, token.start))
+            previous = token if plain else None
+    except (tokenize.TokenError, IndentationError):
+        return text
+    offset = _offsets(text)
+    for end, _start in reversed(edits):
+        at = offset(*end)
+        # previous literal's closing quote + next literal's opening quote
+        text = text[: at - 1] + "\\'" + text[at + 1 :]
+        logger.info(
+            "[quality] Restored apostrophe lost by SQL-style doubled quotes. File %s:%s",
+            path,
+            end[0],
+        )
+    return text
+
+
+_VALID_ESCAPES = set("\n\\'\"abfnrtv01234567xNuU")
+
+
+def fix_invalid_escapes(path, text):
+    r"""Prefix with r strings whose backslashes are all invalid escapes.
+
+    Python 3.12 warns on ``"\."`` and will reject it. When no valid escape is
+    present, the raw string has exactly the same value; otherwise only warn.
+    """
+    edits = []
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (tokenize.TokenError, IndentationError):
+        return text
+    for token in tokens:
+        if token.type != tokenize.STRING or "\\" not in token.string:
+            continue
+        prefix = re.match(r"(?i)[rubf]*", token.string)[0]
+        if "r" in prefix.lower() or "b" in prefix.lower() or "f" in prefix.lower():
+            continue
+        body = token.string[len(prefix):]
+        following = re.findall(r"\\(.)", body, re.S)
+        if all(char in _VALID_ESCAPES for char in following):
+            continue
+        if any(char in _VALID_ESCAPES for char in following):
+            logger.warning(
+                "[quality] String mixes valid and invalid backslash escapes "
+                "(SyntaxWarning in Python 3.12); escape the invalid ones. File %s:%s",
+                path,
+                token.start[0],
+            )
+            continue
+        candidate = prefix + "r" + body
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                if ast.literal_eval(candidate) != ast.literal_eval(token.string):
+                    continue
+        except (SyntaxError, ValueError):
+            continue
+        edits.append((token.start, token.end, candidate))
+    offset = _offsets(text)
+    for start, end, value in reversed(edits):
+        text = text[: offset(*start)] + value + text[offset(*end) :]
+        logger.info(
+            "[quality] Invalid escape sequence: string made raw. File %s:%s",
+            path,
+            start[0],
+        )
+    return text
 
 
 def check_python(path, text):
@@ -236,6 +339,7 @@ def finish_module(
         text = tools._read_content(manifest)
         # Run this before manifest formatting: formatting sees only the already
         # concatenated runtime value and can no longer recover the token split.
+        text = repair_sql_apostrophes(manifest, text)
         check_adjacent_string_apostrophes(manifest, text)
         if cosmetic:
             text = remove_internal_headers(text)
@@ -256,6 +360,12 @@ def finish_module(
                 logger.error(
                     "[quality] Manifest key %r is made of adjacent string literals; a comma is probably missing. File %s:%s",
                     key, manifest, line,
+                )
+            if not data.get("author"):
+                logger.warning(
+                    "[quality] Manifest has no 'author' key; Odoo 20 logs "
+                    "\"Missing 'author' key\". File %s:1",
+                    manifest,
                 )
             node = _find_key(text, "data")
             if isinstance(node, (ast.List, ast.Tuple)):
@@ -306,6 +416,10 @@ def finish_module(
             )
     for path in tools.get_files(module, (".py",)):
         text = tools._read_content(path)
+        fixed = fix_invalid_escapes(path, repair_sql_apostrophes(path, text))
+        if fixed != text:
+            tools._write_content(path, fixed)
+            text = fixed
         if path != manifest:
             check_python(path, text)
         if cosmetic:

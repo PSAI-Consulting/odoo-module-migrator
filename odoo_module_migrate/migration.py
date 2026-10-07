@@ -471,6 +471,10 @@ class Migration:
                 module_migration._module_path, model_index
             ):
                 logger.warning("%s. File %s:%s", message, path, line)
+            for path, line, message in models.check_tracking_without_mail(
+                module_migration._module_path, model_index
+            ):
+                logger.warning("%s. File %s:%s", message, path, line)
 
         # names imported from the addons of the target Odoo
         from .analysis import imports
