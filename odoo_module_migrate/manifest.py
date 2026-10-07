@@ -6,10 +6,29 @@ import io
 import json
 import tokenize
 
-KEY_ORDER = ("name", "summary", "description", "version", "category", "author", "website", "license",
-             "depends", "external_dependencies", "data", "demo", "assets")
-SCAFFOLD_COMMENTS = ("categories can be used", "any module necessary", "always loaded",
-                     "only loaded in demonstration", "check https://github.com/odoo/odoo")
+KEY_ORDER = (
+    "name",
+    "summary",
+    "description",
+    "version",
+    "category",
+    "author",
+    "website",
+    "license",
+    "depends",
+    "external_dependencies",
+    "data",
+    "demo",
+    "assets",
+)
+SCAFFOLD_COMMENTS = (
+    "categories can be used",
+    "for the full list",
+    "any module necessary",
+    "always loaded",
+    "only loaded in demonstration",
+    "check https://github.com/odoo/odoo",
+)
 
 
 def format_manifest(text, default_website="", keep_installable=False):
@@ -20,40 +39,101 @@ def format_manifest(text, default_website="", keep_installable=False):
     """
     data = ast.literal_eval(text)
     tree = ast.parse(text)
-    if not isinstance(data, dict) or len(tree.body) != 1 or not isinstance(tree.body[0].value, ast.Dict):
+    if (
+        not isinstance(data, dict)
+        or len(tree.body) != 1
+        or not isinstance(tree.body[0].value, ast.Dict)
+    ):
         raise ManifestError("Manifest must contain one literal dictionary")
     mapping = tree.body[0].value
     pos = _Positions(text)
-    start, end = pos(mapping.lineno, mapping.col_offset), pos(mapping.end_lineno, mapping.end_col_offset)
+    start, end = (
+        pos(mapping.lineno, mapping.col_offset),
+        pos(mapping.end_lineno, mapping.end_col_offset),
+    )
     data.setdefault("website", default_website)
     data.setdefault("license", "LGPL-3")
     if isinstance(data.get("description"), str) and not data["description"].strip():
         data.pop("description")
-    for key, default in (("installable", True), ("application", False), ("auto_install", False)):
-        if key in data and data[key] is default and not (key == "installable" and keep_installable):
+    for key, default in (
+        ("installable", True),
+        ("application", False),
+        ("auto_install", False),
+    ):
+        if (
+            key in data
+            and data[key] is default
+            and not (key == "installable" and keep_installable)
+        ):
             data.pop(key)
     comments = {}
-    keys = [(k.lineno, k.value) for k in mapping.keys if isinstance(k, ast.Constant)]
+    keys = [
+        (k.lineno, k.end_lineno, k.value)
+        for k in mapping.keys
+        if isinstance(k, ast.Constant)
+    ]
     for token in tokenize.generate_tokens(io.StringIO(text).readline):
-        if token.type != tokenize.COMMENT or not (mapping.lineno <= token.start[0] <= mapping.end_lineno):
+        if token.type != tokenize.COMMENT or not (
+            mapping.lineno <= token.start[0] <= mapping.end_lineno
+        ):
             continue
         if any(phrase in token.string.lower() for phrase in SCAFFOLD_COMMENTS):
             continue
-        owner = next((key for line, key in reversed(keys) if line <= token.start[0]), None)
+        # An inline comment belongs to its key. A standalone comment between
+        # entries documents the following key and must move with it when the
+        # canonical order is applied.
+        same_line = next(
+            (key for line, end, key in keys if line <= token.start[0] <= end), None
+        )
+        owner = same_line or next(
+            (key for line, _end, key in keys if line > token.start[0]), None
+        )
         comments.setdefault(owner, []).append(token.string)
 
     def render(value, indent):
         pad = " " * indent
         if isinstance(value, (list, tuple)):
             opening, closing = ("[", "]") if isinstance(value, list) else ("(", ")")
-            return opening + ("\n" + "".join(pad + "    " + render(v, indent + 4) + ",\n" for v in value) + pad if value else "") + closing
+            return (
+                opening
+                + (
+                    "\n"
+                    + "".join(
+                        pad + "    " + render(v, indent + 4) + ",\n" for v in value
+                    )
+                    + pad
+                    if value
+                    else ""
+                )
+                + closing
+            )
         if isinstance(value, dict):
-            return "{" + ("\n" + "".join(pad + "    " + render(k, 0) + ": " + render(v, indent + 4) + ",\n" for k, v in value.items()) + pad if value else "") + "}"
+            return (
+                "{"
+                + (
+                    "\n"
+                    + "".join(
+                        pad
+                        + "    "
+                        + render(k, 0)
+                        + ": "
+                        + render(v, indent + 4)
+                        + ",\n"
+                        for k, v in value.items()
+                    )
+                    + pad
+                    if value
+                    else ""
+                )
+                + "}"
+            )
         if isinstance(value, str):
             return json.dumps(value, ensure_ascii=False)
         return repr(value)
 
-    ordered = [key for key in KEY_ORDER if key in data] + [key for key in data if key not in KEY_ORDER]
+    ordered = [key for key in KEY_ORDER if key in data] + [
+        key for key in data if key not in KEY_ORDER
+    ]
     lines = ["{"]
     lines.extend("    " + c for c in comments.pop(None, []))
     for key in ordered:
@@ -130,7 +210,9 @@ def rewrite_list(text, key, new_depends):
     # quotes of the item they replace, or of the first item
     sources, quotes = {}, []
     for elt in node.elts:
-        source = text[pos(elt.lineno, elt.col_offset):pos(elt.end_lineno, elt.end_col_offset)]
+        source = text[
+            pos(elt.lineno, elt.col_offset) : pos(elt.end_lineno, elt.end_col_offset)
+        ]
         if isinstance(elt, ast.Constant):
             sources[elt.value] = source
             quotes.append(source[0])
@@ -147,8 +229,8 @@ def rewrite_list(text, key, new_depends):
     if node.lineno != node.end_lineno and node.elts:
         # one item per line
         first = node.elts[0]
-        indent = text[pos(first.lineno, 0):pos(first.lineno, first.col_offset)]
-        closing_indent = text[pos(node.end_lineno, 0):end - 1]
+        indent = text[pos(first.lineno, 0) : pos(first.lineno, first.col_offset)]
+        closing_indent = text[pos(node.end_lineno, 0) : end - 1]
         body = "".join(f"\n{indent}{item}," for item in items)
         new = f"{opening}{body}\n{closing_indent}{closing}"
     else:
@@ -183,20 +265,31 @@ def apply_module_rules(depends, rules):
             continue
         index = result.index(old)
         if action == "removed":
-            messages.append((
-                "error",
-                f"Depends on '{old}', removed from Odoo: replace or drop this "
-                f"dependency by hand",
-            ))
+            messages.append(
+                (
+                    "error",
+                    f"Depends on '{old}', removed from Odoo: replace or drop this "
+                    f"dependency by hand",
+                )
+            )
             continue
         if action not in ("renamed", "merged", "oca_moved") or not new:
             continue
         if new in result:
             del result[index]
-            messages.append(("info", f"Dependency '{old}' removed ({action} into '{new}', already a dependency)"))
+            messages.append(
+                (
+                    "info",
+                    f"Dependency '{old}' removed ({action} into '{new}', already a dependency)",
+                )
+            )
         else:
             result[index] = new
-            messages.append(("info", f"Dependency '{old}' replaced by '{new}' ({action})"))
+            messages.append(
+                ("info", f"Dependency '{old}' replaced by '{new}' ({action})")
+            )
         if action == "oca_moved":
-            messages.append(("warning", f"Check that '{new}' is available on your system"))
+            messages.append(
+                ("warning", f"Check that '{new}' is available on your system")
+            )
     return result, messages

@@ -43,6 +43,9 @@ Gravité : 🔴 produit du code faux ou qui plante · 🟠 manque une détection
 | 23 | 🟠 | Surcharge accidentelle d'une méthode standard (même nom) non signalée | `stof_product` |
 | 24 | 🟡 | `_` utilisé sans être importé non signalé | `stof_product` |
 | 25 | 🟡 | Fichier déclaré deux fois dans `data` du manifest non signalé | `stof_product` |
+| 26 | 🔴 | Ancre `<header>` disparue des formulaires produit en 20 classée 🟠 « [incomplete] » au lieu de 🔴 | `stof_product_composition` (version du 07/10) |
+| 27 | 🟠 | `detailed_type` dans les expressions de vues (`invisible="detailed_type == 'service'"`) non converti ni signalé | `stof_product_composition` (version du 07/10) |
+| 28 | 🟠 | Manifest avec commentaires « scaffold » non mis au modèle (« Manifest could not be inspected ») | `stof_product_composition` (version du 07/10) |
 
 ---
 
@@ -293,6 +296,53 @@ virtual_free_qty = fields.Float(..., search='_search_virtual_free_qty')   # mét
 
 `views/product_brand.xml` apparaît deux fois dans `data`. Odoo l'indique (« imported twice ») et l'outil pourrait le dédoublonner.
 
+## 26. 🔴 `<header>` disparu, signalé comme simple avertissement
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — pour les formulaires produit
+> standard concernés, `<header position="before">` devient
+> `<sheet position="before">`. Le contenu et le format du bloc sont conservés.
+
+Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_composition` :
+`🟠 [view] [incomplete] <header> not found in the combined view product.product_normal_form_view`.
+
+- En 20, `product.product_template_form_view` commence directement par `<sheet>`. En 17, il avait un `<header>`.
+- Les deux vues `<header position="before">` **ne s'installent pas** : c'est un 🔴, pas un 🟠.
+- Correction appliquée chez Stof : `<sheet position="before">`, ce qui place l'alerte au même endroit, en haut du formulaire.
+- **Correction proposée** :
+  - quand l'ancre existe dans la vue source (17) et pas dans la cible (20), afficher un 🔴 même si l'arbre d'héritage est « incomplet » ;
+  - proposer `<sheet position="before">` comme remplacement de `<header position="before">` sur les formulaires sans `<header>`.
+
+## 27. 🟠 `detailed_type` dans les expressions de vues
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — les expressions des vues
+> `product.template` et `product.product` sont converties selon `service`,
+> `product` et `consu`. Un `detailed_type` restant est signalé en erreur.
+
+```xml
+<button name="action_section" ... invisible="detailed_type == 'service'">
+```
+
+- `detailed_type` a été supprimé en 18 (remplacé par `type`, avec `is_storable`). L'outil le gère en Python (`type=product`), mais pas dans les **attributs de vues** (`invisible`, `readonly`, `required`, `column_invisible`, `domain`).
+- À l'installation, l'expression référence un champ inexistant.
+- **Correction proposée** : réécrire `detailed_type == 'service'` → `type == 'service'`, `detailed_type == 'product'` → `is_storable`, `detailed_type == 'consu'` → `type == 'consu' and not is_storable`. Sinon, signaler 🔴 tout `detailed_type` restant dans une expression XML.
+
+## 28. 🟠 Manifest non mis au modèle
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — cas original reproduit. Les
+> commentaires scaffold sont retirés, les commentaires métier restent attachés
+> à leur clé et une éventuelle erreur de lecture indique désormais sa cause.
+
+```python
+    'description': """
+        Champs
+    """,
+    # Categories can be used to filter modules in modules listing
+```
+
+- Rapport : « Manifest could not be inspected ». Le manifest garde ses commentaires « scaffold », ses guillemets simples et ses listes sur une ligne.
+- Cause probable : les commentaires entre les clés, ou l'espace en fin de ligne dans la description.
+- **Correction proposée** : parser avec `ast` (les commentaires sont ignorés) et réécrire selon le modèle. Les commentaires « scaffold » connus peuvent être supprimés sans risque.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -309,6 +359,7 @@ virtual_free_qty = fields.Float(..., search='_search_virtual_free_qty')   # mét
 | `easi_filiere` | Traductions dans `l10n/`, f-string dans `_()` | 18, 19 |
 | `stof_sale` | `digits='Product Unit of Measure'` (encore) ; bloc « Date de livraison » en doublon avec la vue 20 | 15, 20 |
 | `stof_product` | `digits` (encore), `self._context`, `_` non importé, méthode de recherche inexistante, surcharge accidentelle de `_search_free_qty`, fichier en double dans le manifest | 15, 21 à 25 |
+| `stof_product_composition` | `<header>` disparu (signalé en 🟠 seulement), `detailed_type` dans les vues, manifest non mis au modèle | 26, 27, 28 |
 | `stof_wms_fields` | Dépendance `stof_customer_lead_time` manquante (`move.partner_id.customer_lead`, champ ajouté sur `res.partner` par ce module) | 3 |
 
 ---

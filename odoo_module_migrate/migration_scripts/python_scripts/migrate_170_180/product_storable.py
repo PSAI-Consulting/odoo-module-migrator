@@ -19,17 +19,41 @@ import re
 
 CHAIN = r"(?P<chain>[A-Za-z_][\w.]*\.(?:product_id|product_tmpl_id))"
 PY_RULES = [
-    (re.compile(CHAIN + r"\.(?:detailed_)?type\s*!=\s*(['\"])product\2"), r"not \g<chain>.is_storable"),
-    (re.compile(CHAIN + r"\.(?:detailed_)?type\s*==\s*(['\"])product\2"), r"\g<chain>.is_storable"),
     (
-        re.compile(r"""(?P<q>['"])(?P<f>product_id|product_tmpl_id)\.(?:detailed_)?type(?P=q)\s*,\s*(?P<q2>['"])=(?P=q2)\s*,\s*(?P<q3>['"])product(?P=q3)"""),
+        re.compile(CHAIN + r"\.(?:detailed_)?type\s*!=\s*(['\"])product\2"),
+        r"not \g<chain>.is_storable",
+    ),
+    (
+        re.compile(CHAIN + r"\.(?:detailed_)?type\s*==\s*(['\"])product\2"),
+        r"\g<chain>.is_storable",
+    ),
+    (
+        re.compile(
+            r"""(?P<q>['"])(?P<f>product_id|product_tmpl_id)\.(?:detailed_)?type(?P=q)\s*,\s*(?P<q2>['"])=(?P=q2)\s*,\s*(?P<q3>['"])product(?P=q3)"""
+        ),
         r"\g<q>\g<f>.is_storable\g<q>, \g<q2>=\g<q2>, True",
     ),
 ]
 # expressions inside views of product.template / product.product
 VIEW_RULES = [
-    (re.compile(r"\b(?:detailed_)?type\s*!=\s*'product'"), "not is_storable"),
-    (re.compile(r"\b(?:detailed_)?type\s*==\s*'product'"), "is_storable"),
+    (
+        re.compile(r"\b(?:detailed_)?type\s*!=\s*(?P<q>['\"]|&quot;)product(?P=q)"),
+        "not is_storable",
+    ),
+    (
+        re.compile(r"\b(?:detailed_)?type\s*==\s*(?P<q>['\"]|&quot;)product(?P=q)"),
+        "is_storable",
+    ),
+    # A storable product and a consumable now both have type='consu'.
+    (
+        re.compile(r"\bdetailed_type\s*==\s*(?P<q>['\"]|&quot;)consu(?P=q)"),
+        "type == 'consu' and not is_storable",
+    ),
+    (
+        re.compile(r"\bdetailed_type\s*!=\s*(?P<q>['\"]|&quot;)consu(?P=q)"),
+        "(type != 'consu' or is_storable)",
+    ),
+    (re.compile(r"\bdetailed_type\b"), "type"),
     (re.compile(r"""(['"])detailed_type\1"""), r"\1type\1"),
 ]
 PRODUCT_VIEW_RE = re.compile(
@@ -40,6 +64,7 @@ PRODUCT_VIEW_RE = re.compile(
 LEFTOVER_RE = re.compile(
     r"""\b(?:detailed_)?type['"]?\s*(?:[!=]=|,\s*['"]=['"]\s*,)\s*['"]product['"]"""
 )
+DETAILED_TYPE_RE = re.compile(r"\bdetailed_type\b")
 
 
 def _apply(rules, text):
@@ -67,3 +92,12 @@ def migrate_product_storable(**kwargs):
                 " is_storable (odoo 728d9f83f6d1), if this is a product. File %s:%s"
                 % (path, line)
             )
+        if path.suffix == ".xml":
+            for record in PRODUCT_VIEW_RE.finditer(new):
+                for match in DETAILED_TYPE_RE.finditer(record.group(0)):
+                    line = new.count("\n", 0, record.start() + match.start()) + 1
+                    logger.error(
+                        "[18] detailed_type no longer exists on products; replace it with type"
+                        " and is_storable according to the old value. File %s:%s"
+                        % (path, line)
+                    )

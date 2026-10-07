@@ -15,6 +15,9 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.view_a
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.invisible_fields import (
     check_invisible_fields,
 )
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.product_storable import (
+    migrate_product_storable,
+)
 from odoo_module_migrate.report import Entry, ModuleReport
 
 
@@ -222,6 +225,26 @@ def test_exact_xpath_and_targeted_repair(tmp_path):
     assert (mod / "view.xml").read_text() == text
 
 
+def test_product_header_anchor_moves_before_sheet(tmp_path):
+    mod = addon(
+        tmp_path,
+        "custom",
+        xml=view(
+            "form",
+            '<header position="before"><div class="alert">Review</div></header>',
+            "product.product_normal_form_view",
+        ),
+    )
+    args = dict(
+        module_path=mod, tools=tools, logger=logging.getLogger("odoo_module_migrate")
+    )
+    migrate_view_anchors(**args)
+    text = (mod / "view.xml").read_text()
+    assert '<sheet position="before"><div class="alert">Review</div></sheet>' in text
+    migrate_view_anchors(**args)
+    assert (mod / "view.xml").read_text() == text
+
+
 def test_unknown_dependency_and_risk(tmp_path):
     addon(tmp_path, "base", xml=view("form", "<form><group/></form>"))
     mod = addon(
@@ -351,6 +374,51 @@ def test_manifest_template_preserves_customer_values_and_load_order():
     assert "installable" not in data and "description" not in data
     assert "# Copyright Example" in result and "# business ordering matters" in result
     assert format_manifest(result) == result
+
+
+def test_manifest_scaffold_comments_removed_business_comments_preserved():
+    from odoo_module_migrate.manifest import format_manifest
+
+    original = """# -*- coding: utf-8 -*-
+{
+    'name': 'Composition',
+    # Categories can be used to filter modules in modules listing
+    # for the full list
+    'category': 'base',
+    # Explanation specific to this module
+    'depends': ['base', 'product'],  # Keep this inline note
+    # always loaded
+    'data': ['views/product.xml'],
+}
+"""
+    result = format_manifest(original)
+    assert "Categories can be used" not in result
+    assert "for the full list" not in result
+    assert "always loaded" not in result
+    assert "# Explanation specific to this module" in result
+    assert "# Keep this inline note" in result
+    assert result.index("# Explanation specific") < result.index('"depends"')
+    assert result.index("# Keep this inline") < result.index('"depends"')
+    assert format_manifest(result) == result
+
+
+def test_product_view_detailed_type_values_are_migrated(tmp_path):
+    xml = """<record id="form" model="ir.ui.view">
+<field name="model">product.template</field>
+<field name="arch" type="xml"><form>
+<button invisible="detailed_type == 'service'"/>
+<button invisible="detailed_type == &quot;consu&quot;"/>
+<button invisible="detailed_type != 'consu'"/>
+</form></field></record>"""
+    mod = addon(tmp_path, "custom", xml=xml)
+    migrate_product_storable(
+        module_path=mod, tools=tools, logger=logging.getLogger("odoo_module_migrate")
+    )
+    text = (mod / "view.xml").read_text()
+    assert "detailed_type" not in text
+    assert "type == 'service'" in text
+    assert "type == 'consu' and not is_storable" in text
+    assert "(type != 'consu' or is_storable)" in text
 
 
 def test_unused_import_cleanup_preserves_initializers_and_noqa(tmp_path):

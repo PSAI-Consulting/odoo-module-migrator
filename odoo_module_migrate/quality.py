@@ -184,9 +184,12 @@ def finish_module(
                 logger.info("Added Odoo's default license LGPL-3. File %s:1", manifest)
             if text != tools._read_content(manifest):
                 tools._write_content(manifest, text)
-        except (SyntaxError, ValueError, TypeError):
+        except (SyntaxError, ValueError, TypeError) as error:
             logger.warning(
-                "[quality] Manifest could not be inspected. File %s:1", manifest
+                "[quality] Manifest could not be inspected (%s: %s). File %s:1",
+                type(error).__name__,
+                error,
+                manifest,
             )
     for path in tools.get_files(module, (".py",)):
         text = tools._read_content(path)

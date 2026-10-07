@@ -28,6 +28,20 @@ def migrate_view_anchors(**kwargs):
             return original
         ref = parent.get("ref")
 
+        if ref in {
+            "product.product_normal_form_view",
+            "product.product_template_only_form_view",
+        }:
+            # These product forms lost their header in Odoo 20. Content placed
+            # immediately before it belongs immediately before the sheet now.
+            original = re.sub(
+                r"<header\b(?=[^>]*\bposition\s*=\s*(['\"])before\1)[^>]*>([\s\S]*?)</header>",
+                lambda m: re.sub(r"^<header", "<sheet", m[0]).replace(
+                    "</header>", "</sheet>"
+                ),
+                original,
+            )
+
         def tag(m):
             value = m[0]
             if ref == "sale.view_order_form" and value.startswith("<xpath"):
@@ -83,6 +97,6 @@ def migrate_view_anchors(**kwargs):
         if new != text:
             tools._write_content(path, new)
             logger.info(
-                "[20] Updated selectors against sale/account view sources (addons/sale/views/sale_order_views.xml; addons/account/views/account_move_views.xml). File %s",
+                "[20] Updated selectors against sale/account/product view sources. File %s",
                 path,
             )
