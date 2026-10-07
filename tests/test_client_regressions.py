@@ -12,6 +12,9 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.compat
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.view_anchors import (
     migrate_view_anchors,
 )
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.bank_account_fields import (
+    migrate_bank_account_fields,
+)
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.invisible_fields import (
     check_invisible_fields,
 )
@@ -243,6 +246,57 @@ def test_product_header_anchor_moves_before_sheet(tmp_path):
     assert '<sheet position="before"><div class="alert">Review</div></sheet>' in text
     migrate_view_anchors(**args)
     assert (mod / "view.xml").read_text() == text
+
+
+def test_bank_account_field_in_python_commands_and_qweb(tmp_path):
+    mod = addon(
+        tmp_path,
+        "custom",
+        code="""class Importer(Model):
+    _name = "x.importer"
+    def run(self, partner, values):
+        account = self.env["res.partner.bank"].search([("acc_number", "=", values.get("acc_number"))])
+        partner.write({"bank_ids": [(0, 0, {"acc_number": values.get("acc_number")})]})
+        return values.get("acc_number"), account
+""",
+        xml="""<template id="report">
+<span t-field="partner_bank.acc_number"/>
+<span t-esc="partner_bank.acc_number[:4] + supplier_bank.acc_number"/>
+</template>""",
+    )
+    args = dict(
+        module_path=mod, tools=tools, logger=logging.getLogger("odoo_module_migrate")
+    )
+    migrate_bank_account_fields(**args)
+    python = (mod / "models.py").read_text()
+    xml = (mod / "view.xml").read_text()
+    assert python.count('values.get("acc_number")') == 3
+    assert '("account_number", "=",' in python
+    assert '{"account_number": values.get' in python
+    assert xml.count(".account_number") == 3
+    assert ".acc_number" not in xml
+    before = tools.hash_tree(mod)
+    migrate_bank_account_fields(**args)
+    assert tools.hash_tree(mod) == before
+
+
+def test_ambiguous_acc_number_is_reported_not_rewritten(tmp_path, caplog):
+    mod = addon(
+        tmp_path,
+        "custom",
+        code="def value(record):\n    return record.acc_number\n",
+        xml='<span t-field="record.acc_number"/>',
+    )
+    with caplog.at_level(logging.ERROR, logger="odoo_module_migrate"):
+        migrate_bank_account_fields(
+            module_path=mod,
+            tools=tools,
+            logger=logging.getLogger("odoo_module_migrate"),
+        )
+    assert "record.acc_number" in (mod / "models.py").read_text()
+    assert 't-field="record.acc_number"' in (mod / "view.xml").read_text()
+    assert "Ambiguous .acc_number access" in caplog.text
+    assert "Ambiguous .acc_number in QWeb" in caplog.text
 
 
 def test_unknown_dependency_and_risk(tmp_path):

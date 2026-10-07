@@ -30,6 +30,12 @@ les méthodes de calcul. Les appels directs `model.<méthode>()` déclarés par 
 tâche planifiée ou une action serveur sont vérifiés contre le modèle cible et
 les dépendances du module ; un fournisseur hors dépendances est nommé.
 
+Le renommage Odoo 20 `res.partner.bank.acc_number` → `account_number` couvre
+aussi les dictionnaires de commandes x2many sous `bank_ids` et les expressions
+QWeb dont le récepteur est identifié comme une banque. Les clés homonymes des
+flux d'import restent intactes. Un accès `.acc_number` ambigu est laissé en
+place et signalé pour revue.
+
 ## Formatage
 
 ```shell

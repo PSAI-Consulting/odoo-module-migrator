@@ -381,6 +381,18 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Rapport : « Risque aucun », 0 TODO.
 - **Correction proposée** : pour chaque `ir.cron` (et `ir.actions.server`) avec `model.<méthode>()`, vérifier que la méthode existe dans le module ou ses dépendances ; sinon TODO 🟠, en précisant le module hors dépendances qui la définit.
 
+## 32. 🟠 Champ `res.partner.bank.acc_number` renommé en `account_number`
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — en complément de la règle
+> modèle/champ existante, les commandes de création sous `bank_ids` et les
+> expressions QWeb dont le récepteur désigne une banque sont converties. Les
+> accès attributaires ou QWeb encore ambigus sont signalés en erreur ; les clés
+> des flux externes restent inchangées.
+
+- Vu en testant `easi_account_payment_term_bank` (le module lui-même ne l'utilise pas) : `Invalid field 'acc_number' in 'res.partner.bank'`.
+- Renommé en saas-19.2, donc en 20. Utilisé par `edi_bi_generic_import` (Python, ×8) et `account_payment_partner` (OCA, rapport QWeb, ×3).
+- **Correction proposée** : renommer `acc_number` → `account_number` en Python, XML et QWeb quand le modèle est `res.partner.bank` (ou `partner_bank_id.` / `bank_ids.`) ; sinon TODO 🔴.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
