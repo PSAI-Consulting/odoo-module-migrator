@@ -1,5 +1,6 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 import pytest
+import logging
 
 from odoo_module_migrate import manifest as m
 
@@ -80,3 +81,31 @@ def test_bump_version_formats():
     assert bump("20.0.1.0.0", "20.0") == "20.0.1.0.0"
     assert bump("17.0.1", "20.0") == "20.0.1"
     assert bump("0.1", "20.0") == "20.0.0.1"
+
+
+def test_missing_version_is_inserted_and_concatenated_key_is_reported(tmp_path, caplog):
+    from odoo_module_migrate import quality, tools
+    from odoo_module_migrate.migration_scripts.python_scripts.migrate_allways.smart_bump_version import (
+        bump_revision,
+    )
+
+    path = tmp_path / "__manifest__.py"
+    path.write_text("{'name': 'X', 'category': 'Contact', 'Sales' 'version': '0.1'}")
+    unknown, concatenated = m.inspect_keys(path.read_text())
+    assert unknown == [("Salesversion", 1)]
+    assert concatenated == [("Salesversion", 1)]
+    caplog.set_level(logging.ERROR)
+    quality.finish_module(tmp_path, cosmetic=False)
+    assert "adjacent string literals" in caplog.text
+    assert caplog.text.count("Salesversion") == 1
+
+    bump_revision(
+        tools=tools,
+        manifest_path=path,
+        migration_steps=[{"target_version_name": "20.0"}],
+        logger=logging.getLogger("test"),
+    )
+
+    data = eval(path.read_text(), {"__builtins__": {}})  # noqa: S307 - literal fixture
+    assert data["version"] == "20.0.1.0.0"
+    assert data["Salesversion"] == "0.1"

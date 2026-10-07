@@ -468,6 +468,47 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `sale_order_block_duplicate_product`. `", ".join(_("line %(sequence)s…") for line in lines)` : `_()` cherche `self` dans le cadre appelant pour trouver la langue ; dans une expression génératrice, il ne le trouve pas et le texte reste en anglais, sans erreur.
 - **Correction proposée** : remplacer `_()` par `self.env._()` (Odoo 18+) dans les expressions génératrices, compréhensions et lambdas d'une méthode ; ou plus largement, partout où `self` est disponible.
 
+## 40. 🔴 Plantage à l'écriture du rapport (`KeyError: 'inconnu'`)
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — le risque `inconnu` est
+> ordonné explicitement dans le sommaire et une valeur inconnue future utilise
+> un ordre de repli au lieu de faire échouer la commande.
+
+- Module : `additional_salesperson`. Le rapport du module est écrit, puis `render_summary` plante : `order[r.risk]` ne connaît pas le risque « inconnu ». Code de sortie 1.
+- **Correction proposée** : ajouter « inconnu » à `order` (ou `order.get(r.risk, 99)`).
+
+## 41. 🟠 Manifest avec une virgule manquante : clé fantôme gardée
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — la version manquante est
+> réellement insérée avec la version cible. Les clés inconnues et les clés
+> composées de littéraux de chaînes adjacents sont signalées en erreur sans
+> supprimer d'éventuelles métadonnées personnalisées.
+
+- Module : `additional_salesperson`. `'category': 'Contact','Sales'` puis `'version': '0.1'` : Python lit `'Sales' 'version'` comme une seule clé `'Salesversion'`. Le module n'a donc **pas de version**.
+- Le migrator a écrit `"Salesversion": "20.0.0.1"` en fin de manifest, sans `version`.
+- **Correction proposée** : signaler en 🔴 toute clé de manifest inconnue d'Odoo ; si `version` manque, l'ajouter. Les chaînes collées (`'a' 'b'`) se repèrent avec `tokenize`.
+
+## 42. 🟠 Surcharge d'une méthode qui n'existe nulle part
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — une méthode
+> qui appelle son homonyme via `super()` est comparée aux parents indexés. Les
+> renommages historiques vérifiés sont extensibles par règles ; le cas CRM
+> propose `_prepare_customer_values` avec le commit Odoo source. Sinon, les
+> noms proches sont présentés comme pistes seulement.
+
+- Module : `additional_salesperson`. `crm.lead._create_lead_partner_data` n'existe plus depuis la 13 (remplacée par `_prepare_customer_values`) : la surcharge et son `super()` ne sont jamais appelés, sans erreur.
+- **Correction proposée** : pour chaque méthode surchargée qui appelle `super()`, vérifier qu'elle existe dans un parent de la cible ; sinon TODO 🟠, avec la méthode au nom le plus proche.
+
+## 43. 🟡 Faux positif sur un filtre remplacé par une vue fille
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — chaque sélecteur est aussi
+> évalué sur l'architecture propre de la vue héritée et de ses ancêtres. Les
+> vues sœurs restent utiles pour détecter les ajouts disponibles, mais leur
+> remplacement d'une ancre ne produit plus de faux positif.
+
+- Module : `additional_salesperson`. « filter[@name='my_sale_orders_filter'] not found in the combined view sale.view_sales_order_filter » : le filtre existe dans la vue de base ; seule la vue fille `sale_order_view_search_inherit_quotation` le remplace.
+- **Correction proposée** : valider l'ancre sur la vue héritée **seule** (plus les vues dont le module dépend), pas sur la vue combinée avec toutes les vues filles.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -490,6 +531,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_account_validation_automatic` | Tâche planifiée qui appelle une méthode absente du module (celle de l'OCR) ; manifest au modèle incomplet | 30, 31 |
 | `easi_purchase_minimum` | `product_uom` → `uom_id`, `_select_seller` renvoie un dict, `line.name` sans produit, `min_qty` par défaut à 1 | 34 à 37 |
 | `sale_order_block_duplicate_product` | `_()` dans une expression génératrice (texte non traduit) ; 3 faux positifs sur `id` | 38, 39 |
+| `additional_salesperson` | Clé `Salesversion` (virgule manquante), surcharge de `_create_lead_partner_data` inexistante ; plantage du rapport | 40 à 43 |
 
 ---
 

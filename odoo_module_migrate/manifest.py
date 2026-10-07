@@ -22,6 +22,19 @@ KEY_ORDER = (
     "demo",
     "assets",
 )
+# Public keys read by Odoo 20 plus common packaging metadata kept by Odoo/OCA.
+# Unknown keys are preserved, but reported because a missing comma can silently
+# create a plausible-looking key such as ``Salesversion``.
+KNOWN_KEYS = set(KEY_ORDER) | {
+    "application", "author", "auto_install", "bootstrap", "cloc_exclude",
+    "configurator_snippets", "configurator_snippets_addons", "contributors",
+    "countries", "currency", "development_status", "iap_paid_service", "icon",
+    "images", "installable",
+    "kpi_providers", "live_test_url", "maintainer", "new_page_templates",
+    "other_files", "post_init_hook", "post_load", "pre_init_hook", "price",
+    "sequence", "support", "test", "theme_customizations", "uninstall_hook",
+    "url", "web",
+}
 SCAFFOLD_COMMENTS = (
     "categories can be used",
     "for the full list",
@@ -166,6 +179,32 @@ def format_manifest(text, default_website="", keep_installable=False):
 
 class ManifestError(ValueError):
     pass
+
+
+def inspect_keys(text):
+    """Return ``(unknown keys, concatenated string key lines)``."""
+    tree = ast.parse(text)
+    mapping = tree.body[0].value
+    if not isinstance(mapping, ast.Dict):
+        raise ManifestError("Manifest must contain one literal dictionary")
+    positions = _Positions(text)
+    unknown, concatenated = [], []
+    for key in mapping.keys:
+        if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+            continue
+        if key.value not in KNOWN_KEYS:
+            unknown.append((key.value, key.lineno))
+        source = text[
+            positions(key.lineno, key.col_offset):
+            positions(key.end_lineno, key.end_col_offset)
+        ]
+        strings = [
+            token for token in tokenize.generate_tokens(io.StringIO(source).readline)
+            if token.type == tokenize.STRING
+        ]
+        if len(strings) > 1:
+            concatenated.append((key.value, key.lineno))
+    return unknown, concatenated
 
 
 class _Positions:

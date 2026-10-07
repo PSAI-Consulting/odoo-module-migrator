@@ -160,6 +160,22 @@ def finish_module(
         text = tools._read_content(manifest)
         try:
             data = ast.literal_eval(text)
+            from .manifest import inspect_keys
+
+            unknown_keys, concatenated_keys = inspect_keys(text)
+            concatenated_set = set(concatenated_keys)
+            for key, line in unknown_keys:
+                if (key, line) in concatenated_set:
+                    continue
+                logger.error(
+                    "[quality] Unknown manifest key %r; check for a typo or a missing comma. File %s:%s",
+                    key, manifest, line,
+                )
+            for key, line in concatenated_keys:
+                logger.error(
+                    "[quality] Manifest key %r is made of adjacent string literals; a comma is probably missing. File %s:%s",
+                    key, manifest, line,
+                )
             node = _find_key(text, "data")
             if isinstance(node, (ast.List, ast.Tuple)):
                 values = ast.literal_eval(node)

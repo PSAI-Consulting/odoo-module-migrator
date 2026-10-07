@@ -54,3 +54,11 @@ def test_no_todo_means_no_risk():
     rep = report.ModuleReport("m", pathlib.Path("."))
     assert rep.risk == "aucun"
     assert "Aucun." in report.render(rep, "18.0", "19.0")
+
+
+def test_summary_accepts_unknown_risk():
+    rep = report.ModuleReport("m", pathlib.Path("."))
+    rep.entries.append(report.Entry("WARNING", "[incomplete] missing dependency"))
+    assert rep.risk == "inconnu"
+    text = report.render_summary([rep], "17.0", "20.0")
+    assert "| [m](m.md) | inconnu |" in text

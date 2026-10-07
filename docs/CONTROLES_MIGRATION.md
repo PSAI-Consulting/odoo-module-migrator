@@ -29,6 +29,10 @@ configuration.
 | 36 | Avertissement sur `.name` des lignes de vente, achat et facture lorsque le code attend le nom du produit, en Python résolu et dans les expressions QWeb aux variables de ligne explicites. |
 | 38 | Les champs magiques de `BaseModel` (`id`, `display_name`, dates et utilisateurs de création/modification, `__last_update`) sont présents sur chaque modèle indexé et ne produisent pas de faux diagnostic de champ absent. |
 | 39 | À partir d'Odoo 18, `_()` devient `self.env._()` dans les générateurs, compréhensions et lambdas des méthodes de modèles afin de rendre la langue explicite. Les appels ordinaires restent inchangés. |
+| 40 | Le sommaire accepte le risque `inconnu` des analyses incomplètes et classe prudemment tout nouveau niveau imprévu au lieu d'échouer. |
+| 41 | Une version absente est insérée dans le manifest. Les clés étrangères au schéma Odoo et les clés formées par concaténation implicite de chaînes sont signalées, tout en conservant les métadonnées personnalisées pour revue. |
+| 42 | Une méthode qui appelle `super().<même méthode>()` est vérifiée contre les parents de la cible. Les renommages connus viennent de règles documentées ; à défaut, les noms proches sont seulement suggérés. |
+| 43 | Les ancres sont validées sur la vue héritée et ses ancêtres avant la composition avec les autres vues dépendantes. Une vue sœur qui remplace l'ancre n'invalide donc plus la vue en cours. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans

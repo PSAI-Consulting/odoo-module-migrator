@@ -646,6 +646,45 @@ def test_scheduled_action_method_must_come_from_dependencies(tmp_path):
     ]
 
 
+def test_super_call_to_removed_parent_method_is_reported(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "crm",
+        ["base"],
+        """class Lead(Model):
+    _name = 'crm.lead'
+    def _prepare_customer_values(self, partner_name, parent_id=False): pass
+""",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["crm"],
+        """class Lead(Model):
+    _inherit = 'crm.lead'
+    def _create_lead_partner_data(self, name, is_company, parent_id=False):
+        return super()._create_lead_partner_data(name, is_company, parent_id)
+""",
+    )
+
+    index = models.ModelIndex.build([tmp_path])
+    index.renamed_methods[("crm.lead", "_create_lead_partner_data")] = (
+        "_prepare_customer_values",
+        "odoo d8b6b35cb3c",
+    )
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index
+        )
+    ]
+
+    assert len(messages) == 1
+    assert "no parent method with that name exists" in messages[0]
+    assert "_prepare_customer_values" in messages[0]
+
+
 def test_product_view_detailed_type_values_are_migrated(tmp_path):
     xml = """<record id="form" model="ir.ui.view">
 <field name="model">product.template</field>

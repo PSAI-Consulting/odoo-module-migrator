@@ -1,6 +1,7 @@
 """Conservative, model-aware checks of Python code against indexed addons."""
 
 import ast
+import difflib
 from pathlib import Path
 import re
 
@@ -381,6 +382,58 @@ def check_module(module, index, target_version=20, precision_names=None):
                                     "error",
                                     f"{model}: {kw.arg}={kw.value.value!r} names a method absent from the model and its indexed parents",
                                 )
+                if isinstance(
+                    stmt, (ast.FunctionDef, ast.AsyncFunctionDef)
+                ):
+                    inherited_owners = set().union(
+                        *(
+                            index.method_owners.get((m, stmt.name), set())
+                            for m in ancestors
+                        )
+                    ) - {module.name}
+                    calls_same_super = any(
+                        isinstance(node, ast.Call)
+                        and isinstance(node.func, ast.Attribute)
+                        and node.func.attr == stmt.name
+                        and isinstance(node.func.value, ast.Call)
+                        and isinstance(node.func.value.func, ast.Name)
+                        and node.func.value.func.id == "super"
+                        for node in ast.walk(stmt)
+                    )
+                    if (
+                        calls_same_super
+                        and not inherited_owners
+                        and complete
+                        and ancestors <= index.defined
+                    ):
+                        inherited_methods = {
+                            method
+                            for ancestor in ancestors
+                            for method in index.methods.get(ancestor, set())
+                            if index.method_owners.get((ancestor, method), set())
+                            - {module.name}
+                        }
+                        known = index.renamed_methods.get((model, stmt.name))
+                        if known:
+                            target, source = known
+                            suggestion = f"; renamed to {target}"
+                            if source:
+                                suggestion += f" ({source})"
+                        else:
+                            close = difflib.get_close_matches(
+                                stmt.name, sorted(inherited_methods), n=3, cutoff=0.4
+                            )
+                            suggestion = (
+                                f"; possible target methods: {', '.join(close)}"
+                                if close
+                                else ""
+                            )
+                        yield (
+                            path,
+                            stmt.lineno,
+                            "warning",
+                            f"{model}.{stmt.name}() calls super(), but no parent method with that name exists in the indexed target{suggestion}",
+                        )
                 if isinstance(
                     stmt, (ast.FunctionDef, ast.AsyncFunctionDef)
                 ) and stmt.name.startswith(("_search_", "_compute_")):

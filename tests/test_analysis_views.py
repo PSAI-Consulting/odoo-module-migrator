@@ -105,6 +105,41 @@ def test_removed_menu_parent_suggests_destinations_from_moved_children(tmp_path)
     assert "Review the intended functional section" in messages[0]
 
 
+def test_parent_anchor_survives_even_if_sibling_view_replaces_it(tmp_path):
+    ref, custom = tmp_path / "odoo", tmp_path / "custom"
+    _module(ref, "base", [], "")
+    _module(
+        ref,
+        "sale",
+        ["base"],
+        _view(
+            "search",
+            None,
+            '<search><filter name="my_sale_orders_filter"/></search>',
+        )
+        + _view(
+            "search_child",
+            "sale.search",
+            '<filter name="my_sale_orders_filter" position="replace">'
+            '<filter name="quotation_filter"/></filter>',
+        ),
+    )
+    mod = _module(
+        custom,
+        "custom",
+        ["sale"],
+        _view(
+            "search_custom",
+            "sale.search",
+            '<filter name="my_sale_orders_filter" position="attributes">'
+            '<attribute name="domain">[]</attribute></filter>',
+        ),
+    )
+    index = views.ViewIndex.build([ref, custom])
+
+    assert not list(views.check_module(mod, index, {"base", "sale"}))
+
+
 def test_bare_tag_anchors(tmp_path):
     """<header position="inside"> and //header need such an element in the
     target view (product.product_normal_form_view has no <header> in 20.0,

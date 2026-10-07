@@ -1,0 +1,3 @@
+# Historical removals can still occur in modules whose manifest version was
+# bumped without adapting the code, so these diagnostics apply to every range.
+- [crm.lead, _create_lead_partner_data, _prepare_customer_values, "odoo d8b6b35cb3c '[REF] crm(_*): improve code of methods used in lead/opp convert/merge wizards'"]

@@ -347,6 +347,38 @@ class ViewIndex:
         extend(root)
         return result
 
+    def combined_parent(self, parent):
+        """Architecture of ``parent`` through its ancestors, without siblings.
+
+        A custom view is validated against its inherited view's own combined
+        architecture. Other children of the same root can replace an anchor in
+        the final rendering, but do not make that anchor invalid at install.
+        """
+        root = self.root(parent)
+        arch = self.arches.get(root)
+        if arch is None:
+            return None
+        if arch.tag == "template":
+            result = etree.Element("t")
+            result.extend(copy.deepcopy(list(arch)))
+        elif len(arch) == 1:
+            result = copy.deepcopy(arch[0])
+        else:
+            result = etree.Element("data")
+            result.extend(copy.deepcopy(list(arch)))
+        chain, current, seen = [], parent, set()
+        while current != root and current not in seen:
+            seen.add(current)
+            chain.append(current)
+            current = self.parent.get(current)
+            if current is None:
+                return None
+        for xid in reversed(chain):
+            for spec in _specs(self.arches.get(xid, ())):
+                if _apply_spec(result, spec) is not True:
+                    return None
+        return result
+
 
 def _locate(arch, spec):
     if spec.tag == "xpath":
@@ -513,6 +545,7 @@ def check_module(module, index, reference_modules, menu_parent_hints=()):
             # the view itself does not count: it holds the anchors
             available = index.available(index.root(parent), closure if complete else index.modules, exclude={xid})
             combined = index.combined(parent, closure if complete else index.modules, xid)
+            parent_combined = index.combined_parent(parent)
             partial_arch = (parent, frozenset(closure if complete else index.modules), xid) in index.incomplete_combinations
             reported = set()
             for node, key, added in _anchors(arch):
@@ -530,9 +563,17 @@ def check_module(module, index, reference_modules, menu_parent_hints=()):
             if combined is not None:
                 for node in _specs(arch):
                     valid = _apply_spec(combined, node)
-                    if valid is None:
+                    parent_valid = (
+                        _apply_spec(parent_combined, node)
+                        if parent_combined is not None
+                        else None
+                    )
+                    if valid is True or parent_valid is True:
+                        continue
+                    if valid is None or parent_valid is None:
                         yield path, node.sourceline, f"[incomplete] Selector or inheritance operation in {parent} requires runtime validation"
-                    if valid is False and id(node) not in reported:
+                        continue
+                    if valid is False and parent_valid is not True and id(node) not in reported:
                         selector = node.get("expr") if node.tag == "xpath" else etree.tostring(node, encoding="unicode").split(">")[0] + ">"
                         keys = [key for spec, key, _ in _anchors(arch) if spec is node]
                         if keys and any(key not in _keys(combined) for key in keys):

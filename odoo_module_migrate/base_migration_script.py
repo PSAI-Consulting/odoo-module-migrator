@@ -30,6 +30,7 @@ class BaseMigrationScript:
     _REMOVED_FIELDS: List[Tuple] = []
     _RENAMED_FIELDS: List[Tuple] = []
     _RENAMED_MODELS: List[Tuple] = []
+    _RENAMED_METHODS: List[Tuple] = []
     _REMOVED_MODELS: List[Tuple] = []
     _GLOBAL_FUNCTIONS: List[Any] = []  # [function_object]
     _FIELD_TYPES: List[Any] = []
@@ -54,6 +55,7 @@ class BaseMigrationScript:
         self._REMOVED_FIELDS = copy.deepcopy(getattr(self, '_REMOVED_FIELDS', []))
         self._RENAMED_FIELDS = copy.deepcopy(getattr(self, '_RENAMED_FIELDS', []))
         self._RENAMED_MODELS = copy.deepcopy(getattr(self, '_RENAMED_MODELS', []))
+        self._RENAMED_METHODS = copy.deepcopy(getattr(self, '_RENAMED_METHODS', []))
         self._REMOVED_MODELS = copy.deepcopy(getattr(self, '_REMOVED_MODELS', []))
         self._GLOBAL_FUNCTIONS = copy.deepcopy(getattr(self, '_GLOBAL_FUNCTIONS', []))
         self._FIELD_TYPES = copy.deepcopy(getattr(self, '_FIELD_TYPES', []))
@@ -114,6 +116,11 @@ class BaseMigrationScript:
             },
             # [(old.model.name, new.model.name, more_info)]
             "_RENAMED_MODELS": {
+                "type": TYPE_ARRAY,
+                "doc": [],
+            },
+            # [(model, old_method, new_method, source), ...]
+            "_RENAMED_METHODS": {
                 "type": TYPE_ARRAY,
                 "doc": [],
             },

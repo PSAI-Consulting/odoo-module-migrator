@@ -215,6 +215,7 @@ class ModelIndex:
         self.method_owners = collections.defaultdict(set)
         self.field_types = collections.defaultdict(set)
         self.company_fields = set()
+        self.renamed_methods = {}
 
     def _add_fields(self, path, owner=""):
         text = path.read_bytes()

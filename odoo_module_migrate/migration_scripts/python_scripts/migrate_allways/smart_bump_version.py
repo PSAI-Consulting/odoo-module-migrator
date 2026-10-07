@@ -1,4 +1,7 @@
+import ast
 import re
+
+from odoo_module_migrate.manifest import _find_key, _Positions
 
 
 def bump_revision(**kwargs):
@@ -19,29 +22,43 @@ def bump_revision(**kwargs):
     # Read current manifest content
     manifest_content = tools._read_content(manifest_path)
     
-    # Find current version using regex
-    version_pattern = r"['\"]version['\"][\s]*:[\s]*['\"]([^'\"]+)['\"]"
-    version_match = re.search(version_pattern, manifest_content)
-    
-    if not version_match:
+    version_node = _find_key(manifest_content, "version")
+    current_version = (
+        version_node.value
+        if isinstance(version_node, ast.Constant)
+        and isinstance(version_node.value, str)
+        else None
+    )
+
+    if current_version is None:
         # If no version found, set a default one
         new_version = f"{target_version_name}.1.0.0"
         kwargs["logger"].warning("No version found in manifest, setting default version: %s" % new_version)
+        try:
+            tree = ast.parse(manifest_content)
+            mapping = tree.body[0].value
+            if not isinstance(mapping, ast.Dict):
+                return
+            pos = _Positions(manifest_content)
+            offset = pos(mapping.lineno, mapping.col_offset) + 1
+            indent = " " * 4
+            insertion = f'\n{indent}"version": "{new_version}",'
+            new_content = manifest_content[:offset] + insertion + manifest_content[offset:]
+            tools._write_content(manifest_path, new_content)
+            kwargs["logger"].info("Added missing manifest version %s" % new_version)
+        except (SyntaxError, ValueError, IndexError, AttributeError):
+            return
+        return
     else:
-        current_version = version_match.group(1)
         new_version = _adapt_version_format(current_version, target_version_name)
-    
-    # Replace version in manifest using a safer approach
-    # Read current content and replace manually
+
     content = tools._read_content(manifest_path)
-    
-    # Pattern to match version line
-    version_pattern = r"(['\"])version(['\"])[\s]*:[\s]*(['\"])([^'\"]+)(['\"])"
-    
-    def replacement_func(match):
-        return match.group(1) + 'version' + match.group(2) + ': ' + match.group(3) + new_version + match.group(5)
-    
-    new_content = re.sub(version_pattern, replacement_func, content)
+    pos = _Positions(content)
+    start = pos(version_node.lineno, version_node.col_offset)
+    end = pos(version_node.end_lineno, version_node.end_col_offset)
+    source = content[start:end]
+    quote = source[0] if source[:1] in {"'", '"'} else '"'
+    new_content = content[:start] + quote + new_version + quote + content[end:]
     
     if new_content != content:
         tools._write_content(manifest_path, new_content)

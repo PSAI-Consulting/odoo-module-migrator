@@ -418,6 +418,12 @@ class Migration:
             reference + list(options.context_path) + [self._directory_path]
         )
         self._resolve_index_dependencies(model_index)
+        for script in self._migration_scripts:
+            for rule in script._RENAMED_METHODS:
+                if len(rule) >= 3:
+                    model_index.renamed_methods.setdefault(
+                        (rule[0], rule[1]), (rule[2], rule[3] if len(rule) > 3 else "")
+                    )
         from .analysis import python_checks
         for module_migration in self._module_migrations:
             # The model index resolves relational aliases that the standalone

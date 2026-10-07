@@ -194,8 +194,8 @@ def render_summary(reports, init_version, target_version):
         "| Module | Risque | TODO | Erreurs | Transformations |",
         "|---|---|---|---|---|",
     ]
-    order = {"élevé": 0, "moyen": 1, "faible": 2, "aucun": 3}
-    for report in sorted(reports, key=lambda r: (order[r.risk], r.name)):
+    order = {"élevé": 0, "inconnu": 1, "moyen": 2, "faible": 3, "aucun": 4}
+    for report in sorted(reports, key=lambda r: (order.get(r.risk, 99), r.name)):
         lines.append(
             f"| [{report.name}]({report.name}.md) | {report.risk} | {len(report.todos)} |"
             f" {len(report.errors)} | {len(report.transformations)} |"
