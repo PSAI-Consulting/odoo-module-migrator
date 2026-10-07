@@ -2,6 +2,9 @@
 
 import ast
 from pathlib import Path
+import re
+
+from lxml import etree
 
 from . import fields, models
 
@@ -282,3 +285,61 @@ def check_module(module, index, target_version=20, precision_names=None):
                             "warning",
                             f"Possible accidental override of {model}.{stmt.name} from {', '.join(sorted(owners))}: no super() call or reference to {field}; review manually",
                         )
+    yield from _check_action_methods(module, index, closure, complete)
+
+
+def _model_from_xmlid(reference, index):
+    """Resolve the conventional ``module.model_model_name`` external id."""
+    local = reference.partition(".")[2]
+    candidates = [
+        model for model in index.defined if "model_" + model.replace(".", "_") == local
+    ]
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def _check_action_methods(module, index, closure, complete):
+    """Check direct ``model.method()`` calls in cron/server action code."""
+    for path in module.rglob("*.xml"):
+        try:
+            root = etree.parse(str(path)).getroot()
+        except (OSError, etree.XMLSyntaxError):
+            continue
+        for record in root.xpath(
+            ".//record[@model='ir.cron' or @model='ir.actions.server']"
+        ):
+            model_field = record.find("field[@name='model_id']")
+            code_field = record.find("field[@name='code']")
+            if model_field is None or code_field is None:
+                continue
+            model = _model_from_xmlid(model_field.get("ref", ""), index)
+            code = "".join(code_field.itertext())
+            if not model or not code:
+                continue
+            ancestors = index.ancestors(model)
+            for match in re.finditer(r"\bmodel\.([A-Za-z_]\w*)\s*\(", code):
+                method = match.group(1)
+                owners = set().union(
+                    *(
+                        index.method_owners.get((parent, method), set())
+                        for parent in ancestors
+                    )
+                )
+                if owners & closure:
+                    continue
+                line = code_field.sourceline + code.count("\n", 0, match.start())
+                if owners:
+                    message = (
+                        f"Scheduled/server action calls {model}.{method}(), provided only by "
+                        f"{', '.join(sorted(owners))} outside this module's dependencies"
+                    )
+                elif complete and ancestors <= index.defined:
+                    message = (
+                        f"Scheduled/server action calls {model}.{method}(), but that method is "
+                        "absent from the module and its indexed dependencies"
+                    )
+                else:
+                    message = (
+                        f"[incomplete] Scheduled/server action calls {model}.{method}(); the method "
+                        "was not found in the available dependencies"
+                    )
+                yield path, line, "warning", message

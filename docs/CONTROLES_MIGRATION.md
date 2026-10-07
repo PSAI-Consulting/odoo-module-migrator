@@ -26,7 +26,9 @@ configuration.
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans
-les méthodes de calcul.
+les méthodes de calcul. Les appels directs `model.<méthode>()` déclarés par une
+tâche planifiée ou une action serveur sont vérifiés contre le modèle cible et
+les dépendances du module ; un fournisseur hors dépendances est nommé.
 
 ## Formatage
 
@@ -48,7 +50,10 @@ Le modèle est intégré au code, sans dépendance à Obsidian : ordre des clés
 listes une valeur par ligne, suppression des valeurs par défaut et des
 commentaires scaffold, `website` et `license` présents. Les valeurs métier,
 clés personnalisées, commentaires de l'auteur et descriptions non vides sont
-conservés. Un site absent reste vide, ou reçoit `--default-website URL`.
+conservés. Les descriptions multilignes gardent leurs triples guillemets. Les
+clés optionnelles vides (`summary`, `description`, `external_dependencies`,
+`demo`, `assets`) sont retirées. Un site absent reste vide, ou reçoit
+`--default-website URL`.
 `--no-manifest-format` conserve la présentation d'origine.
 
 L'ordre des fichiers `data` reste inchangé : certains fichiers de sécurité

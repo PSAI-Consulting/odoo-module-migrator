@@ -355,6 +355,32 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Conséquence : la mise au modèle (A20) est sautée et le rapport affiche un TODO trompeur.
 - **Correction proposée** : relire le manifest à la fin du pipeline avant de conclure ; si la lecture réussit, appliquer le modèle et retirer le TODO. Vérifier aussi que le retrait d'une ligne de liste ne laisse pas le fichier invalide.
 
+## 30. 🟡 Mise au modèle du manifest incomplète
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — les descriptions multilignes
+> restent en triples guillemets et les clés optionnelles vides `summary`,
+> `description`, `external_dependencies`, `demo` et `assets` sont retirées.
+
+- Module : `easi_account_validation_automatic`.
+- La `description` en bloc `"""…"""` est réécrite en chaîne avec `
+` : `"
+       Validation automatique…
+    "`. Moins lisible.
+- `"summary": ""` et `"external_dependencies": {}` vides sont gardés, alors que le modèle retire les clés vides.
+- **Correction proposée** : garder les chaînes multilignes en `"""…"""` ; retirer les clés vides (`summary`, `description`, `external_dependencies`, `demo`, `assets`).
+
+## 31. 🟠 Tâche planifiée qui appelle une méthode absente du module
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — les appels
+> directs `model.<méthode>()` des `ir.cron` et `ir.actions.server` sont vérifiés
+> contre le modèle et ses parents. Le rapport nomme les modules fournisseurs
+> présents hors des dépendances.
+
+- Module : `easi_account_validation_automatic`. La tâche appelle `model._cron_validate()`, mais le module définit `_cron_validate_invoices`.
+- `_cron_validate` existe sur `account.move` seulement via `account_invoice_extract` (Enterprise, OCR), qui n'est pas une dépendance : la tâche lancerait l'OCR.
+- Rapport : « Risque aucun », 0 TODO.
+- **Correction proposée** : pour chaque `ir.cron` (et `ir.actions.server`) avec `model.<méthode>()`, vérifier que la méthode existe dans le module ou ses dépendances ; sinon TODO 🟠, en précisant le module hors dépendances qui la définit.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -374,6 +400,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `stof_product_composition` | `<header>` disparu (signalé en 🟠 seulement), `detailed_type` dans les vues, manifest non mis au modèle | 26, 27, 28 |
 | `stof_wms_fields` | Dépendance `stof_customer_lead_time` manquante (`move.partner_id.customer_lead`, champ ajouté sur `res.partner` par ce module) | 3 |
 | `easi_oekotex` | Manifest jugé illisible à tort (état intermédiaire), donc non mis au modèle | 29 |
+| `easi_account_validation_automatic` | Tâche planifiée qui appelle une méthode absente du module (celle de l'OCR) ; manifest au modèle incomplet | 30, 31 |
 
 ---
 

@@ -402,6 +402,77 @@ def test_manifest_scaffold_comments_removed_business_comments_preserved():
     assert format_manifest(result) == result
 
 
+def test_manifest_multiline_description_and_empty_optional_keys():
+    from odoo_module_migrate.manifest import format_manifest
+
+    original = '''{
+    "name": "Validation",
+    "summary": "",
+    "description": """
+        Validate invoices automatically.
+        Keep failures in draft.
+    """,
+    "external_dependencies": {},
+    "demo": [],
+    "assets": {},
+    "depends": ["account"],
+}
+'''
+    result = format_manifest(original)
+    data = ast.literal_eval(result)
+    assert "summary" not in data
+    assert "external_dependencies" not in data
+    assert "demo" not in data
+    assert "assets" not in data
+    assert '"description": """\n' in result
+    assert "        Validate invoices automatically." in result
+    assert format_manifest(result) == result
+
+
+def test_scheduled_action_method_must_come_from_dependencies(tmp_path):
+    addon(
+        tmp_path,
+        "account",
+        code="class Move(Model):\n    _name = 'account.move'\n",
+    )
+    addon(
+        tmp_path,
+        "account_invoice_extract",
+        ["account"],
+        code="class Move(Model):\n    _inherit = 'account.move'\n    def _cron_validate(self): pass\n",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["account"],
+        code="class Move(Model):\n    _inherit = 'account.move'\n    def _cron_validate_invoices(self): pass\n",
+        xml="""<record id="cron" model="ir.cron">
+<field name="model_id" ref="account.model_account_move"/>
+<field name="code">model._cron_validate()</field>
+</record>""",
+    )
+    index = models.ModelIndex.build([tmp_path])
+    issues = list(python_checks.check_module(mod, index))
+    action_issues = [
+        issue for issue in issues if "Scheduled/server action" in issue[-1]
+    ]
+    assert len(action_issues) == 1
+    assert action_issues[0][2] == "warning"
+    assert "account_invoice_extract" in action_issues[0][-1]
+    assert "outside this module's dependencies" in action_issues[0][-1]
+
+    (mod / "view.xml").write_text(
+        (mod / "view.xml")
+        .read_text()
+        .replace("model._cron_validate()", "model._cron_validate_invoices()")
+    )
+    assert not [
+        issue
+        for issue in python_checks.check_module(mod, index)
+        if "Scheduled/server action" in issue[-1]
+    ]
+
+
 def test_product_view_detailed_type_values_are_migrated(tmp_path):
     xml = """<record id="form" model="ir.ui.view">
 <field name="model">product.template</field>

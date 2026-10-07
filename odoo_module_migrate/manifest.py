@@ -4,6 +4,7 @@
 import ast
 import io
 import json
+import textwrap
 import tokenize
 
 KEY_ORDER = (
@@ -53,8 +54,12 @@ def format_manifest(text, default_website="", keep_installable=False):
     )
     data.setdefault("website", default_website)
     data.setdefault("license", "LGPL-3")
-    if isinstance(data.get("description"), str) and not data["description"].strip():
-        data.pop("description")
+    for key in ("summary", "description"):
+        if isinstance(data.get(key), str) and not data[key].strip():
+            data.pop(key)
+    for key in ("external_dependencies", "demo", "assets"):
+        if key in data and not data[key]:
+            data.pop(key)
     for key, default in (
         ("installable", True),
         ("application", False),
@@ -131,6 +136,18 @@ def format_manifest(text, default_website="", keep_installable=False):
             return json.dumps(value, ensure_ascii=False)
         return repr(value)
 
+    def render_entry(key, value):
+        if (
+            key == "description"
+            and isinstance(value, str)
+            and "\n" in value
+            and '"""' not in value
+        ):
+            content = textwrap.dedent(value).strip()
+            body = "\n".join("        " + line for line in content.splitlines())
+            return f'"""\n{body}\n    """'
+        return render(value, 4)
+
     ordered = [key for key in KEY_ORDER if key in data] + [
         key for key in data if key not in KEY_ORDER
     ]
@@ -138,7 +155,9 @@ def format_manifest(text, default_website="", keep_installable=False):
     lines.extend("    " + c for c in comments.pop(None, []))
     for key in ordered:
         lines.extend("    " + c for c in comments.pop(key, []))
-        lines.append("    " + render(key, 0) + ": " + render(data[key], 4) + ",")
+        lines.append(
+            "    " + render(key, 0) + ": " + render_entry(key, data[key]) + ","
+        )
     for remaining in comments.values():
         lines.extend("    " + c for c in remaining)
     lines.append("}")
