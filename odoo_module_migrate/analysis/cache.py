@@ -13,7 +13,7 @@ import tempfile
 import sys
 import sqlite3
 
-SCHEMA = 4
+SCHEMA = 6
 
 
 @lru_cache(maxsize=4)

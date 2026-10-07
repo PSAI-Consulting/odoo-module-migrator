@@ -786,6 +786,82 @@ def test_compute_override_reports_changed_target_dependencies(tmp_path):
     assert "missing order_id.partner_id" in changed[0]
 
 
+def test_iterated_super_result_keeps_record_model_for_field_renames(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "account",
+        ["base"],
+        """class Move(Model):
+    _name = 'account.move'
+    invoice_line_ids = fields.One2many('account.move.line', 'move_id')
+class MoveLine(Model):
+    _name = 'account.move.line'
+    move_id = fields.Many2one('account.move')
+    sale_line_ids = fields.Many2many('sale.order.line')
+class SaleLine(Model):
+    _name = 'sale.order.line'
+    uom_id = fields.Many2one('uom.uom')
+""",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["account"],
+        """class Move(Model):
+    _inherit = 'account.move'
+    def _reverse_moves(self):
+        result = super()._reverse_moves()
+        for move in result:
+            for invoice_line in move.invoice_line_ids:
+                for sale_line in invoice_line.sale_line_ids:
+                    first = sale_line.product_uom
+                    second = sale_line.product_uom
+""",
+    )
+    index = models.ModelIndex.build([tmp_path])
+    changed = python_checks.apply_field_renames(
+        mod, index, {("sale.order.line", "product_uom"): "uom_id"}
+    )
+    assert len(changed) == 2
+    assert "sale_line.product_uom" not in (mod / "models.py").read_text()
+
+
+def test_replaced_standard_method_suggests_reachable_target_hooks(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "sale",
+        ["base"],
+        """class Line(Model):
+    _name = 'sale.order.line'
+    def _compute_qty_invoiced(self):
+        values = self._prepare_qty_invoiced()
+    def _prepare_qty_invoiced(self):
+        return [line for line in self if self._affects_qty_invoiced(line)]
+    def _affects_qty_invoiced(self, invoice_line):
+        return True
+""",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["sale"],
+        """class Line(Model):
+    _inherit = 'sale.order.line'
+    def _compute_qty_invoiced(self):
+        for line in self:
+            line.qty_invoiced = 0
+""",
+    )
+    index = models.ModelIndex.build([tmp_path])
+    messages = [issue[-1] for issue in python_checks.check_module(mod, index)]
+    hooks = [message for message in messages if "target extension hooks" in message]
+    assert len(hooks) == 1
+    assert "_prepare_qty_invoiced" in hooks[0]
+    assert "_affects_qty_invoiced" in hooks[0]
+
+
 def test_dynamic_document_records_and_base_default_get_are_checked(tmp_path):
     addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
     addon(

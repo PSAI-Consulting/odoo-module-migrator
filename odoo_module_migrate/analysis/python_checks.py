@@ -19,6 +19,7 @@ class Uses(ast.NodeVisitor):
         self.usages = []
         self.model_uses = []
         self.called = set()
+        self.super_results = {}
 
     def receiver(self, node):
         if isinstance(node, ast.Name):
@@ -65,16 +66,17 @@ class Uses(ast.NodeVisitor):
             return self.receiver(node.value)
 
     def visit_ClassDef(self, node):
-        saved = self.aliases
+        saved = self.aliases, self.super_results
         names = fields._class_models(node)
         self.aliases = {"self": names[0]} if names else {}
+        self.super_results = {}
         self.generic_visit(node)
-        self.aliases = saved
+        self.aliases, self.super_results = saved
 
     def visit_FunctionDef(self, node):
-        saved = self.aliases.copy()
+        saved = self.aliases.copy(), self.super_results.copy()
         self.generic_visit(node)
-        self.aliases = saved
+        self.aliases, self.super_results = saved
 
     visit_AsyncFunctionDef = visit_FunctionDef
 
@@ -85,15 +87,29 @@ class Uses(ast.NodeVisitor):
             self.visit(target)
             if isinstance(target, ast.Name):
                 self.aliases.pop(target.id, None)
+                self.super_results.pop(target.id, None)
                 if model:
                     self.aliases[target.id] = model
+                elif (
+                    isinstance(node.value, ast.Call)
+                    and isinstance(node.value.func, ast.Attribute)
+                    and isinstance(node.value.func.value, ast.Call)
+                    and isinstance(node.value.func.value.func, ast.Name)
+                    and node.value.func.value.func.id == "super"
+                    and self.aliases.get("self")
+                ):
+                    self.super_results[target.id] = self.aliases["self"]
 
     def visit_For(self, node):
         self.visit(node.iter)
         saved = self.aliases.copy()
         if isinstance(node.target, ast.Name):
             self.aliases.pop(node.target.id, None)
-            model = self.receiver(node.iter)
+            model = self.receiver(node.iter) or (
+                self.super_results.get(node.iter.id)
+                if isinstance(node.iter, ast.Name)
+                else None
+            )
             if model:
                 self.aliases[node.target.id] = model
         for stmt in node.body + node.orelse:
@@ -748,6 +764,42 @@ def check_module(module, index, target_version=20, precision_names=None):
                         and node.func.value.func.id == "super"
                         for node in ast.walk(stmt)
                     )
+                    calls_any_super = any(
+                        isinstance(node, ast.Call)
+                        and isinstance(node.func, ast.Name)
+                        and node.func.id == "super"
+                        for node in ast.walk(stmt)
+                    )
+                    if inherited_owners and not calls_any_super:
+                        target_calls = set()
+                        target_owners = inherited_owners & closure
+                        for ancestor in ancestors:
+                            for owner in target_owners:
+                                direct = index.method_calls.get(
+                                    (ancestor, stmt.name, owner), set()
+                                )
+                                target_calls.update(direct)
+                                for called in direct:
+                                    target_calls.update(
+                                        index.method_calls.get(
+                                            (ancestor, called, owner), set()
+                                        )
+                                    )
+                        hooks = sorted(
+                            name
+                            for name in target_calls
+                            if name.startswith(("_affects_", "_prepare_"))
+                            or name.startswith("_get_") and name.endswith("_domain")
+                        )
+                        if hooks:
+                            yield (
+                                path,
+                                stmt.lineno,
+                                "warning",
+                                f"{model}.{stmt.name} replaces the target implementation without"
+                                f" super(); target extension hooks are available: {', '.join(hooks)}."
+                                " Prefer the narrowest hook to preserve future standard behavior",
+                            )
                     if (
                         calls_same_super
                         and not inherited_owners

@@ -186,7 +186,7 @@ def source_summary(path):
                      parents=list(models - {m}), bases=[],
                      fields=dict.fromkeys(FIELD_ASSIGN_RE.findall(text)),
                      methods=re.findall(r"^    (?:async )?def (\w+)\(", text, re.M),
-                     method_depends={}, types={}, company=[])
+                     method_depends={}, method_calls={}, types={}, company=[])
                 for m in sorted(models)]
     result = []
     for cls in ast.walk(tree):
@@ -196,7 +196,7 @@ def source_summary(path):
         if not infos:
             continue
         model, name, parents, bases, fields, _ = infos[0]
-        kinds, company, method_depends = {}, [], {}
+        kinds, company, method_depends, method_calls = {}, [], {}, {}
         for stmt in cls.body:
             target = stmt.target if isinstance(stmt, ast.AnnAssign) else (
                 stmt.targets[0] if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 else None)
@@ -222,10 +222,24 @@ def source_summary(path):
                     )
                 if dependencies:
                     method_depends[stmt.name] = dependencies
+                calls = {
+                    node.func.attr
+                    for node in ast.walk(stmt)
+                    if isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and (
+                        node.func.attr.startswith(("_affects_", "_prepare_"))
+                        or node.func.attr.startswith("_get_")
+                        and node.func.attr.endswith("_domain")
+                    )
+                }
+                if calls:
+                    method_calls[stmt.name] = sorted(calls)
         result.append(dict(model=model, name=name, parents=sorted(parents), bases=sorted(bases),
                            fields=fields, methods=[s.name for s in cls.body
                            if isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))],
-                           method_depends=method_depends, types=kinds, company=company))
+                           method_depends=method_depends, method_calls=method_calls,
+                           types=kinds, company=company))
     return result
 
 
@@ -244,6 +258,7 @@ class ModelIndex:
         self.methods = collections.defaultdict(set)
         self.method_owners = collections.defaultdict(set)
         self.method_depends = collections.defaultdict(set)
+        self.method_calls = collections.defaultdict(set)
         self.field_types = collections.defaultdict(set)
         self.company_fields = set()
         self.renamed_methods = {}
@@ -304,6 +319,8 @@ class ModelIndex:
                 self.method_owners[model, method].add(owner)
             for method, dependencies in info.get("method_depends", {}).items():
                 self.method_depends[model, method, owner].update(dependencies)
+            for method, calls in info.get("method_calls", {}).items():
+                self.method_calls[model, method, owner].update(calls)
             self.methods[model].update(BASE_METHODS)
             for method in BASE_METHODS:
                 self.method_owners[model, method].add("base")

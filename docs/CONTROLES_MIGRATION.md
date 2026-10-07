@@ -43,6 +43,8 @@ configuration.
 | 53 | Les `@api.depends` des méthodes cibles sont indexés. Une surcharge `_compute_*` qui emploie un ensemble différent reçoit un avertissement détaillant les dépendances manquantes et supplémentaires. |
 | 54 | Pour les modules internes, les en-têtes légaux redondants sont retirés des fichiers Python et du manifest. Les modules reconnus comme OCA conservent leurs en-têtes. |
 | 55 | Après la suppression des imports inutilisés, Ruff corrige aussi les groupes d'imports et un nettoyage final normalise les blocs de lignes vides. |
+| 56 | Une variable issue de `super().<méthode>(...)` et ensuite itérée est traitée comme un recordset du modèle courant. Les chemins relationnels imbriqués et leurs renommages sont alors résolus. |
+| 57 | Pour une méthode cible remplacée sans `super()`, le rapport cherche les points d'extension `_prepare_*`, `_affects_*` et `_get_*_domain` appelés directement ou à un niveau, puis propose ces hooks pour limiter la surcharge. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans

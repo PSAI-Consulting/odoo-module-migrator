@@ -635,6 +635,30 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `easi_no_recompute_on_polines`. Après le retrait de `from itertools import groupby`, il reste 3 lignes vides entre l'en-tête et `from odoo import models` ; `ruff format` ne les réduit pas.
 - **Correction proposée** : après le retrait d'imports inutilisés, réduire les lignes vides consécutives du bloc d'imports (au plus 1 entre deux groupes), ou lancer `ruff check --select I --fix` avant `ruff format`.
 
+## 56. 🟠 `product_uom` non suivi sur la valeur de retour de `super()`
+
+> **État du migrateur (07/10/2026)** : ✅ Corrigé — une valeur affectée depuis
+> `super().<méthode>(...)` reçoit le modèle de `self` lorsqu'elle est ensuite
+> itérée. Les relations imbriquées sont alors résolues normalement. Le cas réel
+> produit six renommages sur six, sans supposer que tous les retours de `super()`
+> sont des recordsets.
+
+- Module : `stof_account_reversal`. 4 `sale_line.product_uom` renommés sur 6. Les 2 oubliés sont dans `_reverse_moves` : `retour = super()._reverse_moves(...)`, `for move in retour`, `for line in move.invoice_line_ids`, `for sale_line in line.sale_line_ids`.
+- La règle n° 52 suit maintenant les générateurs, mais pas le type de la valeur renvoyée par `super()` (même modèle que `self` ici).
+- **Correction proposée** : `x = super().<méthode>(...)` dans une classe `_inherit = M` → `x` est de type `M` quand la méthode standard renvoie `self`-like (ou par défaut) ; ou plus simple : dans un module qui dépend de `sale`, renommer `sale_line.product_uom` dès que la variable vient de `.sale_line_ids`.
+
+## 57. 🟡 Calcul standard remplacé : un point d'extension existe en 20
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — l'index cible
+> conserve les appels vers les hooks `_prepare_*`, `_affects_*` et
+> `_get_*_domain`. Lorsqu'une surcharge remplace le standard sans `super()`, le
+> rapport propose les hooks directs et ceux accessibles à un niveau. Pour ce
+> module : `_prepare_qty_invoiced` et `_affects_qty_invoiced`.
+
+- Module : `stof_account_reversal`. `_compute_qty_invoiced` réécrit en entier (copie du standard 17 + une condition). En 20, le standard passe par `_prepare_qty_invoiced()` et offre `_affects_qty_invoiced(invoice_line)`.
+- Le TODO 🟠 sur les `@api.depends` (n° 53) est bien sorti, mais sans proposer le point d'extension.
+- **Correction proposée** : quand une surcharge ne fait pas `super()` et que la cible a un « hook » documenté (`_affects_*`, `_prepare_*`, `_get_*_domain`…), le citer dans le TODO.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -662,6 +686,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_supplierinfo` | Assistant déclaré en `models.Model` (tout le reste signalé) | 47, 48 |
 | `easi_account` | Manifest non mis au modèle (fausse erreur de syntaxe), `precision_get('Product Unit of Measure')`, `+=` sur un champ HTML | 49 à 51 |
 | `easi_no_recompute_on_polines` | `product_uom` dans une expression génératrice ; dépendances du calcul standard changées ; en-têtes de licence gardés, lignes vides en trop | 52 à 55 |
+| `stof_account_reversal` | 2 `product_uom` sur 6 (valeur renvoyée par `super()`) ; point d'extension `_affects_qty_invoiced` non proposé | 56, 57 |
 
 ---
 
