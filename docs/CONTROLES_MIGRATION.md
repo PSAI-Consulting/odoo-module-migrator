@@ -33,8 +33,9 @@ configuration.
 | 41 | Une version absente est insérée dans le manifest. Les clés étrangères au schéma Odoo et les clés formées par concaténation implicite de chaînes sont signalées, tout en conservant les métadonnées personnalisées pour revue. |
 | 42, 44 | Une méthode qui appelle `super().<même méthode>()` est vérifiée contre les parents de la cible. Les méthodes publiques héritées de `BaseModel`, dont `default_get`, sont connues même sans dépôt Odoo. Les renommages connus viennent de règles documentées ; à défaut, les noms proches sont seulement suggérés. |
 | 43 | Les ancres sont validées sur la vue héritée et ses ancêtres avant la composition avec les autres vues dépendantes. Une vue sœur qui remplace l'ancre n'invalide donc plus la vue en cours. |
-| 45 | À partir de la 18, les relations `Many2one` et `Many2many` vers `documents.document` sans domaine portant sur `type` sont signalées : les dossiers sont désormais des documents de type `folder`. |
+| 45, 47 | À partir de la 18, les relations `Many2one` et `Many2many` vers `documents.document` utilisées comme sélecteurs dans une vue et sans domaine portant sur `type` sont signalées : les dossiers sont désormais des documents de type `folder`. Les sous-vues relationnelles et les domaines XML sont pris en compte ; les relations de stockage non affichées ne sont pas signalées. |
 | 46 | Les champs lus sur un recordset provenant de `env[<modèle dynamique>]` sont signalés avec la forme explicite `record["champ"]`. Pour `x2many += record`, le rapport conseille de collecter les identifiants puis d'utiliser une seule commande `Command.set`. |
+| 48 | Un modèle persistant explicitement nommé qui ressemble fortement à un assistant est signalé : action formulaire `target="new"` avec `default_get()`, ou relation `One2many` vers un modèle transitoire. Une fenêtre modale seule ne déclenche rien. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans

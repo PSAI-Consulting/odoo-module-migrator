@@ -700,12 +700,16 @@ def test_dynamic_document_records_and_base_default_get_are_checked(tmp_path):
         tmp_path,
         "custom",
         ["documents"],
-        """class DocumentWizard(TransientModel):
+        """class StoredDocuments(Model):
+    _name = 'stored.documents'
+    document_ids = fields.Many2many('documents.document')
+
+class OrdinaryModal(Model):
+    _name = 'ordinary.modal'
+
+class DocumentWizard(Model):
     _name = 'document.widgets'
-    file_id = fields.Many2one('documents.document')
-    safe_file_id = fields.Many2one(
-        'documents.document', domain=[('type', '!=', 'folder')]
-    )
+    line_ids = fields.One2many('document.widgets.line', 'wizard_id')
 
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
@@ -717,7 +721,29 @@ def test_dynamic_document_records_and_base_default_get_are_checked(tmp_path):
         for document in self:
             active.document_ids += document.file_id
         return values
+
+class DocumentWizardLine(TransientModel):
+    _name = 'document.widgets.line'
+    wizard_id = fields.Many2one('document.widgets')
+    file_id = fields.Many2one('documents.document')
+    safe_file_id = fields.Many2one(
+        'documents.document', domain=[('type', '!=', 'folder')]
+    )
 """,
+        xml="""<record id="wizard_view" model="ir.ui.view">
+<field name="model">document.widgets</field><field name="arch" type="xml">
+<form><field name="line_ids"><list>
+<field name="file_id"/><field name="safe_file_id"/>
+</list></field></form>
+</field></record>
+<record id="wizard_action" model="ir.actions.act_window">
+<field name="res_model">document.widgets</field>
+<field name="view_mode">form</field><field name="target">new</field>
+</record>
+<record id="ordinary_modal_action" model="ir.actions.act_window">
+<field name="res_model">ordinary.modal</field>
+<field name="view_mode">form</field><field name="target">new</field>
+</record>""",
     )
 
     index = models.ModelIndex.build([tmp_path])
@@ -732,10 +758,15 @@ def test_dynamic_document_records_and_base_default_get_are_checked(tmp_path):
     folder_messages = [message for message in messages if "folders are documents" in message]
     assert len(folder_messages) == 1
     assert folder_messages[0].startswith("file_id links")
+    assert not [message for message in messages if message.startswith("document_ids links")]
     assert len([message for message in messages if "dynamic field access" in message]) == 1
     updates = [message for message in messages if "Dynamic-model x2many update" in message]
     assert len(updates) == 1
     assert "Command.set(ids)" in updates[0]
+    wizard_messages = [message for message in messages if "looks like a wizard" in message]
+    assert len(wizard_messages) == 1
+    assert wizard_messages[0].startswith("document.widgets inherits")
+    assert "models.TransientModel" in wizard_messages[0]
 
 
 def test_product_view_detailed_type_values_are_migrated(tmp_path):

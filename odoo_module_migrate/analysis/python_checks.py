@@ -269,7 +269,43 @@ def _dynamic_model_issues(tree):
         yield node.lineno, message
 
 
-def _document_relation_issues(tree, target_version):
+def _document_selection_fields(module, index):
+    """Relations actually used as selectors in this module's view arches."""
+    visible, type_domains = set(), set()
+
+    def visit(node, model):
+        if node.tag == "field" and node.get("name"):
+            field = node.get("name")
+            key = (model, field)
+            visible.add(key)
+            domain = node.get("domain", "")
+            if re.search(r"\btype\b", domain):
+                type_domains.add(key)
+            comodels = index.comodels.get(key, set())
+            nested_model = next(iter(comodels)) if len(comodels) == 1 else model
+            for child in node:
+                visit(child, nested_model)
+            return
+        for child in node:
+            visit(child, model)
+
+    for path in Path(module).rglob("*.xml"):
+        try:
+            root = etree.parse(str(path)).getroot()
+        except (OSError, etree.XMLSyntaxError):
+            continue
+        for record in root.xpath(".//record[@model='ir.ui.view']"):
+            model_node = record.find("field[@name='model']")
+            arch = record.find("field[@name='arch']")
+            if model_node is None or arch is None or not (model_node.text or "").strip():
+                continue
+            model = model_node.text.strip()
+            for child in arch:
+                visit(child, model)
+    return visible, type_domains
+
+
+def _document_relation_issues(tree, target_version, visible, type_domains):
     if target_version < 18:
         return
     for cls in ast.walk(tree):
@@ -292,6 +328,10 @@ def _document_relation_issues(tree, target_version):
                 and call.args[0].value == "documents.document"
             ):
                 continue
+            model = fields._class_models(cls)[0]
+            key = (model, target.id)
+            if key not in visible or key in type_domains:
+                continue
             domain = next((kw.value for kw in call.keywords if kw.arg == "domain"), None)
             mentions_type = domain is not None and any(
                 isinstance(node, ast.Constant) and node.value == "type"
@@ -308,10 +348,95 @@ def _document_relation_issues(tree, target_version):
                 )
 
 
+def _modal_models(module):
+    result = set()
+    for path in Path(module).rglob("*.xml"):
+        try:
+            root = etree.parse(str(path)).getroot()
+        except (OSError, etree.XMLSyntaxError):
+            continue
+        for record in root.xpath(".//record[@model='ir.actions.act_window']"):
+            values = {
+                field.get("name"): "".join(field.itertext()).strip()
+                for field in record.findall("field")
+            }
+            if values.get("target") == "new" and "form" in values.get("view_mode", ""):
+                if values.get("res_model"):
+                    result.add(values["res_model"])
+    return result
+
+
+def _persistent_wizard_issues(tree, index, modal_models):
+    """Strong signs that a persistent model was intended to be a wizard."""
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef):
+            continue
+        models_in_class = fields._class_models(cls)
+        bases = {
+            base.attr if isinstance(base, ast.Attribute) else getattr(base, "id", "")
+            for base in cls.bases
+        }
+        if not models_in_class or "Model" not in bases or "TransientModel" in bases:
+            continue
+        model = models_in_class[0]
+        explicitly_named = any(
+            isinstance(stmt, ast.Assign)
+            and len(stmt.targets) == 1
+            and isinstance(stmt.targets[0], ast.Name)
+            and stmt.targets[0].id == "_name"
+            for stmt in cls.body
+        )
+        if not explicitly_named:
+            continue
+        transient_lines = []
+        for stmt in cls.body:
+            target = stmt.target if isinstance(stmt, ast.AnnAssign) else (
+                stmt.targets[0]
+                if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+                else None
+            )
+            call = getattr(stmt, "value", None)
+            if not (
+                isinstance(target, ast.Name)
+                and isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Attribute)
+                and call.func.attr == "One2many"
+            ):
+                continue
+            comodel = next(iter(index.comodels.get((model, target.id), set())), None)
+            if comodel in index.transient:
+                transient_lines.append((target.id, comodel))
+        methods = {
+            stmt.name
+            for stmt in cls.body
+            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
+        modal_default = model in modal_models and "default_get" in methods
+        if not transient_lines and not modal_default:
+            continue
+        evidence = []
+        if model in modal_models:
+            evidence.append("it is opened by a form action with target='new'")
+        if "default_get" in methods:
+            evidence.append("it defines default_get()")
+        if transient_lines:
+            relations = ", ".join(
+                f"{field} -> {comodel}" for field, comodel in transient_lines
+            )
+            evidence.append(f"it has One2many relations to transient models ({relations})")
+        yield (
+            cls.lineno,
+            f"{model} inherits models.Model but looks like a wizard: {'; '.join(evidence)};"
+            " use models.TransientModel unless these records must persist",
+        )
+
+
 def check_module(module, index, target_version=20, precision_names=None):
     module = Path(module)
     closure = index.closure(module.name)
     complete = not index.unknown_dependencies(module.name)
+    document_fields, document_type_domains = _document_selection_fields(module, index)
+    modal_models = _modal_models(module)
     for path in models._python_files(module):
         try:
             tree = ast.parse(path.read_bytes())
@@ -321,7 +446,11 @@ def check_module(module, index, target_version=20, precision_names=None):
         visitor.visit(tree)
         for line, message in _dynamic_model_issues(tree):
             yield path, line, "warning", message
-        for line, message in _document_relation_issues(tree, target_version) or ():
+        for line, message in _document_relation_issues(
+            tree, target_version, document_fields, document_type_domains
+        ) or ():
+            yield path, line, "warning", message
+        for line, message in _persistent_wizard_issues(tree, index, modal_models):
             yield path, line, "warning", message
         if precision_names:
             for node in ast.walk(tree):

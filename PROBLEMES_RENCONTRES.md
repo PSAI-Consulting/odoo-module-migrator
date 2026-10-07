@@ -541,6 +541,28 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `easi_document_on_line`. `self.env[context["active_model"]].browse(...).document_ids` et `rec.document_ids += doc.file_id` : avertissements PyCharm (« Unresolved attribute reference for class 'BaseModel' », signature x2many).
 - **Correction proposée** : sur un enregistrement issu de `self.env[<variable>]`, proposer `record["champ"]` ; remplacer `x2many += record` (dans une boucle, après `Command.clear()`) par un seul `[Command.set(ids)]`.
 
+## 47. 🟡 Domaine « sans dossier » proposé sur un champ de stockage
+
+> **État du migrateur (07/10/2026)** : ✅ Faux positif corrigé — le contrôle
+> suit maintenant les champs réellement utilisés dans les architectures de
+> vues, y compris le modèle des lignes d'une sous-vue `One2many`. Une relation
+> de stockage absente des vues n'est plus traitée comme un sélecteur. Un domaine
+> XML portant déjà sur `type` est également reconnu.
+
+- Module : `easi_supplierinfo`. Les nouvelles règles (n° 45, 46) ont bien vu l'assistant. Mais le TODO « add a domain excluding folders » sort aussi sur `product.supplierinfo.document_ids`, un `Many2many` de stockage qui n'est pas affiché pour choisir (le choix se fait dans l'assistant).
+- **Correction proposée** : ne signaler que les champs affichés dans une vue sans domaine, ou baisser en 🟡 quand le champ n'apparaît dans aucune vue.
+
+## 48. 🟡 Assistant déclaré en `models.Model`
+
+> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — un modèle
+> persistant explicitement nommé est signalé comme assistant probable lorsque
+> plusieurs indices concordent : action formulaire `target="new"`, méthode
+> `default_get()` et/ou `One2many` vers un modèle transitoire. Une simple action
+> modale sur un modèle persistant ne suffit pas à produire l'avertissement.
+
+- Module : `easi_supplierinfo`. `supplierinfo.document` (bouton `maj_line`, action `target="new"`, lignes en `TransientModel`) est un `models.Model` : une ligne reste en base à chaque ouverture.
+- **Correction proposée** : signaler en 🟡 un `models.Model` utilisé seulement par une action `target="new"`, ou qui a des `One2many` vers des `TransientModel`.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -565,6 +587,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `sale_order_block_duplicate_product` | `_()` dans une expression génératrice (texte non traduit) ; 3 faux positifs sur `id` | 38, 39 |
 | `additional_salesperson` | Clé `Salesversion` (virgule manquante), surcharge de `_create_lead_partner_data` inexistante ; plantage du rapport | 40 à 43 |
 | `easi_document_on_line` | Dossiers proposés comme documents (refonte de `documents` en 18) ; faux positif sur `default_get` ; champ lu sur un modèle dynamique | 44 à 46 |
+| `easi_supplierinfo` | Assistant déclaré en `models.Model` (tout le reste signalé) | 47, 48 |
 
 ---
 
