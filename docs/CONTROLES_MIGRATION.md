@@ -27,6 +27,8 @@ configuration.
 | 34 | Les renommages de champs sont aussi appliqués avec l'index relationnel cible : les alias imbriqués comme `order.order_line` → `line` sont résolus et les renommages successifs restent ordonnés. Un accès résolu à un champ absent de la cible devient une erreur. |
 | 35, 37 | Un appel à `_select_seller()` en 20 dont le résultat n'est pas extrait via `supplierinfo` est signalé car il renvoie désormais un dictionnaire. L'absence de `quantity` ajoute un avertissement sur le nouveau défaut `min_qty = 1`. |
 | 36 | Avertissement sur `.name` des lignes de vente, achat et facture lorsque le code attend le nom du produit, en Python résolu et dans les expressions QWeb aux variables de ligne explicites. |
+| 38 | Les champs magiques de `BaseModel` (`id`, `display_name`, dates et utilisateurs de création/modification, `__last_update`) sont présents sur chaque modèle indexé et ne produisent pas de faux diagnostic de champ absent. |
+| 39 | À partir d'Odoo 18, `_()` devient `self.env._()` dans les générateurs, compréhensions et lambdas des méthodes de modèles afin de rendre la langue explicite. Les appels ordinaires restent inchangés. |
 
 Les lectures du délai produit devenu dépendant de la société en 20 sont aussi
 signalées lorsque le modèle est identifié, ainsi que les appels `write()` dans

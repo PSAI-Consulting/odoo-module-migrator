@@ -272,6 +272,7 @@ def check_module(module, index, target_version=20, precision_names=None):
                 not owners
                 and complete
                 and ancestors <= index.defined
+                and field not in models.MAGIC_FIELDS
                 and not field.startswith("_")
                 and field not in {"env", "ids"}
                 and not any(field in index.methods.get(m, set()) for m in ancestors)

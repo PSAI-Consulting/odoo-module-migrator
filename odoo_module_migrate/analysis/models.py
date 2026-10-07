@@ -225,7 +225,7 @@ class ModelIndex:
             models = {m for decl in MODEL_DECL_RE.findall(text) for m in QUOTED_MODEL_RE.findall(decl)}
             names = set(FIELD_ASSIGN_RE.findall(text))
             for model in models:
-                self.fields[model] |= names
+                self.fields[model] |= names | MAGIC_FIELDS
                 self.parents[model] |= models - {model}
             # models defined by _name only can't be told apart: all are defined
             self.defined |= set(NAME_RE.findall(text))
@@ -238,7 +238,7 @@ class ModelIndex:
             if "AbstractModel" in bases:
                 self.abstract.add(model)
             self.parents[model] |= parents
-            self.fields[model] |= set(fields)
+            self.fields[model] |= set(fields) | MAGIC_FIELDS
             for field, comodel in fields.items():
                 if comodel:
                     self.comodels[(model, field)].add(comodel)
@@ -251,6 +251,7 @@ class ModelIndex:
                 self.models[owner].add(info["name"])
                 self.defined.add(info["name"])
             self.parents[model].update(info["parents"])
+            self.fields[model].update(MAGIC_FIELDS)
             if "TransientModel" in info["bases"]:
                 self.transient.add(model)
             if "AbstractModel" in info["bases"]:

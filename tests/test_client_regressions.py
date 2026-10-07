@@ -24,6 +24,9 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.invisi
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.product_storable import (
     migrate_product_storable,
 )
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.env_translation import (
+    migrate_env_translation,
+)
 from odoo_module_migrate.report import Entry, ModuleReport
 
 
@@ -187,6 +190,48 @@ class Uom(Model):
     ]
     assert not any("returns a dict" in message for message in corrected_messages)
     assert any("without quantity" in message for message in corrected_messages)
+
+
+def test_magic_fields_and_translation_in_implicit_scopes(tmp_path):
+    addon(
+        tmp_path,
+        "base",
+        code="""class Product(Model):
+    _name = 'product.product'
+    name = fields.Char()
+""",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["base"],
+        """from odoo import _, models
+class Product(models.Model):
+    _inherit = 'product.product'
+    def labels(self, lines):
+        regular = _('Regular')
+        generated = ', '.join(_('Line %s', line) for line in lines)
+        listed = [_('List %s', line) for line in lines]
+        delayed = lambda value: _('Lambda %s', value)
+        return self.id, self.display_name, self.create_date, regular, generated, listed, delayed
+""",
+    )
+    index = models.ModelIndex.build([tmp_path])
+    assert models.MAGIC_FIELDS <= index.fields["product.product"]
+    assert not [
+        message
+        for _path, _line, _level, message in python_checks.check_module(mod, index)
+        if "does not exist" in message
+    ]
+
+    migrate_env_translation(module_path=mod, tools=tools, logger=logging.getLogger("test"))
+
+    result = (mod / "models.py").read_text()
+    assert "regular = _('Regular')" in result
+    assert result.count("self.env._") == 3
+    assert "self.env._('Line %s', line)" in result
+    assert "self.env._('List %s', line)" in result
+    assert "self.env._('Lambda %s', value)" in result
 
 
 def test_unicode_semantics_and_raw_strings():

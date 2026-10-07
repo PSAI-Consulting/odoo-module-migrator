@@ -448,6 +448,26 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `easi_purchase_minimum`. `_select_seller()` sans `quantity` écarte les lignes fournisseur dont `min_qty` > 0 ; en 20, les nouvelles lignes ont `min_qty = 1`.
 - **Correction proposée** : signaler les `_select_seller(` sans `quantity` (🟠), et plus généralement comparer les `default=` des champs standard entre source et cible.
 
+## 38. 🔴 Faux positifs sur le champ `id`
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — les champs magiques communs
+> sont intégrés à chaque modèle indexé et le diagnostic Python réutilise la
+> même liste que le contrôle des chemins de champs.
+
+- Module : `sale_order_block_duplicate_product`. 3 TODO 🔴 « Field product.product.id does not exist in the indexed target » (`line.product_id.id`, `self.id`).
+- `id` (et les autres champs magiques : `display_name`, `create_date`, `write_date`, `create_uid`, `write_uid`) n'est pas dans l'index des champs. Le risque passe à « élevé » à tort.
+- **Correction proposée** : ajouter les champs magiques de `BaseModel` à tous les modèles indexés.
+
+## 39. 🟡 `_()` dans une expression génératrice ou une lambda
+
+> **État du migrateur (07/10/2026)** : ✅ Fait — dans les méthodes de modèles,
+> les appels `_()` situés dans un générateur, une compréhension ou une lambda
+> deviennent `self.env._()` au saut 17→18. Les appels ordinaires, les classes
+> non Odoo et les portées qui redéfinissent `self` sont conservés.
+
+- Module : `sale_order_block_duplicate_product`. `", ".join(_("line %(sequence)s…") for line in lines)` : `_()` cherche `self` dans le cadre appelant pour trouver la langue ; dans une expression génératrice, il ne le trouve pas et le texte reste en anglais, sans erreur.
+- **Correction proposée** : remplacer `_()` par `self.env._()` (Odoo 18+) dans les expressions génératrices, compréhensions et lambdas d'une méthode ; ou plus largement, partout où `self` est disponible.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -469,6 +489,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_oekotex` | Manifest jugé illisible à tort (état intermédiaire), donc non mis au modèle | 29 |
 | `easi_account_validation_automatic` | Tâche planifiée qui appelle une méthode absente du module (celle de l'OCR) ; manifest au modèle incomplet | 30, 31 |
 | `easi_purchase_minimum` | `product_uom` → `uom_id`, `_select_seller` renvoie un dict, `line.name` sans produit, `min_qty` par défaut à 1 | 34 à 37 |
+| `sale_order_block_duplicate_product` | `_()` dans une expression génératrice (texte non traduit) ; 3 faux positifs sur `id` | 38, 39 |
 
 ---
 
