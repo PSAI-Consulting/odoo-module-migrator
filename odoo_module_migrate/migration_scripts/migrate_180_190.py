@@ -5,7 +5,9 @@ import json
 import re
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
-
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.sql_constraint_messages import (
+    _unwrap_translated_constraint_messages,
+)
 
 IMPORT_EXPRESSION_RE = re.compile(r"^([ \t]*)from odoo\.osv import expression[ \t]*$", re.M)
 IMPORT_AND_OR_RE = re.compile(
@@ -101,11 +103,26 @@ def migrate_expression_to_domain(
 def upgrade_sql_constraints(
     logger, module_path, module_name, manifest_path, migration_steps, tools
 ):
+    # The official converter and this fallback both use literal_eval(). Make
+    # conventional translated messages literal first; models.Constraint
+    # translates its message itself.
+    files_to_process = tools.get_files(module_path, (".py",))
+    for file in files_to_process:
+        content = tools._read_content(file)
+        if "_sql_constraints" not in content or "_(" not in content:
+            continue
+        new_content = _unwrap_translated_constraint_messages(content)
+        if new_content != content:
+            tools._write_content(file, new_content)
+            logger.info(
+                "[19] Unwrapped translated _sql_constraints messages before "
+                "conversion. File %s",
+                file,
+            )
     # Odoo method in which we migrate all occurrences of _sql_constraints
     if tools.RUN_CONTEXT.get("upgrade_code"):
         # Odoo's official 18.1-00-sql-constraint.py (ast based) will do it
         return
-    files_to_process = tools.get_files(module_path, (".py",))
     # Regex pattern explanation:
     # (?m) - Multiline mode, ^ matches start of each line
     # ^(?![ \t]*#) - Negative lookahead: exclude lines starting with # (comments)

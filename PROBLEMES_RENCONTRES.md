@@ -984,6 +984,37 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `easi_sale_late`. La règle « (copy) » (#88) ajoute `copy=True` au `name` de vues SQL en lecture seule : inutile, jamais copiées. Par ailleurs, `stock_move.is_done` (supprimé en 20) utilisé dans une requête SQL brute n'est pas signalé.
 - **Correction proposée** : ignorer les modèles `_auto = False` pour #88 ; signaler en 🟠 les colonnes supprimées connues (`is_done`…) dans les chaînes SQL des `_table_query` / `init()`.
 
+## 90. 🔴 Script Odoo `18.1-00-sql-constraint.py` en échec si le message est `_("…")`
+
+> **État du migrateur (08/10/2026)** : ✅ Les appels `_("texte")` utilisés
+> comme message d'un `_sql_constraints` sont remplacés de façon structurée par
+> le littéral équivalent avant la conversion. Cela fonctionne avec le script
+> officiel embarqué comme avec le convertisseur de secours ; les autres appels
+> de traduction restent inchangés.
+
+- Module : `easi_transport`. `ValueError: malformed node or string` (`ast.literal_eval` sur l'appel `_()`) : les `_sql_constraints` restent tels quels, ignorés en 20 → contraintes d'unicité perdues sans erreur.
+- **Correction proposée** : avant le script, remplacer `_("texte")` par `"texte"` dans les `_sql_constraints` (le message de `models.Constraint` est traduit par Odoo) ; à défaut, laisser le TODO 🔴 (déjà fait).
+
+## 91. 🔴 Bouton `toggle_active` non signalé (méthode supprimée en 20)
+
+> **État du migrateur (08/10/2026)** : ✅ Dans une vue, un bouton visible quand
+> `active` est vrai devient `action_archive` et celui visible quand `active` est
+> faux devient `action_unarchive`. Une visibilité plus complexe reste inchangée
+> et produit une erreur à traiter. Les appels Python résolus sont couverts par
+> le contrôle des méthodes absentes de l'index cible.
+
+- Module : `stof_accords_galec`. `<button name="toggle_active" type="object">` (Archiver / Restaurer) : `toggle_active` supprimé (commit Odoo `37ba3b162e7d`) → erreur au clic. Aucun TODO.
+- **Correction proposée** : bouton visible si `not active` / `active` → `action_archive` / `action_unarchive` ; appels Python `.toggle_active()` → signaler en 🔴 (le sens dépend de l'état).
+
+## 92. 🟡 Manifest : `summary` non nettoyé, `description` du modèle `scaffold` gardée
+
+> **État du migrateur (08/10/2026)** : ✅ Le `summary` est ramené à une ligne
+> avec des espaces normalisés. La description exacte générée par le scaffold
+> Odoo est retirée ; les descriptions réelles du module restent conservées.
+
+- Modules : `stof_purchase_owner`, `stof_accords_galec`. `summary` réécrit en `"\n        Add purchase owner."` (retours à la ligne et espaces gardés) ; `description` « Long description of module's purpose » (texte du `scaffold`) conservée.
+- **Correction proposée** : `strip()` + espaces internes réduits pour `summary` ; retirer `description` si elle vaut le texte du `scaffold` (comme le `summary` vide).
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1023,6 +1054,9 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `edi_generic` | `cr.clear()`, `"type": "tree"` dans une vue créée par code, appels `name_get()`, champ inexistant dans un calcul ; faux positifs `get_external_id` ; libellé « Tree » → « List » | 84 à 87 |
 | `easi_mrp` | `name` copié avec « (copy) » en 20, non signalé | 88 |
 | `easi_sale_late` | `copy=True` sur vue SQL, `is_done` en SQL brut non signalé | 89 |
+| `easi_transport` | script `sql-constraint` en échec sur `_()` | 90 |
+| `stof_accords_galec` | `toggle_active` non signalé | 91 |
+| `stof_purchase_owner` | `summary` / `description` du manifest non nettoyés | 92 |
 
 ---
 

@@ -43,6 +43,7 @@ SCAFFOLD_COMMENTS = (
     "only loaded in demonstration",
     "check https://github.com/odoo/odoo",
 )
+SCAFFOLD_DESCRIPTIONS = {"long description of module's purpose"}
 
 
 def format_manifest(
@@ -71,9 +72,17 @@ def format_manifest(
     if default_author and not data.get("author"):
         data["author"] = default_author
     data.setdefault("license", "LGPL-3")
+    if isinstance(data.get("summary"), str):
+        # A summary is rendered on one line by Odoo. Scaffold manifests often
+        # spell it as a triple-quoted indented value.
+        data["summary"] = " ".join(data["summary"].split())
     for key in ("summary", "description"):
         if isinstance(data.get(key), str) and not data[key].strip():
             data.pop(key)
+    if isinstance(data.get("description"), str):
+        normalized_description = " ".join(data["description"].split()).casefold()
+        if normalized_description in SCAFFOLD_DESCRIPTIONS:
+            data.pop("description")
     for key in ("external_dependencies", "data", "demo", "assets"):
         value = data.get(key)
         if isinstance(value, dict):

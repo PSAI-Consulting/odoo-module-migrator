@@ -14,6 +14,9 @@
   suffixe automatique « (copy) » d'Odoo 20.
 - Contrôle des champs supprimés dans le SQL brut et exclusion des vues SQL de
   la règle de copie des noms.
+- Conversion fiable des `_sql_constraints` dont le message utilise `_()`,
+  migration des boutons `toggle_active` d'Odoo 20 et nettoyage des textes
+  scaffold du manifeste.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

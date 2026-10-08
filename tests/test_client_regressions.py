@@ -6,8 +6,12 @@ import logging
 from odoo_module_migrate import quality, tools
 from odoo_module_migrate.analysis import models, python_checks, views
 from odoo_module_migrate.migration import Migration
+from odoo_module_migrate.migration_scripts.migrate_180_190 import upgrade_sql_constraints
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.compatibility import (
     migrate_compatibility,
+)
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.sql_constraint_messages import (
+    _unwrap_translated_constraint_messages,
 )
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.view_anchors import (
     migrate_view_anchors,
@@ -20,6 +24,9 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.bank_a
 )
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.line_descriptions import (
     check_line_descriptions,
+)
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.toggle_active import (
+    _migrate_toggle_active_buttons,
 )
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.invisible_fields import (
     check_invisible_fields,
@@ -1687,3 +1694,115 @@ def test_default_author_fills_only_missing_author(tmp_path, caplog):
     quality.finish_module(mod, manifest_layout=True, default_author="Team")
     data = ast.literal_eval((mod / "__manifest__.py").read_text(encoding="utf-8"))
     assert data["author"] == "Original"
+
+
+def test_manifest_normalizes_summary_and_removes_scaffold_description():
+    from odoo_module_migrate.manifest import format_manifest
+
+    original = '''{
+    "name": "Purchase Owner",
+    "summary": """
+        Add   purchase
+        owner.""",
+    "description": """
+        Long description of module's purpose
+    """,
+}
+'''
+    result = format_manifest(original)
+    data = ast.literal_eval(result)
+    assert data["summary"] == "Add purchase owner."
+    assert "description" not in data
+    assert format_manifest(result) == result
+
+
+def test_translated_sql_constraint_message_is_prepared_for_official_script():
+    source = '''from odoo import _, models
+
+class Carrier(models.Model):
+    _sql_constraints = [
+        ("unique_code", "unique(code)", _("Le code doit être unique.")),
+        ("positive", "CHECK(value > 0)", "Positive value required"),
+    ]
+
+def unrelated():
+    return _("Keep this translation wrapper")
+'''
+    result = _unwrap_translated_constraint_messages(source)
+    assignment = next(
+        node
+        for node in ast.walk(ast.parse(result))
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "_sql_constraints"
+            for target in node.targets
+        )
+    )
+    assert ast.literal_eval(assignment.value.elts[0]) == (
+        "unique_code",
+        "unique(code)",
+        "Le code doit être unique.",
+    )
+    assert '_("Keep this translation wrapper")' in result
+
+
+def test_translated_sql_constraint_message_works_with_fallback(tmp_path, monkeypatch):
+    source = '''from odoo import _, models
+class Carrier(models.Model):
+    _sql_constraints = [
+        ("unique_code", "unique(code)", _("Le code doit être unique.")),
+    ]
+'''
+    path = tmp_path / "models.py"
+    path.write_text(source, encoding="utf-8")
+    monkeypatch.setitem(tools.RUN_CONTEXT, "upgrade_code", None)
+    upgrade_sql_constraints(
+        logging.getLogger("test"),
+        tmp_path,
+        "custom",
+        tmp_path / "__manifest__.py",
+        [],
+        tools,
+    )
+    result = path.read_text(encoding="utf-8")
+    assert "_sql_constraints" not in result
+    assert "_unique_code = models.Constraint(" in result
+    assert "Le code doit être unique." in result
+
+
+def test_toggle_active_view_buttons_are_migrated_only_when_direction_is_proven():
+    source = '''<odoo><record id="view" model="ir.ui.view"><field name="arch" type="xml">
+<form><header>
+    <button type="object" name="toggle_active" invisible="not active" string="Archive"/>
+    <button name="toggle_active" type="object" invisible="active" string="Restore"/>
+    <button name="toggle_active" type="object" invisible="state != 'draft'"/>
+</header></form>
+</field></record></odoo>'''
+    result, unresolved = _migrate_toggle_active_buttons(source)
+    assert 'name="action_archive"' in result
+    assert 'name="action_unarchive"' in result
+    assert result.count('name="toggle_active"') == 1
+    assert len(unresolved) == 1
+
+
+def test_removed_toggle_active_python_call_is_reported(tmp_path):
+    addon(tmp_path, "base", code='class Base(Model):\n    _name = "base"\n')
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["base"],
+        code='''class Item(Model):
+    _name = "custom.item"
+
+    def archive_or_restore(self):
+        self.toggle_active()
+''',
+    )
+    index = models.ModelIndex.build([tmp_path])
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index, target_version=20
+        )
+    ]
+    assert any("toggle_active() does not exist" in message for message in messages)

@@ -65,6 +65,9 @@ configuration.
 | 86 | `get_external_id` et `_get_external_ids` sont des méthodes de base connues. Un `name_get()[0]` dont le récepteur est prouvé singleton devient le couple `(id, display_name)`. |
 | 87 | La migration tree→list ne modifie plus les libellés « Tree View » ni les textes traduisibles ; elle reste limitée aux structures techniques. |
 | 88, 89 | Pour préserver le comportement antérieur au commit Odoo 20 `b84ffce402d3`, les champs `Char` simples `name`/`x_name` d'un modèle custom reçoivent `copy=True`. Les champs calculés, liés, dépendants de la société, les traductions callable et les modèles SQL `_auto = False` ne sont pas modifiés. Dans les requêtes SQL, les références qualifiées aux champs supprimés connus sont signalées à partir des règles de la migration courante. |
+| 90 | Avant le convertisseur officiel ou de secours, le wrapper de traduction d'un message littéral de `_sql_constraints` est retiré de façon structurée. `models.Constraint` assure ensuite la traduction ; les autres appels `_()` restent intacts. |
+| 91 | En Odoo 20, les boutons de vue `toggle_active` deviennent `action_archive` quand `invisible="not active"` et `action_unarchive` quand `invisible="active"`. Toute autre visibilité reste inchangée et est signalée. Les appels Python résolus sont contrôlés contre les méthodes de la cible. |
+| 92 | Les espaces et retours à la ligne d'un `summary` de manifeste sont réduits pour obtenir une ligne. La description factice exacte du scaffold Odoo est retirée, sans supprimer une description métier. |
 
 Les dépendances Python manquantes sont ajoutées automatiquement au manifeste
 quand l'index des addons est complet, qu'un seul fournisseur existe et que cet
