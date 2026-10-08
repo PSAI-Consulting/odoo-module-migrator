@@ -969,10 +969,20 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 > modèle explicitement nommé, un `fields.Char` simple appelé `name` ou `x_name`
 > reçoit `copy=True` s'il ne définit pas déjà sa politique de copie. Les champs
 > calculés, liés, dépendants de la société ou à traduction callable restent
-> inchangés.
+> inchangés, ainsi que les modèles SQL `_auto = False`.
 
 - Module : `easi_mrp` (et `edi_generic`, `edi_platform_transform` déjà migrés). Odoo 20 (commit `b84ffce402d3`) ajoute `copy=mark_as_copy("name")` à tout `fields.Char` nommé `name`/`x_name` sans `copy=` ni traduction. Les `copy()` et les lignes copiées par un One2many `copy=True` reçoivent « (copy) » : noms techniques modifiés sans erreur.
 - **Correction proposée** : signaler en 🟠 les `name = fields.Char(...)` sans `copy=` dont le modèle est copié (cible d'un One2many `copy=True`, ou `.copy(` sur le modèle) ; proposer `copy=True` pour garder le comportement 17.
+
+## 89. 🟡 `copy=True` ajouté sur les modèles SQL (`_auto = False`) / `is_done` non signalé
+
+> **État du migrateur (08/10/2026)** : ✅ Corrigé — les modèles `_auto = False`
+> sont exclus de la règle #88. Les chaînes SQL sont rapprochées des règles de
+> champs supprimés chargées pour la migration ; une colonne qualifiée par sa
+> table ou son alias produit une erreur avec la provenance de la règle.
+
+- Module : `easi_sale_late`. La règle « (copy) » (#88) ajoute `copy=True` au `name` de vues SQL en lecture seule : inutile, jamais copiées. Par ailleurs, `stock_move.is_done` (supprimé en 20) utilisé dans une requête SQL brute n'est pas signalé.
+- **Correction proposée** : ignorer les modèles `_auto = False` pour #88 ; signaler en 🟠 les colonnes supprimées connues (`is_done`…) dans les chaînes SQL des `_table_query` / `init()`.
 
 ---
 
@@ -1012,6 +1022,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `edi_worker_enable_webservice` | `file.file.decode()` : base64 en 17, texte brut en 20 (contenu envoyé modifié) | 83 |
 | `edi_generic` | `cr.clear()`, `"type": "tree"` dans une vue créée par code, appels `name_get()`, champ inexistant dans un calcul ; faux positifs `get_external_id` ; libellé « Tree » → « List » | 84 à 87 |
 | `easi_mrp` | `name` copié avec « (copy) » en 20, non signalé | 88 |
+| `easi_sale_late` | `copy=True` sur vue SQL, `is_done` en SQL brut non signalé | 89 |
 
 ---
 

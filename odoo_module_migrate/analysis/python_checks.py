@@ -527,7 +527,16 @@ def apply_runtime_api_migrations(module, index, target_version):
                     and len(statement.targets) == 1
                     and isinstance(statement.targets[0], ast.Name)
                 }
-                if "_name" not in declarations:
+                sql_view = any(
+                    isinstance(statement, ast.Assign)
+                    and len(statement.targets) == 1
+                    and isinstance(statement.targets[0], ast.Name)
+                    and statement.targets[0].id == "_auto"
+                    and isinstance(statement.value, ast.Constant)
+                    and statement.value.value is False
+                    for statement in cls.body
+                )
+                if "_name" not in declarations or sql_view:
                     continue
                 class_models = fields._class_models(cls)
                 if not class_models:
@@ -1433,7 +1442,69 @@ def _odoo20_python_issues(tree, index, visitor):
                             yield call.lineno, "warning", f"{call.func.attr}() in an auth='none' route has no request user; call it with an explicit user (for example with_user(SUPERUSER_ID))"
 
 
-def check_module(module, index, target_version=20, precision_names=None):
+_SQL_KEYWORDS = {
+    "cross", "full", "group", "inner", "join", "left", "limit", "on",
+    "order", "outer", "right", "union", "where",
+}
+
+
+def _removed_sql_field_issues(tree, removed_fields):
+    """Find qualified references to known removed ORM fields in raw SQL."""
+    rules = {}
+    for rule in removed_fields or ():
+        if len(rule) < 2:
+            continue
+        model, field = rule[:2]
+        source = rule[2] if len(rule) > 2 else "migration rule"
+        rules.setdefault(model.replace(".", "_").lower(), {}).setdefault(
+            field.lower(), (model, source)
+        )
+    if not rules:
+        return
+    table_pattern = re.compile(
+        r'\b(?:FROM|JOIN)\s+(?:"?[A-Za-z_]\w*"?\.)?"?([A-Za-z_]\w*)"?'
+        r'(?:\s+(?:AS\s+)?"?([A-Za-z_]\w*)"?)?',
+        re.IGNORECASE,
+    )
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and re.search(r"\b(?:SELECT|UPDATE|DELETE\s+FROM|INSERT\s+INTO)\b", node.value, re.I)
+        ):
+            continue
+        aliases = {}
+        for match in table_pattern.finditer(node.value):
+            table, alias = match.groups()
+            normalized_table = table.lower()
+            if normalized_table not in rules:
+                continue
+            aliases[table] = normalized_table
+            if alias and alias.lower() not in _SQL_KEYWORDS:
+                aliases[alias] = normalized_table
+        seen = set()
+        for alias, table in aliases.items():
+            for field, (model, source) in rules[table].items():
+                pattern = re.compile(
+                    rf'\b{re.escape(alias)}\s*\.\s*"?{re.escape(field)}"?\b',
+                    re.IGNORECASE,
+                )
+                for match in pattern.finditer(node.value):
+                    key = (match.start(), model, field)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    line = node.lineno + node.value.count("\n", 0, match.start())
+                    yield (
+                        line,
+                        "error",
+                        f"Raw SQL references removed field {model}.{field}; replace the column using its target semantics ({source})",
+                    )
+
+
+def check_module(
+    module, index, target_version=20, precision_names=None, removed_fields=()
+):
     module = Path(module)
     closure = index.closure(module.name)
     complete = not index.unknown_dependencies(module.name)
@@ -1458,6 +1529,8 @@ def check_module(module, index, target_version=20, precision_names=None):
         if target_version >= 20:
             for line, level, message in _odoo20_python_issues(tree, index, visitor):
                 yield path, line, level, message
+        for line, level, message in _removed_sql_field_issues(tree, removed_fields) or ():
+            yield path, line, level, message
         for line, message in _dynamic_model_issues(tree):
             yield path, line, "warning", message
         for line, message in _document_relation_issues(

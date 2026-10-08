@@ -500,6 +500,11 @@ class Migration:
                 module_migration._module_path, model_index,
                 float(self._migration_steps[-1]["target_version_name"]),
                 precision_names=index.precisions,
+                removed_fields=[
+                    rule
+                    for script in self._migration_scripts
+                    for rule in script._REMOVED_FIELDS
+                ],
             ):
                 getattr(logger, level)("%s. File %s:%s", message, path, line)
             for path, line, message in models.check_module(

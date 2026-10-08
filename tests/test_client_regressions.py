@@ -1450,6 +1450,12 @@ class Child(models.Model):
     _inherit = "custom.line"
     _description = "Child"
     name = fields.Char(string="Inherited Name")
+
+class SqlView(models.Model):
+    _name = "custom.sql.view"
+    _description = "SQL View"
+    _auto = False
+    name = fields.Char()
 """)
     index = models.ModelIndex.build([tmp_path])
     changes = python_checks.apply_runtime_api_migrations(mod, index, 20)
@@ -1461,8 +1467,45 @@ class Child(models.Model):
     assert "x_name = fields.Char(translate=translate_xml)" in text
     assert 'name = fields.Char(string="Contact Name")' in text
     assert 'name = fields.Char(string="Inherited Name")' in text
+    assert "class SqlView" in text and "    name = fields.Char()" in text
     assert len(changes) == 2
     assert not python_checks.apply_runtime_api_migrations(mod, index, 20)
+
+
+def test_removed_fields_are_reported_in_qualified_raw_sql(tmp_path):
+    mod = addon(tmp_path, "custom", code='''from odoo import models
+from odoo.tools import SQL
+
+class Report(models.Model):
+    _name = "custom.report"
+    _auto = False
+
+    def _query(self):
+        return SQL("""
+            SELECT sm.id
+              FROM stock_move AS sm
+             WHERE sm.is_done = TRUE
+        """)
+''')
+    index = models.ModelIndex.build([tmp_path])
+    messages = list(
+        python_checks.check_module(
+            mod,
+            index,
+            target_version=20,
+            removed_fields=[
+                (
+                    "stock.move",
+                    "is_done",
+                    "removed: test state in ('done', 'cancel')",
+                )
+            ],
+        )
+    )
+    sql_issues = [item for item in messages if "stock.move.is_done" in item[3]]
+    assert len(sql_issues) == 1
+    assert sql_issues[0][2] == "error"
+    assert sql_issues[0][1] == 12
 
 
 def test_complex_translation_fstring_stays_manual(tmp_path, caplog):

@@ -12,6 +12,8 @@
   typées `ir.config_parameter` d'Odoo 20 et lectures singleton dans les boucles.
 - Préservation du nom à la copie pour les modèles custom face au nouveau
   suffixe automatique « (copy) » d'Odoo 20.
+- Contrôle des champs supprimés dans le SQL brut et exclusion des vues SQL de
+  la règle de copie des noms.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git
