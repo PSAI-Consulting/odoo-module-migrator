@@ -4,16 +4,24 @@
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
-# TODO
-# All <label> elements in views must have a for="" attribute.
-# All <filter> elements in search views must have a name attribute.
-# All <button> elements in a tree view should have a string attribute
-#   for accessibility.
-
 _TEXT_REPLACES = {
     ".py": {
         "from odoo.addons.base.res": "from odoo.addons.base.models",
         "from odoo.addons.base.ir": "from odoo.addons.base.models",
+    }
+}
+
+_TEXT_WARNINGS = {
+    ".xml": {
+        r"<label\b(?![^>]*\bfor\s*=)[^>]*>": (
+            '[V12] A <label> in a view has no for="..." attribute'
+        ),
+        r"<filter\b(?![^>]*\bname\s*=)[^>]*>": (
+            '[V12] A <filter> in a search view has no name="..." attribute'
+        ),
+        r"(?s)<tree\b[^>]*>(?:(?!</tree>).)*?<button\b(?![^>]*\bstring\s*=)[^>]*>": (
+            '[V12] A <button> in a tree view has no string="..." attribute for accessibility'
+        ),
     }
 }
 
@@ -22,3 +30,4 @@ _TEXT_REPLACES = {
 
 class MigrationScript(BaseMigrationScript):
     _TEXT_REPLACES = _TEXT_REPLACES
+    _TEXT_WARNINGS = _TEXT_WARNINGS

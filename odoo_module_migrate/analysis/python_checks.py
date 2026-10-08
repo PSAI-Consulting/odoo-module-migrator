@@ -502,6 +502,141 @@ def apply_runtime_api_migrations(module, index, target_version):
                         return True
             return False
 
+        def config_parameter_call(node):
+            return (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr in {"get_param", "set_param"}
+                and call_models.get(id(node.func)) == "ir.config_parameter"
+            )
+
+        handled_config_calls = set()
+
+        if target_version >= 20:
+            # Preserve the old coercion while selecting Odoo 20's typed API.
+            for outer in ast.walk(tree):
+                if not (
+                    isinstance(outer, ast.Call)
+                    and isinstance(outer.func, ast.Name)
+                    and outer.func.id in {"int", "float"}
+                    and len(outer.args) == 1
+                    and not outer.keywords
+                ):
+                    continue
+                value = outer.args[0]
+                default = None
+                inner = value
+                if (
+                    isinstance(value, ast.BoolOp)
+                    and isinstance(value.op, ast.Or)
+                    and len(value.values) == 2
+                ):
+                    inner, default = value.values
+                if not (
+                    config_parameter_call(inner)
+                    and inner.func.attr == "get_param"
+                    and len(inner.args) == 1
+                    and not inner.keywords
+                ):
+                    continue
+                if default is not None:
+                    if not isinstance(default, ast.Constant):
+                        continue
+                    if outer.func.id == "int" and (
+                        not isinstance(default.value, int)
+                        or isinstance(default.value, bool)
+                    ):
+                        continue
+                    if outer.func.id == "float" and not isinstance(
+                        default.value, (int, float)
+                    ):
+                        continue
+                receiver = source(inner.func.value)
+                arguments = ", ".join(source(arg) for arg in inner.args)
+                standard_default = default is not None and default.value in {0, 0.0}
+                if default is not None and not standard_default:
+                    arguments += f", {source(default)}"
+                add_edit(
+                    outer,
+                    f"{receiver}.get_{outer.func.id}({arguments})",
+                    f"replace get_param with get_{outer.func.id}",
+                )
+                handled_config_calls.add(id(inner))
+
+            for node in ast.walk(tree):
+                if not config_parameter_call(node) or id(node) in handled_config_calls:
+                    continue
+                receiver = source(node.func.value)
+                if node.func.attr == "set_param":
+                    if len(node.args) < 2:
+                        continue
+                    value = node.args[1]
+                    if isinstance(value, ast.Constant):
+                        kind = (
+                            "bool" if isinstance(value.value, bool)
+                            else "int" if isinstance(value.value, int)
+                            else "float" if isinstance(value.value, float)
+                            else "str" if isinstance(value.value, str)
+                            else None
+                        )
+                    elif (
+                        isinstance(value, ast.Call)
+                        and isinstance(value.func, ast.Name)
+                        and value.func.id in {"bool", "int", "float", "str"}
+                    ):
+                        kind = value.func.id
+                    else:
+                        kind = None
+                    if kind:
+                        add_edit(
+                            node.func,
+                            f"{receiver}.set_{kind}",
+                            f"replace set_param with set_{kind}",
+                        )
+                    continue
+                parent = parents.get(id(node))
+                replacement_node = node.func
+                if (
+                    isinstance(parent, ast.Compare)
+                    and len(parent.ops) == 1
+                    and isinstance(parent.ops[0], (ast.Eq, ast.NotEq))
+                    and len(parent.comparators) == 1
+                    and isinstance(parent.comparators[0], ast.Constant)
+                    and parent.comparators[0].value == "True"
+                    and len(node.args) == 1
+                    and not node.keywords
+                ):
+                    positive = isinstance(parent.ops[0], ast.Eq)
+                    call = f"{receiver}.get_bool({source(node.args[0])})"
+                    add_edit(
+                        parent,
+                        call if positive else f"not {call}",
+                        "replace boolean get_param comparison",
+                    )
+                    handled_config_calls.add(id(node))
+                    continue
+                if (
+                    isinstance(parent, ast.BoolOp)
+                    and isinstance(parent.op, ast.Or)
+                    and len(parent.values) == 2
+                    and parent.values[0] is node
+                    and isinstance(parent.values[1], ast.Constant)
+                    and isinstance(parent.values[1].value, str)
+                    and len(node.args) == 1
+                ):
+                    add_edit(
+                        parent,
+                        f"{receiver}.get_str({source(node.args[0])}, {source(parent.values[1])})",
+                        "replace get_param string default",
+                    )
+                    handled_config_calls.add(id(node))
+                    continue
+                add_edit(
+                    replacement_node,
+                    f"{receiver}.get_str",
+                    "replace get_param with get_str",
+                )
+
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
                 continue
@@ -565,6 +700,55 @@ def apply_runtime_api_migrations(module, index, target_version):
             ):
                 modes = ["list" if mode.strip() == "tree" else mode.strip() for mode in view_mode.value.split(",")]
                 add_edit(view_mode, repr(",".join(modes)), "replace Python action view_mode tree")
+
+        if target_version >= 20:
+            for cls in (
+                node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)
+            ):
+                class_models = fields._class_models(cls)
+                if not class_models:
+                    continue
+                known_fields = set().union(
+                    *(
+                        index.fields.get(ancestor, set())
+                        for ancestor in index.ancestors(class_models[0])
+                    )
+                )
+                for method in cls.body:
+                    if not isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        continue
+                    if any(
+                        isinstance(item, ast.Call)
+                        and isinstance(item.func, ast.Attribute)
+                        and isinstance(item.func.value, ast.Name)
+                        and item.func.value.id == "self"
+                        and item.func.attr == "ensure_one"
+                        for item in ast.walk(method)
+                    ):
+                        continue
+                    for loop in (
+                        item for item in ast.walk(method) if isinstance(item, ast.For)
+                    ):
+                        if not (
+                            isinstance(loop.iter, ast.Name)
+                            and loop.iter.id == "self"
+                            and isinstance(loop.target, ast.Name)
+                        ):
+                            continue
+                        for statement in loop.body:
+                            for item in ast.walk(statement):
+                                if (
+                                    isinstance(item, ast.Attribute)
+                                    and isinstance(item.ctx, ast.Load)
+                                    and isinstance(item.value, ast.Name)
+                                    and item.value.id == "self"
+                                    and item.attr in known_fields
+                                ):
+                                    add_edit(
+                                        item.value,
+                                        loop.target.id,
+                                        f"use loop record for field {item.attr}",
+                                    )
         if not edits:
             continue
         # A parent replacement subsumes edits below it (not expected by these

@@ -11,14 +11,14 @@ configuration.
 | 4 | Nouveau type de règles `field_types`. Détection des lectures/affectations, redéfinitions et méthodes `_compute_<champ>`. Règle vérifiée pour `sale.order.line.customer_lead` en 20.0 ; aucune conversion automatique de données. |
 | 5 | Après `upgrade_code`, `security/ir.access.csv` retrouve la position de l'ancien `security/ir.model.access.csv`, sans réordonner les autres fichiers. |
 | 6, 11 | Imports inutilisés supprimés par défaut (F401, hors `__init__.py`, respecte `noqa`). `--format` ajoute le formatage Ruff des fichiers Python effectivement modifiés, avec la configuration du projet. |
-| 7 | Ajout de la licence LGPL-3 par défaut si absente ; avertissement pour `_name` sans `_description`. La description métier reste à renseigner. |
+| 7 | Ajout de la licence LGPL-3 par défaut si absente. Pour un module interne, un modèle `_name` sans `_description` reçoit une description anglaise stable dérivée de son nom technique ; le code OCA est conservé. |
 | 8, 9 | Chemins de contexte dédoublonnés ; priorité à la copie migrée ; cache disque JSON dans SQLite pour les métadonnées Python/XML ; expressions régulières compilées une fois ; itération des scripts officiels limitée aux modules sélectionnés. Les dépendances restent accessibles en lecture explicite. |
 | 10 | Avertissement uniquement si le champ invisible est utilisé par une expression de la même architecture de vue. |
 | 12, 17 | Évaluation des XPath complets sur une architecture reconstruite : axes enfant/descendant, indices, attributs, modifications successives. Réécritures limitées aux vues standard concernées : colonne `price_unit`, état de facture `status_in_payment`, groupes de recherche sans `expand`. |
 | 13 | Références Python `uom.uom_categ_*` signalées ; `uom.uom.category_id` signalé lorsque le modèle est résolu par l'index cible. Piste : `_has_common_reference(other_uom)`. |
 | 15 | `digits='Product Unit of Measure'` devient `Product Unit` au saut 18→19. Les précisions Python inconnues de l'index cible sont signalées. |
 | 16 | Les dépendances transitives renommées/fusionnées sont résolues pour les contrôles. Une dépendance introuvable n'annule plus les analyses ; le rapport affiche un risque inconnu si les vérifications sont incomplètes et qu'aucune erreur certaine ne justifie un risque élevé. |
-| 18, 19 | Avertissements pour `.po` hors de `i18n/` et f-string passée à une fonction de traduction. Aucun déplacement de traductions ni changement automatique de texte source. |
+| 18, 19 | Avertissement pour `.po` hors de `i18n/`. Une f-string de traduction composée de noms ou d'attributs devient un message à paramètres nommés ; les expressions complexes restent signalées INT001. |
 | 20 | Avertissement de doublon potentiel avec la vue cible, en privilégiant un conteneur commun ou une ancre disparue. Les doublons étant parfois voulus, aucun bloc n'est supprimé automatiquement. |
 | 21 | Migration des raccourcis d'environnement sur les accès Python identifiés comme appartenant à un modèle ; commentaires et textes conservés. |
 | 22, 23 | Contrôle des méthodes `compute`, `inverse`, `search` nommées par une chaîne ; avertissement pour une surcharge `_compute_*` / `_search_*` sans `super()` ni référence au champ correspondant. |
@@ -49,7 +49,7 @@ configuration.
 | 59 | Les droits visant un `AbstractModel` sont signalés dans l'ancien `ir.model.access.csv` comme dans le nouvel `ir.access.csv`. Les noms techniques et XML IDs `model_*` sont résolus par l'index des modèles. |
 | 64 | Les diagnostics de dépendance circulaire sont regroupés par méthode dans le rapport, avec les modèles/champs utilisés et un plan de hook dans le fournisseur ou un module de liaison. |
 | 65, 78 | Une méthode de calcul qui écrit un autre champ et une surcharge `create` sans `@api.model_create_multi` sont signalées. |
-| 66, 67, 70, 71 | Contrôles Odoo 20 sur `__last_update`, texte + octets, API typées de `ir.config_parameter`, appels de méthodes absentes et SQL brut vers `mail_tracking_value`. |
+| 66, 67, 70, 71 | Contrôles Odoo 20 sur `__last_update`, texte + octets, API typées de `ir.config_parameter`, appels de méthodes absentes et SQL brut vers `mail_tracking_value`. Les `get_param`/`set_param` sont convertis quand le type est prouvé ; les écritures dynamiques restent signalées. |
 | 68, 75 | Les lectures/décodages et écritures base64 sur des champs `Binary`/`Image` résolus tiennent compte de `BinaryValue`; `_file_read` avec argument est signalé. |
 | 69 | Constantes de classe et attribut `pool` exclus des faux champs ; un modèle persistant relu par `search` n'est pas proposé comme assistant. |
 | 72, 74, 77 | Réécritures de vues limitées aux architectures : mode kanban, CSS `%`, `active_id` vers `id` et widget `field_selector`. Les contextes d'actions et commentaires sont conservés. |
@@ -58,7 +58,7 @@ configuration.
 | 79 | Diagnostics Python pour chaîne levée, `env.get` booléen, valeur comparée à `fields.X` et `except:` nu. |
 | 80 | Les widgets dont le module fournisseur est connu sont comparés à la fermeture des dépendances (`section_and_note_one2many` → `account`). |
 | 81 | Pour Odoo 20, les opérations base64 directement reliées à un champ `Binary`/`Image` connu sont converties vers `.content` en lecture et `BinaryBytes(...)` en écriture, avec ajout d'import. Les usages non prouvés restent inchangés. |
-| 82 | Une lecture `self.<champ>` dans `for record in self` est signalée et propose `record.<champ>` afin d'éviter `Expected singleton`; les méthodes ayant appelé `ensure_one()` sont exclues. |
+| 82 | Une lecture `self.<champ>` dans `for record in self` devient `record.<champ>` afin d'éviter `Expected singleton`; les méthodes ayant appelé `ensure_one()` sont exclues. |
 | 83 | Sur un champ `Binary`/`Image` résolu, `.decode()` sans encodage ou avec UTF-8/ASCII devient `.to_base64()` pour préserver la valeur historique. Les encodages dynamiques restent à revoir ; le typage traverse les arguments nommés passés aux méthodes. |
 | 84 | `cr.clear()`/`reset()` immédiatement après `commit()` devient `env.transaction.clear()`; ailleurs, un diagnostic demande de traiter aussi les callbacks `precommit`. |
 | 85 | Les dictionnaires Python prouvés comme vues/actions migrent `type: tree` et `view_mode: tree` vers `list`, sans remplacement global des valeurs métier. |

@@ -4,7 +4,10 @@
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
-# TODO: Call 2to3
+# Python 2 to 3 conversion is intentionally not attempted with the removed
+# stdlib lib2to3 parser. Modern migrations (including 17 -> 20) already start
+# from Python 3; a future legacy converter must use a maintained concrete-syntax
+# parser and preserve Odoo source formatting.
 
 _TEXT_REPLACES = {
     "*": {

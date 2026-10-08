@@ -4,7 +4,7 @@
         <field name="name">res.partner.simplified.form</field>
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
-            <!-- This is a list view for partners -->
+            <!-- This is a tree view for partners -->
             <list position="inside">
                 <field name="test_field_1"/>
                 <field name="active" widget="boolean_toggle"/>

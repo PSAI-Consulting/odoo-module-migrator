@@ -8,6 +8,8 @@
   formatage Ruff optionnel, respect des modules OCA et des métadonnées client.
 - Contrôles supplémentaires des dépendances Python, méthodes de champs,
   changements de types, précisions, traductions et héritages de vues.
+- Corrections sûres des `_description`, f-strings traduisibles simples, API
+  typées `ir.config_parameter` d'Odoo 20 et lectures singleton dans les boucles.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

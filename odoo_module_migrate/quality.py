@@ -285,6 +285,145 @@ def check_python(path, text):
                     )
 
 
+def migrate_simple_translation_fstrings(path, text):
+    """Turn simple translated f-strings into extractable named placeholders.
+
+    Expressions with conversions, format specifications, calls or subscripts are
+    deliberately left to the existing INT001 diagnostic: naming those values is
+    a business/editorial choice rather than a mechanical migration.
+    """
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return text
+    positions = _Positions(text)
+
+    def source(node):
+        return text[
+            positions(node.lineno, node.col_offset) :
+            positions(node.end_lineno, node.end_col_offset)
+        ]
+
+    edits = []
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and len(node.args) == 1
+            and not node.keywords
+            and isinstance(node.args[0], ast.JoinedStr)
+            and (
+                isinstance(node.func, ast.Name) and node.func.id == "_"
+                or isinstance(node.func, ast.Attribute) and node.func.attr == "_"
+            )
+        ):
+            continue
+        chunks = []
+        arguments = []
+        names = {}
+        used = set()
+        safe = True
+        for value in node.args[0].values:
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                chunks.append(value.value.replace("%", "%%"))
+                continue
+            if not (
+                isinstance(value, ast.FormattedValue)
+                and value.conversion == -1
+                and value.format_spec is None
+            ):
+                safe = False
+                break
+            expression = value.value
+            cursor = expression
+            while isinstance(cursor, ast.Attribute):
+                cursor = cursor.value
+            if not isinstance(cursor, ast.Name) or not isinstance(
+                expression, (ast.Name, ast.Attribute)
+            ):
+                safe = False
+                break
+            expression_source = source(expression)
+            key = names.get(expression_source)
+            if key is None:
+                base = expression.id if isinstance(expression, ast.Name) else expression.attr
+                key = base
+                suffix = 2
+                while key in used:
+                    key = f"{base}_{suffix}"
+                    suffix += 1
+                names[expression_source] = key
+                used.add(key)
+                arguments.append((key, expression_source))
+            chunks.append(f"%({key})s")
+        if not safe:
+            continue
+        replacement = f"{source(node.func)}({''.join(chunks)!r}"
+        replacement += "".join(f", {key}={value}" for key, value in arguments) + ")"
+        edits.append(
+            (
+                positions(node.lineno, node.col_offset),
+                positions(node.end_lineno, node.end_col_offset),
+                replacement,
+                node.lineno,
+            )
+        )
+    for start, end, replacement, line in reversed(edits):
+        text = text[:start] + replacement + text[end:]
+        logger.info(
+            "[quality] Translation f-string converted to named placeholders. File %s:%s",
+            path,
+            line,
+        )
+    return text
+
+
+def add_missing_model_descriptions(path, text):
+    """Add a stable English description to explicitly named Odoo models."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return text
+    lines = text.splitlines(keepends=True)
+    inserts = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef):
+            continue
+        declarations = {
+            statement.targets[0].id: statement
+            for statement in node.body
+            if isinstance(statement, ast.Assign)
+            and len(statement.targets) == 1
+            and isinstance(statement.targets[0], ast.Name)
+        }
+        if "_description" in declarations:
+            continue
+        statement = declarations.get("_name")
+        if not (
+            statement
+            and isinstance(statement.value, ast.Constant)
+            and isinstance(statement.value.value, str)
+        ):
+            continue
+        description = statement.value.value.replace(".", " ").replace("_", " ").title()
+        indent = " " * statement.col_offset
+        newline = "\r\n" if lines[statement.end_lineno - 1].endswith("\r\n") else "\n"
+        inserts.append(
+            (
+                statement.end_lineno,
+                f"{indent}_description = {description!r}{newline}",
+                node.lineno,
+            )
+        )
+    for line_index, value, line in reversed(inserts):
+        lines.insert(line_index, value)
+        logger.info(
+            "[quality] Added model description derived from _name. File %s:%s",
+            path,
+            line,
+        )
+    return "".join(lines)
+
+
 def clean_init_blank_lines(text):
     """Remove empty lines from import-only package initializers.
 
@@ -421,6 +560,9 @@ def finish_module(
     for path in tools.get_files(module, (".py",)):
         text = tools._read_content(path)
         fixed = fix_invalid_escapes(path, repair_sql_apostrophes(path, text))
+        fixed = migrate_simple_translation_fstrings(path, fixed)
+        if cosmetic and path != manifest:
+            fixed = add_missing_model_descriptions(path, fixed)
         if fixed != text:
             tools._write_content(path, fixed)
             text = fixed

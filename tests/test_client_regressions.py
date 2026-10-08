@@ -282,8 +282,12 @@ def test_quality_and_manifest_access_order(tmp_path, caplog):
     assert manifest["data"] == ["security/ir.access.csv", "view.xml"]
     assert manifest["license"] == "LGPL-3"
     assert not (mod / "models.py").read_text().startswith("\n")
-    for fragment in ("F821", "INT001", "_description", "write()", "outside i18n"):
+    for fragment in ("F821", "write()", "outside i18n"):
         assert fragment in caplog.text
+    migrated = (mod / "models.py").read_text(encoding="utf-8")
+    assert "_description = 'X Model'" in migrated
+    assert "_('Hello %(id)s', id=self.id)" in migrated
+    assert "INT001" not in caplog.text
     before = tools.hash_tree(mod)
     quality.finish_module(mod)
     assert tools.hash_tree(mod) == before
@@ -1361,6 +1365,68 @@ class Item(models.Model):
         )
     ]
     assert any("Cursor.clear()/reset() was removed" in message for message in messages)
+
+
+def test_odoo20_typed_config_parameters_and_loop_fields_are_migrated(tmp_path):
+    mod = addon(tmp_path, "custom", code="""from odoo import fields, models
+
+class Task(models.Model):
+    _name = "custom.task"
+    _description = "Task"
+    enabled = fields.Boolean()
+
+    def run(self):
+        config = self.env["ir.config_parameter"].sudo()
+        count = int(config.get_param("count") or 0)
+        ratio = float(config.get_param("ratio") or 1.5)
+        title = config.get_param("title") or "Default"
+        enabled = config.get_param("enabled") == "True"
+        raw = config.get_param("raw")
+        config.set_param("attempts", 3)
+        config.set_param("dynamic", self.enabled)
+        legacy_false = config.get_param("legacy_false") == "False"
+        truthy_text = bool(config.get_param("truthy_text"))
+        explicit_default = config.get_param("explicit", False)
+        for task in self:
+            if self.enabled:
+                task.enabled = False
+        return count, ratio, title, enabled, raw, legacy_false, truthy_text, explicit_default
+""")
+    index = models.ModelIndex.build([tmp_path])
+    changes = python_checks.apply_runtime_api_migrations(mod, index, 20)
+    text = (mod / "models.py").read_text(encoding="utf-8")
+    assert "config.get_int(\"count\")" in text
+    assert "config.get_float(\"ratio\", 1.5)" in text
+    assert 'config.get_str("title", "Default")' in text
+    assert 'config.get_bool("enabled")' in text
+    assert 'config.get_str("raw")' in text
+    assert 'config.set_int("attempts", 3)' in text
+    assert 'config.set_param("dynamic", self.enabled)' in text
+    assert 'config.get_str("legacy_false") == "False"' in text
+    assert 'bool(config.get_str("truthy_text"))' in text
+    assert 'config.get_str("explicit", False)' in text
+    assert "if task.enabled:" in text
+    assert len(changes) == 10
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index, target_version=20
+        )
+    ]
+    assert sum("set_param" in message for message in messages) == 1
+    assert not any("get_param" in message for message in messages)
+
+
+def test_complex_translation_fstring_stays_manual(tmp_path, caplog):
+    mod = addon(
+        tmp_path,
+        "custom",
+        code='from odoo import _\nvalue = _(f"Total: {amount:.2f}")\n',
+    )
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate"):
+        quality.finish_module(mod)
+    assert 'f"Total: {amount:.2f}"' in (mod / "models.py").read_text()
+    assert "INT001" in caplog.text
 
 
 def test_tree_to_list_keeps_user_facing_labels(tmp_path):

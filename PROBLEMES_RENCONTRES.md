@@ -1,6 +1,6 @@
 # Problèmes rencontrés — migration Stof 17.0 → 20.0
 
-> Suivi mis à jour le 07/10/2026. Les descriptions ci-dessous sont conservées
+> Suivi mis à jour le 08/10/2026. Les descriptions ci-dessous sont conservées
 > comme cas de reproduction. « Détection implémentée » signifie que le migrateur
 > produit un TODO ; cela ne signifie pas que le module client a été corrigé.
 > Les sources Stof n’ont pas été modifiées par ces travaux.
@@ -116,7 +116,9 @@ L'import `api` inutilisé a disparu de `stof_partner_exchange/models/partner_sec
 
 ## 7. 🟡 Avertissements Odoo faciles à corriger
 
-> **État du migrateur (07/10/2026)** : 🟡 Partiel — licence manquante ajoutée ; _description manquant signalé, description métier à renseigner.
+> **État du migrateur (08/10/2026)** : ✅ Correction automatique — licence
+> manquante ajoutée et `_description` généré en anglais depuis le `_name` pour
+> les modules internes. Les modules OCA restent inchangés.
 
 Au chargement en 20, Odoo signale `Missing 'license' key in manifest` et `The model partner.sector has no _description`.
 
@@ -242,7 +244,9 @@ Vérifié en appliquant les héritages sur les vues 20 :
 
 ## 19. 🟡 f-string dans une traduction
 
-> **État du migrateur (07/10/2026)** : ✅ Détection implémentée — f-strings passées à la traduction signalées (INT001), texte à corriger manuellement.
+> **État du migrateur (08/10/2026)** : ✅ Correction automatique pour les
+> interpolations simples (nom ou attribut), avec paramètres nommés extractibles.
+> Les appels, indices, conversions et formats (`:.2f`) restent signalés INT001.
 
 ```python
 move.message_post(body=_(f"Alerte : le délai de paiement est supérieur à {{max_due_date}} jours. ... {days - max_due_date} jour(s)."))
@@ -753,10 +757,10 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 
 ## 67. 🔴 `get_param` / `set_param` supprimés (Odoo 20)
 
-> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — les deux API
-> supprimées deviennent des erreurs et le diagnostic demande de choisir la
-> variante typée `get_*` / `set_*`. Le type n'est pas deviné automatiquement
-> lorsqu'il dépend du code appelant.
+> **État du migrateur (08/10/2026)** : ✅ Correction automatique quand le type
+> est prouvé par une conversion, une valeur constante, une comparaison à
+> `"True"` ou une valeur par défaut. Un `get_param` sans contexte devient
+> `get_str`; les écritures de type dynamique restent des erreurs à traiter.
 
 - Module : `edi_worker` (vu par PyCharm). `self.env["ir.config_parameter"].sudo().get_param(...)` : méthode supprimée (commit `a4f2879697a7`), remplacée par `get_str`, `get_int`, `get_float`, `get_bool` et `set_*`. 128 usages dans 21 modules Stof.
 - **Correction proposée** : `int(get_param(k) or 0)` → `get_int(k)` ; `get_param(k) or d` → `get_str(k, d)` ; `get_param(k) == "True"` → `get_bool(k)` ; sinon `get_str(k)` + TODO 🟠 sur le type. Idem `set_param` → `set_str`/`set_int`…
@@ -898,9 +902,9 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 
 ## 82. 🟡 `self.<champ>` dans une boucle `for task in self`
 
-> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — dans une
+> **État du migrateur (08/10/2026)** : ✅ Correction automatique — dans une
 > méthode de modèle, les lectures d'un champ indexé via `self` à l'intérieur de
-> `for variable in self` proposent la variable de boucle. Les méthodes,
+> `for variable in self` utilisent la variable de boucle. Les méthodes,
 > `self.env`, les écritures et les méthodes qui imposent `ensure_one()` sont
 > exclues.
 
@@ -1008,7 +1012,7 @@ Règle commune : **ne jamais changer le comportement, les identifiants XML ni le
 |---|---|---|---|---|
 | A1 | Ajouter dans `depends` les modules dont le code Python utilise un modèle ou un champ (voir problème 3) | `partner_identification` dans `stof_partner_exchange` | Signaler seulement si le module manquant est OCA / tiers non migré | ✅ Ajout automatique si l'index est complet, le fournisseur unique et non circulaire ; sinon TODO détaillé. |
 | A2 | Ajouter `'license': 'LGPL-3'` quand la clé manque | `stof_partner_exchange` | Valeur qu'Odoo prend déjà par défaut : aucun changement de comportement | ✅ Fait. |
-| A3 | Ajouter un `_description` aux modèles `_name` qui n'en ont pas, en anglais (dérivé de `_name` : `partner.sector` → `"Partner Sector"`) | `stof_partner_exchange` | Supprime l'avertissement Odoo ; ne pas toucher aux `.po` | Signalement fait ; génération de description non appliquée. |
+| A3 | Ajouter un `_description` aux modèles `_name` qui n'en ont pas, en anglais (dérivé de `_name` : `partner.sector` → `"Partner Sector"`) | `stof_partner_exchange` | Supprime l'avertissement Odoo ; ne pas toucher aux `.po` | ✅ Fait pour les modules internes ; OCA conservé. |
 | A4 | Nettoyer le manifest : retirer les commentaires du modèle `scaffold` (« Categories can be used to filter… », « any module necessary… », « always loaded ») et la `description` vide | `stof_partner_exchange` | Purement cosmétique | ✅ Fait avec le modèle de manifeste. |
 | A5 | Charger les fichiers `security/` en premier dans `data` | `stof_partner_exchange` | Usage standard Odoo | Non appliqué globalement : ordre conservé ; remplacement ACL à sa position initiale. |
 | A6 | `super(MaClasse, self)` → `super()` | `stof_partner_exchange` | Python 3 | Non ajouté : modernisation indépendante de la migration. |
@@ -1025,3 +1029,29 @@ Règle commune : **ne jamais changer le comportement, les identifiants XML ni le
 | A18 | Ne pas faire de `write()` dans une méthode `_compute_*` : proposer l'affectation `record.champ = valeur` | `stof_wms_fields` | Signalé en 🟠, correction manuelle | ✅ Signalement implémenté. |
 | A20 | Appliquer le modèle de manifest de l'équipe (ordre des clés, `website` et `license` toujours présents, listes une valeur par ligne) | tous | Voir `_Modèle manifest` (Obsidian Stof) | ✅ Modèle intégré et générique ; ordre data conservé, site absent configurable. |
 | A15 | Ne **pas** appliquer les nettoyages cosmétiques (A2 à A14) aux modules **OCA** : seulement les corrections nécessaires, pour garder le code proche de l'OCA | — | Détection déjà disponible (`--no-oca-modules`) | ✅ Fait : nettoyages ignorés pour les modules reconnus OCA. |
+
+## Audit des TODO restants (08/10/2026)
+
+Tous les problèmes numérotés ont été relus. Les TODO encore manuels sont
+conservés lorsqu'une correction exige une décision métier ou une preuve que
+l'analyse statique ne possède pas : déplacement de traductions (18), retrait
+d'un bloc de vue devenu doublon (20), surcharge standard potentiellement
+accidentelle (23), chargement `data` répété (25), concaténation HTML (51),
+écart de `@api.depends` (53), dépendance circulaire et choix d'architecture
+(64), migration complexe de `mail.compose.message` (70), route `auth="none"`
+(73), champ porté par un héritier de mixin (76), adaptation de `create` au
+multi-enregistrement (78) et erreurs Python qui nécessitent de choisir le type
+d'exception ou le comportement voulu (79).
+
+Les modernisations A5 à A8, A12 et A14 restent volontairement hors du mode par
+défaut : elles changent l'ordre des données, la forme du code ou des
+commentaires sans être nécessaires à une migration. Les contrôles A16 et A17
+restent des diagnostics, car la société à utiliser et la politique de
+conversion des données appartiennent au métier du module.
+
+Les deux anciens commentaires `TODO` présents dans les scripts 10→11 et 11→12
+ont également été traités. Les attributs d'accessibilité manquants des vues 12
+sont maintenant signalés. La conversion Python 2 par `lib2to3` n'est pas
+activée : cette bibliothèque a été retirée de Python et une conversion aveugle
+ne garantirait pas la conservation du code Odoo. Ce point historique ne touche
+pas les migrations modernes, dont 17→20.
