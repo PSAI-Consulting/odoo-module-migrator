@@ -60,6 +60,17 @@ configuration.
 | 81 | Pour Odoo 20, les opérations base64 directement reliées à un champ `Binary`/`Image` connu sont converties vers `.content` en lecture et `BinaryBytes(...)` en écriture, avec ajout d'import. Les usages non prouvés restent inchangés. |
 | 82 | Une lecture `self.<champ>` dans `for record in self` est signalée et propose `record.<champ>` afin d'éviter `Expected singleton`; les méthodes ayant appelé `ensure_one()` sont exclues. |
 | 83 | Sur un champ `Binary`/`Image` résolu, `.decode()` sans encodage ou avec UTF-8/ASCII devient `.to_base64()` pour préserver la valeur historique. Les encodages dynamiques restent à revoir ; le typage traverse les arguments nommés passés aux méthodes. |
+| 84 | `cr.clear()`/`reset()` immédiatement après `commit()` devient `env.transaction.clear()`; ailleurs, un diagnostic demande de traiter aussi les callbacks `precommit`. |
+| 85 | Les dictionnaires Python prouvés comme vues/actions migrent `type: tree` et `view_mode: tree` vers `list`, sans remplacement global des valeurs métier. |
+| 86 | `get_external_id` et `_get_external_ids` sont des méthodes de base connues. Un `name_get()[0]` dont le récepteur est prouvé singleton devient le couple `(id, display_name)`. |
+| 87 | La migration tree→list ne modifie plus les libellés « Tree View » ni les textes traduisibles ; elle reste limitée aux structures techniques. |
+
+Les dépendances Python manquantes sont ajoutées automatiquement au manifeste
+quand l'index des addons est complet, qu'un seul fournisseur existe et que cet
+ajout ne crée pas de cycle. La même règle s'applique aux widgets dont le module
+fournisseur est connu. Les imports inutilisés sont déjà supprimés par défaut
+avec Ruff F401, sauf dans les `__init__.py`, les modules OCA et lorsque
+`--keep-unused-imports` est demandé.
 | 60 | Une chaîne dont toutes les séquences d'échappement sont invalides (`"\."`, `SyntaxWarning` en Python 3.12) devient une chaîne brute de valeur identique. Un mélange de séquences valides et invalides est signalé. |
 | 61 | La normalisation du manifest retire aussi `data` vide et les entrées vides de `external_dependencies` (puis la clé si elle ne contient plus rien). |
 | 62 | `tracking=` sur un champ d'un modèle sans `mail.thread` (lignée entièrement connue) est signalé. Un `author` absent est complété par `--default-author`, sinon signalé. |

@@ -39,6 +39,7 @@ TAG_STEP_RE = re.compile(r"^([\w\-]+)(?:\[\d+\])?$")
 REF_EVAL_RE = re.compile(r"""\bref\(\s*["']([\w]+\.[\w.]+)["']\s*\)""")
 # XML ids created by the ORM / the module loader, not by data files
 GENERATED_PREFIXES = ("model_", "field_", "selection__", "module_", "access_", "constraint_")
+WIDGET_MODULES = {"section_and_note_one2many": "account"}
 
 
 def _module_dirs(paths):
@@ -514,14 +515,13 @@ def check_module(module, index, reference_modules, menu_parent_hints=()):
     # a dependency outside the addons paths may add any anchor, XML id or
     # dependency: then only what must exist in the target Odoo itself is checked
     complete = index.complete(closure)
-    widget_modules = {"section_and_note_one2many": "account"}
     for path in _data_files(module):
         root = _parse(path)
         if root is None:
             continue
         if complete:
             for node in root.xpath(".//field[@widget]"):
-                provider = widget_modules.get(node.get("widget"))
+                provider = WIDGET_MODULES.get(node.get("widget"))
                 if provider and provider not in closure:
                     yield path, node.sourceline, _missing_depends(
                         f"widget {node.get('widget')!r}", provider
@@ -596,6 +596,43 @@ def check_module(module, index, reference_modules, menu_parent_hints=()):
             path, root, module.name, index, reference_modules,
             closure if complete else None, menu_parent_hints,
         )
+
+
+def apply_known_widget_dependencies(module, index):
+    """Add a widget provider only when its ownership and closure are certain."""
+    module = pathlib.Path(module)
+    closure = index.closure(module.name)
+    if not index.complete(closure):
+        return []
+    providers = set()
+    for path in _data_files(module):
+        root = _parse(path)
+        if root is None:
+            continue
+        providers.update(
+            WIDGET_MODULES[node.get("widget")]
+            for node in root.xpath(".//field[@widget]")
+            if node.get("widget") in WIDGET_MODULES
+        )
+    additions = sorted(
+        provider
+        for provider in providers - closure
+        if provider in index.depends and module.name not in index.closure(provider)
+    )
+    if not additions:
+        return []
+    manifest_path = module / "__manifest__.py"
+    text = manifest_path.read_text(encoding="utf-8", errors="replace")
+    try:
+        dependencies = list(ast.literal_eval(text.lstrip()).get("depends", []))
+        from ..manifest import rewrite_list
+
+        text = rewrite_list(text, "depends", dependencies + additions)
+    except (OSError, SyntaxError, ValueError, TypeError):
+        return []
+    manifest_path.write_text(text, encoding="utf-8")
+    index.depends[module.name] = dependencies + additions
+    return additions
 
 
 def _missing_depends(what, owner):

@@ -919,6 +919,46 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `edi_worker_enable_webservice`. En 17, `file.file.decode()` donnait la **chaîne base64** (envoyée telle quelle dans un JSON). En 20, `BinaryValue.decode()` renvoie le **texte brut** : le service distant reçoit autre chose, et un fichier non UTF-8 plante. Rapport : « aucun risque ».
 - **Correction proposée** : sur un champ `Binary`, `x.decode()` (sans encodage, ou `"utf-8"`/`"ascii"`) → `x.to_base64()` pour garder la valeur de la 17 ; TODO 🟠 si un encodage métier est passé (`x.decode(self.encoding)` : vouloir le texte brut est alors probable).
 
+## 84. 🔴 `self.env.cr.clear()` supprimé
+
+> **État du migrateur (08/10/2026)** : ✅ Correction automatique lorsqu'un
+> `cr.clear()`/`reset()` suit immédiatement un `commit()` : remplacement par
+> `env.transaction.clear()`. Dans les autres positions, un TODO rappelle aussi
+> `cr.precommit.clear()` afin de ne pas supprimer implicitement des callbacks.
+
+- Module : `edi_generic`. `Cursor.clear()` et `Cursor.reset()` n'existent plus en 20 (commit `832d8714a849`) → `AttributeError`. Non signalé.
+- **Correction proposée** : `cr.clear()` → `env.transaction.clear()` (+ `cr.precommit.clear()` si l'appel n'est pas juste après un `commit`).
+
+## 85. 🔴 `"type": "tree"` dans une vue créée par code
+
+> **État du migrateur (08/10/2026)** : ✅ Correction structurée — les
+> dictionnaires passés à `ir.ui.view.create/write` (ou contenant `arch`) passent
+> de `type=tree` à `list`; les actions résolues convertissent `view_mode` sans
+> toucher les autres dictionnaires métier.
+
+- Module : `edi_generic`. Le migrator a converti `<tree>` → `<list>` dans une chaîne Python, mais pas `"type": "tree"` du dict passé à `ir.ui.view.create` → « Wrong value for ir.ui.view.type: 'tree' ».
+- **Correction proposée** : dans un `create`/`write` sur `ir.ui.view` (ou un dict avec `arch`/`arch_base`), `"type": "tree"` → `"list"` ; idem `view_mode` contenant `tree` dans `ir.actions.act_window` créées par code.
+
+## 86. 🟠 Appels explicites `x.name_get()` / faux positifs `get_external_id`
+
+> **État du migrateur (08/10/2026)** : ✅ Corrigé — `get_external_id` et
+> `_get_external_ids` sont connus sur `BaseModel`. La forme singleton prouvée
+> `record.name_get()[0]` devient `(record.id, record.display_name)`; les appels
+> dont la cardinalité n'est pas démontrée restent à revoir.
+
+- Module : `edi_generic`. `column.name_get()[0]` (clé de cache) non converti ; le TODO ne vise que la **définition** de `name_get`. Inversement, 5 TODO 🔴 « get_external_id does not exist » sont faux : la méthode existe en 20 (`models.py:5200`).
+- **Correction proposée** : `x.name_get()[0]` → `(x.id, x.display_name)` (ou une méthode dédiée si `name_get` est surchargé) ; ajouter `get_external_id`, `_get_external_ids` aux méthodes connues de `BaseModel`.
+
+## 87. 🟠 Libellé de champ « Tree » renommé en « List » : traduction perdue
+
+> **État du migrateur (08/10/2026)** : ✅ Corrigé — les remplacements textuels
+> généraux de « tree view » ont été retirés. Seuls les balises, sélecteurs,
+> modes et dictionnaires techniques sont migrés ; les libellés et textes
+> traduisibles restent identiques.
+
+- Module : `edi_generic`. `fields.Many2one("ir.ui.view", "EDI Tree View")` → `"EDI List View"`. Le `.po` n'a que `msgid "EDI Tree View"` → le libellé français « Vue arborescente EDI » n'est plus appliqué.
+- **Correction proposée** : ne renommer `tree` → `list` que dans les éléments techniques (`<tree>`, `view_mode`, `"type"`), jamais dans les libellés (`string`, 2ᵉ argument positionnel d'un champ, textes `_()`).
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -955,6 +995,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `edi_platform_transform` | `active_id` dans une vue, base64 en `bytes` écrit dans un `Binary`, `_file_read`, fichier d'exemple en `BinaryValue`, sous-formulaire contact refait en 20 (ancres), widget `DynamicModelFieldSelectorChar`, `create` sans décorateur, `raise` d'une chaîne, `env.get` en booléen, dépendance `account` | 68, 74 à 80 |
 | `edi_worker_enable_ftp` | `self.` au lieu de `task.` dans la boucle ; ruptures `Binary` signalées sans correction | 81, 82 |
 | `edi_worker_enable_webservice` | `file.file.decode()` : base64 en 17, texte brut en 20 (contenu envoyé modifié) | 83 |
+| `edi_generic` | `cr.clear()`, `"type": "tree"` dans une vue créée par code, appels `name_get()`, champ inexistant dans un calcul ; faux positifs `get_external_id` ; libellé « Tree » → « List » | 84 à 87 |
 
 ---
 
@@ -965,7 +1006,7 @@ Règle commune : **ne jamais changer le comportement, les identifiants XML ni le
 
 | # | Automatisation | Exemple (module) | Remarque | État |
 |---|---|---|---|---|
-| A1 | Ajouter dans `depends` les modules dont le code Python utilise un modèle ou un champ (voir problème 3) | `partner_identification` dans `stof_partner_exchange` | Signaler seulement si le module manquant est OCA / tiers non migré | Détection faite ; ajout automatique non appliqué (ambiguïtés/cycles). |
+| A1 | Ajouter dans `depends` les modules dont le code Python utilise un modèle ou un champ (voir problème 3) | `partner_identification` dans `stof_partner_exchange` | Signaler seulement si le module manquant est OCA / tiers non migré | ✅ Ajout automatique si l'index est complet, le fournisseur unique et non circulaire ; sinon TODO détaillé. |
 | A2 | Ajouter `'license': 'LGPL-3'` quand la clé manque | `stof_partner_exchange` | Valeur qu'Odoo prend déjà par défaut : aucun changement de comportement | ✅ Fait. |
 | A3 | Ajouter un `_description` aux modèles `_name` qui n'en ont pas, en anglais (dérivé de `_name` : `partner.sector` → `"Partner Sector"`) | `stof_partner_exchange` | Supprime l'avertissement Odoo ; ne pas toucher aux `.po` | Signalement fait ; génération de description non appliquée. |
 | A4 | Nettoyer le manifest : retirer les commentaires du modèle `scaffold` (« Categories can be used to filter… », « any module necessary… », « always loaded ») et la `description` vide | `stof_partner_exchange` | Purement cosmétique | ✅ Fait avec le modèle de manifeste. |

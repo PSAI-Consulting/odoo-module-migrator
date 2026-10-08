@@ -27,6 +27,9 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.invisi
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.product_storable import (
     migrate_product_storable,
 )
+from odoo_module_migrate.migration_scripts.migrate_170_180 import (
+    replace_tree_with_list_in_views,
+)
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.env_translation import (
     migrate_env_translation,
 )
@@ -1236,6 +1239,16 @@ def test_known_view_widget_provider_must_be_a_dependency(tmp_path):
     index = views.ViewIndex.build([tmp_path])
     issues = list(views.check_module(mod, index, {"base", "account"}))
     assert any("widget 'section_and_note_one2many'" in message and "account" in message for _path, _line, message in issues)
+    assert views.apply_known_widget_dependencies(mod, index) == ["account"]
+    manifest = ast.literal_eval((mod / "__manifest__.py").read_text())
+    assert manifest["depends"] == ["base", "account"]
+    assert not [
+        message
+        for _path, _line, message in views.check_module(
+            mod, index, {"base", "account"}
+        )
+        if "section_and_note_one2many" in message
+    ]
 
 
 def test_binaryvalue_operations_are_fixed_when_field_type_is_proven(tmp_path):
@@ -1311,6 +1324,93 @@ class Task(models.Model):
     matching = [message for message in messages if "for task in self" in message]
     assert len(matching) == 1
     assert "task.delete_after" in matching[0]
+
+
+def test_runtime_view_cursor_and_singleton_name_get_are_migrated(tmp_path):
+    mod = addon(tmp_path, "custom", code="""from odoo import fields, models
+
+class Item(models.Model):
+    _name = "custom.item"
+    _description = "Item"
+    view_id = fields.Many2one("ir.ui.view", "EDI Tree View")
+
+    def build(self):
+        self.env.cr.commit()
+        self.env.cr.clear()
+        self.env["ir.ui.view"].create({"type": "tree", "arch": "<tree/>"})
+        self.env["ir.actions.act_window"].create({"view_mode": "tree,form"})
+        for item in self:
+            pair = item.name_get()[0]
+        self.env.cr.reset()
+        return pair
+""")
+    index = models.ModelIndex.build([tmp_path])
+    changes = python_checks.apply_runtime_api_migrations(mod, index, 20)
+    text = (mod / "models.py").read_text(encoding="utf-8")
+    assert len(changes) == 4
+    assert "self.env.transaction.clear()" in text
+    assert '"type": \'list\'' in text
+    assert '"view_mode": \'list,form\'' in text
+    assert "(item.id, item.display_name)" in text
+    assert "EDI Tree View" in text
+    assert "get_external_id" in models.BASE_METHODS
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index, target_version=20
+        )
+    ]
+    assert any("Cursor.clear()/reset() was removed" in message for message in messages)
+
+
+def test_tree_to_list_keeps_user_facing_labels(tmp_path):
+    mod = addon(
+        tmp_path,
+        "custom",
+        code='LABEL = "EDI Tree View"\nMODE = {"view_mode": "tree,form"}\n',
+    )
+    replace_tree_with_list_in_views(
+        logger=logging.getLogger("test"),
+        module_path=mod,
+        module_name="custom",
+        manifest_path=mod / "__manifest__.py",
+        migration_steps=(),
+        tools=tools,
+    )
+    text = (mod / "models.py").read_text(encoding="utf-8")
+    assert '"EDI Tree View"' in text
+    assert '"view_mode": "list,form"' in text
+
+
+def test_unique_non_circular_python_dependency_is_added(tmp_path):
+    addon(tmp_path, "base", data=[])
+    addon(
+        tmp_path,
+        "provider",
+        ["base"],
+        code='class Provided(Model):\n    _name = "provider.model"\n',
+        data=[],
+    )
+    addon(
+        tmp_path,
+        "circular_provider",
+        ["custom"],
+        code='class Circular(Model):\n    _name = "circular.model"\n',
+        data=[],
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["base"],
+        code='def run(self):\n    self.env["provider.model"].search([])\n    self.env["circular.model"].search([])\n',
+        data=[],
+    )
+    index = models.ModelIndex.build([tmp_path])
+    additions = python_checks.apply_unambiguous_dependencies(mod, index)
+    manifest = ast.literal_eval((mod / "__manifest__.py").read_text())
+    assert additions == ["provider"]
+    assert manifest["depends"] == ["base", "provider"]
+    assert "circular_provider" not in manifest["depends"]
 
 def test_invalid_escape_sequences_become_raw_strings(tmp_path, caplog):
     mod = addon(tmp_path, "custom", code="""from odoo import fields, models

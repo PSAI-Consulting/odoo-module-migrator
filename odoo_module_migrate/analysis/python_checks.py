@@ -13,7 +13,7 @@ from . import fields, models
 class Uses(ast.NodeVisitor):
     """Track recordset aliases and relational paths within a method."""
 
-    def __init__(self, index, parameter_types=None):
+    def __init__(self, index, parameter_types=None, method_parameters=None):
         self.index = index
         self.aliases = {}
         self.usages = []
@@ -22,6 +22,7 @@ class Uses(ast.NodeVisitor):
         self.method_calls = []
         self.super_results = {}
         self.parameter_types = parameter_types or {}
+        self.method_parameters = method_parameters or {}
 
     def receiver(self, node):
         if isinstance(node, ast.Name):
@@ -168,6 +169,13 @@ class Uses(ast.NodeVisitor):
             model = self.receiver(node.func.value)
             if model:
                 self.method_calls.append((node.func, model, node.func.attr))
+                names = self.method_parameters.get((model, node.func.attr), ())
+                for name, argument in zip(names, node.args):
+                    argument_model = self.receiver(argument)
+                    if argument_model:
+                        self.parameter_types.setdefault(
+                            (model, node.func.attr, name), set()
+                        ).add(argument_model)
                 for keyword in node.keywords:
                     argument_model = self.receiver(keyword.value)
                     if keyword.arg and argument_model:
@@ -191,11 +199,33 @@ class Uses(ast.NodeVisitor):
 
 def analyze_uses(tree, index):
     """Resolve local aliases, then propagate typed keyword arguments once."""
-    first = Uses(index)
-    first.visit(tree)
-    second = Uses(index, first.parameter_types)
-    second.visit(tree)
-    return second
+    method_parameters = {}
+    for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+        class_models = fields._class_models(cls)
+        if not class_models:
+            continue
+        for statement in cls.body:
+            if not isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            arguments = [*statement.args.posonlyargs, *statement.args.args]
+            if arguments and arguments[0].arg in {"self", "cls"}:
+                arguments = arguments[1:]
+            method_parameters[(class_models[0], statement.name)] = tuple(
+                argument.arg for argument in arguments
+            )
+    parameter_types = {}
+    visitor = None
+    for _iteration in range(max(2, len(method_parameters) + 1)):
+        before = {key: frozenset(value) for key, value in parameter_types.items()}
+        visitor = Uses(index, parameter_types, method_parameters)
+        visitor.visit(tree)
+        parameter_types = visitor.parameter_types
+        after = {key: frozenset(value) for key, value in parameter_types.items()}
+        if after == before and _iteration:
+            break
+    final = Uses(index, parameter_types, method_parameters)
+    final.visit(tree)
+    return final
 
 
 def apply_field_renames(module, index, renames):
@@ -387,12 +417,241 @@ def apply_binaryvalue_migrations(module, index):
     return changed
 
 
+def apply_runtime_api_migrations(module, index, target_version):
+    """Apply model-proven runtime API migrations without changing labels."""
+    if target_version < 18:
+        return []
+    changed = []
+    for path in models._python_files(Path(module)):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        try:
+            tree = ast.parse(text)
+        except (SyntaxError, ValueError):
+            continue
+        visitor = analyze_uses(tree, index)
+        resolved = {id(node): (model, field) for node, model, field in visitor.usages}
+        call_models = {id(node): model for node, model, _method in visitor.method_calls}
+        parents = {
+            id(child): parent
+            for parent in ast.walk(tree)
+            for child in ast.iter_child_nodes(parent)
+        }
+        positions = fields._Positions(text)
+        edits = []
+
+        def source(node):
+            return text[
+                positions.offset(node.lineno, node.col_offset) :
+                positions.offset(node.end_lineno, node.end_col_offset)
+            ]
+
+        def add_edit(node, replacement, detail):
+            edits.append(
+                (
+                    positions.offset(node.lineno, node.col_offset),
+                    positions.offset(node.end_lineno, node.end_col_offset),
+                    replacement,
+                    node.lineno,
+                    detail,
+                )
+            )
+
+        def immediately_after_commit(node):
+            statement = node
+            while id(statement) in parents and not isinstance(
+                statement, (ast.Expr, ast.Assign, ast.AnnAssign)
+            ):
+                statement = parents[id(statement)]
+            block = parents.get(id(statement))
+            body = getattr(block, "body", ())
+            if statement not in body:
+                return False
+            position = body.index(statement)
+            if position == 0:
+                return False
+            previous = body[position - 1]
+            return any(
+                isinstance(item, ast.Call)
+                and isinstance(item.func, ast.Attribute)
+                and item.func.attr == "commit"
+                for item in ast.walk(previous)
+            )
+
+        def singleton_receiver(receiver, node):
+            info = resolved.get(id(receiver))
+            if info and "Many2one" in _field_kind(index, *info):
+                return True
+            if isinstance(receiver, ast.Name):
+                if any(
+                    isinstance(usage, ast.Attribute)
+                    and isinstance(usage.value, ast.Name)
+                    and usage.value.id == receiver.id
+                    and _field_kind(index, usage_model, usage_field)
+                    - {"One2many", "Many2many"}
+                    for usage, usage_model, usage_field in visitor.usages
+                ):
+                    return True
+                current = node
+                while id(current) in parents:
+                    current = parents[id(current)]
+                    if (
+                        isinstance(current, ast.For)
+                        and isinstance(current.target, ast.Name)
+                        and current.target.id == receiver.id
+                    ):
+                        return True
+            return False
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+                continue
+            if (
+                target_version >= 20
+                and node.func.attr in {"clear", "reset"}
+                and isinstance(node.func.value, ast.Attribute)
+                and node.func.value.attr == "cr"
+                and immediately_after_commit(node)
+            ):
+                add_edit(
+                    node,
+                    source(node.func.value.value) + ".transaction.clear()",
+                    "replace Cursor.clear/reset after commit",
+                )
+                continue
+            if node.func.attr != "name_get" or node.args or node.keywords:
+                continue
+            parent = parents.get(id(node))
+            if not (
+                isinstance(parent, ast.Subscript)
+                and isinstance(parent.slice, ast.Constant)
+                and parent.slice.value == 0
+                and singleton_receiver(node.func.value, node)
+            ):
+                continue
+            receiver = source(node.func.value)
+            add_edit(
+                parent,
+                f"({receiver}.id, {receiver}.display_name)",
+                "replace removed singleton name_get()[0]",
+            )
+
+        for mapping in (node for node in ast.walk(tree) if isinstance(node, ast.Dict)):
+            values = {
+                key.value: value
+                for key, value in zip(mapping.keys, mapping.values)
+                if isinstance(key, ast.Constant) and isinstance(key.value, str)
+            }
+            call = parents.get(id(mapping))
+            while call is not None and not isinstance(call, ast.Call):
+                call = parents.get(id(call))
+            model = (
+                call_models.get(id(call.func))
+                if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                else None
+            )
+            type_value = values.get("type")
+            if (
+                isinstance(type_value, ast.Constant)
+                and type_value.value == "tree"
+                and (model == "ir.ui.view" or {"arch", "arch_base"} & values.keys())
+            ):
+                add_edit(type_value, repr("list"), "replace Python ir.ui.view type tree")
+            view_mode = values.get("view_mode")
+            if (
+                model == "ir.actions.act_window"
+                and isinstance(view_mode, ast.Constant)
+                and isinstance(view_mode.value, str)
+                and "tree" in view_mode.value.split(",")
+            ):
+                modes = ["list" if mode.strip() == "tree" else mode.strip() for mode in view_mode.value.split(",")]
+                add_edit(view_mode, repr(",".join(modes)), "replace Python action view_mode tree")
+        if not edits:
+            continue
+        # A parent replacement subsumes edits below it (not expected by these
+        # rules, but filtering keeps the generic editor deterministic).
+        selected = []
+        for edit in sorted(edits, key=lambda item: (item[0], -item[1])):
+            if any(start <= edit[0] and edit[1] <= end for start, end, *_ in selected):
+                continue
+            selected.append(edit)
+        for start, end, replacement, _line, _detail in sorted(selected, reverse=True):
+            text = text[:start] + replacement + text[end:]
+        path.write_text(text, encoding="utf-8")
+        changed.extend((path, line, detail) for *_rest, line, detail in selected)
+    return changed
+
+
 def dependency_message(index, module, what, owners):
     owners = sorted(owners)
     circular = [owner for owner in owners if module in index.closure(owner)]
     if len(circular) == len(owners):
         return f"{what}: circular dependency; move this code into {', '.join(circular)} (field/model provider) or a bridge module"
     return f"{what}: add a provider to 'depends': {', '.join(o for o in owners if o not in circular)}"
+
+
+def apply_unambiguous_dependencies(module, index):
+    """Add uniquely proven, non-circular Python providers to depends."""
+    module = Path(module)
+    if index.unknown_dependencies(module.name):
+        return []
+    closure = index.closure(module.name)
+    providers = set()
+
+    def consider(owners):
+        owners = set(owners)
+        if owners & closure:
+            return
+        if len(owners) != 1:
+            return
+        owner = next(iter(owners))
+        if owner in index.depends and module.name not in index.closure(owner):
+            providers.add(owner)
+
+    for path in models._python_files(module):
+        try:
+            tree = ast.parse(path.read_bytes())
+        except (SyntaxError, ValueError):
+            continue
+        visitor = analyze_uses(tree, index)
+        for _node, model in visitor.model_uses:
+            consider(index.owners(model))
+        for _node, model, field in visitor.usages:
+            consider(
+                set().union(
+                    *(
+                        index.field_owners.get((ancestor, field), set())
+                        for ancestor in index.ancestors(model)
+                    )
+                )
+            )
+        for _node, model, method in visitor.method_calls:
+            consider(
+                set().union(
+                    *(
+                        index.method_owners.get((ancestor, method), set())
+                        for ancestor in index.ancestors(model)
+                    )
+                )
+                - {"base"}
+            )
+    if not providers:
+        return []
+    manifest_path = module / "__manifest__.py"
+    text = manifest_path.read_text(encoding="utf-8", errors="replace")
+    try:
+        data = ast.literal_eval(text.lstrip())
+        dependencies = list(data.get("depends", []))
+        additions = sorted(providers - set(dependencies))
+        if not additions:
+            return []
+        from ..manifest import rewrite_list
+
+        text = rewrite_list(text, "depends", dependencies + additions)
+    except (OSError, SyntaxError, ValueError, TypeError):
+        return []
+    manifest_path.write_text(text, encoding="utf-8")
+    index.depends[module.name] = dependencies + additions
+    return additions
 
 
 def _seller_info_extracted(call, tree):
@@ -804,6 +1063,13 @@ def _odoo20_python_issues(tree, index, visitor):
             yield node.lineno, "error", f"ir.config_parameter.{name}() was removed in Odoo 20; choose the typed {replacement} method matching the value"
         if name == "_file_read" and node.args:
             yield node.lineno, "error", "ir.attachment._file_read() no longer accepts store_fname in Odoo 20; call it on the attachment without arguments (it returns BinaryValue)"
+        if (
+            name in {"clear", "reset"}
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Attribute)
+            and node.func.value.attr == "cr"
+        ):
+            yield node.lineno, "error", "Cursor.clear()/reset() was removed in Odoo 20; use env.transaction.clear(), and also clear cr.precommit when pending precommit callbacks must be discarded"
         if name == "execute" and node.args and isinstance(node.args[0], ast.Constant):
             sql = node.args[0].value
             if isinstance(sql, str) and re.search(r"\bmail_tracking_value\b", sql, re.I):

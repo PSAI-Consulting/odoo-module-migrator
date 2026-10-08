@@ -24,8 +24,6 @@ def replace_tree_with_list_in_views(logger, module_path, module_name, manifest_p
     reg_tree_to_list_view = re.compile(
         r"""(['"]views['"][^'":]*[:=].*['"])tree(['"])"""
     )
-    reg_tree_to_list_string = re.compile(r"""([ '">)])tree( [vV]iews?[ '"<.)])""")
-    reg_tree_to_list_String = re.compile(r"""([ '">)])Tree( [vV]iews?[ '"<.)])""")
     reg_tree_to_list_env_ref = re.compile(r"""(self\.env\.ref\(.*['"])tree(['"])""")
 
     for file in files_to_process:
@@ -33,7 +31,6 @@ def replace_tree_with_list_in_views(logger, module_path, module_name, manifest_p
             content = tools._read_content(file)
             original_content = content
             
-            content = content.replace(" tree view ", " list view ")
             content = reg_tree_to_list_xml_mode.sub(r"\1list\4", content)
             content = reg_tree_to_list_tag.sub(r"\1list\2", content)
             content = reg_tree_to_list_xpath.sub(r"\1\2list\3", content)
@@ -41,8 +38,6 @@ def replace_tree_with_list_in_views(logger, module_path, module_name, manifest_p
             content = reg_tree_to_list_mode.sub(r"\1list\2", content)
             content = reg_tree_to_list_view_mode.sub(r"\1list\3", content)
             content = reg_tree_to_list_view.sub(r"\1list\2", content)
-            content = reg_tree_to_list_string.sub(r"\1list\2", content)
-            content = reg_tree_to_list_String.sub(r"\1List\2", content)
             content = reg_tree_to_list_env_ref.sub(r"\1list\2", content)
 
             if content != original_content:

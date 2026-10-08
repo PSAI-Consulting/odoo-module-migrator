@@ -405,6 +405,15 @@ class Migration:
             script.parse_rules()
             menu_parent_hints.extend(script._MENU_PARENT_HINTS)
         for module_migration in self._module_migrations:
+            widget_dependencies = views.apply_known_widget_dependencies(
+                module_migration._module_path, index
+            )
+            for dependency in widget_dependencies:
+                logger.info(
+                    "Added uniquely resolved widget dependency %s. File %s:1",
+                    dependency,
+                    module_migration._module_path / "__manifest__.py",
+                )
             unknown = index.unknown_dependencies(module_migration._module_name)
             if unknown:
                 logger.warning(
@@ -437,6 +446,15 @@ class Migration:
                     )
         from .analysis import python_checks
         for module_migration in self._module_migrations:
+            additions = python_checks.apply_unambiguous_dependencies(
+                module_migration._module_path, model_index
+            )
+            for dependency in additions:
+                logger.info(
+                    "Added uniquely resolved Python dependency %s. File %s:1",
+                    dependency,
+                    module_migration._module_path / "__manifest__.py",
+                )
             # The model index resolves relational aliases that the standalone
             # migration scripts cannot know (order.order_line -> line). Apply
             # each step in order so chained renames remain chained.
@@ -464,6 +482,18 @@ class Migration:
                         changed_path,
                         changed_line,
                     )
+            runtime_changes = python_checks.apply_runtime_api_migrations(
+                module_migration._module_path,
+                model_index,
+                float(self._migration_steps[-1]["target_version_name"]),
+            )
+            for changed_path, changed_line, detail in runtime_changes:
+                logger.info(
+                    "Migrated runtime API (%s). File %s:%s",
+                    detail,
+                    changed_path,
+                    changed_line,
+                )
             logger.info("Checking Python and field callbacks: %s", module_migration._module_name)
             log_model = logger.warning if model_index.unknown_dependencies(module_migration._module_name) else logger.error
             for path, line, level, message in python_checks.check_module(
