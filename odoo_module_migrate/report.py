@@ -12,6 +12,7 @@ or, failing that, the module being migrated. Each module gets:
 * a risk level.
 """
 
+import ast
 import collections
 import logging
 import pathlib
@@ -123,6 +124,51 @@ class ReportCollector(logging.Handler):
             record.levelname, " ".join(cleaned.split()), relative, line,
             source.group(0) if source else "",
         )
+        circular = re.match(r"(.+?): circular dependency; (.+)", entry.message)
+        if circular and entry.file and entry.line:
+            try:
+                tree = ast.parse(
+                    (report.path / entry.file).read_text(
+                        encoding="utf-8", errors="replace"
+                    )
+                )
+                functions = [
+                    node
+                    for node in ast.walk(tree)
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                    and node.lineno <= entry.line <= getattr(node, "end_lineno", node.lineno)
+                ]
+            except (OSError, SyntaxError, ValueError):
+                functions = []
+            if functions:
+                function = max(functions, key=lambda node: node.lineno)
+                suffix = circular[2]
+                full_suffix = (
+                    suffix
+                    + "; keep the base hook neutral and override it in the provider or a bridge module"
+                )
+                prefix = f"Method {function.name} uses "
+                for previous in report.entries:
+                    if (
+                        previous.file == entry.file
+                        and previous.line == function.lineno
+                        and previous.message.startswith(prefix)
+                        and previous.message.endswith(full_suffix)
+                    ):
+                        used = previous.message[len(prefix) : -(len(full_suffix) + 2)]
+                        item = circular[1]
+                        if item not in used.split(", "):
+                            previous.message = (
+                                prefix + used + ", " + item + ": " + suffix
+                            )
+                        return
+                entry.line = function.lineno
+                entry.message = (
+                    prefix
+                    + circular[1]
+                    + ": "
+                    + full_suffix
+                )
         # the same rule may be reported by several version steps
         if entry not in report.entries:
             report.entries.append(entry)

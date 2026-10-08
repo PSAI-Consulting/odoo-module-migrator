@@ -90,8 +90,8 @@ def _classes(path):
 # ---------------------------------------------------------------------------
 
 # fields every model has (odoo/orm/models.py: id, display_name, log access)
-MAGIC_FIELDS = {"id", "display_name", "create_uid", "create_date", "write_uid", "write_date",
-                "__last_update"}
+MAGIC_FIELDS = {"id", "display_name", "create_uid", "create_date", "write_uid", "write_date"}
+BASE_ATTRIBUTES = {"env", "ids", "pool"}
 # Public ORM methods inherited by every regular, abstract and transient model.
 # The core ``odoo/orm/models.py`` is not an addon and is therefore absent from
 # normal addons-path indexing (bundled mode has no core checkout either).

@@ -47,6 +47,16 @@ configuration.
 | 57 | Pour une méthode cible remplacée sans `super()`, le rapport cherche les points d'extension `_prepare_*`, `_affects_*` et `_get_*_domain` appelés directement ou à un niveau, puis propose ces hooks pour limiter la surcharge. |
 | 58 | Une apostrophe doublée façon SQL (`'d''entrée'` : deux littéraux `'…'` collés sans espace, lettre de chaque côté) est réécrite en apostrophe échappée dans le manifest et le code, avant le formatage. Les autres littéraux accolés entre lettres sont seulement signalés. |
 | 59 | Les droits visant un `AbstractModel` sont signalés dans l'ancien `ir.model.access.csv` comme dans le nouvel `ir.access.csv`. Les noms techniques et XML IDs `model_*` sont résolus par l'index des modèles. |
+| 64 | Les diagnostics de dépendance circulaire sont regroupés par méthode dans le rapport, avec les modèles/champs utilisés et un plan de hook dans le fournisseur ou un module de liaison. |
+| 65, 78 | Une méthode de calcul qui écrit un autre champ et une surcharge `create` sans `@api.model_create_multi` sont signalées. |
+| 66, 67, 70, 71 | Contrôles Odoo 20 sur `__last_update`, texte + octets, API typées de `ir.config_parameter`, appels de méthodes absentes et SQL brut vers `mail_tracking_value`. |
+| 68, 75 | Les lectures/décodages et écritures base64 sur des champs `Binary`/`Image` résolus tiennent compte de `BinaryValue`; `_file_read` avec argument est signalé. |
+| 69 | Constantes de classe et attribut `pool` exclus des faux champs ; un modèle persistant relu par `search` n'est pas proposé comme assistant. |
+| 72, 74, 77 | Réécritures de vues limitées aux architectures : mode kanban, CSS `%`, `active_id` vers `id` et widget `field_selector`. Les contextes d'actions et commentaires sont conservés. |
+| 73 | Les appels de messagerie dans une route `auth="none"` sans utilisateur explicite sont signalés. |
+| 76 | Pour un champ absent d'un mixin abstrait, le diagnostic liste les héritiers concrets qui le définissent et leurs types. |
+| 79 | Diagnostics Python pour chaîne levée, `env.get` booléen, valeur comparée à `fields.X` et `except:` nu. |
+| 80 | Les widgets dont le module fournisseur est connu sont comparés à la fermeture des dépendances (`section_and_note_one2many` → `account`). |
 | 60 | Une chaîne dont toutes les séquences d'échappement sont invalides (`"\."`, `SyntaxWarning` en Python 3.12) devient une chaîne brute de valeur identique. Un mélange de séquences valides et invalides est signalé. |
 | 61 | La normalisation du manifest retire aussi `data` vide et les entrées vides de `external_dependencies` (puis la clé si elle ne contient plus rien). |
 | 62 | `tracking=` sur un champ d'un modèle sans `mail.thread` (lignée entièrement connue) est signalé. Un `author` absent est complété par `--default-author`, sinon signalé. |

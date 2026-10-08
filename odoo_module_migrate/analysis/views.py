@@ -514,10 +514,18 @@ def check_module(module, index, reference_modules, menu_parent_hints=()):
     # a dependency outside the addons paths may add any anchor, XML id or
     # dependency: then only what must exist in the target Odoo itself is checked
     complete = index.complete(closure)
+    widget_modules = {"section_and_note_one2many": "account"}
     for path in _data_files(module):
         root = _parse(path)
         if root is None:
             continue
+        if complete:
+            for node in root.xpath(".//field[@widget]"):
+                provider = widget_modules.get(node.get("widget"))
+                if provider and provider not in closure:
+                    yield path, node.sourceline, _missing_depends(
+                        f"widget {node.get('widget')!r}", provider
+                    )
         if index.precisions:
             for node in root.iter():
                 if not isinstance(node.tag, str):

@@ -721,6 +721,169 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `edi_webservice_data_model`. `# se poser peut être la question de impacket plutôt que pysmb` était au-dessus de `external_dependencies` (vide) ; la clé est retirée, le commentaire reste seul avant `}`.
 - **Correction proposée** : quand une clé est retirée, retirer aussi les commentaires qui lui sont attachés (lignes juste au-dessus).
 
+## 64. 🟠 « Dépendance circulaire » : 1 TODO par ligne, sans plan de déplacement
+
+> **État du migrateur (08/10/2026)** : ✅ Corrigé — le rapport regroupe les
+> dépendances circulaires par méthode, liste les modèles/champs concernés et
+> propose de garder un hook neutre dans la base puis de le surcharger dans le
+> fournisseur ou dans un module de liaison.
+
+- Module : `edi_worker`. 31 TODO 🔴 « circular dependency; move this code into edi_platform » (`self.env['edi.task']`, `edi.file`, `edi.configuration`, `file_mapping`). Le diagnostic est juste (PyCharm signale les mêmes symboles) : le code du mode local a été déplacé dans `edi_platform` / `edi_platform_transform`, avec des méthodes vides dans `edi_worker`.
+- Mais 31 lignes pour 6 méthodes : difficile à lire.
+- **Correction proposée** : regrouper par **méthode** (« `_send_local_files` utilise edi.task, edi.file → à déplacer dans edi_platform, qui étend déjà edi.worker.config ») ; dire si le module cible étend déjà le modèle ; proposer le squelette (méthode vide dans le module de base + surcharge dans le module cible).
+
+## 66. 🔴 Bugs d'exécution non vus : `__last_update`, texte + octets
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée —
+> `__last_update` n'est plus considéré comme un champ magique et ses emplois
+> sous forme de chaîne sont signalés. Une concaténation texte + `.content`
+> propose `.text` ou un décodage explicite.
+
+- Module : `edi_worker`. `.sorted("__last_update")` (champ magique supprimé en 17) et `"…" + response.content` (`bytes`, `requests`) : vus par PyCharm, pas par le migrator.
+- **Correction proposée** : remplacer `__last_update` par `write_date` (ou `id`) partout (domaines, `sorted`, `mapped`, vues) ; signaler `str + response.content`.
+
+## 65. 🟡 Calcul qui vide un champ saisi : sans effet à la création
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — pour chaque
+> champ déclarant `compute=`, les affectations d'autres champs dans la méthode
+> sont signalées avec le risque particulier pendant `create`.
+
+- Module : `edi_ftp_data_model` / `edi_worker`. `_encrypt_input_ftp_password` met `input_ftp_password = False` dans le calcul de `input_ftp_password_encrypted` ; à la création, la valeur saisie l'emporte : mot de passe stocké en clair (11 en prod).
+- **Correction proposée** : signaler (🟡) l'écriture d'un **autre** champ, non calculé, dans une méthode `_compute_*` / `compute=`.
+
+## 67. 🔴 `get_param` / `set_param` supprimés (Odoo 20)
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — les deux API
+> supprimées deviennent des erreurs et le diagnostic demande de choisir la
+> variante typée `get_*` / `set_*`. Le type n'est pas deviné automatiquement
+> lorsqu'il dépend du code appelant.
+
+- Module : `edi_worker` (vu par PyCharm). `self.env["ir.config_parameter"].sudo().get_param(...)` : méthode supprimée (commit `a4f2879697a7`), remplacée par `get_str`, `get_int`, `get_float`, `get_bool` et `set_*`. 128 usages dans 21 modules Stof.
+- **Correction proposée** : `int(get_param(k) or 0)` → `get_int(k)` ; `get_param(k) or d` → `get_str(k, d)` ; `get_param(k) == "True"` → `get_bool(k)` ; sinon `get_str(k)` + TODO 🟠 sur le type. Idem `set_param` → `set_str`/`set_int`…
+
+## 68. 🔴 Champs `Binary` : `BinaryValue` au lieu de base64
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — les appels
+> base64 portant sur un champ `Binary`/`Image` résolu et `_file_read` avec un
+> argument sont signalés avec les adaptations `BinaryValue` correspondantes.
+
+- Module : `edi_worker`. `base64.b64decode(self.file)` sur un `fields.Binary` : en 20 la valeur est le contenu **brut** (`BinaryValue`, commit `41fe2ebdb9cc`) → « Incorrect padding », intercepté : lecture CSV et aperçu vides, **sans erreur**. Écrire des `bytes` lève `TypeError: use BinaryValue instead of bytes` (le `str` base64 reste accepté).
+- `ir.attachment._file_read(store_fname)` : plus d'argument, renvoie un `BinaryValue`.
+- 96 `b64decode`/`b64encode` dans 21 modules Stof (EDI, imports).
+- **Correction proposée** : sur un champ `Binary` connu, `base64.b64decode(rec.f)` → `rec.f.content` ; `rec.f = base64.b64encode(x)` → `rec.f = BinaryBytes(x)` (ou `.decode()`) ; TODO 🔴 sinon. `_file_read(x)` → `_file_read()`.
+
+## 69. 🟡 Faux positifs : constantes de classe, `self.pool`, modèle « assistant »
+
+> **État du migrateur (08/10/2026)** : ✅ Corrigé — les constantes en
+> majuscules et `pool` font partie des attributs connus. La proposition de
+> `TransientModel` est supprimée quand le modèle est relu par `search` ou
+> `search_count`.
+
+- Module : `edi_platform`. 🔴 « Field edi.platform.alert.SEVERITY_INFO does not exist » (constante de classe `SEVERITY_INFO = "INFO"`) ; 🔴 « Field res.config.settings.pool » (`self.pool`, le registre) ; 🟠 `edi.jwt.token` « looks like a wizard » (ouvert en `target="new"`, mais les jetons doivent rester en base).
+- **Correction proposée** : ignorer les attributs de classe non-champs (`NOM = valeur` en majuscules) et les attributs de `BaseModel` (`pool`, `env`, `ids`…) ; ne proposer `TransientModel` que si aucun `search`/`search_count` ne relit le modèle.
+
+## 70. 🔴 `mail.compose.message.res_id` / `_onchange_template_id_wrapper`
+
+> **État du migrateur (08/10/2026)** : ✅ Détection complétée — en plus des
+> champs absents, les appels de méthodes sur un modèle résolu sont maintenant
+> comparés aux méthodes de la cible. La transformation de `res_id` reste à
+> relire car la construction attendue de `res_ids` dépend de l'appelant.
+
+- Module : `edi_platform`. Le formulaire d'envoi de mail n'a plus `res_id` (→ `res_ids`, texte) ni `_onchange_template_id_wrapper` (le corps se calcule depuis le modèle). Déjà le cas en 17. Le migrator a bien signalé `res_id` (🔴), pas la méthode.
+- **Correction proposée** : `"res_id": x.id` → `"res_ids": str(x.ids)` sur `mail.compose.message` ; retirer `_onchange_template_id_wrapper()`.
+
+## 71. 🔴 `mail_tracking_value` en SQL brut
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — un
+> `cr.execute` contenant cette table produit une erreur et propose ORM/cascade
+> ou un garde `table_exists()`.
+
+- Module : `edi_platform`. `DELETE FROM mail_tracking_value …` dans une purge : en 20, `mail.tracking.value` est dans le module optionnel `mail_tracking` (commit `dd0c51ec1855`). Sans lui, la table n'existe pas.
+- **Correction proposée** : signaler (🔴) les noms de tables de modèles déplacés ou supprimés dans le SQL brut (`cr.execute`) ; pour celle-ci, proposer de s'appuyer sur la cascade ou de tester `table_exists`.
+
+## 72. 🟡 Widget de champ inexistant, CSS invalide
+
+> **État du migrateur (08/10/2026)** : ✅ Correction sûre implémentée — dans
+> les architectures de vues, `widget="kanban"` devient `mode="kanban"` et les
+> pourcentages CSS doublés sont normalisés. Les actions et commentaires sont
+> exclus de cette réécriture.
+
+- Module : `edi_platform`. `<field … widget="kanban">` (aucun widget de champ « kanban » : avertissement console, repli sur le one2many) ; `style="width:200%%"`.
+- **Correction proposée** : vérifier `widget=` contre le registre `fields` de la cible ; pour un x2many, proposer `mode="kanban"`.
+
+## 73. 🟡 Contrôleur `auth="none"` : `message_post` sans utilisateur
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée —
+> `message_post` et `activity_schedule` dans une route `auth="none"` sont
+> signalés lorsqu'aucun `with_user(...)` n'est présent sur le récepteur.
+
+- Module : `edi_platform`. Dans une route `auth="none"`, `request.env.user` est vide ; en 20, `message_post` appelle `self.env.user._is_public()` → « Expected singleton: res.users() ».
+- **Correction proposée** : signaler (🟠) `message_post`, `activity_schedule`… dans une route `auth="none"` sans `with_user(...)` ; proposer `with_user(SUPERUSER_ID)`.
+
+## 74. 🔴 `active_id` dans le contexte d'un champ de vue
+
+> **État du migrateur (08/10/2026)** : ✅ Correction automatique — `active_id`
+> devient `id` uniquement dans les attributs d'expression d'une architecture
+> `ir.ui.view`. Le contexte d'une action reste inchangé.
+
+- Module : `edi_platform_transform`. `<field name="values_ids" context="{'default_column_id': active_id}"/>` dans un formulaire : refusé en 20 à l'installation (« Incohérence des droits d'accès … le champ active_id n'existe pas »). Non signalé par le migrator.
+- `active_id` reste valide dans le `domain` / `context` d'une **action** (`ir.actions.act_window`).
+- **Correction proposée** : dans `arch` (attributs `context`, `domain`, `invisible`…), remplacer `active_id` par `id` ; ne pas toucher aux champs d'actions.
+
+## 75. 🟠 Écriture de base64 en `bytes` dans un champ `Binary` / `Image`
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — les
+> affectations directes et valeurs de dictionnaires `create`/`write` sont
+> reliées au type du champ et proposent `BinaryBytes` ou une chaîne décodée.
+
+- Module : `edi_platform_transform`. `rec.file_structure = base64.b64encode(png)`, `create({"file": base64.b64encode(data)})` : en 20, `TypeError: use BinaryValue instead of bytes`.
+- **Correction proposée** (complète le n° 68) : ajouter `.decode()` (ou `BinaryBytes(data)`) quand on écrit `b64encode(...)` dans un champ `Binary`/`Image` ou dans un `create`/`write`.
+
+## 76. 🟡 Calcul dans un mixin qui lit un champ des modèles concrets
+
+> **État du migrateur (08/10/2026)** : ✅ Diagnostic enrichi — si le récepteur
+> est abstrait, l'erreur liste les modèles concrets héritiers qui possèdent le
+> champ et son type dans chacun, afin de choisir où déplacer le calcul.
+
+- Module : `edi_platform_transform`. `edi.model.transform._compute_transform_partner_id` lit `configuration_id`, défini en many2one sur `edi.task` et en texte sur `edi.worker.config`. 🔴 « Field edi.model.transform.configuration_id does not exist » : juste, mais la correction (déplacer le calcul dans le modèle concret) n'est pas proposée.
+- **Correction proposée** : dans ce cas, lister les modèles concrets qui héritent du mixin et le type du champ dans chacun.
+
+## 77. 🔴 Widget `DynamicModelFieldSelectorChar` supprimé
+
+> **État du migrateur (08/10/2026)** : ✅ Renommage automatique vers
+> `field_selector`, limité aux architectures de vues Odoo 20 et conservant les
+> options existantes.
+
+- Module : `edi_platform_transform` (et `edi_generic`). Renommé `field_selector` en 20 (commit `0ab72b14a4a3`), mêmes options (`model`, `follow_relations`). Sans renommage : avertissement console et simple champ texte.
+- **Correction proposée** : renommage automatique ; plus largement, vérifier chaque `widget=` contre le registre `fields` de la cible (voir n° 72).
+
+## 78. 🟠 `create(self, vals)` sans `@api.model_create_multi`
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — toute
+> surcharge de modèle nommée `create` sans le décorateur reçoit un diagnostic
+> demandant `vals_list` et le traitement de chaque dictionnaire.
+
+- Module : `edi_platform_transform`. La surcharge reçoit un dict ou une liste selon l'appelant ; avec une liste, `"clé" in vals` est faux et le code saute.
+- **Correction proposée** : ajouter `@api.model_create_multi`, renommer en `vals_list` et boucler.
+
+## 79. 🟡 Bugs Python repérables statiquement
+
+> **État du migrateur (08/10/2026)** : ✅ Détections implémentées pour `raise`
+> d'une chaîne, `env.get(...)` utilisé comme booléen, `isinstance` d'une valeur
+> avec une classe `fields.*` et les `except:` nus.
+
+- Module : `edi_platform_transform`. `raise f"..."` (lever une chaîne → `TypeError`) ; `if not env.get(model):` (recordset vide = faux, la boucle ne fait jamais rien) ; `isinstance(rec.champ, fields.One2many)` (valeur ≠ champ, toujours faux) ; `except:` nus.
+- **Correction proposée** : règles dédiées (🟠) : `raise` d'une chaîne → `UserError(...)` ; `env.get(x)` testé en booléen → `x in env` ; `isinstance(…, fields.X)` sur une valeur → `self._fields[n].type`.
+
+## 80. 🟡 Dépendance manquante pour un widget
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — le registre
+> extensible des widgets fournisseurs connaît `section_and_note_one2many` et
+> exige `account` dans la fermeture des dépendances lorsque l'index est complet.
+
+- Module : `edi_platform_transform`. `widget="section_and_note_one2many"` vient d'`account`, absent des dépendances.
+- **Correction proposée** : pour chaque widget, retrouver le module qui l'enregistre et vérifier qu'il est dans les dépendances.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -752,6 +915,9 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `edi_data_model` | Rien de bloquant ; apostrophes doublées façon SQL, droits sur des modèles abstraits | 58, 59 |
 | `edi_ftp_data_model` | `\.` invalide en Python 3.12 ; clés vides du manifest | 60, 61 |
 | `edi_webservice_data_model` | Rien de bloquant ; commentaire orphelin dans le manifest | 63 |
+| `edi_worker` | `get_param` supprimé, champs `Binary` en `BinaryValue`, `_file_read`, `__last_update`, texte + octets ; 31 TODO « dépendance circulaire » à regrouper ; calcul qui vide un champ saisi | 64 à 68 |
+| `edi_platform` | `get_param` (n° 67), `BinaryValue` en JSON et à la lecture (n° 68), `_onchange_template_id_wrapper`, `mail_tracking_value` en SQL, widget `kanban`, `message_post` en `auth="none"` ; faux positifs (constantes, `self.pool`, jeton « assistant ») | 67 à 73 |
+| `edi_platform_transform` | `active_id` dans une vue, base64 en `bytes` écrit dans un `Binary`, `_file_read`, fichier d'exemple en `BinaryValue`, sous-formulaire contact refait en 20 (ancres), widget `DynamicModelFieldSelectorChar`, `create` sans décorateur, `raise` d'une chaîne, `env.get` en booléen, dépendance `account` | 68, 74 à 80 |
 
 ---
 

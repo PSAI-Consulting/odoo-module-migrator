@@ -12,6 +12,9 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.compat
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.view_anchors import (
     migrate_view_anchors,
 )
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.view_expressions import (
+    migrate_view_expressions,
+)
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.bank_account_fields import (
     migrate_bank_account_fields,
 )
@@ -27,7 +30,7 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.produc
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180.env_translation import (
     migrate_env_translation,
 )
-from odoo_module_migrate.report import Entry, ModuleReport
+from odoo_module_migrate.report import Entry, ModuleReport, ReportCollector
 
 
 def addon(root, name, depends=(), code="", xml="", data=None):
@@ -1122,6 +1125,117 @@ class Concrete(models.Model):
     assert len(issues) == 1
     assert "custom.input" in issues[0][2]
 
+
+def test_odoo20_runtime_api_and_python_errors_are_reported(tmp_path):
+    mod = addon(tmp_path, "custom", code="""import base64
+from odoo import api, fields, models
+
+class Thing(models.Model):
+    _name = "custom.thing"
+    _description = "Thing"
+    image = fields.Image()
+    result = fields.Char(compute="_compute_result")
+    password = fields.Char()
+
+    def _compute_result(self):
+        self.password = False
+        self.result = "ok"
+
+    def create(self, vals):
+        self.image = base64.b64encode(b"png")
+        if not self.env.get("optional.model"):
+            pass
+        if isinstance(self.image, fields.Image):
+            pass
+        try:
+            raise f"bad {vals}"
+        except:
+            pass
+        self.env["ir.config_parameter"].get_param("key")
+        self.env["ir.attachment"]._file_read("name")
+        self.env.cr.execute("DELETE FROM mail_tracking_value")
+        return super().create(vals)
+""")
+    index = models.ModelIndex.build([tmp_path])
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index, target_version=20
+        )
+    ]
+    expected = [
+        "model_create_multi",
+        "base64.b64encode",
+        "env.get",
+        "isinstance(record.value",
+        "cannot raise a string",
+        "Bare except",
+        "get_param",
+        "_file_read",
+        "mail_tracking_value",
+        "writes other field password",
+    ]
+    for fragment in expected:
+        assert any(fragment in message for message in messages), fragment
+
+
+def test_odoo20_view_expression_and_widget_rewrites_are_scoped_to_views(tmp_path):
+    mod = addon(tmp_path, "custom", xml="""<record id="view" model="ir.ui.view">
+<field name="model">custom.thing</field><field name="arch" type="xml"><form>
+<field name="line_ids" context="{'default_parent_id': active_id}" widget="kanban"/>
+<field name="path" widget="DynamicModelFieldSelectorChar" style="width:200%%"/>
+</form></field></record>
+<record id="action" model="ir.actions.act_window">
+<field name="context">{'default_parent_id': active_id}</field></record>""")
+    migrate_view_expressions(
+        module_path=mod, tools=tools, logger=logging.getLogger("test")
+    )
+    text = (mod / "view.xml").read_text()
+    assert "default_parent_id': id" in text
+    assert 'mode="kanban"' in text and 'widget="kanban"' not in text
+    assert 'widget="field_selector"' in text
+    assert "width:200%" in text and "200%%" not in text
+    assert "<field name=\"context\">{'default_parent_id': active_id}" in text
+
+
+def test_circular_dependency_todos_are_grouped_by_method(tmp_path):
+    mod = addon(tmp_path, "custom", code="""class Worker:
+    def send(self):
+        first = 1
+        second = 2
+""")
+    collector = ReportCollector([("custom", mod)])
+    for line, item in ((3, "Field worker.task_id"), (4, "Model edi.file")):
+        record = logging.LogRecord(
+            "test",
+            logging.ERROR,
+            "",
+            0,
+            f"{item}: circular dependency; move this code into provider "
+            f"(field/model provider) or a bridge module. File {mod / 'models.py'}:{line}",
+            (),
+            None,
+        )
+        collector.emit(record)
+    entries = collector.reports["custom"].entries
+    assert len(entries) == 1
+    assert entries[0].line == 2
+    assert "Method send uses Field worker.task_id, Model edi.file" in entries[0].message
+
+
+def test_known_view_widget_provider_must_be_a_dependency(tmp_path):
+    addon(tmp_path, "base", data=[])
+    addon(tmp_path, "account", ["base"], data=[])
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["base"],
+        xml="""<record id="view" model="ir.ui.view"><field name="model">x</field>
+<field name="arch" type="xml"><form><field name="line_ids" widget="section_and_note_one2many"/></form></field></record>""",
+    )
+    index = views.ViewIndex.build([tmp_path])
+    issues = list(views.check_module(mod, index, {"base", "account"}))
+    assert any("widget 'section_and_note_one2many'" in message and "account" in message for _path, _line, message in issues)
 
 def test_invalid_escape_sequences_become_raw_strings(tmp_path, caplog):
     mod = addon(tmp_path, "custom", code="""from odoo import fields, models

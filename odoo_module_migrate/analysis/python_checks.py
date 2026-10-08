@@ -19,6 +19,7 @@ class Uses(ast.NodeVisitor):
         self.usages = []
         self.model_uses = []
         self.called = set()
+        self.method_calls = []
         self.super_results = {}
 
     def receiver(self, node):
@@ -158,6 +159,8 @@ class Uses(ast.NodeVisitor):
         if isinstance(node.func, ast.Attribute):
             self.called.add(id(node.func))
             model = self.receiver(node.func.value)
+            if model:
+                self.method_calls.append((node.func, model, node.func.attr))
             if model and node.func.attr in {"write", "create", "update"} and node.args:
                 arg = node.args[0]
                 dictionaries = (
@@ -410,7 +413,26 @@ def _modal_models(module):
     return result
 
 
-def _persistent_wizard_issues(tree, index, modal_models):
+def _searched_models(module):
+    result = set()
+    for path in models._python_files(module):
+        try:
+            tree = ast.parse(path.read_bytes())
+        except (SyntaxError, ValueError):
+            continue
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr in {"search", "search_count"}
+            ):
+                model = fields._env_model(node.func.value)
+                if model:
+                    result.add(model)
+    return result
+
+
+def _persistent_wizard_issues(tree, index, modal_models, searched_models=()):
     """Strong signs that a persistent model was intended to be a wizard."""
     for cls in ast.walk(tree):
         if not isinstance(cls, ast.ClassDef):
@@ -423,6 +445,8 @@ def _persistent_wizard_issues(tree, index, modal_models):
         if not models_in_class or "Model" not in bases or "TransientModel" in bases:
             continue
         model = models_in_class[0]
+        if model in searched_models:
+            continue
         explicitly_named = any(
             isinstance(stmt, ast.Assign)
             and len(stmt.targets) == 1
@@ -518,12 +542,151 @@ def _html_field_issues(tree, index):
                 )
 
 
+def _field_kind(index, model, field):
+    return set().union(
+        *(index.field_types.get((ancestor, field), set()) for ancestor in index.ancestors(model))
+    )
+
+
+def _odoo20_python_issues(tree, index, visitor):
+    """Certain Python incompatibilities introduced by the Odoo 20 ORM APIs."""
+    parents = {
+        id(child): parent
+        for parent in ast.walk(tree)
+        for child in ast.iter_child_nodes(parent)
+    }
+    resolved = {id(node): (model, field) for node, model, field in visitor.usages}
+    call_models = {id(node): model for node, model, _method in visitor.method_calls}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Raise) and isinstance(node.exc, (ast.Constant, ast.JoinedStr)):
+            value = node.exc.value if isinstance(node.exc, ast.Constant) else ""
+            if isinstance(node.exc, ast.JoinedStr) or isinstance(value, str):
+                yield node.lineno, "error", "Python cannot raise a string; raise UserError(...) or another Exception instance"
+        if isinstance(node, ast.ExceptHandler) and node.type is None:
+            yield node.lineno, "warning", "Bare except catches system-exiting exceptions; catch Exception or the expected exception types"
+        if (
+            isinstance(node, ast.BinOp)
+            and isinstance(node.op, ast.Add)
+            and (
+                isinstance(node.left, ast.Constant) and isinstance(node.left.value, str)
+                and isinstance(node.right, ast.Attribute) and node.right.attr == "content"
+                or isinstance(node.right, ast.Constant) and isinstance(node.right.value, str)
+                and isinstance(node.left, ast.Attribute) and node.left.attr == "content"
+            )
+        ):
+            yield node.lineno, "error", "Text is concatenated with .content, which is commonly bytes (for example requests.Response.content); decode it or use .text"
+        if not isinstance(node, ast.Call):
+            continue
+        name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+        if name in {"get_param", "set_param"}:
+            replacement = "get_str/get_int/get_float/get_bool" if name == "get_param" else "set_str/set_int/set_float/set_bool"
+            yield node.lineno, "error", f"ir.config_parameter.{name}() was removed in Odoo 20; choose the typed {replacement} method matching the value"
+        if name == "_file_read" and node.args:
+            yield node.lineno, "error", "ir.attachment._file_read() no longer accepts store_fname in Odoo 20; call it on the attachment without arguments (it returns BinaryValue)"
+        if name == "execute" and node.args and isinstance(node.args[0], ast.Constant):
+            sql = node.args[0].value
+            if isinstance(sql, str) and re.search(r"\bmail_tracking_value\b", sql, re.I):
+                yield node.lineno, "error", "Raw SQL references mail_tracking_value, whose model moved to optional mail_tracking in Odoo 20; rely on ORM/cascades or guard the table with table_exists()"
+        if name in {"b64decode", "b64encode"} and node.args:
+            info = resolved.get(id(node.args[0]))
+            if info and _field_kind(index, *info) & {"Binary", "Image"}:
+                action = "read field.content instead of base64-decoding it" if name == "b64decode" else "do not base64-encode an already binary field value"
+                yield node.lineno, "error", f"Odoo 20 Binary/Image values use BinaryValue; {action}"
+        if name == "b64encode":
+            parent = parents.get(id(node))
+            if isinstance(parent, (ast.Assign, ast.AnnAssign)):
+                targets = parent.targets if isinstance(parent, ast.Assign) else [parent.target]
+                for target in targets:
+                    info = resolved.get(id(target))
+                    if info and _field_kind(index, *info) & {"Binary", "Image"}:
+                        yield node.lineno, "error", "base64.b64encode() returns bytes, which cannot be assigned to a Binary/Image field in Odoo 20; use BinaryBytes(raw) or decode the base64 result to str"
+        if name in {"create", "write", "update"} and node.args:
+            model = call_models.get(id(node.func))
+            mappings = node.args[0].elts if isinstance(node.args[0], (ast.List, ast.Tuple)) else [node.args[0]]
+            for mapping in mappings:
+                if not model or not isinstance(mapping, ast.Dict):
+                    continue
+                for key, value in zip(mapping.keys, mapping.values):
+                    if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                        continue
+                    if not (_field_kind(index, model, key.value) & {"Binary", "Image"}):
+                        continue
+                    value_name = value.func.attr if isinstance(value, ast.Call) and isinstance(value.func, ast.Attribute) else getattr(getattr(value, "func", None), "id", "")
+                    if value_name == "b64encode":
+                        yield value.lineno, "error", f"base64.b64encode() returns bytes for Binary/Image field {model}.{key.value}; use BinaryBytes(raw) or decode the base64 result to str"
+        if (
+            name == "get"
+            and isinstance(node.func, ast.Attribute)
+            and (
+                isinstance(node.func.value, ast.Name) and node.func.value.id == "env"
+                or isinstance(node.func.value, ast.Attribute) and node.func.value.attr == "env"
+            )
+            and isinstance(parents.get(id(node)), (ast.If, ast.IfExp, ast.UnaryOp, ast.BoolOp))
+        ):
+            yield node.lineno, "warning", "env.get(model) returns a recordset; a missing/empty model is false. Use `model in env` to test registry membership"
+        if (
+            isinstance(node.func, ast.Name) and node.func.id == "isinstance"
+            and len(node.args) >= 2
+            and isinstance(node.args[1], ast.Attribute)
+            and isinstance(node.args[1].value, ast.Name)
+            and node.args[1].value.id == "fields"
+        ):
+            yield node.lineno, "warning", "isinstance(record.value, fields.X) compares a field value with a field descriptor class; inspect record._fields[name].type instead"
+
+    for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+        class_models = fields._class_models(cls)
+        if not class_models:
+            continue
+        computed = {}
+        for stmt in cls.body:
+            target = stmt.target if isinstance(stmt, ast.AnnAssign) else (
+                stmt.targets[0] if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 else None
+            )
+            call = getattr(stmt, "value", None)
+            if isinstance(target, ast.Name) and isinstance(call, ast.Call):
+                compute = next((kw.value.value for kw in call.keywords if kw.arg == "compute" and isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str)), None)
+                if compute:
+                    computed.setdefault(compute, set()).add(target.id)
+        for stmt in cls.body:
+            if not isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            decorators = {
+                deco.attr for deco in stmt.decorator_list if isinstance(deco, ast.Attribute)
+            }
+            if stmt.name == "create" and "model_create_multi" not in decorators:
+                yield stmt.lineno, "warning", "create() override lacks @api.model_create_multi; accept vals_list and handle every dictionary before calling super()"
+            fields_for_compute = computed.get(stmt.name, set())
+            if fields_for_compute:
+                for assignment in ast.walk(stmt):
+                    targets = []
+                    if isinstance(assignment, ast.Assign):
+                        targets = assignment.targets
+                    elif isinstance(assignment, (ast.AnnAssign, ast.AugAssign)):
+                        targets = [assignment.target]
+                    for target in targets:
+                        if isinstance(target, ast.Attribute) and target.attr not in fields_for_compute:
+                            yield target.lineno, "warning", f"Compute {stmt.name} writes other field {target.attr}; clearing a user-entered field during compute may be ignored during create and can leave the original value stored"
+                            break
+            auth_none = any(
+                isinstance(deco, ast.Call)
+                and (getattr(deco.func, "attr", "") == "route" or getattr(deco.func, "id", "") == "route")
+                and any(kw.arg == "auth" and isinstance(kw.value, ast.Constant) and kw.value.value == "none" for kw in deco.keywords)
+                for deco in stmt.decorator_list
+            )
+            if auth_none:
+                for call in ast.walk(stmt):
+                    if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute) and call.func.attr in {"message_post", "activity_schedule"}:
+                        if not any(isinstance(part, ast.Call) and isinstance(part.func, ast.Attribute) and part.func.attr == "with_user" for part in ast.walk(call.func.value)):
+                            yield call.lineno, "warning", f"{call.func.attr}() in an auth='none' route has no request user; call it with an explicit user (for example with_user(SUPERUSER_ID))"
+
+
 def check_module(module, index, target_version=20, precision_names=None):
     module = Path(module)
     closure = index.closure(module.name)
     complete = not index.unknown_dependencies(module.name)
     document_fields, document_type_domains = _document_selection_fields(module, index)
     modal_models = _modal_models(module)
+    searched_models = _searched_models(module)
     for path in models._python_files(module):
         try:
             tree = ast.parse(path.read_bytes())
@@ -531,13 +694,27 @@ def check_module(module, index, target_version=20, precision_names=None):
             continue
         visitor = Uses(index)
         visitor.visit(tree)
+        if target_version >= 17:
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Constant) and node.value == "__last_update":
+                    yield (
+                        path,
+                        node.lineno,
+                        "error",
+                        "__last_update was removed in Odoo 17; use write_date (or id for stable ordering)",
+                    )
+        if target_version >= 20:
+            for line, level, message in _odoo20_python_issues(tree, index, visitor):
+                yield path, line, level, message
         for line, message in _dynamic_model_issues(tree):
             yield path, line, "warning", message
         for line, message in _document_relation_issues(
             tree, target_version, document_fields, document_type_domains
         ) or ():
             yield path, line, "warning", message
-        for line, message in _persistent_wizard_issues(tree, index, modal_models):
+        for line, message in _persistent_wizard_issues(
+            tree, index, modal_models, searched_models
+        ):
             yield path, line, "warning", message
         for line, message in _html_field_issues(tree, index):
             yield path, line, "warning", message
@@ -597,14 +774,36 @@ def check_module(module, index, target_version=20, precision_names=None):
                 and ancestors <= index.defined
                 and field not in models.MAGIC_FIELDS
                 and not field.startswith("_")
-                and field not in {"env", "ids"}
+                and field not in models.BASE_ATTRIBUTES
+                and not field.isupper()
                 and not any(field in index.methods.get(m, set()) for m in ancestors)
             ):
+                if model in index.abstract:
+                    concrete = []
+                    for candidate in sorted(index.defined - index.abstract):
+                        if model not in index.ancestors(candidate):
+                            continue
+                        kinds = "/".join(sorted(index.field_types.get((candidate, field), set())))
+                        if field in index.fields.get(candidate, set()):
+                            concrete.append(candidate + (f" ({kinds})" if kinds else ""))
+                    detail = (
+                        "; concrete inheritors define it differently: " + ", ".join(concrete)
+                        if concrete else ""
+                    )
+                else:
+                    detail = ""
                 yield (
                     path,
                     node.lineno,
                     "error",
-                    f"Field {model}.{field} does not exist in the indexed target",
+                    f"Field {model}.{field} does not exist in the indexed target{detail}",
+                )
+            if target_version >= 17 and field == "__last_update":
+                yield (
+                    path,
+                    node.lineno,
+                    "error",
+                    "__last_update was removed in Odoo 17; use write_date (or id for stable ordering)",
                 )
             if target_version >= 19 and model == "uom.uom" and field == "category_id":
                 yield (
@@ -670,6 +869,21 @@ def check_module(module, index, target_version=20, precision_names=None):
                         "warning",
                         "_select_seller() called without quantity while product.supplierinfo.min_qty now defaults to 1 in Odoo 20; pass the quantity explicitly",
                     )
+        for node, model, method in visitor.method_calls:
+            ancestors = index.ancestors(model)
+            if (
+                complete
+                and ancestors <= index.defined
+                and not any(method in index.methods.get(ancestor, set()) for ancestor in ancestors)
+                and method not in models.BASE_ATTRIBUTES
+                and method not in {"get_param", "set_param", "_file_read"}
+            ):
+                yield (
+                    path,
+                    node.lineno,
+                    "error",
+                    f"Method {model}.{method}() does not exist in the indexed target",
+                )
         for cls in ast.walk(tree):
             if not isinstance(cls, ast.ClassDef):
                 continue
