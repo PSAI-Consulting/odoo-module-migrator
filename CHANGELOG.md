@@ -20,6 +20,8 @@
 - Typage des recordsets renvoyés par `mapped`, exclusion des faux fournisseurs
   de méthodes ORM et revue obligatoire avant d'ajouter une dépendance
   Enterprise.
+- Rapports recalculés sur les sources finales et détection des fichiers Python
+  non atteignables depuis les imports du module.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

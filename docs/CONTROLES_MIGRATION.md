@@ -69,6 +69,7 @@ configuration.
 | 91 | En Odoo 20, les boutons de vue `toggle_active` deviennent `action_archive` quand `invisible="not active"` et `action_unarchive` quand `invisible="active"`. Toute autre visibilité reste inchangée et est signalée. Les appels Python résolus sont contrôlés contre les méthodes de la cible. |
 | 92 | Les espaces et retours à la ligne d'un `summary` de manifeste sont réduits pour obtenir une ligne. La description factice exacte du scaffold Odoo est retirée, sans supprimer une description métier. |
 | 93 | Les appels aux méthodes héritées de `BaseModel`, dont `_search`, ne sont pas attribués à un module qui les surcharge. Une dépendance Python dont l'unique fournisseur porte la licence `OEEL-1` reste un TODO avec le symbole déclencheur au lieu d'être ajoutée. Le typage traverse aussi `mapped("champ_relationnel")`, notamment pour renommer `stock.move.line.product_uom_id` en `uom_id`. |
+| 94 | Les erreurs et avertissements fondés sur un motif textuel sont recalculés après tous les nettoyages : le rapport ne conserve plus un TODO dont le code a disparu. Les analyses Python suivent les imports locaux depuis le `__init__.py` de l'addon ; un fichier ou paquet non chargé est exclu des diagnostics de migration et reçoit un unique avertissement de code mort. |
 
 Les dépendances Python manquantes sont ajoutées automatiquement au manifeste
 quand l'index des addons est complet, qu'un seul fournisseur existe et que cet

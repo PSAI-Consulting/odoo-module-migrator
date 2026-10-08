@@ -2,6 +2,42 @@
 from odoo_module_migrate.analysis import models
 
 
+def test_loaded_python_files_follow_relative_imports(tmp_path):
+    module = tmp_path / "custom"
+    package = module / "models"
+    hidden_package = module / "wizard"
+    package.mkdir(parents=True)
+    hidden_package.mkdir()
+    (module / "__init__.py").write_text(
+        "from . import models\n"
+        "from odoo.addons.custom import controllers\n"
+        "import odoo.addons.custom.hooks\n",
+        encoding="utf-8",
+    )
+    (module / "controllers.py").write_text("VALUE = 4\n", encoding="utf-8")
+    (module / "hooks.py").write_text("VALUE = 5\n", encoding="utf-8")
+    (package / "__init__.py").write_text(
+        "from . import loaded\n", encoding="utf-8"
+    )
+    (package / "loaded.py").write_text("VALUE = 1\n", encoding="utf-8")
+    orphan = package / "orphan.py"
+    orphan.write_text("VALUE = 2\n", encoding="utf-8")
+    hidden_init = hidden_package / "__init__.py"
+    hidden_init.write_text("from . import child\n", encoding="utf-8")
+    (hidden_package / "child.py").write_text("VALUE = 3\n", encoding="utf-8")
+
+    loaded = models.loaded_python_files(module)
+    assert loaded == {
+        module / "__init__.py",
+        module / "controllers.py",
+        module / "hooks.py",
+        package / "__init__.py",
+        package / "loaded.py",
+    }
+    # One warning for the unimported package, without a redundant child warning.
+    assert models.unimported_python_files(module) == [orphan, hidden_init]
+
+
 def _module(root, name, depends, py):
     path = root / name
     (path / "models").mkdir(parents=True)

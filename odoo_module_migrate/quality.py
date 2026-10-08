@@ -474,6 +474,15 @@ def finish_module(
     module, cosmetic=True, original_data=(), manifest_layout=False, default_website="",
     default_author="",
 ):
+    from .analysis.models import unimported_python_files
+
+    for path in unimported_python_files(module):
+        logger.warning(
+            "[quality] Python file/package is not reachable from the addon's "
+            "__init__.py and is not loaded by Odoo; import it explicitly or "
+            "remove the dead code. File %s:1",
+            path,
+        )
     manifest = module / "__manifest__.py"
     if manifest.exists():
         text = tools._read_content(manifest)

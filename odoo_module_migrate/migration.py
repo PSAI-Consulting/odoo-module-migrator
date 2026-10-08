@@ -1,22 +1,23 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+import ast
 import importlib
+import inspect
 import os
 import pathlib
 import pkgutil
-import inspect
-import ast
+import re
 import subprocess
 import traceback
 
-from .config import _AVAILABLE_MIGRATION_STEPS, _MANIFEST_NAMES
+from . import report, tools
+from .base_migration_script import BaseMigrationScript
+from .config import _ALLOWED_EXTENSIONS, _AVAILABLE_MIGRATION_STEPS, _MANIFEST_NAMES
 from .exception import ConfigException
 from .log import logger
-from . import report, tools
-from .tools import _run, _get_latest_version_code
-from .upgrade_code import run_upgrade_code
 from .module_migration import ModuleMigration
-from .base_migration_script import BaseMigrationScript
+from .tools import _get_latest_version_code, _run
+from .upgrade_code import run_upgrade_code
 
 
 class Migration:
@@ -297,6 +298,8 @@ class Migration:
             if float(init_version) < 20 <= float(target_version):
                 self._check_access_records_left()
             self._run_pre_commit_if_configured()
+            if self.report_collector:
+                self._reconcile_text_rule_diagnostics()
             for module_migration in self._module_migrations:
                 module_migration.restore()
             if self.report_collector:
@@ -329,6 +332,62 @@ class Migration:
             (self._report_dir / "README.md").write_text(
                 report.render_summary(reports, init_version, target_version), encoding="utf-8"
             )
+
+    def _reconcile_text_rule_diagnostics(self):
+        """Re-evaluate regex TODOs against the final migrated sources.
+
+        A later official script, Ruff or the quality pass may remove the text
+        that originally triggered a rule. Rebuilding these entries here keeps
+        the report aligned with the code the user will actually review.
+        """
+        rules = {}
+        for script in self._migration_scripts:
+            script.parse_rules()
+            for extension in _ALLOWED_EXTENSIONS:
+                file_rules = script._file_rules(extension)
+                for level, patterns in (
+                    ("ERROR", file_rules["errors"]),
+                    ("WARNING", file_rules["warnings"]),
+                ):
+                    for pattern, message in patterns.items():
+                        normalized = " ".join(message.rstrip(". ").split())
+                        rules.setdefault(extension, []).append(
+                            (re.compile(pattern), normalized, level)
+                        )
+        known_messages = {
+            message
+            for extension_rules in rules.values()
+            for _pattern, message, _level in extension_rules
+        }
+        from .analysis.models import loaded_python_files
+
+        for item in self._module_migrations:
+            module_report = self.report_collector.reports[item._module_name]
+            module_report.entries[:] = [
+                entry
+                for entry in module_report.entries
+                if entry.message not in known_messages
+            ]
+            loaded_python = set(loaded_python_files(item._module_path))
+            for extension, extension_rules in rules.items():
+                for path in tools.get_files(item._module_path, (extension,)):
+                    if extension == ".py" and path not in loaded_python:
+                        continue
+                    text = tools._read_content(path)
+                    for pattern, message, level in extension_rules:
+                        match = pattern.search(text)
+                        if not match:
+                            continue
+                        source = report.SOURCE_RE.search(message)
+                        entry = report.Entry(
+                            level,
+                            message,
+                            path.relative_to(item._module_path).as_posix(),
+                            text.count("\n", 0, match.start()) + 1,
+                            source.group(0) if source else "",
+                        )
+                        if entry not in module_report.entries:
+                            module_report.entries.append(entry)
 
     def _format_changed_files(self):
         import shutil

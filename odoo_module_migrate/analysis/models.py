@@ -28,12 +28,110 @@ def _str_values(node):
     return []
 
 
-def _python_files(module):
+def _candidate_python_files(module):
     for path in pathlib.Path(module).rglob("*.py"):
         parts = path.relative_to(module).parts
+        if path.name in {"__manifest__.py", "__openerp__.py", "__terp__.py"}:
+            continue
         if parts and parts[0] in ("tests", "static", "migrations", "upgrades"):
             continue
         yield path
+
+
+def loaded_python_files(module):
+    """Python files reachable from the addon's root ``__init__.py``.
+
+    Odoo imports the addon package, then ordinary relative imports decide
+    which model, wizard and controller files execute. If the root initializer
+    is absent, keep the historical all-files fallback so an incomplete source
+    tree is still analysable without false dead-code claims.
+    """
+    module = pathlib.Path(module)
+    candidates = set(_candidate_python_files(module))
+    root = module / "__init__.py"
+    if root not in candidates:
+        return candidates
+    loaded, pending = set(), [root]
+    while pending:
+        path = pending.pop()
+        if path in loaded:
+            continue
+        loaded.add(path)
+        try:
+            tree = ast.parse(path.read_bytes())
+        except (SyntaxError, ValueError):
+            # An initializer that cannot be parsed may load modules
+            # dynamically. Avoid calling its children dead code.
+            return candidates
+        package = path.relative_to(module).parent.parts
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    parts = tuple(alias.name.split("."))
+                    for prefix in (("odoo", "addons", module.name), (module.name,)):
+                        if parts[: len(prefix)] == prefix:
+                            add_parts = parts[len(prefix) :]
+                            file_path = module.joinpath(*add_parts).with_suffix(".py")
+                            package_init = module.joinpath(*add_parts, "__init__.py")
+                            for candidate in (file_path, package_init):
+                                if candidate in candidates and candidate not in loaded:
+                                    pending.append(candidate)
+                continue
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if node.level:
+                keep = len(package) - (node.level - 1)
+                if keep < 0:
+                    continue
+                base = package[:keep] + tuple((node.module or "").split("."))
+                base = tuple(part for part in base if part)
+            else:
+                absolute = tuple((node.module or "").split("."))
+                base = None
+                for prefix in (("odoo", "addons", module.name), (module.name,)):
+                    if absolute[: len(prefix)] == prefix:
+                        base = absolute[len(prefix) :]
+                        break
+                if base is None:
+                    continue
+
+            def add(parts):
+                file_path = module.joinpath(*parts).with_suffix(".py")
+                package_init = module.joinpath(*parts, "__init__.py")
+                for candidate in (file_path, package_init):
+                    if candidate in candidates and candidate not in loaded:
+                        pending.append(candidate)
+
+            if node.module:
+                add(base)
+            for alias in node.names:
+                if alias.name != "*":
+                    add(base + tuple(alias.name.split(".")))
+    return loaded
+
+
+def unimported_python_files(module):
+    """Relevant Python files/packages that Odoo will not import."""
+    module = pathlib.Path(module)
+    candidates = set(_candidate_python_files(module))
+    if not (module / "__init__.py").is_file():
+        return []
+    missing = candidates - loaded_python_files(module)
+    result = []
+    for path in sorted(missing):
+        parents = path.relative_to(module).parents
+        if any(
+            (parent_init := module / parent / "__init__.py") != path
+            and parent_init in missing
+            for parent in parents
+        ):
+            continue
+        result.append(path)
+    return result
+
+
+def _python_files(module):
+    yield from sorted(loaded_python_files(module))
 
 
 NAME_RE = re.compile(r"""^\s{4}_name\s*=\s*['"]([\w.]+)['"]""", re.M)

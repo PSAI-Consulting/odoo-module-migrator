@@ -1954,3 +1954,63 @@ def test_removed_toggle_active_python_call_is_reported(tmp_path):
         )
     ]
     assert any("toggle_active() does not exist" in message for message in messages)
+
+
+def test_final_report_rechecks_text_errors_and_ignores_unloaded_python(tmp_path):
+    mod = addon(
+        tmp_path,
+        "custom",
+        code="from odoo import models\n",
+    )
+    (mod / "__init__.py").write_text("from . import models\n", encoding="utf-8")
+    orphan = mod / "orphan.py"
+    orphan.write_text("from odoo.osv import expression\n", encoding="utf-8")
+    migration = Migration(
+        tmp_path,
+        "19.0",
+        "20.0",
+        ["custom"],
+        commit_enabled=False,
+        pre_commit=False,
+    )
+    migration.report_collector = ReportCollector([("custom", mod)])
+    module_report = migration.report_collector.reports["custom"]
+    message = (
+        "[20] The odoo.osv package was removed: use odoo.fields.Domain "
+        "(Domain.AND / Domain.OR...)"
+    )
+    module_report.entries.extend(
+        [
+            Entry("ERROR", message, "models.py", 1),
+            Entry("ERROR", message, "orphan.py", 1),
+        ]
+    )
+
+    migration._reconcile_text_rule_diagnostics()
+
+    assert not [entry for entry in module_report.entries if entry.message == message]
+    (mod / "models.py").write_text(
+        "from odoo.osv import expression\n", encoding="utf-8"
+    )
+    migration._reconcile_text_rule_diagnostics()
+    remaining = [entry for entry in module_report.entries if entry.message == message]
+    assert len(remaining) == 1
+    assert (remaining[0].file, remaining[0].line) == ("models.py", 1)
+
+
+def test_unimported_python_file_is_reported_once(tmp_path, caplog):
+    mod = addon(tmp_path, "custom", code="VALUE = 1\n")
+    (mod / "__init__.py").write_text("from . import models\n", encoding="utf-8")
+    orphan = mod / "orphan.py"
+    orphan.write_text("VALUE = 2\n", encoding="utf-8")
+
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate"):
+        quality.finish_module(mod)
+
+    warnings = [
+        record.message
+        for record in caplog.records
+        if "not reachable from the addon's __init__.py" in record.message
+    ]
+    assert len(warnings) == 1
+    assert str(orphan) in warnings[0]

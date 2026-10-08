@@ -1028,6 +1028,18 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `stof_partner_backorder_strategy`. « Added uniquely resolved Python dependency stock_barcode » alors que le module n'utilise rien de `stock_barcode` (Enterprise) → dépendance inutile ajoutée sans être signalée en TODO. Par ailleurs `move_line.product_uom_id` (devenu `uom_id` en 20) n'est pas converti, alors que `move.product_uom` l'est.
 - **Correction proposée** : ne jamais ajouter une dépendance Enterprise automatiquement (TODO 🟠 avec le symbole qui l'a déclenchée) ; ajouter `stock.move.line.product_uom_id` → `uom_id` aux renommages de champs.
 
+## 94. 🟡 TODO 🔴 `odoo.osv` restant alors que l'import a été retiré
+
+> **État du migrateur (08/10/2026)** : ✅ Les diagnostics textuels sont
+> reconstruits sur les fichiers finaux, après Ruff, le nettoyage qualité et
+> pre-commit : un motif supprimé ne reste plus dans le rapport. Le graphe des
+> imports du module part désormais du `__init__.py` racine ; les fichiers non
+> atteignables sont exclus des analyses et reçoivent un unique TODO 🟠 demandant
+> de les importer explicitement ou de retirer le code mort.
+
+- Module : `easi_bom`. `from odoo.osv import expression` inutilisé : retiré par le nettoyage des imports, mais le rapport garde « [20] The odoo.osv package was removed » en 🔴 (risque « élevé » à tort). Idem pour un fichier non chargé (`mrp_production.py`, absent de `__init__.py`) qui reçoit un TODO.
+- **Correction proposée** : recalculer les TODO après le nettoyage des imports ; signaler les fichiers Python non importés (🟡) au lieu de leur appliquer des TODO.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1071,6 +1083,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `stof_accords_galec` | `toggle_active` non signalé | 91 |
 | `stof_purchase_owner` | `summary` / `description` du manifest non nettoyés | 92 |
 | `stof_partner_backorder_strategy` | dépendance `stock_barcode` à tort, `product_uom_id` des lignes | 93 |
+| `easi_bom` | TODO `odoo.osv` après retrait de l'import, fichier non chargé | 94 |
 
 ---
 
