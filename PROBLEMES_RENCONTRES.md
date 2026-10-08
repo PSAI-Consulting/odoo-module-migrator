@@ -1040,6 +1040,20 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `easi_bom`. `from odoo.osv import expression` inutilisé : retiré par le nettoyage des imports, mais le rapport garde « [20] The odoo.osv package was removed » en 🔴 (risque « élevé » à tort). Idem pour un fichier non chargé (`mrp_production.py`, absent de `__init__.py`) qui reçoit un TODO.
 - **Correction proposée** : recalculer les TODO après le nettoyage des imports ; signaler les fichiers Python non importés (🟡) au lieu de leur appliquer des TODO.
 
+## 95. 🔴 Changement de signature de `sale.order._create_invoices` non détecté
+
+> **État du migrateur (08/10/2026)** : ✅ Les signatures des méthodes de la
+> cible sont désormais indexées et comparées aux surcharges. Les incompatibilités
+> certaines sont des TODO 🔴 avec les deux signatures et le détail des arguments.
+> Quand la surcharge ne fait que transmettre ses paramètres au `super()`, que
+> les paramètres retirés ne sont utilisés nulle part ailleurs et que les valeurs
+> par défaut sont littérales, la signature et l'appel nommé sont corrigés
+> automatiquement. Les deux formes rencontrées ici, positionnelle et nommée,
+> sont prises en charge.
+
+- Module : `account_move_autosplit_delivery` (0 TODO, risque « aucun »). Odoo 20 (commit `9400a302fba0`) : `_create_invoices(self, final=False, grouped=False)` au lieu de `(self, grouped=False, final=False, date=None)`. La surcharge `super()._create_invoices(grouped, final, date)` plante (argument en trop) et inverse `final` / `grouped`. Même cas dans `easi_sale_auto_discount`.
+- **Correction proposée** : comparer la signature des méthodes surchargées avec la cible (paramètres renommés, supprimés, réordonnés) et signaler en 🔴 ; pour ce cas, réécrire en `def _create_invoices(self, final=False, grouped=False)` + `super()._create_invoices(final=final, grouped=grouped)` (ou `*args, **kwargs` comme Odoo).
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1084,6 +1098,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `stof_purchase_owner` | `summary` / `description` du manifest non nettoyés | 92 |
 | `stof_partner_backorder_strategy` | dépendance `stock_barcode` à tort, `product_uom_id` des lignes | 93 |
 | `easi_bom` | TODO `odoo.osv` après retrait de l'import, fichier non chargé | 94 |
+| `account_move_autosplit_delivery` | signature de `_create_invoices` non détectée | 95 |
 
 ---
 

@@ -2014,3 +2014,112 @@ def test_unimported_python_file_is_reported_once(tmp_path, caplog):
     ]
     assert len(warnings) == 1
     assert str(orphan) in warnings[0]
+
+
+def test_override_signature_is_synchronized_from_target(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "sale",
+        ["base"],
+        """class SaleOrder(Model):
+    _name = "sale.order"
+
+    def _create_invoices(self, final=False, grouped=False):
+        return self
+""",
+    )
+    custom = addon(
+        tmp_path,
+        "custom",
+        ["sale"],
+        """class SaleOrder(Model):
+    _inherit = "sale.order"
+
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        moves = super()._create_invoices(grouped, final, date)
+        return moves if final else self
+""",
+    )
+    index = models.ModelIndex.build([tmp_path])
+
+    before = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(custom, index)
+        if "override is incompatible" in message
+    ]
+    assert len(before) == 1
+    assert "target parameters are reordered" in before[0]
+    assert "passes 3 positional arguments" in before[0]
+
+    changes = python_checks.apply_override_signature_migrations(custom, index)
+
+    assert len(changes) == 1
+    migrated = (custom / "models.py").read_text(encoding="utf-8")
+    assert "def _create_invoices(self, final=False, grouped=False):" in migrated
+    assert "super()._create_invoices(final=final, grouped=grouped)" in migrated
+    ast.parse(migrated)
+    assert not [
+        message
+        for _path, _line, _level, message in python_checks.check_module(custom, index)
+        if "override is incompatible" in message
+    ]
+
+    keyword_custom = addon(
+        tmp_path,
+        "keyword_custom",
+        ["sale"],
+        """class SaleOrder(Model):
+    _inherit = "sale.order"
+
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        return super()._create_invoices(grouped=grouped, final=final, date=date)
+""",
+    )
+    keyword_index = models.ModelIndex.build([tmp_path])
+    assert len(
+        python_checks.apply_override_signature_migrations(
+            keyword_custom, keyword_index
+        )
+    ) == 1
+    keyword_migrated = (keyword_custom / "models.py").read_text(encoding="utf-8")
+    assert "def _create_invoices(self, final=False, grouped=False):" in keyword_migrated
+    assert "super()._create_invoices(final=final, grouped=grouped)" in keyword_migrated
+
+
+def test_complex_override_signature_is_reported_without_rewrite(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "provider",
+        ["base"],
+        """class Item(Model):
+    _name = "x.item"
+
+    def process(self, value, *, strict=False):
+        return value
+""",
+    )
+    custom = addon(
+        tmp_path,
+        "custom",
+        ["provider"],
+        """class Item(Model):
+    _inherit = "x.item"
+
+    def process(self, strict=False, value=None):
+        return super().process(strict, value)
+""",
+    )
+    original = (custom / "models.py").read_text(encoding="utf-8")
+    index = models.ModelIndex.build([tmp_path])
+
+    issues = [
+        (level, message)
+        for _path, _line, level, message in python_checks.check_module(custom, index)
+        if "override is incompatible" in message
+    ]
+
+    assert len(issues) == 1 and issues[0][0] == "error"
+    assert not python_checks.apply_override_signature_migrations(custom, index)
+    assert (custom / "models.py").read_text(encoding="utf-8") == original

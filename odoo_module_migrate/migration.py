@@ -546,6 +546,16 @@ class Migration:
                         "Renamed resolved field %s.%s -> %s. File %s:%s",
                         model, old, new, changed_path, changed_line,
                     )
+            signature_changes = python_checks.apply_override_signature_migrations(
+                module_migration._module_path, model_index
+            )
+            for changed_path, changed_line, detail in signature_changes:
+                logger.info(
+                    "Synchronized override signature (%s). File %s:%s",
+                    detail,
+                    changed_path,
+                    changed_line,
+                )
             if float(self._migration_steps[-1]["target_version_name"]) >= 20:
                 binary_changes = python_checks.apply_binaryvalue_migrations(
                     module_migration._module_path, model_index

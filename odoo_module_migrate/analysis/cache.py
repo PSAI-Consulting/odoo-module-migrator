@@ -5,15 +5,15 @@ files invalidate the entry independently of the checkout's git revision.
 """
 
 import atexit
-from functools import lru_cache
 import json
 import os
-from pathlib import Path
-import tempfile
-import sys
 import sqlite3
+import sys
+import tempfile
+from functools import lru_cache
+from pathlib import Path
 
-SCHEMA = 6
+SCHEMA = 7
 
 
 @lru_cache(maxsize=4)

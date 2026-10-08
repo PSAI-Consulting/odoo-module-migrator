@@ -2,12 +2,290 @@
 
 import ast
 import difflib
-from pathlib import Path
+import io
 import re
+import tokenize
+from pathlib import Path
 
 from lxml import etree
 
 from . import fields, models
+
+
+def _target_method_signature(index, ancestors, method, closure, module_name):
+    """Return the single concrete signature inherited from target addons."""
+    signatures = {}
+    for ancestor in ancestors:
+        for owner in index.method_owners.get((ancestor, method), set()):
+            if owner in {module_name, "base"} or owner not in closure:
+                continue
+            for signature in index.method_signatures.get((ancestor, method, owner), ()):
+                # A forwarding *args/**kwargs override gives no useful contract;
+                # another concrete implementation in the MRO remains usable.
+                if signature.get("vararg") or signature.get("kwarg"):
+                    continue
+                signatures[models.signature_key(signature)] = signature
+    return next(iter(signatures.values())) if len(signatures) == 1 else None
+
+
+def _same_super_calls(function):
+    return [
+        node
+        for node in ast.walk(function)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == function.name
+        and isinstance(node.func.value, ast.Call)
+        and isinstance(node.func.value.func, ast.Name)
+        and node.func.value.func.id == "super"
+    ]
+
+
+def _signature_problem(local, target, super_calls):
+    """Explain a provable incompatibility with a target method contract."""
+    if local.get("vararg") and local.get("kwarg"):
+        return ""
+    local_parameters = local["parameters"]
+    target_parameters = target["parameters"]
+    local_by_name = {item["name"]: item for item in local_parameters}
+    target_names = [item["name"] for item in target_parameters]
+    missing = [name for name in target_names if name not in local_by_name]
+    shared_order = [
+        item["name"] for item in local_parameters if item["name"] in target_names
+    ]
+    reordered = shared_order != [name for name in target_names if name in local_by_name]
+    changed_kind = [
+        item["name"]
+        for item in target_parameters
+        if item["name"] in local_by_name
+        and local_by_name[item["name"]]["kind"] != item["kind"]
+    ]
+    changed_defaults = [
+        item["name"]
+        for item in target_parameters
+        if item["name"] in local_by_name
+        and local_by_name[item["name"]].get("default") != item.get("default")
+    ]
+    call_problems = []
+    positional = [
+        item for item in target_parameters if item["kind"] != "keyword_only"
+    ]
+    allowed_keywords = {item["name"] for item in target_parameters}
+    required = {
+        item["name"]
+        for item in target_parameters
+        if item.get("default") is None
+    }
+    for call in super_calls:
+        if any(isinstance(argument, ast.Starred) for argument in call.args) or any(
+            keyword.arg is None for keyword in call.keywords
+        ):
+            continue
+        if len(call.args) > len(positional):
+            call_problems.append(
+                f"super() passes {len(call.args)} positional arguments but the target accepts {len(positional)}"
+            )
+        for position, argument in enumerate(call.args[: len(positional)]):
+            if (
+                isinstance(argument, ast.Name)
+                and argument.id in local_by_name
+                and argument.id != positional[position]["name"]
+            ):
+                call_problems.append(
+                    f"positional argument {argument.id!r} is received as {positional[position]['name']!r}"
+                )
+        unknown = sorted(
+            keyword.arg
+            for keyword in call.keywords
+            if keyword.arg is not None and keyword.arg not in allowed_keywords
+        )
+        if unknown:
+            call_problems.append("super() passes removed keyword(s) " + ", ".join(unknown))
+        passed = {
+            positional[position]["name"]
+            for position in range(min(len(call.args), len(positional)))
+        } | {keyword.arg for keyword in call.keywords if keyword.arg}
+        # Required parameters may deliberately be supplied by the target's
+        # internal defaults only when they actually have a default.
+        omitted = sorted(required - passed)
+        if omitted:
+            call_problems.append("super() omits required parameter(s) " + ", ".join(omitted))
+    parts = []
+    if missing:
+        parts.append("missing target parameter(s) " + ", ".join(missing))
+    if reordered:
+        parts.append("target parameters are reordered")
+    if changed_kind:
+        parts.append("parameter kind changed for " + ", ".join(changed_kind))
+    if changed_defaults:
+        parts.append("target default changed for " + ", ".join(changed_defaults))
+    parts.extend(dict.fromkeys(call_problems))
+    return "; ".join(parts)
+
+
+def _function_parameter_span(text, function, positions):
+    """Offsets inside the parentheses of a function definition."""
+    tokens = tokenize.generate_tokens(io.StringIO(text).readline)
+    started = named = False
+    depth = 0
+    opening = None
+    for token in tokens:
+        start = positions.offset(*token.start)
+        if start < positions.offset(function.lineno, function.col_offset):
+            continue
+        if token.type == tokenize.NAME and token.string in {"def", "async"}:
+            started = True
+            continue
+        if started and token.type == tokenize.NAME and token.string == function.name:
+            named = True
+            continue
+        if not named or token.type != tokenize.OP:
+            continue
+        if token.string == "(":
+            if depth == 0:
+                opening = positions.offset(*token.end)
+            depth += 1
+        elif token.string == ")":
+            depth -= 1
+            if depth == 0 and opening is not None:
+                return opening, positions.offset(*token.start)
+    return None
+
+
+def apply_override_signature_migrations(module, index):
+    """Synchronize simple overrides whose old signature is unambiguous.
+
+    The rewrite is deliberately narrow: simple positional parameters, one
+    direct forwarding super call, literal target defaults, and removed
+    parameters unused anywhere else in the method.
+    """
+    module = Path(module)
+    closure = index.closure(module.name)
+    changed = []
+    for path in models._python_files(module):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        try:
+            tree = ast.parse(text)
+        except (SyntaxError, ValueError):
+            continue
+        positions = fields._Positions(text)
+        edits = []
+        for cls in ast.walk(tree):
+            if not isinstance(cls, ast.ClassDef):
+                continue
+            class_models = fields._class_models(cls)
+            if not class_models:
+                continue
+            model = class_models[0]
+            ancestors = index.ancestors(model)
+            for function in cls.body:
+                if not isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                target = _target_method_signature(
+                    index, ancestors, function.name, closure, module.name
+                )
+                calls = _same_super_calls(function)
+                if not target or len(calls) != 1:
+                    continue
+                local = models.method_signature(function)
+                if not _signature_problem(local, target, calls):
+                    continue
+                if (
+                    not function.args.args
+                    or function.args.args[0].arg not in {"self", "cls"}
+                    or function.args.posonlyargs
+                    or function.args.vararg
+                    or function.args.kwonlyargs
+                    or function.args.kwarg
+                    or any(
+                        argument.annotation is not None
+                        for argument in function.args.args
+                    )
+                    or any(item["kind"] != "positional_or_keyword" for item in target["parameters"])
+                ):
+                    continue
+                local_names = [item["name"] for item in local["parameters"]]
+                target_names = [item["name"] for item in target["parameters"]]
+                if not set(target_names) <= set(local_names):
+                    continue
+                call = calls[0]
+                forwards_positionally = (
+                    not call.keywords
+                    and [getattr(arg, "id", None) for arg in call.args] == local_names
+                )
+                forwards_by_name = (
+                    not call.args
+                    and len(call.keywords) == len(local_names)
+                    and {
+                        keyword.arg: getattr(keyword.value, "id", None)
+                        for keyword in call.keywords
+                    }
+                    == {name: name for name in local_names}
+                )
+                if not (forwards_positionally or forwards_by_name):
+                    continue
+                removed = set(local_names) - set(target_names)
+                if any(
+                    sum(
+                        isinstance(node, ast.Name)
+                        and isinstance(node.ctx, ast.Load)
+                        and node.id == name
+                        for node in ast.walk(function)
+                    )
+                    != 1
+                    for name in removed
+                ):
+                    continue
+                rendered = []
+                safe_defaults = True
+                for item in target["parameters"]:
+                    value = item["name"]
+                    default = item.get("default")
+                    if default is not None:
+                        try:
+                            ast.literal_eval(default)
+                        except (SyntaxError, ValueError):
+                            safe_defaults = False
+                            break
+                        value += "=" + default
+                    rendered.append(value)
+                span = _function_parameter_span(text, function, positions)
+                if (
+                    not safe_defaults
+                    or not span
+                    or "#" in text[span[0] : span[1]]
+                ):
+                    continue
+                recordset = function.args.args[0].arg
+                edits.append((*span, ", ".join([recordset, *rendered])))
+                call_start = positions.offset(call.lineno, call.col_offset)
+                call_end = positions.offset(call.end_lineno, call.end_col_offset)
+                call_source = text[
+                    positions.offset(call.func.lineno, call.func.col_offset) :
+                    positions.offset(call.func.end_lineno, call.func.end_col_offset)
+                ]
+                edits.append(
+                    (
+                        call_start,
+                        call_end,
+                        call_source
+                        + "("
+                        + ", ".join(f"{name}={name}" for name in target_names)
+                        + ")",
+                    )
+                )
+                changed.append(
+                    (
+                        path,
+                        function.lineno,
+                        f"{model}.{function.name}{models.format_signature(local)} -> {models.format_signature(target)} and named super() arguments",
+                    )
+                )
+        for start, end, replacement in sorted(edits, reverse=True):
+            text = text[:start] + replacement + text[end:]
+        if edits:
+            path.write_text(text, encoding="utf-8")
+    return changed
 
 
 class Uses(ast.NodeVisitor):
@@ -1851,6 +2129,25 @@ def check_module(
                         and node.func.value.func.id == "super"
                         for node in ast.walk(stmt)
                     )
+                    target_signature = _target_method_signature(
+                        index, ancestors, stmt.name, closure, module.name
+                    )
+                    if target_signature:
+                        local_signature = models.method_signature(stmt)
+                        signature_problem = _signature_problem(
+                            local_signature,
+                            target_signature,
+                            _same_super_calls(stmt),
+                        )
+                        if signature_problem:
+                            yield (
+                                path,
+                                stmt.lineno,
+                                "error" if complete else "warning",
+                                f"{model}.{stmt.name} override is incompatible with the indexed target: "
+                                f"custom {models.format_signature(local_signature)}, target "
+                                f"{models.format_signature(target_signature)}; {signature_problem}",
+                            )
                     calls_any_super = any(
                         isinstance(node, ast.Call)
                         and isinstance(node.func, ast.Name)

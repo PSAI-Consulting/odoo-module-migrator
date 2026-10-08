@@ -22,6 +22,8 @@
   Enterprise.
 - Rapports recalculés sur les sources finales et détection des fichiers Python
   non atteignables depuis les imports du module.
+- Comparaison des signatures de surcharges avec les modèles de la cible et
+  synchronisation sûre des simples appels de transmission à `super()`.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

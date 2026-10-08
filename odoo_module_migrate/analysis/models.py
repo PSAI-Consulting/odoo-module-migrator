@@ -274,6 +274,77 @@ def _class_infos(tree):
         yield model, name, parents, bases, fields, paths
 
 
+def method_signature(node):
+    """Return a JSON-compatible signature without the recordset argument."""
+    positional = [
+        *(('positional_only', arg) for arg in node.args.posonlyargs),
+        *(('positional_or_keyword', arg) for arg in node.args.args),
+    ]
+    defaults = [None] * (len(positional) - len(node.args.defaults)) + [
+        ast.unparse(default) for default in node.args.defaults
+    ]
+    parameters = [
+        {"kind": kind, "name": arg.arg, "default": default}
+        for (kind, arg), default in zip(positional, defaults)
+    ]
+    if parameters and parameters[0]["name"] in {"self", "cls"}:
+        parameters.pop(0)
+    parameters.extend(
+        {
+            "kind": "keyword_only",
+            "name": arg.arg,
+            "default": ast.unparse(default) if default is not None else None,
+        }
+        for arg, default in zip(node.args.kwonlyargs, node.args.kw_defaults)
+    )
+    return {
+        "parameters": parameters,
+        "vararg": node.args.vararg.arg if node.args.vararg else None,
+        "kwarg": node.args.kwarg.arg if node.args.kwarg else None,
+    }
+
+
+def signature_key(signature):
+    return (
+        tuple(
+            (item["kind"], item["name"], item.get("default"))
+            for item in signature["parameters"]
+        ),
+        signature.get("vararg"),
+        signature.get("kwarg"),
+    )
+
+
+def format_signature(signature):
+    values = []
+    positional = [
+        item for item in signature["parameters"] if item["kind"] != "keyword_only"
+    ]
+    keyword_only = [
+        item for item in signature["parameters"] if item["kind"] == "keyword_only"
+    ]
+    positional_only = sum(item["kind"] == "positional_only" for item in positional)
+    for position, item in enumerate(positional, 1):
+        value = item["name"]
+        if item.get("default") is not None:
+            value += "=" + item["default"]
+        values.append(value)
+        if positional_only and position == positional_only:
+            values.append("/")
+    if signature.get("vararg"):
+        values.append("*" + signature["vararg"])
+    elif keyword_only:
+        values.append("*")
+    for item in keyword_only:
+        value = item["name"]
+        if item.get("default") is not None:
+            value += "=" + item["default"]
+        values.append(value)
+    if signature.get("kwarg"):
+        values.append("**" + signature["kwarg"])
+    return "(" + ", ".join(values) + ")"
+
+
 def source_summary(path):
     """JSON-compatible model metadata; one parse per source revision."""
     text = path.read_bytes()
@@ -340,6 +411,8 @@ def source_summary(path):
         result.append(dict(model=model, name=name, parents=sorted(parents), bases=sorted(bases),
                            fields=fields, methods=[s.name for s in cls.body
                            if isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))],
+                           method_signatures={s.name: method_signature(s) for s in cls.body
+                           if isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))},
                            method_depends=method_depends, method_calls=method_calls,
                            types=kinds, company=company))
     return result
@@ -359,6 +432,7 @@ class ModelIndex:
         self.field_owners = collections.defaultdict(set)
         self.methods = collections.defaultdict(set)
         self.method_owners = collections.defaultdict(set)
+        self.method_signatures = collections.defaultdict(list)
         self.method_depends = collections.defaultdict(set)
         self.method_calls = collections.defaultdict(set)
         self.field_types = collections.defaultdict(set)
@@ -420,6 +494,16 @@ class ModelIndex:
             for method in info["methods"]:
                 self.methods[model].add(method)
                 self.method_owners[model, method].add(owner)
+                signature = info.get("method_signatures", {}).get(method)
+                if (
+                    signature
+                    and signature_key(signature)
+                    not in {
+                        signature_key(existing)
+                        for existing in self.method_signatures[model, method, owner]
+                    }
+                ):
+                    self.method_signatures[model, method, owner].append(signature)
             for method, dependencies in info.get("method_depends", {}).items():
                 self.method_depends[model, method, owner].update(dependencies)
             for method, calls in info.get("method_calls", {}).items():
