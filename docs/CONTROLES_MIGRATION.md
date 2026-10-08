@@ -64,6 +64,7 @@ configuration.
 | 85 | Les dictionnaires Python prouvés comme vues/actions migrent `type: tree` et `view_mode: tree` vers `list`, sans remplacement global des valeurs métier. |
 | 86 | `get_external_id` et `_get_external_ids` sont des méthodes de base connues. Un `name_get()[0]` dont le récepteur est prouvé singleton devient le couple `(id, display_name)`. |
 | 87 | La migration tree→list ne modifie plus les libellés « Tree View » ni les textes traduisibles ; elle reste limitée aux structures techniques. |
+| 88 | Pour préserver le comportement antérieur au commit Odoo 20 `b84ffce402d3`, les champs `Char` simples `name`/`x_name` d'un modèle custom reçoivent `copy=True`. Les champs calculés, liés, dépendants de la société et les traductions callable ne sont pas modifiés. |
 
 Les dépendances Python manquantes sont ajoutées automatiquement au manifeste
 quand l'index des addons est complet, qu'un seul fournisseur existe et que cet

@@ -1417,6 +1417,54 @@ class Task(models.Model):
     assert not any("get_param" in message for message in messages)
 
 
+def test_odoo20_name_copy_suffix_is_prevented_for_custom_models(tmp_path):
+    mod = addon(tmp_path, "custom", code="""from odoo import fields, models
+
+class Line(models.Model):
+    _name = "custom.line"
+    _description = "Line"
+    name = fields.Char(string="Name", required=True)
+    x_name = fields.Char()
+
+class Explicit(models.Model):
+    _name = "custom.explicit"
+    _description = "Explicit"
+    name = fields.Char(copy=False)
+
+class Computed(models.Model):
+    _name = "custom.computed"
+    _description = "Computed"
+    name = fields.Char(compute="_compute_name")
+
+class CallableTranslation(models.Model):
+    _name = "custom.translated"
+    _description = "Translated"
+    x_name = fields.Char(translate=translate_xml)
+
+class Extension(models.Model):
+    _inherit = "res.partner"
+    name = fields.Char(string="Contact Name")
+
+class Child(models.Model):
+    _name = "custom.child"
+    _inherit = "custom.line"
+    _description = "Child"
+    name = fields.Char(string="Inherited Name")
+""")
+    index = models.ModelIndex.build([tmp_path])
+    changes = python_checks.apply_runtime_api_migrations(mod, index, 20)
+    text = (mod / "models.py").read_text(encoding="utf-8")
+    assert 'name = fields.Char(string="Name", required=True, copy=True)' in text
+    assert "x_name = fields.Char(copy=True)" in text
+    assert "name = fields.Char(copy=False)" in text
+    assert 'name = fields.Char(compute="_compute_name")' in text
+    assert "x_name = fields.Char(translate=translate_xml)" in text
+    assert 'name = fields.Char(string="Contact Name")' in text
+    assert 'name = fields.Char(string="Inherited Name")' in text
+    assert len(changes) == 2
+    assert not python_checks.apply_runtime_api_migrations(mod, index, 20)
+
+
 def test_complex_translation_fstring_stays_manual(tmp_path, caplog):
     mod = addon(
         tmp_path,

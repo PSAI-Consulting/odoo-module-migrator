@@ -513,6 +513,80 @@ def apply_runtime_api_migrations(module, index, target_version):
         handled_config_calls = set()
 
         if target_version >= 20:
+            # Since Odoo 20 commit b84ffce402d3, ordinary Char fields named
+            # name/x_name default to mark_as_copy(), while previous versions
+            # copied their value unchanged. An explicit copy=True restores the
+            # old behavior without requiring us to predict every copy path.
+            for cls in (
+                item for item in ast.walk(tree) if isinstance(item, ast.ClassDef)
+            ):
+                declarations = {
+                    statement.targets[0].id
+                    for statement in cls.body
+                    if isinstance(statement, ast.Assign)
+                    and len(statement.targets) == 1
+                    and isinstance(statement.targets[0], ast.Name)
+                }
+                if "_name" not in declarations:
+                    continue
+                class_models = fields._class_models(cls)
+                if not class_models:
+                    continue
+                model = class_models[0]
+                for statement in cls.body:
+                    if not (
+                        isinstance(statement, ast.Assign)
+                        and len(statement.targets) == 1
+                        and isinstance(statement.targets[0], ast.Name)
+                        and statement.targets[0].id in {"name", "x_name"}
+                        and isinstance(statement.value, ast.Call)
+                        and isinstance(statement.value.func, ast.Attribute)
+                        and isinstance(statement.value.func.value, ast.Name)
+                        and statement.value.func.value.id == "fields"
+                        and statement.value.func.attr == "Char"
+                    ):
+                        continue
+                    call = statement.value
+                    keywords = {keyword.arg: keyword.value for keyword in call.keywords}
+                    field_name = statement.targets[0].id
+                    inherited_field = any(
+                        field_name in index.fields.get(parent, set())
+                        for parent in index.ancestors(model) - {model}
+                    )
+                    if (
+                        inherited_field
+                        or "copy" in keywords
+                        or {"compute", "related", "company_dependent"} & keywords.keys()
+                        or any(keyword.arg is None for keyword in call.keywords)
+                        or any(isinstance(arg, ast.Starred) for arg in call.args)
+                    ):
+                        continue
+                    translate = keywords.get("translate")
+                    if translate is not None and not (
+                        isinstance(translate, ast.Constant)
+                        and isinstance(translate.value, bool)
+                    ):
+                        continue
+                    arguments = [*call.args, *(keyword.value for keyword in call.keywords)]
+                    if arguments:
+                        last = arguments[-1]
+                        offset = positions.offset(last.end_lineno, last.end_col_offset)
+                        insertion = ", copy=True"
+                    else:
+                        offset = positions.offset(
+                            call.func.end_lineno, call.func.end_col_offset
+                        ) + 1
+                        insertion = "copy=True"
+                    edits.append(
+                        (
+                            offset,
+                            offset,
+                            insertion,
+                            statement.lineno,
+                            f"preserve copied {field_name} without '(copy)' suffix",
+                        )
+                    )
+
             # Preserve the old coercion while selecting Odoo 20's typed API.
             for outer in ast.walk(tree):
                 if not (
