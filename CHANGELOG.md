@@ -17,6 +17,9 @@
 - Conversion fiable des `_sql_constraints` dont le message utilise `_()`,
   migration des boutons `toggle_active` d'Odoo 20 et nettoyage des textes
   scaffold du manifeste.
+- Typage des recordsets renvoyés par `mapped`, exclusion des faux fournisseurs
+  de méthodes ORM et revue obligatoire avant d'ajouter une dépendance
+  Enterprise.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

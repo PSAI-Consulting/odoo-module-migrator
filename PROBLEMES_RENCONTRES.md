@@ -1015,6 +1015,19 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Modules : `stof_purchase_owner`, `stof_accords_galec`. `summary` réécrit en `"\n        Add purchase owner."` (retours à la ligne et espaces gardés) ; `description` « Long description of module's purpose » (texte du `scaffold`) conservée.
 - **Correction proposée** : `strip()` + espaces internes réduits pour `summary` ; retirer `description` si elle vaut le texte du `scaffold` (comme le `summary` vide).
 
+## 93. 🟠 Dépendance `stock_barcode` ajoutée à tort / `product_uom_id` des lignes de mouvement non renommé
+
+> **État du migrateur (08/10/2026)** : ✅ Cause corrigée. `_search()` est
+> maintenant connue comme méthode de base, donc une surcharge Enterprise ne
+> devient plus son faux fournisseur. Les dépendances Python sous licence
+> Enterprise ne sont jamais ajoutées automatiquement : le rapport indique le
+> module et le modèle/champ/méthode qui les réclame. Enfin,
+> `mapped("relation")` propage le modèle relationnel, ce qui applique bien la
+> règle existante `stock.move.line.product_uom_id` → `uom_id` à `pack`.
+
+- Module : `stof_partner_backorder_strategy`. « Added uniquely resolved Python dependency stock_barcode » alors que le module n'utilise rien de `stock_barcode` (Enterprise) → dépendance inutile ajoutée sans être signalée en TODO. Par ailleurs `move_line.product_uom_id` (devenu `uom_id` en 20) n'est pas converti, alors que `move.product_uom` l'est.
+- **Correction proposée** : ne jamais ajouter une dépendance Enterprise automatiquement (TODO 🟠 avec le symbole qui l'a déclenchée) ; ajouter `stock.move.line.product_uom_id` → `uom_id` aux renommages de champs.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1057,6 +1070,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_transport` | script `sql-constraint` en échec sur `_()` | 90 |
 | `stof_accords_galec` | `toggle_active` non signalé | 91 |
 | `stof_purchase_owner` | `summary` / `description` du manifest non nettoyés | 92 |
+| `stof_partner_backorder_strategy` | dépendance `stock_barcode` à tort, `product_uom_id` des lignes | 93 |
 
 ---
 

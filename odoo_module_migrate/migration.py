@@ -446,14 +446,30 @@ class Migration:
                     )
         from .analysis import python_checks
         for module_migration in self._module_migrations:
-            additions = python_checks.apply_unambiguous_dependencies(
-                module_migration._module_path, model_index
+            additions, manual_dependencies = (
+                python_checks.apply_unambiguous_dependencies(
+                    module_migration._module_path, model_index, with_manual=True
+                )
             )
             for dependency in additions:
                 logger.info(
                     "Added uniquely resolved Python dependency %s. File %s:1",
                     dependency,
                     module_migration._module_path / "__manifest__.py",
+                )
+            for path, line, dependency, symbol in manual_dependencies:
+                if not symbol.startswith("method "):
+                    # Model and field dependencies are emitted by check_module
+                    # below with their warning severity.
+                    continue
+                logger.warning(
+                    "[dependency] Enterprise dependency %s not added automatically; "
+                    "%s requires it according to the target index. Review the feature "
+                    "and add it explicitly if intended. File %s:%s",
+                    dependency,
+                    symbol,
+                    path,
+                    line,
                 )
             # The model index resolves relational aliases that the standalone
             # migration scripts cannot know (order.order_line -> line). Apply

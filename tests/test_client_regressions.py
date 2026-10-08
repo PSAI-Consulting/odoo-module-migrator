@@ -1576,6 +1576,154 @@ def test_unique_non_circular_python_dependency_is_added(tmp_path):
     assert manifest["depends"] == ["base", "provider"]
     assert "circular_provider" not in manifest["depends"]
 
+
+def test_enterprise_python_dependency_is_reported_but_not_added(tmp_path):
+    addon(tmp_path, "base", data=[])
+    provider = addon(
+        tmp_path,
+        "enterprise_feature",
+        ["base"],
+        code='class Feature(Model):\n    _name = "enterprise.feature"\n',
+        data=[],
+    )
+    (provider / "__manifest__.py").write_text(
+        repr(
+            {
+                "name": "Enterprise feature",
+                "license": "OEEL-1",
+                "depends": ["base"],
+                "data": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["base"],
+        code='def run(self):\n    self.env["enterprise.feature"].search([])\n',
+        data=[],
+    )
+    index = models.ModelIndex.build([tmp_path])
+    additions, manual = python_checks.apply_unambiguous_dependencies(
+        mod, index, with_manual=True
+    )
+    manifest = ast.literal_eval((mod / "__manifest__.py").read_text())
+    assert additions == []
+    assert manifest["depends"] == ["base"]
+    assert len(manual) == 1
+    assert manual[0][2:] == (
+        "enterprise_feature",
+        "model enterprise.feature",
+    )
+    issues = list(python_checks.check_module(mod, index))
+    assert len(issues) == 1
+    assert issues[0][2] == "warning"
+    assert "Enterprise provider enterprise_feature" in issues[0][3]
+
+
+def test_base_search_override_does_not_create_enterprise_dependency(tmp_path):
+    addon(tmp_path, "base", data=[])
+    addon(
+        tmp_path,
+        "stock",
+        ["base"],
+        code='class Location(Model):\n    _name = "stock.location"\n',
+        data=[],
+    )
+    barcode = addon(
+        tmp_path,
+        "stock_barcode",
+        ["stock"],
+        code='class Location(Model):\n    _inherit = "stock.location"\n    def _search(self, domain): pass\n',
+        data=[],
+    )
+    (barcode / "__manifest__.py").write_text(
+        repr(
+            {
+                "name": "Barcode",
+                "license": "OEEL-1",
+                "depends": ["stock"],
+                "data": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["stock"],
+        code='def run(self):\n    self.env["stock.location"]._search([])\n',
+        data=[],
+    )
+    index = models.ModelIndex.build([tmp_path])
+    additions, manual = python_checks.apply_unambiguous_dependencies(
+        mod, index, with_manual=True
+    )
+    assert additions == []
+    assert manual == []
+
+    (barcode / "models.py").write_text(
+        'class Location(Model):\n    _inherit = "stock.location"\n'
+        "    def enterprise_scan(self): pass\n",
+        encoding="utf-8",
+    )
+    (mod / "models.py").write_text(
+        'def run(self):\n    self.env["stock.location"].enterprise_scan()\n',
+        encoding="utf-8",
+    )
+    index = models.ModelIndex.build([tmp_path])
+    additions, manual = python_checks.apply_unambiguous_dependencies(
+        mod, index, with_manual=True
+    )
+    assert additions == []
+    assert len(manual) == 1
+    assert manual[0][2:] == (
+        "stock_barcode",
+        "method stock.location.enterprise_scan()",
+    )
+
+
+def test_mapped_relational_recordset_is_typed_for_field_renames(tmp_path):
+    addon(tmp_path, "base", data=[])
+    addon(
+        tmp_path,
+        "stock",
+        ["base"],
+        code='''class Picking(Model):
+    _name = "stock.picking"
+    move_line_ids = fields.One2many("stock.move.line")
+
+class MoveLine(Model):
+    _name = "stock.move.line"
+    product_id = fields.Many2one("product.product")
+    uom_id = fields.Many2one("uom.uom")
+''',
+        data=[],
+    )
+    mod = addon(
+        tmp_path,
+        "custom",
+        ["stock"],
+        code='''class Picking(Model):
+    _inherit = "stock.picking"
+
+    def quantities(self):
+        for pack in self.mapped("move_line_ids").filtered(lambda x: x.product_id):
+            pack.product_uom_id._compute_quantity(pack.quantity, pack.product_id.uom_id)
+''',
+        data=[],
+    )
+    index = models.ModelIndex.build([tmp_path])
+    changes = python_checks.apply_field_renames(
+        mod,
+        index,
+        {("stock.move.line", "product_uom_id"): "uom_id"},
+    )
+    assert len(changes) == 1
+    assert "pack.uom_id._compute_quantity" in (mod / "models.py").read_text()
+
+
 def test_invalid_escape_sequences_become_raw_strings(tmp_path, caplog):
     mod = addon(tmp_path, "custom", code="""from odoo import fields, models
 

@@ -49,6 +49,30 @@ class Uses(ast.NodeVisitor):
         if (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "mapped"
+            and len(node.args) == 1
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
+            model = self.receiver(node.func.value)
+            for field in node.args[0].value.split("."):
+                candidates = (
+                    set().union(
+                        *(
+                            self.index.comodels.get((ancestor, field), set())
+                            for ancestor in self.index.ancestors(model)
+                        )
+                    )
+                    if model
+                    else set()
+                )
+                if len(candidates) != 1:
+                    return None
+                model = next(iter(candidates))
+            return model
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
             and node.func.attr
             in {
                 "sudo",
@@ -850,28 +874,43 @@ def apply_runtime_api_migrations(module, index, target_version):
 
 def dependency_message(index, module, what, owners):
     owners = sorted(owners)
+    if set(owners) <= index.enterprise_modules:
+        return (
+            f"{what}: Enterprise provider {', '.join(owners)} is not added "
+            "automatically; review the feature and add it explicitly if intended"
+        )
     circular = [owner for owner in owners if module in index.closure(owner)]
     if len(circular) == len(owners):
         return f"{what}: circular dependency; move this code into {', '.join(circular)} (field/model provider) or a bridge module"
     return f"{what}: add a provider to 'depends': {', '.join(o for o in owners if o not in circular)}"
 
 
-def apply_unambiguous_dependencies(module, index):
-    """Add uniquely proven, non-circular Python providers to depends."""
+def apply_unambiguous_dependencies(module, index, with_manual=False):
+    """Add safe Python providers and retain Enterprise providers for review."""
     module = Path(module)
     if index.unknown_dependencies(module.name):
-        return []
+        return ([], []) if with_manual else []
     closure = index.closure(module.name)
     providers = set()
+    manual = set()
 
-    def consider(owners):
+    def result(additions):
+        if not with_manual:
+            return additions
+        return additions, sorted(
+            manual, key=lambda item: (str(item[0]), *item[1:])
+        )
+
+    def consider(owners, symbol, path, line):
         owners = set(owners)
         if owners & closure:
             return
         if len(owners) != 1:
             return
         owner = next(iter(owners))
-        if owner in index.depends and module.name not in index.closure(owner):
+        if owner in index.enterprise_modules:
+            manual.add((path, line, owner, symbol))
+        elif owner in index.depends and module.name not in index.closure(owner):
             providers.add(owner)
 
     for path in models._python_files(module):
@@ -880,29 +919,34 @@ def apply_unambiguous_dependencies(module, index):
         except (SyntaxError, ValueError):
             continue
         visitor = analyze_uses(tree, index)
-        for _node, model in visitor.model_uses:
-            consider(index.owners(model))
-        for _node, model, field in visitor.usages:
+        for node, model in visitor.model_uses:
+            consider(index.owners(model), f"model {model}", path, node.lineno)
+        for node, model, field in visitor.usages:
             consider(
                 set().union(
                     *(
                         index.field_owners.get((ancestor, field), set())
                         for ancestor in index.ancestors(model)
                     )
-                )
+                ),
+                f"field {model}.{field}",
+                path,
+                node.lineno,
             )
-        for _node, model, method in visitor.method_calls:
+        for node, model, method in visitor.method_calls:
             consider(
                 set().union(
                     *(
                         index.method_owners.get((ancestor, method), set())
                         for ancestor in index.ancestors(model)
                     )
-                )
-                - {"base"}
+                ),
+                f"method {model}.{method}()",
+                path,
+                node.lineno,
             )
     if not providers:
-        return []
+        return result([])
     manifest_path = module / "__manifest__.py"
     text = manifest_path.read_text(encoding="utf-8", errors="replace")
     try:
@@ -915,10 +959,10 @@ def apply_unambiguous_dependencies(module, index):
 
         text = rewrite_list(text, "depends", dependencies + additions)
     except (OSError, SyntaxError, ValueError, TypeError):
-        return []
+        return result([])
     manifest_path.write_text(text, encoding="utf-8")
     index.depends[module.name] = dependencies + additions
-    return additions
+    return result(additions)
 
 
 def _seller_info_extracted(call, tree):
@@ -1564,10 +1608,11 @@ def check_module(
         for node, model in visitor.model_uses:
             owners = set(index.owners(model))
             if owners and not owners & closure:
+                enterprise = owners <= index.enterprise_modules
                 yield (
                     path,
                     node.lineno,
-                    "error" if complete else "warning",
+                    "warning" if enterprise or not complete else "error",
                     dependency_message(index, module.name, f"Model {model}", owners),
                 )
             elif not owners and complete and index.models.get("base"):
@@ -1587,10 +1632,11 @@ def check_module(
                 *(index.field_owners.get((m, field), set()) for m in ancestors)
             )
             if owners and not owners & closure:
+                enterprise = owners <= index.enterprise_modules
                 yield (
                     path,
                     node.lineno,
-                    "error" if complete else "warning",
+                    "warning" if enterprise or not complete else "error",
                     dependency_message(
                         index, module.name, f"Field {model}.{field}", owners
                     ),

@@ -102,7 +102,8 @@ BASE_METHODS = {
     "flush_recordset", "get_metadata", "invalidate_model",
     "get_external_id", "_get_external_ids",
     "invalidate_recordset", "mapped", "modified", "name_create", "read",
-    "read_group", "search", "search_count", "search_fetch", "search_read",
+    "read_group", "search", "_search", "search_count", "search_fetch",
+    "search_read",
     "sorted", "sudo", "unlink", "update", "with_company", "with_context",
     "with_env", "with_prefetch", "with_user", "write",
 }
@@ -265,6 +266,7 @@ class ModelIndex:
         self.field_types = collections.defaultdict(set)
         self.company_fields = set()
         self.renamed_methods = {}
+        self.enterprise_modules = set()
 
     def _add_fields(self, path, owner=""):
         text = path.read_bytes()
@@ -381,6 +383,8 @@ class ModelIndex:
         except (ValueError, SyntaxError):
             manifest = {}
         self.depends[module.name] = manifest.get("depends", [])
+        if manifest.get("license") == "OEEL-1":
+            self.enterprise_modules.add(module.name)
         for path in _python_files(module):
             self._add_summary(path, module.name)
 
