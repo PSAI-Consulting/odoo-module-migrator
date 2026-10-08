@@ -1247,23 +1247,44 @@ class File(models.Model):
     _name = "custom.file"
     _description = "File"
     file = fields.Binary()
+    encoding = fields.Char()
 
     def convert(self, raw):
         stream = io.BytesIO(base64.b64decode(self.file))
         self.file = base64.b64encode(raw)
         self.create({"file": base64.b64encode(raw)})
+        payload = self.file.decode()
+        ascii_payload = self.file.decode("ascii")
+        decoded_text = self.file.decode(self.encoding)
         external_payload = base64.b64encode(raw).decode()
-        return stream, external_payload
+        return stream, payload, ascii_payload, decoded_text, external_payload
+
+    def payload(self, item):
+        return item.file.decode()
+
+    def call_payload(self):
+        return self.payload(item=self)
 """)
     index = models.ModelIndex.build([tmp_path])
     changes = python_checks.apply_binaryvalue_migrations(mod, index)
     text = (mod / "models.py").read_text(encoding="utf-8")
-    assert len(changes) == 3
+    assert len(changes) == 6
     assert "io.BytesIO(self.file.content)" in text
     assert "self.file = BinaryBytes(raw)" in text
     assert 'self.create({"file": BinaryBytes(raw)})' in text
+    assert text.count("self.file.to_base64()") == 2
+    assert "return item.file.to_base64()" in text
+    assert "self.file.decode(self.encoding)" in text
     assert "base64.b64encode(raw).decode()" in text
     assert text.count("from odoo.tools.binary import BinaryBytes") == 1
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index, target_version=20
+        )
+    ]
+    decode_messages = [message for message in messages if "BinaryValue" in message and "decode()" in message]
+    assert len(decode_messages) == 1
 
 
 def test_self_field_read_inside_record_loop_is_reported(tmp_path):

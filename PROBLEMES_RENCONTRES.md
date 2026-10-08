@@ -907,6 +907,18 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `edi_worker_enable_ftp`. `if self.input_ftp_delete_after_download:` dans `for task in self:` → erreur « Expected singleton » dès que plusieurs enregistrements.
 - **Correction proposée** : dans le corps d'un `for x in self:`, signaler (🟠) les lectures de champ sur `self` et proposer `x.<champ>`.
 
+## 83. 🔴 `record.binary_field.decode()` change de sens en silence
+
+> **État du migrateur (08/10/2026)** : ✅ Correction automatique implémentée —
+> un `.decode()` sans encodage, ou avec UTF-8/ASCII constant, sur un champ
+> `Binary`/`Image` prouvé devient `.to_base64()`. Le type du record est aussi
+> propagé depuis les arguments nommés des appels vers les paramètres des
+> méthodes. Un encodage dynamique ou métier reste inchangé et reçoit un TODO
+> expliquant `.content.decode(encoding)`.
+
+- Module : `edi_worker_enable_webservice`. En 17, `file.file.decode()` donnait la **chaîne base64** (envoyée telle quelle dans un JSON). En 20, `BinaryValue.decode()` renvoie le **texte brut** : le service distant reçoit autre chose, et un fichier non UTF-8 plante. Rapport : « aucun risque ».
+- **Correction proposée** : sur un champ `Binary`, `x.decode()` (sans encodage, ou `"utf-8"`/`"ascii"`) → `x.to_base64()` pour garder la valeur de la 17 ; TODO 🟠 si un encodage métier est passé (`x.decode(self.encoding)` : vouloir le texte brut est alors probable).
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -942,6 +954,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `edi_platform` | `get_param` (n° 67), `BinaryValue` en JSON et à la lecture (n° 68), `_onchange_template_id_wrapper`, `mail_tracking_value` en SQL, widget `kanban`, `message_post` en `auth="none"` ; faux positifs (constantes, `self.pool`, jeton « assistant ») | 67 à 73 |
 | `edi_platform_transform` | `active_id` dans une vue, base64 en `bytes` écrit dans un `Binary`, `_file_read`, fichier d'exemple en `BinaryValue`, sous-formulaire contact refait en 20 (ancres), widget `DynamicModelFieldSelectorChar`, `create` sans décorateur, `raise` d'une chaîne, `env.get` en booléen, dépendance `account` | 68, 74 à 80 |
 | `edi_worker_enable_ftp` | `self.` au lieu de `task.` dans la boucle ; ruptures `Binary` signalées sans correction | 81, 82 |
+| `edi_worker_enable_webservice` | `file.file.decode()` : base64 en 17, texte brut en 20 (contenu envoyé modifié) | 83 |
 
 ---
 

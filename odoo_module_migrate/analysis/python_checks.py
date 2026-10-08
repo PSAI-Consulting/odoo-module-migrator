@@ -13,7 +13,7 @@ from . import fields, models
 class Uses(ast.NodeVisitor):
     """Track recordset aliases and relational paths within a method."""
 
-    def __init__(self, index):
+    def __init__(self, index, parameter_types=None):
         self.index = index
         self.aliases = {}
         self.usages = []
@@ -21,6 +21,7 @@ class Uses(ast.NodeVisitor):
         self.called = set()
         self.method_calls = []
         self.super_results = {}
+        self.parameter_types = parameter_types or {}
 
     def receiver(self, node):
         if isinstance(node, ast.Name):
@@ -76,6 +77,12 @@ class Uses(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node):
         saved = self.aliases.copy(), self.super_results.copy()
+        model = self.aliases.get("self")
+        if model:
+            for argument in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]:
+                candidates = self.parameter_types.get((model, node.name, argument.arg), set())
+                if len(candidates) == 1:
+                    self.aliases[argument.arg] = next(iter(candidates))
         self.generic_visit(node)
         self.aliases, self.super_results = saved
 
@@ -161,6 +168,12 @@ class Uses(ast.NodeVisitor):
             model = self.receiver(node.func.value)
             if model:
                 self.method_calls.append((node.func, model, node.func.attr))
+                for keyword in node.keywords:
+                    argument_model = self.receiver(keyword.value)
+                    if keyword.arg and argument_model:
+                        self.parameter_types.setdefault(
+                            (model, node.func.attr, keyword.arg), set()
+                        ).add(argument_model)
             if model and node.func.attr in {"write", "create", "update"} and node.args:
                 arg = node.args[0]
                 dictionaries = (
@@ -174,6 +187,15 @@ class Uses(ast.NodeVisitor):
                             ):
                                 self.usages.append((key, model, key.value))
         self.generic_visit(node)
+
+
+def analyze_uses(tree, index):
+    """Resolve local aliases, then propagate typed keyword arguments once."""
+    first = Uses(index)
+    first.visit(tree)
+    second = Uses(index, first.parameter_types)
+    second.visit(tree)
+    return second
 
 
 def apply_field_renames(module, index, renames):
@@ -190,8 +212,7 @@ def apply_field_renames(module, index, renames):
             tree = ast.parse(text)
         except (SyntaxError, ValueError):
             continue
-        visitor = Uses(index)
-        visitor.visit(tree)
+        visitor = analyze_uses(tree, index)
         positions = fields._Positions(text)
         edits = set()
         for node, model, field in visitor.usages:
@@ -225,8 +246,7 @@ def apply_binaryvalue_migrations(module, index):
             tree = ast.parse(text)
         except (SyntaxError, ValueError):
             continue
-        visitor = Uses(index)
-        visitor.visit(tree)
+        visitor = analyze_uses(tree, index)
         resolved = {id(node): (model, field) for node, model, field in visitor.usages}
         call_models = {id(node): model for node, model, _method in visitor.method_calls}
         parents = {
@@ -248,6 +268,44 @@ def apply_binaryvalue_migrations(module, index):
             return bool(info and _field_kind(index, *info) & {"Binary", "Image"})
 
         for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                receiver_info = resolved.get(id(node.func.value))
+                if node.func.attr == "decode" and binary(receiver_info):
+                    encoding = None
+                    if node.args:
+                        encoding = (
+                            node.args[0].value
+                            if isinstance(node.args[0], ast.Constant)
+                            and isinstance(node.args[0].value, str)
+                            else False
+                        )
+                    else:
+                        encoding_kw = next(
+                            (kw.value for kw in node.keywords if kw.arg == "encoding"),
+                            None,
+                        )
+                        if encoding_kw is not None:
+                            encoding = (
+                                encoding_kw.value
+                                if isinstance(encoding_kw, ast.Constant)
+                                and isinstance(encoding_kw.value, str)
+                                else False
+                            )
+                    if encoding is None or (
+                        isinstance(encoding, str)
+                        and encoding.lower().replace("_", "-")
+                        in {"utf-8", "utf8", "ascii"}
+                    ):
+                        edits.append(
+                            (
+                                positions.offset(node.lineno, node.col_offset),
+                                positions.offset(node.end_lineno, node.end_col_offset),
+                                source(node.func.value) + ".to_base64()",
+                                node.lineno,
+                                "preserve BinaryValue base64 text",
+                            )
+                        )
+                        continue
             if not (
                 isinstance(node, ast.Call)
                 and len(node.args) == 1
@@ -755,6 +813,14 @@ def _odoo20_python_issues(tree, index, visitor):
             if info and _field_kind(index, *info) & {"Binary", "Image"}:
                 action = "read field.content instead of base64-decoding it" if name == "b64decode" else "do not base64-encode an already binary field value"
                 yield node.lineno, "error", f"Odoo 20 Binary/Image values use BinaryValue; {action}"
+        if name == "decode" and isinstance(node.func, ast.Attribute):
+            info = resolved.get(id(node.func.value))
+            if info and _field_kind(index, *info) & {"Binary", "Image"}:
+                yield (
+                    node.lineno,
+                    "warning",
+                    "decode() on an Odoo 20 BinaryValue decodes the raw file, while older Binary fields held base64 bytes; use to_base64() to preserve a base64 payload, or .content.decode(encoding) when decoded file text is intended",
+                )
         if name == "b64encode":
             parent = parents.get(id(node))
             if isinstance(parent, (ast.Assign, ast.AnnAssign)):
@@ -855,8 +921,7 @@ def check_module(module, index, target_version=20, precision_names=None):
             tree = ast.parse(path.read_bytes())
         except (SyntaxError, ValueError):
             continue
-        visitor = Uses(index)
-        visitor.visit(tree)
+        visitor = analyze_uses(tree, index)
         if target_version >= 17:
             for node in ast.walk(tree):
                 if isinstance(node, ast.Constant) and node.value == "__last_update":
