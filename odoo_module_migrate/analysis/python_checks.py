@@ -216,6 +216,119 @@ def apply_field_renames(module, index, renames):
     return changed
 
 
+def apply_binaryvalue_migrations(module, index):
+    """Apply only model-proven Odoo 20 BinaryValue conversions."""
+    changed = []
+    for path in models._python_files(Path(module)):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        try:
+            tree = ast.parse(text)
+        except (SyntaxError, ValueError):
+            continue
+        visitor = Uses(index)
+        visitor.visit(tree)
+        resolved = {id(node): (model, field) for node, model, field in visitor.usages}
+        call_models = {id(node): model for node, model, _method in visitor.method_calls}
+        parents = {
+            id(child): parent
+            for parent in ast.walk(tree)
+            for child in ast.iter_child_nodes(parent)
+        }
+        positions = fields._Positions(text)
+        edits = []
+        needs_import = False
+
+        def source(node):
+            return text[
+                positions.offset(node.lineno, node.col_offset) :
+                positions.offset(node.end_lineno, node.end_col_offset)
+            ]
+
+        def binary(info):
+            return bool(info and _field_kind(index, *info) & {"Binary", "Image"})
+
+        for node in ast.walk(tree):
+            if not (
+                isinstance(node, ast.Call)
+                and len(node.args) == 1
+                and not node.keywords
+            ):
+                continue
+            name = (
+                node.func.attr
+                if isinstance(node.func, ast.Attribute)
+                else getattr(node.func, "id", "")
+            )
+            replacement = None
+            detail = ""
+            if name == "b64decode" and binary(resolved.get(id(node.args[0]))):
+                replacement = source(node.args[0]) + ".content"
+                detail = "read BinaryValue.content"
+            elif name == "b64encode":
+                target_info = None
+                parent = parents.get(id(node))
+                if isinstance(parent, (ast.Assign, ast.AnnAssign)):
+                    targets = parent.targets if isinstance(parent, ast.Assign) else [parent.target]
+                    target_info = next(
+                        (resolved.get(id(target)) for target in targets if binary(resolved.get(id(target)))),
+                        None,
+                    )
+                elif isinstance(parent, ast.Dict):
+                    for key, value in zip(parent.keys, parent.values):
+                        if value is not node or not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                            continue
+                        call = parents.get(id(parent))
+                        while call is not None and not isinstance(call, ast.Call):
+                            call = parents.get(id(call))
+                        model = (
+                            call_models.get(id(call.func))
+                            if isinstance(call, ast.Call)
+                            and isinstance(call.func, ast.Attribute)
+                            and call.func.attr in {"create", "write", "update"}
+                            else None
+                        )
+                        if model and binary((model, key.value)):
+                            target_info = (model, key.value)
+                if target_info:
+                    replacement = f"BinaryBytes({source(node.args[0])})"
+                    detail = "write BinaryBytes"
+                    needs_import = True
+            if replacement:
+                edits.append(
+                    (
+                        positions.offset(node.lineno, node.col_offset),
+                        positions.offset(node.end_lineno, node.end_col_offset),
+                        replacement,
+                        node.lineno,
+                        detail,
+                    )
+                )
+        if not edits:
+            continue
+        for start, end, replacement, _line, _detail in sorted(edits, reverse=True):
+            text = text[:start] + replacement + text[end:]
+        if needs_import and not re.search(
+            r"^\s*from\s+odoo\.tools\.binary\s+import\s+.*\bBinaryBytes\b",
+            text,
+            re.M,
+        ):
+            body = ast.parse(text).body
+            line = body[0].lineno - 1 if body else 0
+            if body and isinstance(body[0], ast.Expr) and isinstance(
+                body[0].value, ast.Constant
+            ) and isinstance(body[0].value.value, str):
+                line = body[0].end_lineno
+            for statement in body:
+                if isinstance(statement, ast.ImportFrom) and statement.module == "__future__":
+                    line = max(line, statement.end_lineno)
+            lines = text.splitlines(keepends=True)
+            lines.insert(line, "from odoo.tools.binary import BinaryBytes\n")
+            text = "".join(lines)
+        path.write_text(text, encoding="utf-8")
+        changed.extend((path, line, detail) for *_rest, line, detail in edits)
+    return changed
+
+
 def dependency_message(index, module, what, owners):
     owners = sorted(owners)
     circular = [owner for owner in owners if module in index.closure(owner)]
@@ -548,6 +661,56 @@ def _field_kind(index, model, field):
     )
 
 
+def _multi_record_self_issues(tree, index):
+    """Find field reads on self inside an explicit `for record in self`."""
+    for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+        class_models = fields._class_models(cls)
+        if not class_models:
+            continue
+        model = class_models[0]
+        known_fields = set().union(
+            *(index.fields.get(ancestor, set()) for ancestor in index.ancestors(model))
+        )
+        for method in cls.body:
+            if not isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            ensured = any(
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "self"
+                and node.func.attr == "ensure_one"
+                for node in ast.walk(method)
+            )
+            if ensured:
+                continue
+            for loop in (node for node in ast.walk(method) if isinstance(node, ast.For)):
+                if not (
+                    isinstance(loop.iter, ast.Name)
+                    and loop.iter.id == "self"
+                    and isinstance(loop.target, ast.Name)
+                ):
+                    continue
+                variable = loop.target.id
+                seen = set()
+                for statement in loop.body:
+                    for node in ast.walk(statement):
+                        if (
+                            isinstance(node, ast.Attribute)
+                            and isinstance(node.ctx, ast.Load)
+                            and isinstance(node.value, ast.Name)
+                            and node.value.id == "self"
+                            and node.attr in known_fields
+                            and node.attr not in seen
+                        ):
+                            seen.add(node.attr)
+                            yield (
+                                node.lineno,
+                                f"self.{node.attr} reads a field inside `for {variable} in self`; "
+                                f"use {variable}.{node.attr} to avoid Expected singleton on multi-record calls",
+                            )
+
+
 def _odoo20_python_issues(tree, index, visitor):
     """Certain Python incompatibilities introduced by the Odoo 20 ORM APIs."""
     parents = {
@@ -717,6 +880,8 @@ def check_module(module, index, target_version=20, precision_names=None):
         ):
             yield path, line, "warning", message
         for line, message in _html_field_issues(tree, index):
+            yield path, line, "warning", message
+        for line, message in _multi_record_self_issues(tree, index):
             yield path, line, "warning", message
         if precision_names:
             for node in ast.walk(tree):

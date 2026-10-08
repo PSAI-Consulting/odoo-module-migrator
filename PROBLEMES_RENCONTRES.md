@@ -884,6 +884,29 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `edi_platform_transform`. `widget="section_and_note_one2many"` vient d'`account`, absent des dépendances.
 - **Correction proposée** : pour chaque widget, retrouver le module qui l'enregistre et vérifier qu'il est dans les dépendances.
 
+## 81. 🟡 Ruptures `Binary` signalées mais non corrigées automatiquement
+
+> **État du migrateur (08/10/2026)** : ✅ Correction automatique implémentée —
+> lorsque l'index prouve le type `Binary`/`Image`, un décodage base64 direct
+> devient une lecture `.content` et une écriture base64 directe devient
+> `BinaryBytes(...)`. L'import est ajouté une seule fois ; le nettoyage habituel
+> retire ensuite `base64` s'il n'est plus utilisé. Les formes ambiguës restent
+> seulement signalées.
+
+- Module : `edi_worker_enable_ftp`. Les nouvelles règles signalent bien `base64.b64decode(file.file)` et `create({"file": base64.b64encode(x)})` (🔴), mais laissent la correction à faire.
+- **Correction proposée** : quand le champ est connu comme `Binary` : `io.BytesIO(base64.b64decode(r.f))` → `io.BytesIO(r.f.content)` ; `"f": base64.b64encode(x)` → `"f": BinaryBytes(x)` (+ import `odoo.tools.binary.BinaryBytes`), puis retirer l'import `base64` s'il devient inutile.
+
+## 82. 🟡 `self.<champ>` dans une boucle `for task in self`
+
+> **État du migrateur (08/10/2026)** : ✅ Détection implémentée — dans une
+> méthode de modèle, les lectures d'un champ indexé via `self` à l'intérieur de
+> `for variable in self` proposent la variable de boucle. Les méthodes,
+> `self.env`, les écritures et les méthodes qui imposent `ensure_one()` sont
+> exclues.
+
+- Module : `edi_worker_enable_ftp`. `if self.input_ftp_delete_after_download:` dans `for task in self:` → erreur « Expected singleton » dès que plusieurs enregistrements.
+- **Correction proposée** : dans le corps d'un `for x in self:`, signaler (🟠) les lectures de champ sur `self` et proposer `x.<champ>`.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -918,6 +941,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `edi_worker` | `get_param` supprimé, champs `Binary` en `BinaryValue`, `_file_read`, `__last_update`, texte + octets ; 31 TODO « dépendance circulaire » à regrouper ; calcul qui vide un champ saisi | 64 à 68 |
 | `edi_platform` | `get_param` (n° 67), `BinaryValue` en JSON et à la lecture (n° 68), `_onchange_template_id_wrapper`, `mail_tracking_value` en SQL, widget `kanban`, `message_post` en `auth="none"` ; faux positifs (constantes, `self.pool`, jeton « assistant ») | 67 à 73 |
 | `edi_platform_transform` | `active_id` dans une vue, base64 en `bytes` écrit dans un `Binary`, `_file_read`, fichier d'exemple en `BinaryValue`, sous-formulaire contact refait en 20 (ancres), widget `DynamicModelFieldSelectorChar`, `create` sans décorateur, `raise` d'une chaîne, `env.get` en booléen, dépendance `account` | 68, 74 à 80 |
+| `edi_worker_enable_ftp` | `self.` au lieu de `task.` dans la boucle ; ruptures `Binary` signalées sans correction | 81, 82 |
 
 ---
 

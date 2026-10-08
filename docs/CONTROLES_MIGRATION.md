@@ -57,6 +57,8 @@ configuration.
 | 76 | Pour un champ absent d'un mixin abstrait, le diagnostic liste les héritiers concrets qui le définissent et leurs types. |
 | 79 | Diagnostics Python pour chaîne levée, `env.get` booléen, valeur comparée à `fields.X` et `except:` nu. |
 | 80 | Les widgets dont le module fournisseur est connu sont comparés à la fermeture des dépendances (`section_and_note_one2many` → `account`). |
+| 81 | Pour Odoo 20, les opérations base64 directement reliées à un champ `Binary`/`Image` connu sont converties vers `.content` en lecture et `BinaryBytes(...)` en écriture, avec ajout d'import. Les usages non prouvés restent inchangés. |
+| 82 | Une lecture `self.<champ>` dans `for record in self` est signalée et propose `record.<champ>` afin d'éviter `Expected singleton`; les méthodes ayant appelé `ensure_one()` sont exclues. |
 | 60 | Une chaîne dont toutes les séquences d'échappement sont invalides (`"\."`, `SyntaxWarning` en Python 3.12) devient une chaîne brute de valeur identique. Un mélange de séquences valides et invalides est signalé. |
 | 61 | La normalisation du manifest retire aussi `data` vide et les entrées vides de `external_dependencies` (puis la clé si elle ne contient plus rien). |
 | 62 | `tracking=` sur un champ d'un modèle sans `mail.thread` (lignée entièrement connue) est signalé. Un `author` absent est complété par `--default-author`, sinon signalé. |

@@ -256,7 +256,7 @@ class Migration:
                 self._migration_scripts.extend(self._load_migration_script(full_name))
 
         scripts = [inspect.getfile(x.__class__).split("/")[-1] for x in self._migration_scripts]
-        logger.debug(f"Migration scripts to execute:\n- " + "\n- ".join(scripts))
+        logger.debug("Migration scripts to execute:\n- " + "\n- ".join(scripts))
 
     def run(self):
         init_version = self._migration_steps[0]["init_version_name"]
@@ -452,6 +452,17 @@ class Migration:
                     logger.info(
                         "Renamed resolved field %s.%s -> %s. File %s:%s",
                         model, old, new, changed_path, changed_line,
+                    )
+            if float(self._migration_steps[-1]["target_version_name"]) >= 20:
+                binary_changes = python_checks.apply_binaryvalue_migrations(
+                    module_migration._module_path, model_index
+                )
+                for changed_path, changed_line, detail in binary_changes:
+                    logger.info(
+                        "Migrated Odoo 20 BinaryValue operation (%s). File %s:%s",
+                        detail,
+                        changed_path,
+                        changed_line,
                     )
             logger.info("Checking Python and field callbacks: %s", module_migration._module_name)
             log_model = logger.warning if model_index.unknown_dependencies(module_migration._module_name) else logger.error

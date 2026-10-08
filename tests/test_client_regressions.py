@@ -1237,6 +1237,60 @@ def test_known_view_widget_provider_must_be_a_dependency(tmp_path):
     issues = list(views.check_module(mod, index, {"base", "account"}))
     assert any("widget 'section_and_note_one2many'" in message and "account" in message for _path, _line, message in issues)
 
+
+def test_binaryvalue_operations_are_fixed_when_field_type_is_proven(tmp_path):
+    mod = addon(tmp_path, "custom", code="""import base64
+import io
+from odoo import fields, models
+
+class File(models.Model):
+    _name = "custom.file"
+    _description = "File"
+    file = fields.Binary()
+
+    def convert(self, raw):
+        stream = io.BytesIO(base64.b64decode(self.file))
+        self.file = base64.b64encode(raw)
+        self.create({"file": base64.b64encode(raw)})
+        external_payload = base64.b64encode(raw).decode()
+        return stream, external_payload
+""")
+    index = models.ModelIndex.build([tmp_path])
+    changes = python_checks.apply_binaryvalue_migrations(mod, index)
+    text = (mod / "models.py").read_text(encoding="utf-8")
+    assert len(changes) == 3
+    assert "io.BytesIO(self.file.content)" in text
+    assert "self.file = BinaryBytes(raw)" in text
+    assert 'self.create({"file": BinaryBytes(raw)})' in text
+    assert "base64.b64encode(raw).decode()" in text
+    assert text.count("from odoo.tools.binary import BinaryBytes") == 1
+
+
+def test_self_field_read_inside_record_loop_is_reported(tmp_path):
+    mod = addon(tmp_path, "custom", code="""from odoo import fields, models
+
+class Task(models.Model):
+    _name = "custom.task"
+    _description = "Task"
+    delete_after = fields.Boolean()
+
+    def process(self):
+        for task in self:
+            if self.delete_after:
+                task.unlink()
+            self.env["res.partner"]
+""")
+    index = models.ModelIndex.build([tmp_path])
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index, target_version=20
+        )
+    ]
+    matching = [message for message in messages if "for task in self" in message]
+    assert len(matching) == 1
+    assert "task.delete_after" in matching[0]
+
 def test_invalid_escape_sequences_become_raw_strings(tmp_path, caplog):
     mod = addon(tmp_path, "custom", code="""from odoo import fields, models
 
