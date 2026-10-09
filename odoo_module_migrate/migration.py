@@ -274,6 +274,7 @@ class Migration:
             )
             logger.addHandler(self.report_collector)
         try:
+            self._check_repository_merged_modules()
             for module_migration in self._module_migrations:
                 module_migration.apply_scripts()
             if self.report_collector:
@@ -311,6 +312,68 @@ class Migration:
             tools.RUN_CONTEXT.clear()
             if self.report_collector:
                 logger.removeHandler(self.report_collector)
+
+    def _check_repository_merged_modules(self):
+        """Report old module directories even when they were not selected.
+
+        Dependency rewriting alone cannot reveal a sibling OCA module that was
+        merged upstream. Keeping both directories would lose the database
+        module/XML-ID transfer required during an upgrade.
+        """
+        selected = {item._module_name for item in self._module_migrations}
+        current_rules = []
+        current_old = set()
+        for script in self._migration_scripts:
+            script.parse_rules()
+            for rule in script._DEPRECATED_MODULES:
+                if len(rule) > 2 and rule[1] == "merged":
+                    current_rules.append(rule)
+                    current_old.add(rule[0])
+
+        # Also inspect merges from earlier transitions. A stale OCA directory
+        # can still be present when a user starts directly from 19.0 even if
+        # that module was already merged while moving to 19.0.
+        import yaml
+
+        rules = list(current_rules)
+        target_code = int(float(self._migration_steps[-1]["target_version_name"]) * 10)
+        rules_root = pathlib.Path(__file__).parent / "migration_scripts/deprecated_modules"
+        for step in rules_root.glob("migrate_*_*"):
+            match = re.fullmatch(r"migrate_(\d+)_(\d+)", step.name)
+            if not match or int(match.group(2)) > target_code:
+                continue
+            for source in sorted(step.glob("*.yaml")):
+                for rule in yaml.safe_load(source.read_text(encoding="utf-8")) or []:
+                    if len(rule) > 2 and rule[1] == "merged":
+                        rules.append(rule)
+
+        reported = set()
+        for rule in rules:
+            old, _state, target = rule[:3]
+            if old in reported or (old in selected and old in current_old):
+                continue
+            path = self._directory_path / old
+            if not path.is_dir() or not self._is_module_path(path):
+                continue
+            reported.add(old)
+            previous_report = None
+            if self.report_collector and target in self.report_collector.reports:
+                previous_report = self.report_collector.current
+                self.report_collector.current = self.report_collector.reports[target]
+            logger.error(
+                "[repository] Module '%s' is merged into '%s' in the target "
+                "version but its directory is still present. Merge its code "
+                "and add a pre-migration database module/XML-ID transfer. "
+                "File %s:1",
+                old,
+                target,
+                next(
+                    (path / name for name in _MANIFEST_NAMES if (path / name).exists()),
+                    path,
+                ),
+            )
+            if self.report_collector and target in self.report_collector.reports:
+                self.report_collector.current = previous_report
 
     def _write_reports(self, init_version, target_version):
         reports = []

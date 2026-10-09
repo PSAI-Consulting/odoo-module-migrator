@@ -217,7 +217,9 @@ class BaseMigrationScript:
                     commit_enabled,
                 )
 
-        self.handle_deprecated_modules(manifest_path, self._DEPRECATED_MODULES)
+        self.handle_deprecated_modules(
+            manifest_path, self._DEPRECATED_MODULES, module_name=module_name
+        )
 
         if self._GLOBAL_FUNCTIONS:
             for function in self._GLOBAL_FUNCTIONS:
@@ -499,11 +501,27 @@ class BaseMigrationScript:
                         )
                     )
 
-    def handle_deprecated_modules(self, manifest_path: pathlib.Path, deprecated_modules: List[Any]) -> None:
+    def handle_deprecated_modules(
+        self,
+        manifest_path: pathlib.Path,
+        deprecated_modules: List[Any],
+        module_name: str = "",
+    ) -> None:
         """Rewrite the 'depends' of the manifest for removed / renamed /
         merged modules (rules of deprecated_modules/migrate_XXX_YYY/*.yaml)."""
         if not deprecated_modules or not manifest_path or not manifest_path.exists():
             return
+        for rule in deprecated_modules:
+            if len(rule) > 2 and rule[0] == module_name and rule[1] == "merged":
+                logger.error(
+                    "Module '%s' is merged into '%s' in the target version. "
+                    "Merge its code into the target module and add a pre-migration "
+                    "script that transfers its ir_module_module / ir_model_data "
+                    "references before removing the old module. File %s:1",
+                    module_name,
+                    rule[2],
+                    manifest_path,
+                )
         text = _read_content(manifest_path)
         try:
             depends = manifest.get_depends(text)

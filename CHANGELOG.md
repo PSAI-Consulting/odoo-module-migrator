@@ -30,6 +30,9 @@
   renommages de champs dans les dictionnaires construits par les tests.
 - Conversion `ir.access.csv` respectueuse du manifest et domaines CSV ramenés
   sur une ligne sans altérer les chaînes littérales.
+- Conversion bancaire Odoo 20 étendue aux journaux et aux anciens chemins
+  `bank_id.name/bic` ; ACL externes exclues et modules fusionnés signalés à
+  l'échelle du dépôt.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

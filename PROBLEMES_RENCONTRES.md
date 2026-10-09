@@ -1100,6 +1100,24 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `purchase_order_type`. `purchase.order.line.product_uom_id` (19) → `uom_id` (20) : valeurs `{"product_uom_id": ...}` des tests non converties → `KeyError` ; la règle `ir.access.csv` garde aussi le domaine sur plusieurs lignes avec espaces.
 - **Correction proposée** : appliquer les renommages de champs aux dictionnaires de valeurs des tests ; écrire le domaine de la règle sur une ligne.
 
+## 99. 🔴 `account_payment_mode` (19 → 20) : `_test_user_groups` mal inséré, banques 20, droit d'un autre module
+
+> **État du migrateur (09/10/2026)** : ✅ Corrigé — l'attribut `BaseCommon`
+> est inséré avant le premier décorateur. Le renommage bancaire couvre
+> `account.journal.bank_acc_number` et les chemins
+> `partner_bank.bank_id.name/bic` en Python/QWeb. Une ACL dont l'ID appartient
+> à un autre module est exclue avant le convertisseur officiel ou de secours,
+> signalée en 🔴, et un ancien CSV devenu vide est retiré du manifeste. Les
+> modules fusionnés connus d'OpenUpgrade sont signalés lorsqu'ils sont migrés
+> ou lorsqu'un ancien dossier non sélectionné reste dans le dépôt.
+
+- `_test_user_groups = None` inséré **entre `@classmethod` et `def setUpClass`** → erreur de syntaxe dans les tests.
+- Banques refaites en 20 (commit `113d77eb35a`) : `res.bank`, `bank_id` signalés dans les vues / démo, mais pas `journal.bank_acc_number` → `bank_account_number` ni le modèle de facture (`partner_bank.bank_id.name` / `.bic` → `bank_name` / `bank_bic`, l'impression plante).
+- `ir.model.access.csv` gardé avec une ligne dont l'identifiant est dans un autre module (`account.access_account_payment_method`) : non convertie, et en 20 ce droit standard existe avec d'autres valeurs (l'écraser changerait un droit Odoo).
+- `ir.access.csv` créé mais `ir.model.access.csv` laissé dans `data`.
+- Fusion de modules OCA (`account_payment_partner` → `account_payment_mode`) non détectée : aucun signalement sur les modules du dépôt qui n'existent plus dans la version cible.
+- **Correction proposée** : insérer l'attribut avant le premier décorateur ; renommages `bank_acc_number`, `bank_id.name/bic` ; signaler (🔴) les lignes d'accès hors module ; retirer `ir.model.access.csv` de `data` quand il est vide ; signaler les modules OCA fusionnés (liste `merged_modules` d'OpenUpgrade) et proposer le script de fusion.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1148,6 +1166,7 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `sale_stock_picking_blocking` | modules OCA : manifest `data`, `maintainers`, `DISABLED_MAIL_CONTEXT`, `index.html` | 96 |
 | `sale_order_type` | `migrations/` supprimé, rapports SQL 20, `BaseCommon` | 97 |
 | `purchase_order_type` | renommages non appliqués aux tests, domaine sur plusieurs lignes | 98 |
+| `account_payment_mode` | `_test_user_groups` mal placé, banques 20, droit hors module, fusion OCA | 99 |
 
 ---
 

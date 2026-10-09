@@ -5,6 +5,7 @@ import logging
 
 from odoo_module_migrate import quality, tools
 from odoo_module_migrate.analysis import models, python_checks, views
+from odoo_module_migrate.base_migration_script import BaseMigrationScript
 from odoo_module_migrate.migration import Migration
 from odoo_module_migrate.migration_scripts.migrate_180_190 import upgrade_sql_constraints
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.compatibility import (
@@ -418,11 +419,12 @@ def test_bank_account_field_in_python_commands_and_qweb(tmp_path):
     def run(self, partner, values):
         account = self.env["res.partner.bank"].search([("acc_number", "=", values.get("acc_number"))])
         partner.write({"bank_ids": [(0, 0, {"acc_number": values.get("acc_number")})]})
-        return values.get("acc_number"), account
+        return values.get("acc_number"), account, partner_bank.bank_id.name, partner_bank.bank_id.bic
 """,
         xml="""<template id="report">
 <span t-field="partner_bank.acc_number"/>
 <span t-esc="partner_bank.acc_number[:4] + supplier_bank.acc_number"/>
+<t t-if="partner_bank.bank_id" t-out="partner_bank.bank_id.name + partner_bank.bank_id.bic"/>
 </template>""",
     )
     args = dict(
@@ -436,6 +438,11 @@ def test_bank_account_field_in_python_commands_and_qweb(tmp_path):
     assert '{"account_number": values.get' in python
     assert xml.count(".account_number") == 3
     assert ".acc_number" not in xml
+    assert "partner_bank.bank_name" in python
+    assert "partner_bank.bank_bic" in python
+    assert 't-if="partner_bank.bank_name"' in xml
+    assert "partner_bank.bank_name + partner_bank.bank_bic" in xml
+    assert ".bank_id" not in python + xml
     before = tools.hash_tree(mod)
     migrate_bank_account_fields(**args)
     assert tools.hash_tree(mod) == before
@@ -458,6 +465,39 @@ def test_ambiguous_acc_number_is_reported_not_rewritten(tmp_path, caplog):
     assert 't-field="record.acc_number"' in (mod / "view.xml").read_text()
     assert "Ambiguous .acc_number access" in caplog.text
     assert "Ambiguous .acc_number in QWeb" in caplog.text
+
+
+def test_journal_bank_account_number_is_renamed_with_resolved_model(tmp_path):
+    addon(
+        tmp_path,
+        "account",
+        code="""class Journal(Model):
+    _name = "account.journal"
+    bank_account_number = fields.Char()
+""",
+    )
+    custom = addon(
+        tmp_path,
+        "custom",
+        ["account"],
+        code="""class Journal(Model):
+    _inherit = "account.journal"
+    def number(self):
+        return self.bank_acc_number
+""",
+    )
+    index = models.ModelIndex.build([tmp_path])
+
+    changes = python_checks.apply_field_renames(
+        custom,
+        index,
+        {("account.journal", "bank_acc_number"): "bank_account_number"},
+    )
+
+    assert len(changes) == 1
+    assert "self.bank_account_number" in (custom / "models.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_unknown_dependency_and_risk(tmp_path):
@@ -2239,6 +2279,68 @@ class CustomCommon(BaseCommon):
     assert not python_checks.apply_base_common_compatibility(module)
 
 
+def test_base_common_attribute_is_inserted_before_first_decorator(tmp_path):
+    module = tmp_path / "custom"
+    tests = module / "tests"
+    tests.mkdir(parents=True)
+    path = tests / "common.py"
+    path.write_text(
+        """from odoo.addons.base.tests.common import BaseCommon
+
+class CustomCommon(BaseCommon):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+""",
+        encoding="utf-8",
+    )
+
+    python_checks.apply_base_common_compatibility(module)
+
+    migrated = path.read_text(encoding="utf-8")
+    assert migrated.index("_test_user_groups") < migrated.index("@classmethod")
+    ast.parse(migrated)
+
+
+def test_selected_merged_module_is_reported(tmp_path, caplog):
+    module = tmp_path / "old_module"
+    module.mkdir()
+    manifest = module / "__manifest__.py"
+    manifest.write_text("{'depends': []}\n", encoding="utf-8")
+
+    with caplog.at_level(logging.ERROR, logger="odoo_module_migrate"):
+        BaseMigrationScript().handle_deprecated_modules(
+            manifest,
+            [["old_module", "merged", "new_module"]],
+            module_name="old_module",
+        )
+
+    assert "is merged into 'new_module'" in caplog.text
+
+
+def test_stale_merged_sibling_is_reported_for_later_start_version(tmp_path, caplog):
+    for name in ("account_payment_mode", "account_payment_partner"):
+        module = tmp_path / name
+        module.mkdir()
+        (module / "__manifest__.py").write_text(
+            f"{{'name': {name!r}, 'depends': []}}\n", encoding="utf-8"
+        )
+    migration = Migration(
+        tmp_path,
+        "19.0",
+        "20.0",
+        module_names=["account_payment_mode"],
+        commit_enabled=False,
+        pre_commit=False,
+        write_report=False,
+    )
+
+    with caplog.at_level(logging.ERROR, logger="odoo_module_migrate"):
+        migration._check_repository_merged_modules()
+
+    assert "account_payment_partner' is merged into 'account_payment_mode" in caplog.text
+
+
 def test_simple_sql_report_hooks_are_migrated_to_tablesql(tmp_path):
     from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.report_table_sql import (
         migrate_report_table_sql,
@@ -2347,3 +2449,86 @@ def test_access_fallback_preserves_manifest_layout_and_flattens_domain(tmp_path)
     assert len(rows) == 3
     assert "company_ids" in rows[1]
     assert not (security / "ir.model.access.csv").exists()
+
+
+def test_access_fallback_drops_external_acl_override_and_stale_manifest_entry(
+    tmp_path, caplog
+):
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import (
+        convert_access_to_ir_access,
+    )
+
+    module = tmp_path / "custom"
+    security = module / "security"
+    security.mkdir(parents=True)
+    manifest = module / "__manifest__.py"
+    manifest.write_text(
+        "{'data': ['security/ir.model.access.csv', 'views.xml']}\n",
+        encoding="utf-8",
+    )
+    source = security / "ir.model.access.csv"
+    source.write_text(
+        "id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink\n"
+        "account.access_method,External,account.model_method,account.group_manager,1,1,1,1\n",
+        encoding="utf-8",
+    )
+
+    tools.RUN_CONTEXT["upgrade_code"] = True
+    try:
+        with caplog.at_level(logging.ERROR, logger="odoo_module_migrate"):
+            convert_access_to_ir_access(
+                logging.getLogger("odoo_module_migrate"),
+                module,
+                "custom",
+                manifest,
+                [],
+                tools,
+            )
+    finally:
+        tools.RUN_CONTEXT.clear()
+
+    assert "belongs to external module account" in caplog.text
+    assert not source.exists()
+    assert not (security / "ir.access.csv").exists()
+    assert ast.literal_eval(manifest.read_text(encoding="utf-8"))["data"] == [
+        "views.xml"
+    ]
+
+
+def test_access_fallback_keeps_local_rows_when_external_override_is_mixed(
+    tmp_path, caplog
+):
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import (
+        convert_access_to_ir_access,
+    )
+
+    module = tmp_path / "custom"
+    security = module / "security"
+    security.mkdir(parents=True)
+    manifest = module / "__manifest__.py"
+    manifest.write_text(
+        "{'data': ['security/ir.model.access.csv']}\n", encoding="utf-8"
+    )
+    (security / "ir.model.access.csv").write_text(
+        "id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink\n"
+        "access_local,Local,model_local,base.group_user,1,0,0,0\n"
+        "account.access_method,External,account.model_method,account.group_manager,1,1,1,1\n",
+        encoding="utf-8",
+    )
+
+    with caplog.at_level(logging.ERROR, logger="odoo_module_migrate"):
+        convert_access_to_ir_access(
+            logging.getLogger("odoo_module_migrate"),
+            module,
+            "custom",
+            manifest,
+            [],
+            tools,
+        )
+
+    target = (security / "ir.access.csv").read_text(encoding="utf-8")
+    assert "access_local" in target
+    assert "account.access_method" not in target
+    assert ast.literal_eval(manifest.read_text(encoding="utf-8"))["data"] == [
+        "security/ir.access.csv"
+    ]

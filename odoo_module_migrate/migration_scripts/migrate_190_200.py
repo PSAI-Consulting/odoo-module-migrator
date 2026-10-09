@@ -77,6 +77,78 @@ def _read_acl(acl_file, module_name: str) -> list:
     return rows
 
 
+def _rewrite_manifest_access_entries(manifest_path, module_path, removed, replacement=None):
+    """Remove old ACL files and optionally insert their Odoo 20 replacement."""
+    manifest = manifest_path.read_text(encoding="utf-8")
+    data = list(ast.literal_eval(manifest).get("data", []))
+    old_entries = {
+        path.relative_to(module_path).as_posix() for path in removed
+    }
+    rewritten = []
+    inserted = False
+    for value in data:
+        if value in old_entries:
+            if replacement and not inserted and replacement not in rewritten:
+                rewritten.append(replacement)
+                inserted = True
+            continue
+        if value == replacement:
+            inserted = True
+        rewritten.append(value)
+    if replacement and not inserted:
+        rewritten.insert(0, replacement)
+    if rewritten != data:
+        tools_text = rewrite_list(manifest, "data", rewritten)
+        manifest_path.write_text(tools_text, encoding="utf-8")
+
+
+def _sanitize_acl_files(acl_files, module_path, module_name, manifest_path, logger):
+    """Drop ACL updates whose XML ID belongs to another module.
+
+    A dotted ID in the first CSV column updates an existing external record.
+    Carrying that row to ir.access would silently alter an Odoo/OCA module's
+    standard permissions. Empty source files are removed from the manifest so
+    the official converter cannot leave a stale entry behind.
+    """
+    kept_files = []
+    for path in acl_files:
+        text = path.read_text(encoding="utf-8-sig")
+        reader = csv.DictReader(io.StringIO(text))
+        fieldnames = reader.fieldnames or []
+        rows = list(reader)
+        local = []
+        for line, row in enumerate(rows, 2):
+            xmlid = (row.get("id") or "").strip()
+            owner = xmlid.split(".", 1)[0] if "." in xmlid else module_name
+            if owner != module_name:
+                logger.error(
+                    "[ir.access] ACL %s belongs to external module %s and was not "
+                    "converted; overriding another module's Odoo 20 access is unsafe. "
+                    "File %s:%s",
+                    xmlid,
+                    owner,
+                    path,
+                    line,
+                )
+                continue
+            local.append(row)
+        if local:
+            if len(local) != len(rows):
+                buffer = io.StringIO()
+                writer = csv.DictWriter(buffer, fieldnames=fieldnames, lineterminator="\n")
+                writer.writeheader()
+                writer.writerows(local)
+                path.write_text(buffer.getvalue(), encoding="utf-8")
+            kept_files.append(path)
+            continue
+        path.unlink()
+        _rewrite_manifest_access_entries(
+            manifest_path, module_path, [path], replacement=None
+        )
+        logger.info("[ir.access] Removed empty ACL file from the manifest: %s", path)
+    return kept_files
+
+
 def _read_rules(xml_files, module_name: str, logger: logging.Logger) -> list:
     rules = []
     for xml_file in xml_files:
@@ -131,13 +203,16 @@ def convert_access_to_ir_access(
     official 19.4-00-ir-access.py does it, taking the group hierarchy
     (implied_ids) into account, which this function does not.
     """
+    acl_files = [f for f in tools.get_files(module_path, (".csv",)) if f.name == "ir.model.access.csv"]
+    acl_files = _sanitize_acl_files(
+        acl_files, module_path, module_name, manifest_path, logger
+    )
     if tools.RUN_CONTEXT.get("upgrade_code"):
         return
     logger.warning(
         "[ir.access] Fallback conversion (implied groups are ignored): give "
         "--odoo-root to use Odoo's official 19.4-00-ir-access.py instead"
     )
-    acl_files = [f for f in tools.get_files(module_path, (".csv",)) if f.name == "ir.model.access.csv"]
     xml_files = tools.get_files(module_path, (".xml",))
     rules = _read_rules(xml_files, module_name, logger)
     if not acl_files and not rules:
@@ -194,29 +269,10 @@ def convert_access_to_ir_access(
     tools._write_content(target, buffer.getvalue())
     logger.info(f"[ir.access] {len(access_rows)} access rows written in {target}")
 
-    # Manifest: structurally replace the old entries. Regex replacement used
-    # to damage mixed one-line/multiline lists and their quote style.
-    manifest = tools._read_content(manifest_path)
-    data = list(ast.literal_eval(manifest).get("data", []))
-    old_entries = {
-        acl_file.relative_to(module_path).as_posix() for acl_file in acl_files
-    }
     replacement = "security/ir.access.csv"
-    rewritten_data = []
-    inserted = False
-    for value in data:
-        if value in old_entries:
-            if not inserted and replacement not in rewritten_data:
-                rewritten_data.append(replacement)
-                inserted = True
-            continue
-        if value == replacement:
-            inserted = True
-        rewritten_data.append(value)
-    if not inserted:
-        rewritten_data.insert(0, replacement)
-    manifest = rewrite_list(manifest, "data", rewritten_data)
-    tools._write_content(manifest_path, manifest)
+    _rewrite_manifest_access_entries(
+        manifest_path, module_path, acl_files, replacement=replacement
+    )
     for acl_file in acl_files:
         acl_file.unlink()
 

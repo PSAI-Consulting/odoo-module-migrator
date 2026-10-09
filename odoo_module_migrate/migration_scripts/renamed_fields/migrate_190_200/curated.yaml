@@ -8,6 +8,7 @@
 - ["res.partner.bank", "acc_number", "account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
 - ["res.partner.bank", "sanitized_acc_number", "sanitized_account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
 - ["res.partner.bank", "acc_holder_name", "holder_name", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
+- ["account.journal", "bank_acc_number", "bank_account_number", "odoo 113d77eb35aa '[IMP] *: Improve UX of bank accounts'"]
 #
 # Candidats de candidates.yaml (et autres modèles des mêmes commits) vérifiés à la
 # main : git show <sha>, champs parsés avant / après le commit et dans la branche

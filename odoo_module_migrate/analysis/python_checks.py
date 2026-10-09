@@ -394,7 +394,18 @@ def apply_base_common_compatibility(module):
                 offset = positions.offset(first.end_lineno, first.end_col_offset)
                 insertion = f"\n\n{indent}_test_user_groups = None"
             else:
-                offset = positions.offset(first.lineno, first.col_offset)
+                # AST function/class locations start on ``def``/``class``, not
+                # on their decorators. Never insert between a decorator and
+                # the statement it decorates.
+                first_token = (
+                    first.decorator_list[0]
+                    if isinstance(
+                        first, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                    )
+                    and first.decorator_list
+                    else first
+                )
+                offset = positions.offset(first_token.lineno, cls.col_offset + 4)
                 insertion = f"_test_user_groups = None\n\n{indent}"
             edits.append((offset, offset, insertion, cls.name, cls.lineno))
         for start, end, replacement, _name, _line in sorted(edits, reverse=True):

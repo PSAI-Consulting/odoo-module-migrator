@@ -3,8 +3,9 @@
 Source: odoo 113d77eb35aa ``[IMP] *: Improve UX of bank accounts``.
 The generic field engine handles ``env['res.partner.bank']`` and known views.
 This script covers contexts whose model cannot be inferred from Python/XML
-alone: QWeb variables named after a bank and nested create commands of the
-``bank_ids`` relation. External payload keys named ``acc_number`` stay intact.
+alone: QWeb variables named after a bank, nested create commands of the
+``bank_ids`` relation, and paths through the bank model removed in 20.
+External payload keys named ``acc_number`` stay intact.
 """
 
 import ast
@@ -65,6 +66,20 @@ def _python_edits(text):
         if usage.model == "res.partner.bank" and usage.field == "acc_number":
             edits[usage.start, usage.end] = "account_number"
     for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr in {"name", "bic"}:
+            bank_id = node.value
+            if (
+                isinstance(bank_id, ast.Attribute)
+                and bank_id.attr == "bank_id"
+                and BANK_RECEIVER_RE.search(_receiver_name(bank_id.value))
+            ):
+                start = positions.offset(bank_id.lineno, bank_id.col_offset)
+                receiver_end = positions.offset(
+                    bank_id.value.end_lineno, bank_id.value.end_col_offset
+                )
+                end = positions.offset(node.end_lineno, node.end_col_offset)
+                suffix = ".bank_name" if node.attr == "name" else ".bank_bic"
+                edits[start, end] = text[start:receiver_end] + suffix
         if isinstance(node, ast.Attribute) and node.attr == "acc_number":
             end = positions.offset(node.end_lineno, node.end_col_offset)
             span = (end - len(node.attr), end)
@@ -100,6 +115,39 @@ def _qweb(text):
             def expression(found):
                 nonlocal changed
                 expression_text = found.group(3)
+
+                def bank_detail(detail_match):
+                    nonlocal changed
+                    receiver = detail_match.group(1).split(".")[-1]
+                    if not BANK_RECEIVER_RE.search(receiver):
+                        return detail_match[0]
+                    changed += 1
+                    suffix = (
+                        "bank_name" if detail_match.group(2) == "name" else "bank_bic"
+                    )
+                    return detail_match.group(1) + "." + suffix
+
+                expression_text = re.sub(
+                    r"\b([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\.bank_id\.(name|bic)\b",
+                    bank_detail,
+                    expression_text,
+                )
+
+                # In old reports the relation itself was a presence guard.
+                # Its display value is bank_name in Odoo 20.
+                def bank_presence(presence_match):
+                    nonlocal changed
+                    receiver = presence_match.group(1).split(".")[-1]
+                    if not BANK_RECEIVER_RE.search(receiver):
+                        return presence_match[0]
+                    changed += 1
+                    return presence_match.group(1) + ".bank_name"
+
+                expression_text = re.sub(
+                    r"\b([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\.bank_id\b",
+                    bank_presence,
+                    expression_text,
+                )
 
                 def field_name(field_match):
                     nonlocal changed
@@ -138,7 +186,7 @@ def migrate_bank_account_fields(**kwargs):
     tools, logger = kwargs["tools"], kwargs["logger"]
     for path in tools.get_files(kwargs["module_path"], (".py", ".xml")):
         text = tools._read_content(path)
-        if "acc_number" not in text:
+        if not any(name in text for name in ("acc_number", "bank_id")):
             continue
         if path.suffix == ".py":
             edits, unresolved = _python_edits(text)
