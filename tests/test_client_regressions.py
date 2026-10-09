@@ -14,6 +14,9 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.compat
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.sql_constraint_messages import (
     _unwrap_translated_constraint_messages,
 )
+from odoo_module_migrate.migration_scripts.python_scripts.migrate_180_190.purchase_order_note import (
+    migrate_purchase_order_note,
+)
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.view_anchors import (
     migrate_view_anchors,
 )
@@ -314,6 +317,56 @@ def test_oca_cosmetics_are_preserved(tmp_path):
     assert tools.hash_tree(mod) == before
 
 
+def test_same_named_multi_inheritance_is_not_a_new_model(tmp_path, caplog):
+    path = tmp_path / "sale_order.py"
+    text = """from odoo import models
+
+class SaleOrder(models.Model):
+    _name = "sale.order"
+    _inherit = ["sale.order", "comment.template"]
+"""
+    path.write_text(text, encoding="utf-8")
+
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate"):
+        quality.check_python(path, text)
+
+    assert "without _description" not in caplog.text
+    assert quality.add_missing_model_descriptions(path, text) == text
+
+
+def test_oca_icon_is_restored_after_migration_step(tmp_path):
+    from types import SimpleNamespace
+
+    from odoo_module_migrate.module_migration import ModuleMigration
+
+    module = tmp_path / "oca_module"
+    icon = module / "static" / "description" / "icon.png"
+    icon.parent.mkdir(parents=True)
+    original = b"original OCA icon"
+    icon.write_bytes(original)
+    (module / "__manifest__.py").write_text(
+        "{'name': 'OCA', 'author': 'Odoo Community Association (OCA)'}\n",
+        encoding="utf-8",
+    )
+    migration = SimpleNamespace(
+        _directory_path=tmp_path,
+        report_collector=None,
+        _migration_steps=[
+            {"init_version_name": "19.0", "target_version_name": "20.0"}
+        ],
+        _migration_scripts=[],
+        _commit_enabled=False,
+        _is_oca_module=lambda path: True,
+    )
+    item = ModuleMigration(migration, "oca_module")
+    item.apply_scripts()
+    icon.write_bytes(b"replacement")
+
+    item.restore()
+
+    assert icon.read_bytes() == original
+
+
 def test_19_rewrites_are_scoped_and_idempotent(tmp_path, caplog):
     mod = addon(
         tmp_path,
@@ -500,6 +553,38 @@ def test_journal_bank_account_number_is_renamed_with_resolved_model(tmp_path):
     )
 
 
+def test_purchase_order_note_rename_covers_qweb_and_named_parameters(tmp_path):
+    module = addon(
+        tmp_path,
+        "purchase_comments",
+        code="""class PurchaseOrder(Model):
+    _name = "purchase.order"
+    _inherit = ["purchase.order", "comment.template"]
+    def terms(self, order):
+        return self.notes, order.notes
+""",
+        xml="""<template id="comments" inherit_id="purchase.report_purchaseorder_document">
+<xpath expr="//p[@t-field='o.notes']" position="after">
+    <p t-if="purchase_order.notes" t-field="order.notes"/>
+</xpath>
+</template>""",
+    )
+
+    migrate_purchase_order_note(
+        module_path=module,
+        tools=tools,
+        logger=logging.getLogger("odoo_module_migrate"),
+    )
+
+    python = (module / "models.py").read_text(encoding="utf-8")
+    xml = (module / "view.xml").read_text(encoding="utf-8")
+    assert "self.note, order.note" in python
+    assert "o.note" in xml
+    assert "purchase_order.note" in xml
+    assert "order.note" in xml
+    assert ".notes" not in python + xml
+
+
 def test_unknown_dependency_and_risk(tmp_path):
     addon(tmp_path, "base", xml=view("form", "<form><group/></form>"))
     mod = addon(
@@ -651,6 +736,85 @@ def test_manifest_list_rewrite_handles_first_item_on_opening_line():
     assert ast.literal_eval(format_manifest(rewritten))["data"][-1] == (
         "security/ir.access.csv"
     )
+
+
+def test_access_list_repair_normalizes_layout_and_preserves_comments(tmp_path):
+    module = tmp_path / "oca"
+    module.mkdir()
+    manifest = module / "__manifest__.py"
+    manifest.write_text(
+        '''{
+    "name": "Comments",
+    "author": "Odoo Community Association (OCA)",
+    "data": ['security/ir.access.csv',
+        "views/first.xml",
+        # "views/optional.xml",
+        "views/last.xml",
+    ],
+}
+''',
+        encoding="utf-8",
+    )
+
+    quality.finish_module(
+        module,
+        cosmetic=False,
+        original_data=[
+            "views/first.xml",
+            "security/ir.model.access.csv",
+            "views/last.xml",
+        ],
+    )
+
+    migrated = manifest.read_text(encoding="utf-8")
+    assert ast.literal_eval(migrated)["data"] == [
+        "views/first.xml",
+        "security/ir.access.csv",
+        "views/last.xml",
+    ]
+    assert '"data": [\n' in migrated
+    assert "'security/ir.access.csv'" not in migrated
+    assert '# "views/optional.xml"' in migrated
+
+
+def test_access_list_repair_runs_when_replacement_is_already_last(tmp_path):
+    module = tmp_path / "oca"
+    module.mkdir()
+    manifest = module / "__manifest__.py"
+    manifest.write_text(
+        '''{
+    "name": "Comments",
+    "author": "Odoo Community Association (OCA)",
+    "data": ['views/order.xml',
+        # optional report kept disabled
+        "security/ir.access.csv",
+    ],
+}
+''',
+        encoding="utf-8",
+    )
+
+    quality.finish_module(
+        module,
+        cosmetic=False,
+        original_data=["views/order.xml", "security/ir.model.access.csv"],
+    )
+
+    migrated = manifest.read_text(encoding="utf-8")
+    assert '"data": [\n        "views/order.xml",' in migrated
+    assert "'views/order.xml'" not in migrated
+    assert "# optional report kept disabled" in migrated
+
+
+def test_excludes_is_a_known_odoo20_manifest_key():
+    from odoo_module_migrate.manifest import inspect_keys
+
+    unknown, concatenated = inspect_keys(
+        "{'name': 'Intrastat', 'excludes': ['account_intrastat']}"
+    )
+
+    assert not unknown
+    assert not concatenated
 
 
 def test_html_field_append_and_malformed_break_are_reported(tmp_path):

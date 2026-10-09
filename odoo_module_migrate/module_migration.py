@@ -40,6 +40,15 @@ class ModuleMigration:
 
         self._formats = snapshot_formats(self._module_path)
         self._hashes_before = hash_tree(self._module_path)
+        self._protected_oca_icons = {}
+        if self._migration._is_oca_module(self._module_path):
+            description = self._module_path / "static" / "description"
+            if description.is_dir():
+                self._protected_oca_icons = {
+                    path: path.read_bytes()
+                    for path in description.glob("icon.*")
+                    if path.is_file()
+                }
         import ast
         from .tools import _read_content
         try:
@@ -63,6 +72,11 @@ class ModuleMigration:
         self.commit()
 
     def restore(self):
+        for path, content in getattr(self, "_protected_oca_icons", {}).items():
+            if not path.exists() or path.read_bytes() != content:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+                logger.info("Restored original OCA module icon. File %s", path)
         restore_formats(self._formats)
 
     def changed_files(self, ignore=()):

@@ -263,7 +263,11 @@ def check_python(path, text):
                 and len(s.targets) == 1
                 and isinstance(s.targets[0], ast.Name)
             }
-            if "_name" in declarations and "_description" not in declarations:
+            if (
+                "_name" in declarations
+                and "_description" not in declarations
+                and not _extends_same_named_model(node)
+            ):
                 logger.warning(
                     "[quality] Model declares _name without _description; supply a meaningful description. File %s:%s",
                     path,
@@ -377,6 +381,36 @@ def migrate_simple_translation_fstrings(path, text):
     return text
 
 
+def _extends_same_named_model(node):
+    """Whether ``_name`` only keeps the identity of an inherited model."""
+    declarations = {
+        statement.targets[0].id: statement.value
+        for statement in node.body
+        if isinstance(statement, ast.Assign)
+        and len(statement.targets) == 1
+        and isinstance(statement.targets[0], ast.Name)
+    }
+    name = declarations.get("_name")
+    inherited = declarations.get("_inherit")
+    if not (
+        isinstance(name, ast.Constant)
+        and isinstance(name.value, str)
+        and inherited is not None
+    ):
+        return False
+    if isinstance(inherited, ast.Constant) and isinstance(inherited.value, str):
+        parents = {inherited.value}
+    elif isinstance(inherited, (ast.List, ast.Tuple)):
+        parents = {
+            item.value
+            for item in inherited.elts
+            if isinstance(item, ast.Constant) and isinstance(item.value, str)
+        }
+    else:
+        return False
+    return name.value in parents
+
+
 def add_missing_model_descriptions(path, text):
     """Add a stable English description to explicitly named Odoo models."""
     try:
@@ -387,6 +421,8 @@ def add_missing_model_descriptions(path, text):
     inserts = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.ClassDef):
+            continue
+        if _extends_same_named_model(node):
             continue
         declarations = {
             statement.targets[0].id: statement
@@ -536,10 +572,14 @@ def finish_module(
                     preceding = set(original_data[: original_data.index(old)])
                     offset = sum(v in preceding for v in values)
                     values.insert(offset, new)
-                    if values != ast.literal_eval(node):
-                        from .manifest import rewrite_list
+                    from .manifest import rewrite_list
 
-                        text = rewrite_list(text, "data", values)
+                    # Normalize even when the official converter happened to
+                    # append the replacement at the right logical position:
+                    # it may still have put the first item directly after ``[``.
+                    text = rewrite_list(
+                        text, "data", values, normalize_multiline=True
+                    )
             if cosmetic and manifest_layout:
                 from .manifest import format_manifest
 

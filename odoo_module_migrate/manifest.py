@@ -28,7 +28,7 @@ KEY_ORDER = (
 KNOWN_KEYS = set(KEY_ORDER) | {
     "application", "author", "auto_install", "bootstrap", "cloc_exclude",
     "configurator_snippets", "configurator_snippets_addons", "contributors",
-    "countries", "currency", "development_status", "iap_paid_service", "icon",
+    "countries", "currency", "development_status", "excludes", "iap_paid_service", "icon",
     "images", "installable",
     "kpi_providers", "live_test_url", "maintainer", "maintainers", "new_page_templates",
     "other_files", "post_init_hook", "post_load", "pre_init_hook", "price",
@@ -281,16 +281,14 @@ def rewrite_depends(text, new_depends):
     return rewrite_list(text, "depends", new_depends)
 
 
-def rewrite_list(text, key, new_depends):
+def rewrite_list(text, key, new_depends, normalize_multiline=False):
     node = _find_key(text, key)
     if not isinstance(node, (ast.List, ast.Tuple)):
-        raise ManifestError("'depends' is not a literal list")
+        raise ManifestError(f"'{key}' is not a literal list")
     pos = _Positions(text)
     start = pos(node.lineno, node.col_offset)
     end = pos(node.end_lineno, node.end_col_offset)
     original = text[start:end]
-    if "#" in original:
-        raise ManifestError("'depends' contains comments: not rewritten")
     opening, closing = original[0], original[-1]
 
     # Keep the source text (quotes...) of each item; new items take the
@@ -308,15 +306,53 @@ def rewrite_list(text, key, new_depends):
     # keep every comma, newline and indentation byte-for-byte.
     if len(new_depends) == len(node.elts) and len(quotes) == len(node.elts):
         edits = []
+        if normalize_multiline:
+            # Official scripts may inject a single-quoted first item directly
+            # after ``[``. Use the prevailing quote style of the existing
+            # manifest while keeping every comment and comma in place.
+            double = sum(quote == '"' for quote in quotes)
+            single = len(quotes) - double
+            normalized_quote = '"' if double >= single else "'"
+        else:
+            normalized_quote = None
         for elt, name in zip(node.elts, new_depends):
             item_start = pos(elt.lineno, elt.col_offset)
             item_end = pos(elt.end_lineno, elt.end_col_offset)
             source = text[item_start:item_end]
-            quote = source[0]
+            quote = normalized_quote or source[0]
             edits.append((item_start, item_end, f"{quote}{name}{quote}"))
         for item_start, item_end, replacement in reversed(edits):
             text = text[:item_start] + replacement + text[item_end:]
+        if normalize_multiline:
+            refreshed = _find_key(text, key)
+            if (
+                isinstance(refreshed, (ast.List, ast.Tuple))
+                and refreshed.elts
+                and refreshed.lineno == refreshed.elts[0].lineno
+                and refreshed.lineno != refreshed.end_lineno
+            ):
+                refreshed_pos = _Positions(text)
+                first = refreshed.elts[0]
+                first_start = refreshed_pos(first.lineno, first.col_offset)
+                later = next(
+                    (elt for elt in refreshed.elts if elt.lineno > refreshed.lineno),
+                    None,
+                )
+                if later is not None:
+                    indent = text[
+                        refreshed_pos(later.lineno, 0) :
+                        refreshed_pos(later.lineno, later.col_offset)
+                    ]
+                else:
+                    closing_indent = text[
+                        refreshed_pos(refreshed.end_lineno, 0) :
+                        refreshed_pos(refreshed.end_lineno, refreshed.end_col_offset - 1)
+                    ]
+                    indent = closing_indent + "    "
+                text = text[:first_start] + "\n" + indent + text[first_start:]
         return text
+    if "#" in original:
+        raise ManifestError(f"'{key}' contains comments: not rewritten")
     items = []
     for index, name in enumerate(new_depends):
         if name in sources:

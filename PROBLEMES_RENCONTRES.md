@@ -1118,6 +1118,41 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Fusion de modules OCA (`account_payment_partner` → `account_payment_mode`) non détectée : aucun signalement sur les modules du dépôt qui n'existent plus dans la version cible.
 - **Correction proposée** : insérer l'attribut avant le premier décorateur ; renommages `bank_acc_number`, `bank_id.name/bic` ; signaler (🔴) les lignes d'accès hors module ; retirer `ir.model.access.csv` de `data` quand il est vide ; signaler les modules OCA fusionnés (liste `merged_modules` d'OpenUpgrade) et proposer le script de fusion.
 
+## 100. 🟠 `account_comment_template`, `sale_comment_template` (19 → 20) : `data` mal formaté, icône OCA remplacée, `_description` signalé à tort
+
+> **État du migrateur (09/10/2026)** : ✅ Corrigé — la remise en place de
+> `ir.access.csv` normalise le premier élément et le style de guillemets sans
+> perdre les commentaires de `data`. Les fichiers `static/description/icon.*`
+> d'un module reconnu OCA sont protégés puis restaurés avant le rapport et le
+> commit. Une classe dont `_name` figure aussi dans `_inherit` est reconnue
+> comme extension du modèle existant et n'exige plus de `_description`.
+
+- Encore `"data": ['views/….xml', ` (guillemets simples, espace final, saut de ligne perdu) quand `ir.model.access.csv` → `ir.access.csv` (déjà vu, voir plus haut).
+- `static/description/icon.png` remplacé dans un module OCA (doit rester l'icône OCA).
+- [quality] « `_name` sans `_description` » signalé sur `_name = "sale.order"` + `_inherit = ["sale.order", "comment.template"]` : extension d'un modèle existant, pas un nouveau modèle → faux positif.
+- **Correction proposée** : réécrire la liste `data` au format standard ; ne pas toucher l'icône si l'auteur est l'OCA ; ignorer l'avertissement quand `_name` est aussi dans `_inherit`.
+
+## 101. 🟠 `purchase_comment_template` (18 → 20) : `purchase.order.notes` → `note` non renommé
+
+> **État du migrateur (09/10/2026)** : ✅ Corrigé — la règle existante est
+> complétée pour les variables `o`, `order` et `purchase_order` des rapports
+> QWeb d'achat, ainsi que les paramètres clairement nommés dans une extension
+> Python de `purchase.order`. La transformation reste limitée au contexte du
+> modèle et des rapports d'achat.
+
+- Le xpath `<p t-field="o.notes">` du modèle d'impression est bien signalé (🔴 sélecteur introuvable), mais le renommage du champ (commit Odoo `bc24cdddbec5`) n'est pas appliqué ni proposé ; même cas en Python (`order.notes`).
+- **Correction proposée** : ajouter `purchase.order.notes` → `note` aux renommages de champs 19 → 20 (Python, vues, QWeb).
+
+## 102. 🟡 `intrastat_base` (19 → 20) : clé de manifest `excludes` signalée à tort
+
+> **État du migrateur (09/10/2026)** : ✅ Corrigé — `excludes` fait partie des
+> clés de manifeste Odoo reconnues ; sa valeur et ses commentaires restent
+> inchangés.
+
+- [quality] « Unknown manifest key 'excludes' » (🔴) : la clé est valide en 20 (lue par `ir_module.py`, `terp.get('excludes', [])`), seulement absente des valeurs par défaut de `odoo/modules/module.py`.
+- Le renommage `base_vat` → `base` est bien fait.
+- **Correction proposée** : ajouter `excludes` à la liste des clés connues.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1167,6 +1202,9 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `sale_order_type` | `migrations/` supprimé, rapports SQL 20, `BaseCommon` | 97 |
 | `purchase_order_type` | renommages non appliqués aux tests, domaine sur plusieurs lignes | 98 |
 | `account_payment_mode` | `_test_user_groups` mal placé, banques 20, droit hors module, fusion OCA | 99 |
+| `account_comment_template`, `sale_comment_template` | `data` mal formaté, icône OCA remplacée, faux `_description` | 100 |
+| `purchase_comment_template` | `notes` → `note` non renommé | 101 |
+| `intrastat_base` | faux positif sur `excludes` | 102 |
 
 ---
 

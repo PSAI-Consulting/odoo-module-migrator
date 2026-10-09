@@ -33,6 +33,9 @@
 - Conversion bancaire Odoo 20 étendue aux journaux et aux anciens chemins
   `bank_id.name/bic` ; ACL externes exclues et modules fusionnés signalés à
   l'échelle du dépôt.
+- Réparation commentée des listes `data` après `upgrade_code`, protection des
+  icônes OCA, extensions multi-héritées reconnues et renommage complet de
+  `purchase.order.notes` vers `note`.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git
