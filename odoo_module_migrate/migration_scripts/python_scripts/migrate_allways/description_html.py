@@ -22,4 +22,8 @@ def remove_description_xml_declaration(**kwargs):
     new_content = _XML_DECLARATION.sub("", content, count=1)
     if new_content != content:
         tools._write_content(path, new_content)
-        kwargs["logger"].info("XML declaration removed from %s" % path)
+        kwargs["logger"].info(
+            "Removed the XML declaration required for Odoo 20 installation "
+            "(lxml rejects Unicode strings with an encoding declaration). File %s:1",
+            path,
+        )

@@ -1,14 +1,17 @@
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 
+import ast
 import csv
 import io
 import logging
 import re
+import tokenize
 from typing import Any, List
 
 from lxml import etree
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
+from odoo_module_migrate.manifest import rewrite_list
 
 # Odoo 20 replaces ir.model.access (CSV) and ir.rule (XML) by a single model,
 # ir.access, loaded from security/ir.access.csv:
@@ -28,6 +31,25 @@ OPERATIONS = (("c", "perm_create"), ("r", "perm_read"), ("u", "perm_write"), ("d
 RE_REF = re.compile(r"ref\(\s*['\"]([^'\"]+)['\"]\s*\)")
 RE_RULE_RECORD = re.compile(r"[ \t]*<record\b[^>]*\bmodel=['\"]ir\.rule['\"][^>]*>.*?</record>[ \t]*\n?", re.S)
 TRUE_VALUES = {"1", "true", "True"}
+
+
+def _one_line_expression(value: str) -> str:
+    """Collapse Python expression layout without changing string literals."""
+    tokens = tokenize.generate_tokens(io.StringIO(value).readline)
+    kept = [
+        (token.type, token.string)
+        for token in tokens
+        if token.type
+        not in {
+            tokenize.ENCODING,
+            tokenize.ENDMARKER,
+            tokenize.INDENT,
+            tokenize.DEDENT,
+            tokenize.NEWLINE,
+            tokenize.NL,
+        }
+    ]
+    return tokenize.untokenize(kept).strip()
 
 
 def _qualify(xmlid: str, module_name: str) -> str:
@@ -77,7 +99,9 @@ def _read_rules(xml_files, module_name: str, logger: logging.Logger) -> list:
                     ops.add(letter)
             domain = ""
             if domain_field is not None:
-                domain = (domain_field.get("eval") or domain_field.text or "").strip()
+                domain = _one_line_expression(
+                    (domain_field.get("eval") or domain_field.text or "").strip()
+                )
             if domain.replace(" ", "") in ("[(1,'=',1)]", '[(1,"=",1)]', "[]"):
                 domain = ""
             groups = []
@@ -170,22 +194,31 @@ def convert_access_to_ir_access(
     tools._write_content(target, buffer.getvalue())
     logger.info(f"[ir.access] {len(access_rows)} access rows written in {target}")
 
-    # Manifest: the new file takes the place of the first ACL file, the others are removed
+    # Manifest: structurally replace the old entries. Regex replacement used
+    # to damage mixed one-line/multiline lists and their quote style.
     manifest = tools._read_content(manifest_path)
-    for position, acl_file in enumerate(acl_files):
-        relative = acl_file.relative_to(module_path).as_posix()
-        replacement = "security/ir.access.csv" if position == 0 else ""
-        manifest = re.sub(
-            rf"(['\"]){re.escape(relative)}\1(\s*,)?",
-            (lambda m: f"{m.group(1)}{replacement}{m.group(1)}{m.group(2) or ''}") if replacement else "",
-            manifest,
-        )
-        acl_file.unlink()
-    if not acl_files:
-        manifest = re.sub(
-            r"(['\"]data['\"]\s*:\s*\[)", r"\1\n        'security/ir.access.csv',", manifest, count=1
-        )
+    data = list(ast.literal_eval(manifest).get("data", []))
+    old_entries = {
+        acl_file.relative_to(module_path).as_posix() for acl_file in acl_files
+    }
+    replacement = "security/ir.access.csv"
+    rewritten_data = []
+    inserted = False
+    for value in data:
+        if value in old_entries:
+            if not inserted and replacement not in rewritten_data:
+                rewritten_data.append(replacement)
+                inserted = True
+            continue
+        if value == replacement:
+            inserted = True
+        rewritten_data.append(value)
+    if not inserted:
+        rewritten_data.insert(0, replacement)
+    manifest = rewrite_list(manifest, "data", rewritten_data)
     tools._write_content(manifest_path, manifest)
+    for acl_file in acl_files:
+        acl_file.unlink()
 
     # XML: drop the converted ir.rule records
     for xml_file in {rule["file"] for rule in rules}:

@@ -134,6 +134,16 @@ def _python_files(module):
     yield from sorted(loaded_python_files(module))
 
 
+def analysis_python_files(module):
+    """Loaded runtime files plus tests that must migrate with the addon."""
+    module = pathlib.Path(module)
+    files = set(loaded_python_files(module))
+    tests = module / "tests"
+    if tests.is_dir():
+        files.update(tests.rglob("*.py"))
+    return sorted(files)
+
+
 NAME_RE = re.compile(r"""^\s{4}_name\s*=\s*['"]([\w.]+)['"]""", re.M)
 
 

@@ -30,7 +30,7 @@ KNOWN_KEYS = set(KEY_ORDER) | {
     "configurator_snippets", "configurator_snippets_addons", "contributors",
     "countries", "currency", "development_status", "iap_paid_service", "icon",
     "images", "installable",
-    "kpi_providers", "live_test_url", "maintainer", "new_page_templates",
+    "kpi_providers", "live_test_url", "maintainer", "maintainers", "new_page_templates",
     "other_files", "post_init_hook", "post_load", "pre_init_hook", "price",
     "sequence", "support", "test", "theme_customizations", "uninstall_hook",
     "url", "web",
@@ -304,6 +304,19 @@ def rewrite_list(text, key, new_depends):
             sources[elt.value] = source
             quotes.append(source[0])
     default_quote = quotes[0] if quotes else '"'
+    # A pure replacement/reordering with the same number of literal items can
+    # keep every comma, newline and indentation byte-for-byte.
+    if len(new_depends) == len(node.elts) and len(quotes) == len(node.elts):
+        edits = []
+        for elt, name in zip(node.elts, new_depends):
+            item_start = pos(elt.lineno, elt.col_offset)
+            item_end = pos(elt.end_lineno, elt.end_col_offset)
+            source = text[item_start:item_end]
+            quote = source[0]
+            edits.append((item_start, item_end, f"{quote}{name}{quote}"))
+        for item_start, item_end, replacement in reversed(edits):
+            text = text[:item_start] + replacement + text[item_end:]
+        return text
     items = []
     for index, name in enumerate(new_depends):
         if name in sources:

@@ -2123,3 +2123,227 @@ def test_complex_override_signature_is_reported_without_rewrite(tmp_path):
     assert len(issues) == 1 and issues[0][0] == "error"
     assert not python_checks.apply_override_signature_migrations(custom, index)
     assert (custom / "models.py").read_text(encoding="utf-8") == original
+
+
+def test_keyword_only_target_with_permissive_override_is_a_warning(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "provider",
+        ["base"],
+        """class Item(Model):
+    _name = "x.item"
+    def process(self, *, previous=False):
+        return previous
+""",
+    )
+    custom = addon(
+        tmp_path,
+        "custom",
+        ["provider"],
+        """class Item(Model):
+    _inherit = "x.item"
+    def process(self, previous=False):
+        return super().process(previous=previous)
+""",
+    )
+    issues = [
+        (level, message)
+        for _path, _line, level, message in python_checks.check_module(
+            custom, models.ModelIndex.build([tmp_path])
+        )
+        if "keyword-only" in message
+    ]
+    assert len(issues) == 1
+    assert issues[0][0] == "warning"
+    assert "should align its signature" in issues[0][1]
+
+
+def test_oca_maintainers_is_a_known_manifest_key():
+    from odoo_module_migrate.manifest import inspect_keys
+
+    unknown, concatenated = inspect_keys(
+        "{'name': 'Example', 'maintainers': ['alice', 'bob']}"
+    )
+    assert unknown == []
+    assert concatenated == []
+
+
+def test_test_values_dict_uses_model_proven_field_rename(tmp_path):
+    addon(tmp_path, "base", code="class Base(Model):\n    _name = 'base'\n")
+    addon(
+        tmp_path,
+        "purchase",
+        ["base"],
+        """class Line(Model):
+    _name = "purchase.order.line"
+    product_id = fields.Many2one("product.product")
+    product_qty = fields.Float()
+    uom_id = fields.Many2one("uom.uom")
+    price_unit = fields.Float()
+    date_planned = fields.Datetime()
+""",
+    )
+    custom = addon(tmp_path, "custom", ["purchase"], "VALUE = 1\n")
+    tests = custom / "tests"
+    tests.mkdir()
+    path = tests / "test_order.py"
+    path.write_text(
+        """def values(product, qty):
+    return {
+        "product_id": product.id,
+        "product_qty": qty,
+        "product_uom_id": product.uom_id.id,
+        "price_unit": 100,
+        "date_planned": fields.Datetime.now(),
+    }
+""",
+        encoding="utf-8",
+    )
+    index = models.ModelIndex.build([tmp_path])
+
+    changes = python_checks.apply_field_renames(
+        custom,
+        index,
+        {("purchase.order.line", "product_uom_id"): "uom_id"},
+    )
+
+    assert len(changes) == 1
+    assert '"uom_id": product.uom_id.id' in path.read_text(encoding="utf-8")
+
+
+def test_base_common_privileges_are_preserved_for_odoo20(tmp_path):
+    module = tmp_path / "custom"
+    tests = module / "tests"
+    tests.mkdir(parents=True)
+    path = tests / "common.py"
+    path.write_text(
+        """from odoo.addons.base.tests.common import BaseCommon
+
+
+class CustomCommon(BaseCommon):
+    \"\"\"Shared privileged setup.\"\"\"
+
+    def helper(self):
+        return self.env.company
+""",
+        encoding="utf-8",
+    )
+
+    changes = python_checks.apply_base_common_compatibility(module)
+
+    assert len(changes) == 1
+    migrated = path.read_text(encoding="utf-8")
+    assert migrated.count("_test_user_groups = None") == 1
+    ast.parse(migrated)
+    assert not python_checks.apply_base_common_compatibility(module)
+
+
+def test_simple_sql_report_hooks_are_migrated_to_tablesql(tmp_path):
+    from odoo_module_migrate.migration_scripts.python_scripts.migrate_190_200.report_table_sql import (
+        migrate_report_table_sql,
+    )
+
+    module = tmp_path / "custom"
+    module.mkdir()
+    sale = module / "sale_report.py"
+    sale.write_text(
+        '''from odoo import models
+
+class Report(models.Model):
+    _inherit = "sale.report"
+
+    def _select_additional_fields(self):
+        res = super()._select_additional_fields()
+        res["type_id"] = "s.type_id"
+        return res
+
+    def _group_by_sale(self):
+        res = super()._group_by_sale()
+        res += ", s.type_id"
+        return res
+''',
+        encoding="utf-8",
+    )
+    invoice = module / "invoice_report.py"
+    invoice.write_text(
+        '''from odoo import models
+
+class Report(models.Model):
+    _inherit = "account.invoice.report"
+
+    def _select(self):
+        result = super()._select()
+        result += """, move.sale_type_id as sale_type_id"""
+        return result
+''',
+        encoding="utf-8",
+    )
+
+    migrate_report_table_sql(
+        module, tools, logging.getLogger("odoo_module_migrate")
+    )
+
+    sale_text = sale.read_text(encoding="utf-8")
+    invoice_text = invoice.read_text(encoding="utf-8")
+    assert "def _select_dict(self, table):" in sale_text
+    assert '"type_id": table.order_id.type_id' in sale_text
+    assert "def _groupby_list(self, table):" in sale_text
+    assert "[table.order_id.type_id]" in sale_text
+    assert "from odoo.tools import SQL" in invoice_text
+    assert "def _select_list(self, table):" in invoice_text
+    assert 'SQL("%s AS sale_type_id", table.move_id.sale_type_id)' in invoice_text
+    ast.parse(sale_text)
+    ast.parse(invoice_text)
+
+
+def test_access_fallback_preserves_manifest_layout_and_flattens_domain(tmp_path):
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import (
+        convert_access_to_ir_access,
+    )
+
+    module = tmp_path / "custom"
+    security = module / "security"
+    security.mkdir(parents=True)
+    manifest = module / "__manifest__.py"
+    original = '''{
+    "name": "Custom",
+    "data": ["security/ir.model.access.csv",
+             "security/rules.xml"],
+}
+'''
+    manifest.write_text(original, encoding="utf-8")
+    (security / "ir.model.access.csv").write_text(
+        "id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink\n"
+        "access_x,X,model_x,base.group_user,1,1,0,0\n",
+        encoding="utf-8",
+    )
+    (security / "rules.xml").write_text(
+        """<odoo><record id="rule_x" model="ir.rule">
+<field name="name">X restriction</field><field name="model_id" ref="model_x"/>
+<field name="domain_force">[
+    '|', ('company_id', '=', False),
+    ('company_id', 'in', company_ids)
+]</field></record></odoo>""",
+        encoding="utf-8",
+    )
+
+    convert_access_to_ir_access(
+        logging.getLogger("odoo_module_migrate"),
+        module,
+        "custom",
+        manifest,
+        [],
+        tools,
+    )
+
+    rewritten = manifest.read_text(encoding="utf-8")
+    assert '"data": ["security/ir.access.csv",\n' in rewritten
+    assert ast.literal_eval(rewritten)["data"] == [
+        "security/ir.access.csv",
+        "security/rules.xml",
+    ]
+    rows = (security / "ir.access.csv").read_text(encoding="utf-8").splitlines()
+    assert len(rows) == 3
+    assert "company_ids" in rows[1]
+    assert not (security / "ir.model.access.csv").exists()

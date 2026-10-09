@@ -24,6 +24,12 @@
   non atteignables depuis les imports du module.
 - Comparaison des signatures de surcharges avec les modèles de la cible et
   synchronisation sûre des simples appels de transmission à `super()`.
+- Conservation systématique des scripts de migration de données et migration
+  des extensions simples de rapports SQL vers les API `TableSQL` d'Odoo 20.
+- Compatibilité `BaseCommon`, métadonnées OCA, constantes de tests renommées et
+  renommages de champs dans les dictionnaires construits par les tests.
+- Conversion `ir.access.csv` respectueuse du manifest et domaines CSV ramenés
+  sur une ligne sans altérer les chaînes littérales.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

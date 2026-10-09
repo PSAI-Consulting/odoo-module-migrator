@@ -31,7 +31,7 @@ class Migration:
         remote_name="origin",
         commit_enabled=True,
         pre_commit=True,
-        remove_migration_folder=True,
+        remove_migration_folder=False,
         no_oca_modules=False,
         upgrade_code_options=None,
         dry_run=False,
@@ -234,8 +234,9 @@ class Migration:
             self._load_migration_script("odoo_module_migrate.migration_scripts.migrate_allways")
         )
         if self._remove_migration_folder:
-            self._migration_scripts.extend(
-                self._load_migration_script("odoo_module_migrate.migration_scripts.migrate_remove_migration_folder")
+            logger.warning(
+                "Migration folders are always preserved because they may be required "
+                "to upgrade production data; the removal option is ignored"
             )
         
         all_packages = importlib.import_module("odoo_module_migrate.migration_scripts")
@@ -243,7 +244,7 @@ class Migration:
         migration_end = float(self._migration_steps[-1]["target_version_code"])
 
         for loader, name, is_pkg in pkgutil.walk_packages(all_packages.__path__):
-            if name in ("migrate_allways", "migrate_remove_migration_folder"):
+            if name == "migrate_allways":
                 continue
 
             full_name = f"{all_packages.__name__}.{name}"
@@ -557,6 +558,16 @@ class Migration:
                     changed_line,
                 )
             if float(self._migration_steps[-1]["target_version_name"]) >= 20:
+                base_common_changes = python_checks.apply_base_common_compatibility(
+                    module_migration._module_path
+                )
+                for changed_path, changed_line, class_name in base_common_changes:
+                    logger.info(
+                        "Set %s._test_user_groups = None for Odoo 20 BaseCommon compatibility. File %s:%s",
+                        class_name,
+                        changed_path,
+                        changed_line,
+                    )
                 binary_changes = python_checks.apply_binaryvalue_migrations(
                     module_migration._module_path, model_index
                 )

@@ -123,6 +123,43 @@ def _signature_problem(local, target, super_calls):
     return "; ".join(parts)
 
 
+def _keyword_only_relaxation(local, target, super_calls):
+    """Whether the override merely accepts a target keyword-only arg positionally."""
+    local_parameters = local["parameters"]
+    target_parameters = target["parameters"]
+    if (
+        local.get("vararg")
+        or local.get("kwarg")
+        or len(local_parameters) != len(target_parameters)
+    ):
+        return False
+    relaxed = False
+    for custom, expected in zip(local_parameters, target_parameters):
+        if (
+            custom["name"] != expected["name"]
+            or custom.get("default") != expected.get("default")
+        ):
+            return False
+        if custom["kind"] == expected["kind"]:
+            continue
+        if (
+            custom["kind"] == "positional_or_keyword"
+            and expected["kind"] == "keyword_only"
+        ):
+            relaxed = True
+            continue
+        return False
+    keyword_only = {
+        item["name"] for item in target_parameters if item["kind"] == "keyword_only"
+    }
+    for call in super_calls:
+        if call.args or any(keyword.arg is None for keyword in call.keywords):
+            return False
+        if not keyword_only <= {keyword.arg for keyword in call.keywords}:
+            return False
+    return relaxed
+
+
 def _function_parameter_span(text, function, positions):
     """Offsets inside the parentheses of a function definition."""
     tokens = tokenize.generate_tokens(io.StringIO(text).readline)
@@ -285,6 +322,88 @@ def apply_override_signature_migrations(module, index):
             text = text[:start] + replacement + text[end:]
         if edits:
             path.write_text(text, encoding="utf-8")
+    return changed
+
+
+def apply_base_common_compatibility(module):
+    """Keep pre-20 test privileges for direct BaseCommon subclasses."""
+    changed = []
+    tests = Path(module) / "tests"
+    if not tests.is_dir():
+        return changed
+    for path in tests.rglob("*.py"):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        try:
+            tree = ast.parse(text)
+        except (SyntaxError, ValueError):
+            continue
+        direct_names = {"BaseCommon"}
+        module_aliases = set()
+        for statement in tree.body:
+            if isinstance(statement, ast.ImportFrom):
+                if statement.module == "odoo.addons.base.tests.common":
+                    direct_names.update(
+                        alias.asname or alias.name
+                        for alias in statement.names
+                        if alias.name == "BaseCommon"
+                    )
+                if statement.module == "odoo.addons.base.tests":
+                    module_aliases.update(
+                        alias.asname or alias.name
+                        for alias in statement.names
+                        if alias.name == "common"
+                    )
+            elif isinstance(statement, ast.Import):
+                module_aliases.update(
+                    alias.asname or alias.name.rsplit(".", 1)[-1]
+                    for alias in statement.names
+                    if alias.name == "odoo.addons.base.tests.common"
+                )
+        positions = fields._Positions(text)
+        edits = []
+        for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+            direct = any(
+                isinstance(base, ast.Name) and base.id in direct_names
+                or isinstance(base, ast.Attribute)
+                and base.attr == "BaseCommon"
+                and isinstance(base.value, ast.Name)
+                and base.value.id in module_aliases
+                for base in cls.bases
+            )
+            configured = any(
+                isinstance(statement, (ast.Assign, ast.AnnAssign))
+                and any(
+                    isinstance(target, ast.Name) and target.id == "_test_user_groups"
+                    for target in (
+                        statement.targets
+                        if isinstance(statement, ast.Assign)
+                        else [statement.target]
+                    )
+                )
+                for statement in cls.body
+            )
+            if not direct or configured or not cls.body:
+                continue
+            indent = " " * (cls.col_offset + 4)
+            first = cls.body[0]
+            if (
+                isinstance(first, ast.Expr)
+                and isinstance(first.value, ast.Constant)
+                and isinstance(first.value.value, str)
+            ):
+                offset = positions.offset(first.end_lineno, first.end_col_offset)
+                insertion = f"\n\n{indent}_test_user_groups = None"
+            else:
+                offset = positions.offset(first.lineno, first.col_offset)
+                insertion = f"_test_user_groups = None\n\n{indent}"
+            edits.append((offset, offset, insertion, cls.name, cls.lineno))
+        for start, end, replacement, _name, _line in sorted(edits, reverse=True):
+            text = text[:start] + replacement + text[end:]
+        if edits:
+            path.write_text(text, encoding="utf-8")
+            changed.extend(
+                (path, line, name) for _start, _end, _replacement, name, line in edits
+            )
     return changed
 
 
@@ -538,7 +657,7 @@ def apply_field_renames(module, index, renames):
     only attribute accesses with one resolved model are changed.
     """
     changed = []
-    for path in models._python_files(Path(module)):
+    for path in models.analysis_python_files(Path(module)):
         text = path.read_text(encoding="utf-8", errors="replace")
         try:
             tree = ast.parse(text)
@@ -555,6 +674,58 @@ def apply_field_renames(module, index, renames):
                 continue
             end = positions.offset(node.end_lineno, node.end_col_offset)
             edits.add((end - len(field), end, replacement, model, field, node.lineno))
+        # Tests often prepare a values dictionary in a helper before passing
+        # it to create(). Infer the model only when the other keys strongly
+        # and uniquely match one renamed-field candidate.
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Dict):
+                continue
+            string_keys = [
+                key
+                for key in node.keys
+                if isinstance(key, ast.Constant) and isinstance(key.value, str)
+            ]
+            names = {key.value for key in string_keys}
+            for key in string_keys:
+                candidates = []
+                for (model, old), new in renames.items():
+                    if old != key.value:
+                        continue
+                    ancestors = index.ancestors(model)
+                    target_fields = set().union(
+                        *(index.fields.get(ancestor, set()) for ancestor in ancestors)
+                    )
+                    if new not in target_fields or old in target_fields:
+                        continue
+                    score = len((names - {old}) & target_fields)
+                    if score >= 2:
+                        candidates.append((score, model, new))
+                if not candidates:
+                    continue
+                best = max(score for score, _model, _new in candidates)
+                winners = [item for item in candidates if item[0] == best]
+                if len(winners) != 1:
+                    continue
+                _score, model, replacement = winners[0]
+                start = positions.offset(key.lineno, key.col_offset)
+                end = positions.offset(key.end_lineno, key.end_col_offset)
+                source = text[start:end]
+                if (
+                    len(source) < 2
+                    or source[0] not in {'"', "'"}
+                    or source[-1] != source[0]
+                ):
+                    continue
+                edits.add(
+                    (
+                        start,
+                        end,
+                        source[0] + replacement + source[-1],
+                        model,
+                        key.value,
+                        key.lineno,
+                    )
+                )
         if not edits:
             continue
         for start, end, replacement, _model, _field, _line in sorted(
@@ -2140,12 +2311,24 @@ def check_module(
                             _same_super_calls(stmt),
                         )
                         if signature_problem:
+                            relaxed_keyword_only = _keyword_only_relaxation(
+                                local_signature,
+                                target_signature,
+                                _same_super_calls(stmt),
+                            )
                             yield (
                                 path,
                                 stmt.lineno,
-                                "error" if complete else "warning",
-                                f"{model}.{stmt.name} override is incompatible with the indexed target: "
-                                f"custom {models.format_signature(local_signature)}, target "
+                                "warning"
+                                if relaxed_keyword_only or not complete
+                                else "error",
+                                f"{model}.{stmt.name} override "
+                                + (
+                                    "accepts the target keyword-only call but should align its signature: "
+                                    if relaxed_keyword_only
+                                    else "is incompatible with the indexed target: "
+                                )
+                                + f"custom {models.format_signature(local_signature)}, target "
                                 f"{models.format_signature(target_signature)}; {signature_problem}",
                             )
                     calls_any_super = any(
@@ -2186,7 +2369,7 @@ def check_module(
                             )
                     if (
                         calls_same_super
-                        and not inherited_owners
+                        and not inherited_owners & closure
                         and complete
                         and ancestors <= index.defined
                     ):
@@ -2215,7 +2398,7 @@ def check_module(
                         yield (
                             path,
                             stmt.lineno,
-                            "warning",
+                            "error" if known else "warning",
                             f"{model}.{stmt.name}() calls super(), but no parent method with that name exists in the indexed target{suggestion}",
                         )
                 if isinstance(

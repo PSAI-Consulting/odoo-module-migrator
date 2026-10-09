@@ -1054,6 +1054,52 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Module : `account_move_autosplit_delivery` (0 TODO, risque « aucun »). Odoo 20 (commit `9400a302fba0`) : `_create_invoices(self, final=False, grouped=False)` au lieu de `(self, grouped=False, final=False, date=None)`. La surcharge `super()._create_invoices(grouped, final, date)` plante (argument en trop) et inverse `final` / `grouped`. Même cas dans `easi_sale_auto_discount`.
 - **Correction proposée** : comparer la signature des méthodes surchargées avec la cible (paramètres renommés, supprimés, réordonnés) et signaler en 🔴 ; pour ce cas, réécrire en `def _create_invoices(self, final=False, grouped=False)` + `super()._create_invoices(final=final, grouped=grouped)` (ou `*args, **kwargs` comme Odoo).
 
+## 96. 🟠 Modules OCA : `data` du manifest mal réécrit, `maintainers` signalé à tort, `DISABLED_MAIL_CONTEXT`, `index.html`
+
+> **État du migrateur (09/10/2026)** : ✅ La conversion des accès réécrit
+> désormais la liste `data` par son AST et conserve exactement sa disposition
+> lors d'un remplacement simple. `maintainers` est reconnu,
+> `DISABLED_MAIL_CONTEXT` devient `DISABLED_MAIL_CREATE_CONTEXT` et le retrait
+> obligatoire de la déclaration XML d'`index.html` est décrit explicitement
+> dans le rapport. Une surcharge qui accepte encore positionnellement un
+> paramètre devenu keyword-only est rétrogradée en TODO 🟠 lorsque son appel au
+> `super()` reste compatible.
+
+- Modules : `sale_stock_picking_blocking`, `partner_identification` (mode OCA, sans formatage).
+  - `ir.model.access.csv` → `ir.access.csv` écrit `"data": ['security/ir.access.csv', ` (guillemets simples, espace final, saut de ligne perdu).
+  - `maintainers` (clé standard des manifestes OCA) signalé en 🔴 « Unknown manifest key ».
+  - `odoo.addons.base.tests.common.DISABLED_MAIL_CONTEXT` renommé `DISABLED_MAIL_CREATE_CONTEXT` en 20 (commit `61fc60768b79`) : non converti → les tests ne se chargent plus.
+  - Le retrait de la déclaration XML de `static/description/index.html` (indispensable en 20 : « Unicode strings with encoding declaration ») n'apparaît pas comme correction nécessaire dans le rapport.
+  - Signature `_action_launch_stock_rule(self, *, previous_product_uom_qty=False)` : 🔴 alors qu'Odoo 20 appelle toujours par nom (faux positif ; alignement recommandé).
+- **Correction proposée** : écrire la liste `data` au format d'origine ; ajouter `maintainers` aux clés connues ; renommer `DISABLED_MAIL_CONTEXT` ; signaler le retrait de la déclaration XML d'`index.html` comme correction obligatoire ; rétrograder en 🟠 le changement « positionnel → mot-clé seul » quand tous les appels de la cible sont par nom.
+
+## 97. 🔴 Scripts `migrations/` supprimés ; rapports SQL `sale.report` / `account.invoice.report` ; `BaseCommon` 20
+
+> **État du migrateur (09/10/2026)** : ✅ Les dossiers `migrations/` sont
+> toujours conservés ; l'ancien script destructeur a été supprimé. Les trois
+> anciens hooks de rapports sont connus et deviennent des erreurs 🔴 lorsqu'une
+> expression complexe exige une revue. Les extensions simples de colonnes et
+> groupements sont converties automatiquement vers `TableSQL`. Les classes de
+> base de tests héritant directement de `BaseCommon` reçoivent automatiquement
+> `_test_user_groups = None` si elles ne définissent aucune politique.
+
+- Module : `sale_order_type` (base OCA 19.0, `--init-version-name 19.0`).
+  - Le dossier `migrations/` (19.0.1.0.0, 19.0.1.3.0) est **supprimé** : ces scripts convertissent les données d'une base plus ancienne (prod en 16/17) → perte de données silencieuse à la migration.
+  - `sale.report` : `_select_additional_fields` / `_group_by_sale` n'existent plus en 20 (`_select_dict(table)` / `_groupby_list(table)`) ; seul `_group_by_sale` est signalé (🟠, « no parent method »). `account.invoice.report._select()` → `_select_list(table)` : non signalé. Les deux analyses plantent.
+  - Tests : en 20 `BaseCommon` exécute les tests avec un utilisateur `base.group_user` (`_test_user_groups`) → AccessError partout ; Odoo met `_test_user_groups = None` dans ses tests non adaptés.
+- **Correction proposée** : ne jamais supprimer `migrations/` (au plus signaler les versions < cible) ; règles `sale.report` / `account.invoice.report` (🔴 + réécriture type `return super()._select_dict(table) | {...}`) ; signaler les classes de test qui héritent de `BaseCommon` sans `_test_user_groups`.
+
+## 98. 🟡 Renommages de champs non appliqués dans `tests/` (19 → 20)
+
+> **État du migrateur (09/10/2026)** : ✅ Les renommages résolus parcourent
+> aussi `tests/`. Un dictionnaire préparé séparément d'un appel ORM est corrigé
+> seulement lorsque ses autres clés identifient un unique modèle avec assez de
+> preuves. Les domaines transférés vers `ir.access.csv` sont écrits sur une
+> seule ligne par le tokenizer Python, sans modifier les chaînes littérales.
+
+- Module : `purchase_order_type`. `purchase.order.line.product_uom_id` (19) → `uom_id` (20) : valeurs `{"product_uom_id": ...}` des tests non converties → `KeyError` ; la règle `ir.access.csv` garde aussi le domaine sur plusieurs lignes avec espaces.
+- **Correction proposée** : appliquer les renommages de champs aux dictionnaires de valeurs des tests ; écrire le domaine de la règle sur une ligne.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1099,6 +1145,9 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `stof_partner_backorder_strategy` | dépendance `stock_barcode` à tort, `product_uom_id` des lignes | 93 |
 | `easi_bom` | TODO `odoo.osv` après retrait de l'import, fichier non chargé | 94 |
 | `account_move_autosplit_delivery` | signature de `_create_invoices` non détectée | 95 |
+| `sale_stock_picking_blocking` | modules OCA : manifest `data`, `maintainers`, `DISABLED_MAIL_CONTEXT`, `index.html` | 96 |
+| `sale_order_type` | `migrations/` supprimé, rapports SQL 20, `BaseCommon` | 97 |
+| `purchase_order_type` | renommages non appliqués aux tests, domaine sur plusieurs lignes | 98 |
 
 ---
 

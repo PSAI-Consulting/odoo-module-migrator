@@ -81,8 +81,9 @@ def get_parser():
     )
 
     main_parser.add_argument(
-        "-nrmf", "--no-remove-migration-folder", dest="remove_migration_folder", action="store_false",
-        help="Skip removing migration folder."
+        "-nrmf", "--no-remove-migration-folder", dest="remove_migration_folder",
+        action="store_false", default=False,
+        help="Deprecated compatibility option; migration folders are always preserved."
     )
 
     main_parser.add_argument(

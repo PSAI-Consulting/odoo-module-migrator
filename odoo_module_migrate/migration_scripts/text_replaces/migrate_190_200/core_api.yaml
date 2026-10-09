@@ -22,3 +22,5 @@
   # odoo 080bbf6153a : odoo/tests/common.py __getattr__ « Since 18.0: odoo.tests.common.Form
   # is deprecated, use odoo.tests.Form » (supprimé en 20.0)
   '(?m)^(\s*)from odoo\.tests\.common import Form$': '\1from odoo.tests import Form'
+  # odoo 61fc60768b79 '[IMP] mail: do not create mail notification on create'
+  '\bDISABLED_MAIL_CONTEXT\b': 'DISABLED_MAIL_CREATE_CONTEXT'

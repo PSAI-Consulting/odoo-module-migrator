@@ -344,6 +344,7 @@ def test_core_api_replaces_190_200():
         "from odoo.tools import test_reports\n"
         "odoo.tools.test_reports.try_report(cr, uid, 'x', ids)\n"
         "    from odoo.tests.common import Form\n"
+        "ctx = DISABLED_MAIL_CONTEXT\n"
         "if not self._check_recursion():\n"
     )
     new = _apply_yaml(path, ".py", text)
@@ -355,6 +356,7 @@ def test_core_api_replaces_190_200():
         "from odoo.tests import reports as test_reports\n"
         "odoo.tests.reports.try_report(cr, uid, 'x', ids)\n"
         "    from odoo.tests import Form\n"
+        "ctx = DISABLED_MAIL_CREATE_CONTEXT\n"
         "if self._has_cycle():\n"
     )
     assert _apply_yaml(path, ".py", new) == new
