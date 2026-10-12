@@ -1153,6 +1153,43 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Le renommage `base_vat` → `base` est bien fait.
 - **Correction proposée** : ajouter `excludes` à la liste des clés connues.
 
+## 103. 🟠 `easi_purchase` (17 → 20) : champ calculé ajouté sur un champ standard `related`, non signalé
+
+> **État du migrateur (12/10/2026)** : ✅ Corrigé — l'index mémorise les
+> champs `related` de la cible et signale leur redéfinition avec `compute=`.
+> Le diagnostic propose de conserver le champ lié et de ne surcharger que ses
+> métadonnées lorsque c'est possible.
+
+- `purchase.order.line.date_order` est `related='order_id.date_order'` dans `purchase` ; le module le redéfinit avec `compute=` → en 20 avertissement « Field … is both compute and related » au chargement du registre. Le migrateur ne le voit pas.
+- Bon point : la vue `group[@name='other_info']` introuvable et `_select_seller()` (dictionnaire) sont bien signalés (🔴), et la dépendance `edi_generic` manquante est ajoutée.
+- **Correction proposée** : signaler (🟠) une redéfinition avec `compute=` d'un champ `related` du modèle parent (proposer de garder le `related` et de ne surcharger que le libellé).
+
+## 104. 🔴 `easi_tax` (17 → 20) : renommages `tax_id` / `taxes_id` incomplets, moteur de taxes
+
+> **État du migrateur (12/10/2026)** : ✅ Corrigé — les paramètres des lambdas
+> de recordsets sont typés et les XPath imbriqués suivent les relations de
+> l'index cible. Le diagnostic de l'ancien moteur de taxes cite les deux API de
+> remplacement et les différences d'arrondi à contrôler. Les champs servant
+> d'accumulateurs dans un calcul ne déclenchent plus le faux positif.
+
+- `sale.order.line.tax_id` → `tax_ids` et `purchase.order.line.taxes_id` → `tax_ids` appliqués dans `@api.depends` et `line.tax_ids`, mais **pas dans les lambdas** (`self.filtered(lambda x: x.product_id and x.tax_id)`) ni dans les **xpath des vues** (`field[@name='tax_id']`, `field[@name='taxes_id']`, seulement signalés « introuvables »).
+- `_compute_taxes_for_single_line()` bien signalé (🔴), mais sans piste : proposer `_prepare_base_line_for_taxes_computation()` + `_add_tax_details_in_base_line()` et prévenir des différences d'arrondi (base non arrondie, pas d'arrondi en `round_globally`, autoliquidation en 2 montants).
+- Faux positifs 🟠 « compute writes other field » sur `ecotax_total_amount` / `ecotax_unit_amount` (champs stockés non calculés, remis à zéro puis cumulés dans le même calcul : voulu).
+- **Correction proposée** : appliquer les renommages de champs aussi dans les lambdas (`x.<champ>`) et dans les sélecteurs de vues ; ajouter la piste du nouveau moteur de taxes au TODO.
+
+## 105. 🔴 `product_variant_default_code` (19 → 20) : `get_param` → `get_str` sur une option booléenne
+
+> **État du migrateur (12/10/2026)** : ✅ Corrigé — le type des clés
+> `config_parameter` est indexé dans le module et ses dépendances : les clés
+> booléennes migrent vers `get_bool` / `set_bool`. Un `get_str` utilisé comme
+> condition reste une erreur explicite lorsque le type n'est pas prouvé.
+> `BaseModel.new()` est désormais reconnu comme méthode ORM standard.
+
+- Le paramètre vient d'un champ `fields.Boolean(config_parameter=...)` des réglages. En 20 l'écran l'enregistre avec `set_bool` → décoché = `"False"` (en 17 : paramètre supprimé). Le migrateur convertit `if get_param(key):` en `if get_str(key):` → **option toujours vue comme activée**.
+- `set_param(key, True)` du test OCA non converti (`set_bool`).
+- Bien signalé : vue `product.product_variant_easy_edit_view` supprimée. Faux positif : `product.template.new()` « n'existe pas » (méthode ORM).
+- **Correction proposée** : quand la clé correspond à un champ booléen `config_parameter` (du module ou de ses dépendances), convertir en `get_bool` / `set_bool` ; à défaut, signaler 🔴 tout `get_str` utilisé comme condition.
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1205,6 +1242,9 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `account_comment_template`, `sale_comment_template` | `data` mal formaté, icône OCA remplacée, faux `_description` | 100 |
 | `purchase_comment_template` | `notes` → `note` non renommé | 101 |
 | `intrastat_base` | faux positif sur `excludes` | 102 |
+| `easi_purchase` | compute ajouté sur un champ `related` standard | 103 |
+| `easi_tax` | renommages `tax_id` / `taxes_id` incomplets (lambdas, vues), moteur de taxes | 104 |
+| `product_variant_default_code` | `get_str` sur option booléenne (toujours vraie), `set_param` des tests | 105 |
 
 ---
 

@@ -78,6 +78,9 @@ configuration.
 | 100 | La liste `data` réparée après le convertisseur officiel retrouve une disposition multiligne et le style de guillemets dominant tout en conservant ses commentaires. Les icônes `static/description/icon.*` des modules OCA sont restaurées si une étape les modifie. `_name` identique à l'un des modèles de `_inherit` est traité comme une extension et ne déclenche pas l'exigence `_description`. |
 | 101 | Le renommage `purchase.order.notes` → `note` couvre les variables des rapports QWeb d'achat et les paramètres explicitement nommés dans les extensions Python de `purchase.order`, en plus des usages déjà résolus par l'index. |
 | 102 | `excludes`, lu par le chargeur de modules Odoo 20, est une clé de manifeste connue et ne produit plus de faux diagnostic. |
+| 103 | Les champs `related` de la cible sont indexés. Une extension qui redéfinit l'un d'eux avec `compute=` sans remplacer explicitement `related=` reçoit un avertissement sur la combinaison des deux définitions. |
+| 104 | Le typage relationnel couvre les paramètres des lambdas de `filtered`/`sorted` et tous les segments résolus des XPath imbriqués. Le retrait de `_compute_taxes_for_single_line` propose les API de préparation/enrichissement de ligne et rappelle les écarts d'arrondi. Un champ remis à zéro puis modifié par affectation augmentée dans le même calcul est reconnu comme accumulateur voulu. |
+| 105 | Les déclarations `fields.Boolean/Integer/Float/Char(config_parameter=...)` du module et de ses dépendances guident la conversion vers `get_*`/`set_*`. Un `get_str()` employé comme booléen est signalé, et `new()` fait partie des méthodes ORM de base. |
 
 Les dépendances Python manquantes sont ajoutées automatiquement au manifeste
 quand l'index des addons est complet, qu'un seul fournisseur existe et que cet

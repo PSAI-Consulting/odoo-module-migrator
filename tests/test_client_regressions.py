@@ -1628,6 +1628,96 @@ class Task(models.Model):
     assert not any("get_param" in message for message in messages)
 
 
+def test_related_override_lambda_xpath_and_boolean_config_are_understood(tmp_path):
+    addon(tmp_path, "base", code="""from odoo import fields, models
+class Config(models.TransientModel):
+    _name = "res.config.settings"
+    enabled = fields.Boolean(config_parameter="custom.enabled")
+""")
+    addon(tmp_path, "sale", depends=("base",), code="""from odoo import fields, models
+class Order(models.Model):
+    _name = "sale.order"
+    order_line = fields.One2many("sale.order.line", "order_id")
+class Line(models.Model):
+    _name = "sale.order.line"
+    order_id = fields.Many2one("sale.order")
+    tax_ids = fields.Many2many("account.tax")
+    date_order = fields.Datetime(related="order_id.date_order")
+""")
+    custom = addon(tmp_path, "custom", depends=("sale",), code="""from odoo import fields, models
+class Line(models.Model):
+    _inherit = "sale.order.line"
+    date_order = fields.Datetime(compute="_compute_date_order")
+    def run(self):
+        return self.filtered(lambda line: line.tax_id)
+    def virtual(self):
+        return self.new({})
+    def taxes(self, base_line):
+        return self._compute_taxes_for_single_line(base_line)
+    def config(self):
+        config = self.env["ir.config_parameter"]
+        if config.get_param("custom.enabled"):
+            return True
+        config.set_param("custom.enabled", True)
+""", xml="""<record id="view" model="ir.ui.view">
+<field name="model">sale.order</field><field name="arch" type="xml">
+<xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="after"/>
+</field></record>""")
+    index = models.ModelIndex.build([tmp_path])
+    changes = python_checks.apply_field_renames(
+        custom, index, {("sale.order.line", "tax_id"): "tax_ids"}
+    )
+    assert len(changes) == 2
+    assert "lambda line: line.tax_ids" in (custom / "models.py").read_text()
+    assert "field[@name='tax_ids']" in (custom / "view.xml").read_text()
+    python_checks.apply_runtime_api_migrations(custom, index, 20)
+    migrated = (custom / "models.py").read_text()
+    assert 'get_bool("custom.enabled")' in migrated
+    assert 'set_bool("custom.enabled", True)' in migrated
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            custom, index, target_version=20
+        )
+    ]
+    assert any("both computed and related" in message for message in messages)
+    assert not any("Method sale.order.line.new()" in message for message in messages)
+    assert any(
+        "_prepare_base_line_for_taxes_computation" in message
+        and "round_globally" in message
+        for message in messages
+    )
+
+
+def test_get_str_condition_and_compute_accumulator_diagnostics(tmp_path):
+    mod = addon(tmp_path, "custom", code="""from odoo import fields, models
+class Line(models.Model):
+    _name = "custom.line"
+    total = fields.Float(compute="_compute_total")
+    accumulator = fields.Float()
+    entered = fields.Char()
+    def _compute_total(self):
+        for line in self:
+            line.accumulator = 0
+            line.accumulator += 1
+            line.entered = False
+            line.total = line.accumulator
+    def enabled(self):
+        if self.env["ir.config_parameter"].get_str("unknown.enabled"):
+            return True
+""")
+    index = models.ModelIndex.build([tmp_path])
+    messages = [
+        message
+        for _path, _line, _level, message in python_checks.check_module(
+            mod, index, target_version=20
+        )
+    ]
+    assert any("get_str() is used as a boolean condition" in message for message in messages)
+    assert any("writes other field entered" in message for message in messages)
+    assert not any("writes other field accumulator" in message for message in messages)
+
+
 def test_odoo20_name_copy_suffix_is_prevented_for_custom_models(tmp_path):
     mod = addon(tmp_path, "custom", code="""from odoo import fields, models
 

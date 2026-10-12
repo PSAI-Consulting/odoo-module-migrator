@@ -36,6 +36,10 @@
 - Réparation commentée des listes `data` après `upgrade_code`, protection des
   icônes OCA, extensions multi-héritées reconnues et renommage complet de
   `purchase.order.notes` vers `note`.
+- Renommages de champs dans les lambdas et XPath relationnels, détection des
+  champs liés redéfinis comme calculés et guide de migration du moteur fiscal.
+- Typage des clés `config_parameter` depuis les champs de réglages, avec
+  conversion booléenne sûre et détection des chaînes utilisées comme booléens.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

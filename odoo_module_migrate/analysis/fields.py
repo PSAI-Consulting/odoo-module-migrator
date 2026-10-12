@@ -400,19 +400,25 @@ def xml_usages(text, comodels=None):
             expr = node.get("expr") or ""
             if "field" not in expr:
                 continue
+            model = view_model.strip()
             for match in XPATH_NAME_RE.finditer(expr):
-                # only the first @name of the path is a field of the view model
                 span_start = pos.starts[node.sourceline]
                 tag_end = text.find(">", span_start)
                 found = text.find(match.group(0), span_start, tag_end)
                 if found >= 0:
                     value_start = found + match.group(0).index(match.group(2))
                     usages.append(Usage(
-                        view_model.strip(), match.group(2), node.sourceline,
+                        model, match.group(2), node.sourceline,
                         value_start, value_start + len(match.group(2)),
                         f"xpath of a view of {view_model.strip()}",
                     ))
-                break
+                candidates = {
+                    value for (owner, field), value in (comodels or {}).items()
+                    if owner == model and field == match.group(2)
+                }
+                if len(candidates) != 1:
+                    break
+                model = next(iter(candidates))
     return usages
 
 

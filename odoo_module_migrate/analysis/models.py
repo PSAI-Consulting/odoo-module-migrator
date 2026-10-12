@@ -209,7 +209,7 @@ BASE_METHODS = {
     "fields_get", "filtered", "filtered_domain", "flush_model",
     "flush_recordset", "get_metadata", "invalidate_model",
     "get_external_id", "_get_external_ids",
-    "invalidate_recordset", "mapped", "modified", "name_create", "read",
+    "invalidate_recordset", "mapped", "modified", "name_create", "new", "read",
     "read_group", "search", "_search", "search_count", "search_fetch",
     "search_read",
     "sorted", "sudo", "unlink", "update", "with_company", "with_context",
@@ -379,7 +379,8 @@ def source_summary(path):
         if not infos:
             continue
         model, name, parents, bases, fields, _ = infos[0]
-        kinds, company, method_depends, method_calls = {}, [], {}, {}
+        kinds, company, related, config_parameters = {}, [], [], {}
+        method_depends, method_calls = {}, {}
         for stmt in cls.body:
             target = stmt.target if isinstance(stmt, ast.AnnAssign) else (
                 stmt.targets[0] if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 else None)
@@ -389,6 +390,13 @@ def source_summary(path):
                 if any(k.arg == "company_dependent" and isinstance(k.value, ast.Constant)
                        and k.value.value is True for k in call.keywords):
                     company.append(target.id)
+                for keyword in call.keywords:
+                    if (keyword.arg == "related" and isinstance(keyword.value, ast.Constant)
+                            and isinstance(keyword.value.value, str)):
+                        related.append(target.id)
+                    if (keyword.arg == "config_parameter" and isinstance(keyword.value, ast.Constant)
+                            and isinstance(keyword.value.value, str)):
+                        config_parameters[keyword.value.value] = kinds[target.id]
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 dependencies = []
                 for decorator in stmt.decorator_list:
@@ -424,7 +432,8 @@ def source_summary(path):
                            method_signatures={s.name: method_signature(s) for s in cls.body
                            if isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))},
                            method_depends=method_depends, method_calls=method_calls,
-                           types=kinds, company=company))
+                           types=kinds, company=company, related=related,
+                           config_parameters=config_parameters))
     return result
 
 
@@ -447,6 +456,8 @@ class ModelIndex:
         self.method_calls = collections.defaultdict(set)
         self.field_types = collections.defaultdict(set)
         self.company_fields = set()
+        self.related_fields = set()
+        self.config_parameter_types = collections.defaultdict(set)
         self.renamed_methods = {}
         self.enterprise_modules = set()
 
@@ -524,6 +535,9 @@ class ModelIndex:
             for field, kind in info["types"].items():
                 self.field_types[model, field].add(kind)
             self.company_fields.update((model, f) for f in info["company"])
+            self.related_fields.update((model, f) for f in info.get("related", ()))
+            for key, kind in info.get("config_parameters", {}).items():
+                self.config_parameter_types[key].add(kind)
 
     def ancestors(self, model):
         result, todo = set(), [model]

@@ -614,6 +614,22 @@ class Uses(ast.NodeVisitor):
                         self.parameter_types.setdefault(
                             (model, node.func.attr, keyword.arg), set()
                         ).add(argument_model)
+            if (
+                model
+                and node.func.attr in {"filtered", "sorted"}
+                and node.args
+                and isinstance(node.args[0], ast.Lambda)
+                and node.args[0].args.args
+            ):
+                saved = self.aliases.copy()
+                self.aliases[node.args[0].args.args[0].arg] = model
+                self.visit(node.args[0].body)
+                self.aliases = saved
+                for argument in node.args[1:]:
+                    self.visit(argument)
+                for keyword in node.keywords:
+                    self.visit(keyword.value)
+                return
             if model and node.func.attr in {"write", "create", "update"} and node.args:
                 arg = node.args[0]
                 dictionaries = (
@@ -747,6 +763,28 @@ def apply_field_renames(module, index, renames):
         changed.extend(
             (path, line, model, field, replacement)
             for _start, _end, replacement, model, field, line in edits
+        )
+    unique_comodels = {
+        key: next(iter(values))
+        for key, values in index.comodels.items()
+        if len(values) == 1
+    }
+    for path in Path(module).rglob("*.xml"):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        usages = [
+            usage
+            for usage in fields.xml_usages(text, unique_comodels)
+            if Path(module).name
+            not in index.field_owners.get((usage.model, usage.field), set())
+        ]
+        new_text, count = fields.apply_renames(text, usages, renames)
+        if not count:
+            continue
+        path.write_text(new_text, encoding="utf-8")
+        changed.extend(
+            (path, usage.line, usage.model, usage.field, renames[(usage.model, usage.field)])
+            for usage in usages
+            if (usage.model, usage.field) in renames
         )
     return changed
 
@@ -1134,6 +1172,23 @@ def apply_runtime_api_migrations(module, index, target_version):
                 if not config_parameter_call(node) or id(node) in handled_config_calls:
                     continue
                 receiver = source(node.func.value)
+                key = (
+                    node.args[0].value
+                    if node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)
+                    else None
+                )
+                declared_kinds = index.config_parameter_types.get(key, set())
+                declared_kind = None
+                if len(declared_kinds) == 1:
+                    declared_kind = {
+                        "Boolean": "bool",
+                        "Integer": "int",
+                        "Float": "float",
+                        "Char": "str",
+                        "Text": "str",
+                    }.get(next(iter(declared_kinds)).removeprefix("fields."))
                 if node.func.attr == "set_param":
                     if len(node.args) < 2:
                         continue
@@ -1154,12 +1209,20 @@ def apply_runtime_api_migrations(module, index, target_version):
                         kind = value.func.id
                     else:
                         kind = None
-                    if kind:
+                    kind = declared_kind or kind
+                    if kind in {"bool", "int", "float", "str"}:
                         add_edit(
                             node.func,
                             f"{receiver}.set_{kind}",
                             f"replace set_param with set_{kind}",
                         )
+                    continue
+                if declared_kind in {"bool", "int", "float", "str"}:
+                    add_edit(
+                        node.func,
+                        f"{receiver}.get_{declared_kind}",
+                        f"replace get_param with declared get_{declared_kind}",
+                    )
                     continue
                 parent = parents.get(id(node))
                 replacement_node = node.func
@@ -1829,6 +1892,15 @@ def _odoo20_python_issues(tree, index, visitor):
         if not isinstance(node, ast.Call):
             continue
         name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+        if name == "get_str":
+            parent = parents.get(id(node))
+            if (
+                isinstance(parent, (ast.If, ast.IfExp, ast.UnaryOp, ast.BoolOp))
+                or isinstance(parent, ast.Call)
+                and isinstance(parent.func, ast.Name)
+                and parent.func.id == "bool"
+            ):
+                yield node.lineno, "error", "get_str() is used as a boolean condition; the string 'False' is truthy. Use get_bool() for a boolean config parameter"
         if name in {"get_param", "set_param"}:
             replacement = "get_str/get_int/get_float/get_bool" if name == "get_param" else "set_str/set_int/set_float/set_bool"
             yield node.lineno, "error", f"ir.config_parameter.{name}() was removed in Odoo 20; choose the typed {replacement} method matching the value"
@@ -1923,6 +1995,12 @@ def _odoo20_python_issues(tree, index, visitor):
                 yield stmt.lineno, "warning", "create() override lacks @api.model_create_multi; accept vals_list and handle every dictionary before calling super()"
             fields_for_compute = computed.get(stmt.name, set())
             if fields_for_compute:
+                accumulated = {
+                    assignment.target.attr
+                    for assignment in ast.walk(stmt)
+                    if isinstance(assignment, ast.AugAssign)
+                    and isinstance(assignment.target, ast.Attribute)
+                }
                 for assignment in ast.walk(stmt):
                     targets = []
                     if isinstance(assignment, ast.Assign):
@@ -1930,7 +2008,11 @@ def _odoo20_python_issues(tree, index, visitor):
                     elif isinstance(assignment, (ast.AnnAssign, ast.AugAssign)):
                         targets = [assignment.target]
                     for target in targets:
-                        if isinstance(target, ast.Attribute) and target.attr not in fields_for_compute:
+                        if (
+                            isinstance(target, ast.Attribute)
+                            and target.attr not in fields_for_compute
+                            and target.attr not in accumulated
+                        ):
                             yield target.lineno, "warning", f"Compute {stmt.name} writes other field {target.attr}; clearing a user-entered field during compute may be ignored during create and can leave the original value stored"
                             break
             auth_none = any(
@@ -2021,6 +2103,33 @@ def check_module(
         except (SyntaxError, ValueError):
             continue
         visitor = analyze_uses(tree, index)
+        for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+            class_models = fields._class_models(cls)
+            if not class_models:
+                continue
+            model = class_models[0]
+            ancestors = index.ancestors(model)
+            for statement in cls.body:
+                target = (
+                    statement.targets[0]
+                    if isinstance(statement, ast.Assign) and len(statement.targets) == 1
+                    else statement.target if isinstance(statement, ast.AnnAssign) else None
+                )
+                call = getattr(statement, "value", None)
+                if not (isinstance(target, ast.Name) and isinstance(call, ast.Call)):
+                    continue
+                keywords = {keyword.arg for keyword in call.keywords}
+                if (
+                    "compute" in keywords
+                    and "related" not in keywords
+                    and any((ancestor, target.id) in index.related_fields for ancestor in ancestors)
+                ):
+                    yield (
+                        path,
+                        statement.lineno,
+                        "warning",
+                        f"{model}.{target.id} is related in the target model but is redefined with compute=; Odoo will combine both definitions and warn that the field is both computed and related. Keep the inherited related field and override only safe metadata such as string= when possible",
+                    )
         if target_version >= 17:
             for node in ast.walk(tree):
                 if isinstance(node, ast.Constant) and node.value == "__last_update":
@@ -2211,11 +2320,19 @@ def check_module(
                 and method not in models.BASE_ATTRIBUTES
                 and method not in {"get_param", "set_param", "_file_read"}
             ):
+                detail = ""
+                if method == "_compute_taxes_for_single_line":
+                    detail = (
+                        "; migrate through _prepare_base_line_for_taxes_computation() "
+                        "and _add_tax_details_in_base_line(), then review rounding: the "
+                        "base may remain unrounded, round_globally defers rounding, and "
+                        "reverse-charge taxes can produce two amounts"
+                    )
                 yield (
                     path,
                     node.lineno,
                     "error",
-                    f"Method {model}.{method}() does not exist in the indexed target",
+                    f"Method {model}.{method}() does not exist in the indexed target{detail}",
                 )
         for cls in ast.walk(tree):
             if not isinstance(cls, ast.ClassDef):
