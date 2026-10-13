@@ -2,12 +2,14 @@
 
 ## Non publié
 
-- Relecture optionnelle 100 % locale avec Ollama : contexte RAG ciblé sur les
-  diagnostics et sources du module, réponse structurée intégrée aux rapports,
-  sélection automatique d'un modèle de code et échec non bloquant.
-- Mode explicite `--ollama-apply` limité aux remplacements exacts de confiance
-  haute dans Python/XML, avec confinement au module et validation syntaxique ;
-  aucun envoi vers une URL distante n'est accepté.
+- Relecture et réparation 100 % locales avec Ollama :
+  - Abstraction de fournisseur (`BaseLLMProvider`), profilage matériel sans dépendance lourde et commande de diagnostic `--ollama-info`.
+  - RAG hybride auditable : recherche lexicale BM25 et symbolique, filtrage strict par version, priorisation curated et isolation des invites contre les injections.
+  - Boucle autonome de réparation bornée (`--ollama-repair`, `--ollama-max-attempts`, `--ollama-max-minutes`, `--ollama-max-diff-lines`) opérant dans des copies/transactions et annulant tout échec ou régression.
+  - Applicateurs structurés déterministes pour Python (imports, dictionnaires, AST), XML (attributs, XPath), manifestes et CSV.
+  - Score de confiance objectif fondé sur des preuves vérifiables (règles officielles, résolution des symboles, syntaxe et tests).
+  - Mode explicite `--ollama-apply` sécurisé contre les conflits et chevauchements, confinement strict au module et validation syntaxique.
+  - Rapports Markdown enrichis avec bilan des indicateurs, niveau de validation atteint et diffs audités.
 
 - Python 3.12 minimum ; scripts officiels Community 18/19/20 et références
   intégrés pour une utilisation hors ligne, avec provenance et empreintes.

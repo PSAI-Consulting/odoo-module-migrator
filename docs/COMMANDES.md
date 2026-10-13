@@ -212,24 +212,35 @@ Relancer la migration sur un module déjà migré ne change rien
 | `-lp`, `--log-path FICHIER` | Écrire le journal dans un fichier |
 | `-lpwo`, `--log-path-warninglevelonly FICHIER` | Écrire seulement les avertissements et erreurs (Markdown) |
 
-### Relecture intelligente locale (Ollama)
+### Relecture et réparation intelligentes locales (Ollama)
 
 | Option | Rôle |
 |---|---|
+| `--ollama-info` | Diagnostiquer l'environnement Ollama local (version, modèles, RAM, GPU, recommandations) et quitter |
 | `--ollama` / `--ollama-review` | Ajouter au rapport une analyse locale des TODO et extraits de code retrouvés |
-| `--ollama-apply` | Appliquer aussi les remplacements exacts de confiance haute qui passent les validations Python/XML |
-| `--ollama-model NOM` | Choisir un modèle installé ; sinon le migrateur préfère automatiquement un modèle de code |
+| `--ollama-apply` | Appliquer les remplacements exacts vérifiés par score objectif et validés syntaxiquement |
+| `--ollama-repair` | Lancer la boucle autonome de réparation (opérations typées, transactions, vérification et rollback en cas d'échec) |
+| `--ollama-max-attempts N` | Nombre maximal de tentatives par module pour la boucle de réparation (défaut : 3) |
+| `--ollama-max-minutes MIN` | Temps maximal alloué à la réparation par module (défaut : 20) |
+| `--ollama-max-diff-lines L` | Nombre maximal de lignes modifiées accepté par réparation (défaut : 200) |
+| `--ollama-model NOM` | Choisir un modèle installé ; sinon le migrateur adapte automatiquement le modèle au matériel détecté |
 | `--ollama-url URL` | URL locale d'Ollama (défaut : `http://127.0.0.1:11434`, accès distant refusé) |
 | `--ollama-timeout SECONDES` | Temps maximal par module (défaut : 600, adapté à un CPU sans GPU dédié) |
 | `--ollama-max-context CARACTÈRES` | Budget maximal d'extraits retrouvés par module (défaut : 10000 ; au-delà de 12000, contexte modèle 8192 plus lent) |
 
-Installation et utilisation typiques :
+Diagnostic et utilisation typiques :
 
 ```powershell
-ollama pull qwen2.5-coder:7b
-ollama serve
+# Vérifier l'état local et les recommandations adaptées à la machine
+odoo-module-migrate --ollama-info
+
+# Relecture conseil (aucune modification de code)
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
-    --ollama --ollama-model qwen2.5-coder:7b --no-commit
+    --ollama --no-commit
+
+# Réparation autonome prouvée (boucle bornée et vérifiable avec rollback)
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
+    --ollama-repair --ollama-max-attempts 3 --no-commit
 ```
 
 Le modèle peut aussi être défini par `ODOO_MIGRATOR_OLLAMA_MODEL`. Avec

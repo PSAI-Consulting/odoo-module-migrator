@@ -78,7 +78,7 @@ de la migration. La première utilisation prépare un cache local.
 
 ### Relecture intelligente locale avec Ollama
 
-Une seconde lecture optionnelle peut être confiée à un modèle installé dans
+Une seconde lecture ou une réparation autonome optionnelle peut être confiée à un modèle installé dans
 [Ollama](https://ollama.com/). Le code reste sur la machine : seules les URL
 loopback (`localhost`, `127.0.0.1`, `::1`) sont acceptées. Le migrateur fournit
 au modèle les diagnostics, le manifeste et des extraits locaux retrouvés près
@@ -86,17 +86,22 @@ des lignes concernées, puis ajoute au rapport des explications, indices et
 corrections proposées :
 
 ```powershell
-ollama pull qwen2.5-coder:7b
-ollama serve
+# Diagnostic du matériel et des modèles recommandés
+odoo-module-migrate --ollama-info
+
+# Relecture conseil sans modification
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
-    --ollama --ollama-model qwen2.5-coder:7b --no-commit
+    --ollama --no-commit
+
+# Réparation autonome vérifiable (boucle bornée, applicateurs typés, rollback)
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
+    --ollama-repair --ollama-max-attempts 3 --no-commit
 ```
 
-`--ollama` ne modifie jamais le code. `--ollama-apply` est un mode explicite :
-il n'accepte que les remplacements déclarés de confiance haute, dont l'ancien
-texte existe une seule fois, limités aux fichiers Python/XML, puis vérifiés par
-le parseur correspondant. Les contrôles déterministes restent prioritaires et
-les propositions du modèle restent visibles dans le rapport.
+`--ollama` ne modifie jamais le code. `--ollama-apply` applique les remplacements exacts
+de confiance objective validés syntaxiquement. `--ollama-repair` exécute une boucle bornée
+de réparation utilisant des applicateurs structurés (Python, XML, manifestes, CSV) avec
+rollback complet en cas d'échec ou de régression. Les contrôles déterministes restent prioritaires.
 
 `--odoo-root` permet de choisir d'autres sources cibles. `--addons-path` ajoute
 notamment les sources Enterprise et `--context-path` les autres modules métier.
