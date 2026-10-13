@@ -457,6 +457,26 @@ class TargetViewTrees:
         return bool(self.by_id)
 
 
+def changed_xpath_anchors(before: str, after: str, module_name: str = "") -> list[tuple[str, str]] | None:
+    """(parent view, new expr) of every ``<xpath>`` whose ``expr`` changed;
+    None when the xpath elements cannot be paired one to one."""
+    try:
+        old = list(_parse_xml(before).iter("xpath"))
+        new = list(_parse_xml(after).iter("xpath"))
+    except etree.XMLSyntaxError:
+        return None
+    if len(old) != len(new):
+        return None
+    changed = []
+    for a, b in zip(old, new):
+        if a.get("expr") != b.get("expr"):
+            view = _inherited_view(b)
+            if view and "." not in view and module_name:
+                view = f"{module_name}.{view}"
+            changed.append((view, b.get("expr") or ""))
+    return changed
+
+
 def _inherited_view(element) -> str:
     """XML id of the view an <xpath> extends (record or template)."""
     for ancestor in element.iterancestors():
@@ -497,7 +517,8 @@ class XmlXPathApplicator:
             return _reject("balises xpath impossibles à localiser sans ambiguïté")
         matches = [i for i, el in enumerate(elements) if el.get("expr") == old_expr]
         if not matches:
-            return _reject("xpath expr introuvable")
+            existing = [el.get("expr") for el in elements][:5]
+            return _reject("xpath expr introuvable", f"expressions présentes : {existing}")
         if len(matches) > 1:
             return _reject("xpath expr non unique")
         element = elements[matches[0]]

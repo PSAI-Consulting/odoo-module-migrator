@@ -476,6 +476,28 @@ def test_replay_matches_the_migration_messages_and_sees_the_copy(tmp_path):
     assert checker.check_module(module) == before  # the copy never leaks into the original indexes
 
 
+def test_replay_coverage_with_target_indexes(tmp_path):
+    _module, indexes = _indexed_module(tmp_path)
+    rows = {name: done for name, done, _reason in
+                FullModuleDiagnosticsChecker("20.0", indexes=indexes, module_name="mod").coverage()}
+    assert rows["index reconstruits sur la copie"] and rows["vues, XPath, XML ids et menus"]
+    assert not rows["imports depuis les addons cibles"]
+
+
+def test_migration_intelligence_context_with_target_indexes(tmp_path):
+    from odoo_module_migrate.migration import Migration
+
+    module, indexes = _indexed_module(tmp_path)
+    migration = Migration(module.parent, "17.0", "20.0", ["mod"], commit_enabled=False, pre_commit=False)
+    migration._target_indexes = indexes
+    shared = migration._intelligence_context("17.0", "20.0", migration._module_migrations[0])
+    checker = shared["checker"]
+    assert {n: d for n, d, _r in checker.coverage()}["index reconstruits sur la copie"]
+    assert any("nam" in e.message for e in checker.check_module(module))
+    assert shared["context"]["dependency_graph"]["mod"] == ["base"]
+    assert shared["symbol_lookup"]("res.partner") and not shared["symbol_lookup"]("zz_unknown")
+
+
 def test_replay_refuses_a_copy_with_another_name(tmp_path):
     _module, indexes = _indexed_module(tmp_path)
     with pytest.raises(DiagnosticsUnavailable, match="nom du module"):
@@ -677,6 +699,21 @@ def test_repair_llm_errors_repeats_and_idempotence(tmp_path, monkeypatch):
     assert first.applied_operations and not second.attempts and second.highest_validation_level == "aucun diagnostic rejouable"
 
 
+def test_repair_targets_one_diagnostic_per_call_and_moves_on(tmp_path, monkeypatch):
+    def checker(path):
+        text = (pathlib.Path(path) / "models/partner.py").read_text()
+        out = [DiagnosticItem("WARNING", "LIMIT reviewed", "models/partner.py", 3)]
+        return out + ([DiagnosticItem("WARNING", "product_uom renamed", "models/partner.py", 1)] if "'product_uom'" in text else [])
+
+    root, rep = _repair_addon(tmp_path)
+    provider = ScriptedProvider([None, _rename()])
+    session = AutonomousRepairLoop(root, rep, "17.0", "20.0", provider, diagnostics_checker=checker,
+                                   rag=_rag_with_rule(rep, monkeypatch), max_attempts=3).run()
+    assert [a.status for a in session.attempts][:2] == ["advice", "applied"]
+    first, second = (p.split("Diagnostic à corriger maintenant :")[1].splitlines()[1] for p in provider.prompts[:2])
+    assert first != second
+
+
 def test_repair_prompt_is_bounded_and_refreshed(tmp_path, monkeypatch):
     root, rep = _repair_addon(tmp_path)
     for index in range(400):
@@ -693,6 +730,67 @@ def test_repair_prompt_is_bounded_and_refreshed(tmp_path, monkeypatch):
     assert session.applied_operations
     assert all(len(p) < provider.context_budget() + 500 for p in provider.prompts)
     assert "'uom_id'" in provider.prompts[1] and "omitted" in provider.prompts[0]
+
+
+def _xpath_addon(tmp_path, expr):
+    root = tmp_path / "addon"
+    P(root, "__manifest__.py", "{'name': 'addon', 'depends': ['sale']}\n")
+    P(root, "views/v.xml", '<odoo><record id="x" model="ir.ui.view"><field name="inherit_id" ref="sale.view_order_form"/>'
+      f'<field name="arch" type="xml"><xpath expr="{expr}" position="after"/></field></record></odoo>\n')
+    return root
+
+
+@pytest.mark.parametrize("new_expr, trees, expected", [
+    ("//field[@name='tax_ids']", True, "passed"),
+    ("//field[@name='partner_id']", True, "2 nœud(s)"),
+    ("//field[@name='tax_ids']", False, "non indexées"),
+])
+def test_changed_xpath_anchor_must_be_unique_in_parent_view(tmp_path, monkeypatch, new_expr, trees, expected):
+    ref = tmp_path / "ref" / "sale"
+    P(ref, "__manifest__.py", "{'name': 'sale', 'depends': [], 'data': ['v.xml']}\n")
+    P(ref, "v.xml", '<odoo><record id="view_order_form" model="ir.ui.view"><field name="arch" type="xml"><form>'
+      '<field name="partner_id"/><field name="partner_id"/><field name="tax_ids"/></form></field></record></odoo>\n')
+    root = _xpath_addon(tmp_path, "//field[@name='tax_id']")
+    rep = report.ModuleReport("addon", root)
+
+    def checker(path):
+        text = (pathlib.Path(path) / "views/v.xml").read_text()
+        return [DiagnosticItem("ERROR", "anchor tax_id", "views/v.xml", 1)] if "'tax_id'" in text else []
+
+    rule = '- ["sale.order.line", "tax_id", "tax_ids", "OU"]'
+    rag = HybridRAG(rep, "17.0", "20.0")
+    op = {"type": "exact_text_replace", "file": "views/v.xml", "old": "tax_id']", "new": new_expr.split("'")[1] + "']",
+          "evidence": ["migration_scripts/renamed_fields/t/generated.yaml:1"]}
+    if "partner_id" in new_expr:
+        op["new"] = "partner_id']"
+    context = {"target_view_tree": TargetViewTrees(views.ViewIndex.build([tmp_path / "ref"])) if trees else None}
+    import shutil
+
+    from odoo_module_migrate.intelligence.repair import OperationVerifier
+
+    verifier = OperationVerifier("addon", checker, rag, editable=["views/v.xml"], context=context)
+    rag.build_prompt_context([], root, 3000)
+    rag.retrieved_chunks.append(RAGChunk("rule_generated", "migration_scripts/renamed_fields/t/generated.yaml:1", "r",
+                                         rule.replace("tax_ids", op["new"].rstrip("']"))))
+    work = tmp_path / "work"
+    staging = work / "staging" / "addon"
+    shutil.copytree(root, staging)
+    record, verified, _ = verifier.verify(work, staging, checker(staging), op, 1)
+    if expected == "passed":
+        assert verified is not None and record.validations["ancre XPath unique"] == "passed", record.reason
+    else:
+        assert verified is None and expected in record.reason
+
+
+def test_evidence_attribute_prefix_is_normalized_not_relaxed(tmp_path):
+    _root, rep = _repair_addon(tmp_path)
+    rag = HybridRAG(rep, "17.0", "20.0")
+    chunk = RAGChunk("rule_curated", "migration_scripts/x/curated.yaml:3", "r", "- [a, b, c]")
+    rag.retrieved_chunks = [chunk]
+    for ok in (f"ref={chunk.fingerprint}", f'source="{chunk.provenance}"', f"`{chunk.fingerprint}`"):
+        assert rag.find_matching_chunk(ok) is chunk, ok
+    for bad in (f"ref={chunk.fingerprint}0", "source=x/curated.yaml:3", f"ref {chunk.fingerprint}"):
+        assert rag.find_matching_chunk(bad) is None, bad
 
 
 def test_injected_instructions_stay_inside_data_blocks(tmp_path):

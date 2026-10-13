@@ -151,7 +151,7 @@ class FullModuleDiagnosticsChecker:
             "models": indexes is not None and indexes.model_index is not None,
             "imports": indexes is not None and indexes.import_index is not None,
         }
-        rebuilt = bool(indexes is not None and indexes.build_paths)
+        rebuilt = bool(indexes is not None and indexes.rebuilds_copies)
         no_sources = "sources de la version cible non indexées (pas d'upgrade_code / --addons-path)"
         rows = [
             ("syntaxe Python / XML / CSV et manifeste", True, ""),

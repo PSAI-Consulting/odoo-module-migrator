@@ -655,7 +655,11 @@ class HybridRAG:
 
     def find_matching_chunk(self, evidence_str: str, proposed_op: dict[str, Any] | None = None) -> RAGChunk | None:
         """The shown chunk whose fingerprint or full provenance is exactly ``evidence_str``."""
-        reference = (evidence_str or "").strip().strip("`'\"[]()<>").replace("\\", "/").lower()
+        reference = (evidence_str or "").strip().strip("`'\"[]()<>")
+        # `ref=abc` / `source="x:1"`: the model repeats the attribute name; the
+        # value itself must still match exactly.
+        reference = re.sub(r"^(?:ref|source)\s*=\s*", "", reference, flags=re.IGNORECASE)
+        reference = reference.strip("`'\"").replace("\\", "/").lower()
         if len(reference) < 5:
             return None
         for chunk in self.retrieved_chunks:

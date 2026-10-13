@@ -280,7 +280,8 @@ def render_intelligent_review(review):
     lines += [
         "| Indicateur | Valeur |",
         "|---|---|",
-        f"| Propositions du modèle | {len(recommendations)} |",
+        f"| Éditions proposées par le modèle | {sum(1 for r in recommendations if r.old or r.operation_type)} |",
+        f"| Conseils sans édition | {sum(1 for r in recommendations if r.status == 'advice')} |",
         f"| Appliquées (vérifiées puis publiées) | {len(applied)} |",
         f"| Vérifiées mais non appliquées (mode revue) | {len(verified)} |",
         f"| Rejetées par les garde-fous | {len(rejected)} |",
@@ -334,8 +335,10 @@ def render_intelligent_review(review):
             lines.append("- **Preuves vérifiées (provenance exacte) :**")
             for chunk in chunks:
                 lines.append(f"  - `{chunk.provenance}` ({chunk.chunk_type}, empreinte `{chunk.fingerprint}`)")
+        elif item.evidence and "réanalyse" in (item.validations or {}):
+            lines.append(f"- **Références citées par le modèle, introuvables parmi les blocs montrés :** `{item.evidence}`")
         elif item.evidence:
-            lines.append(f"- **Références citées par le modèle, non retrouvées :** `{item.evidence}`")
+            lines.append(f"- **Références citées (non vérifiées, rejet antérieur) :** `{item.evidence}`")
         if item.resolved:
             lines.append("- **Diagnostics résolus (réanalyse) :**")
             for file, level, message in item.resolved:

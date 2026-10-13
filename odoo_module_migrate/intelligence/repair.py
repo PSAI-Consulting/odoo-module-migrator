@@ -34,13 +34,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .. import tools
-from .applicators import apply_typed_operation, validate_syntax
+from .applicators import apply_typed_operation, changed_xpath_anchors, validate_syntax
 from .bench_verifier import VerificationResult
 from .confidence import ConfidenceReport, evaluate_confidence
 from .diagnostics import DiagnosticsUnavailable, compare_diagnostics, diagnostic_key
 from .guards import GuardResult, check_symbol_rewrite
 from .provider import BaseLLMProvider, OllamaError
-from .rag import HybridRAG, RAGChunk, contains_symbol, migration_policy
+from .rag import HybridRAG, RAGChunk, contains_symbol, migration_policy, rename_targets
 
 logger = logging.getLogger(__name__)
 
@@ -66,22 +66,25 @@ COMMON_FIELDS = {"type": _STR, "file": _STR, "description": _STR, "diagnostic": 
 
 
 def _operation_schema() -> dict[str, Any]:
-    properties: dict[str, Any] = {
-        "type": {"type": "string", "enum": sorted(OPERATION_FIELDS)},
+    """One JSON-schema variant per operation type, with its own required
+    fields: the constrained decoding of Ollama then cannot omit them."""
+    common = {
         "file": {"type": "string"},
         "description": {"type": "string"},
         "diagnostic": {"type": "string"},
         "evidence": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
     }
-    for fields in OPERATION_FIELDS.values():
-        for name, (kind, _required) in fields.items():
-            properties[name] = {"type": kind}
-    return {
-        "type": "object",
-        "properties": properties,
-        "required": ["type", "file", "evidence"],
-        "additionalProperties": False,
-    }
+    variants = []
+    for name, fields in OPERATION_FIELDS.items():
+        properties = {"type": {"type": "string", "enum": [name]}, **common}
+        properties.update({field: {"type": kind} for field, (kind, _required) in fields.items()})
+        variants.append({
+            "type": "object",
+            "properties": properties,
+            "required": ["type", "file", *(f for f, (_k, required) in fields.items() if required), "evidence"],
+            "additionalProperties": False,
+        })
+    return {"anyOf": variants}
 
 
 REPAIR_PLAN_SCHEMA = {
@@ -251,6 +254,24 @@ class OperationVerifier:
             self.checker_runs += 1
             self.checker_seconds += time.monotonic() - started
 
+    def _anchor_problem(self, before: str, after: str) -> str:
+        """A changed XPath anchor must match exactly one node of the indexed
+        parent view: Odoo uses the first match, so several matches would make
+        the edit target an unverified node."""
+        changes = changed_xpath_anchors(before, after, self.module_name)
+        if changes is None:
+            return "éléments xpath impossibles à apparier avant/après"
+        trees = self.context.get("target_view_tree")
+        for view, expr in changes:
+            if not trees:
+                return "ancre XPath modifiée mais vues cibles non indexées : unicité invérifiable"
+            if not view or view not in getattr(trees, "by_id", {}):
+                return f"vue parente {view or '?'} non indexée : ancre XPath invérifiable"
+            count = len(trees.xpath(expr, view))
+            if count != 1:
+                return f"ancre XPath {expr!r} : {count} nœud(s) dans la vue parente {view} (une seule attendue)"
+        return ""
+
     @staticmethod
     def _run_optional(callback, path) -> tuple[str, str]:
         if callback is None:
@@ -304,7 +325,8 @@ class OperationVerifier:
             return reject(f"applicateur en échec ({type(exc).__name__}: {exc})")
         record.validations["applicateur"] = "passed" if result.success else "failed"
         if not result.success:
-            return reject(f"{op['type']} : {result.status}")
+            detail = f" ({result.error})" if result.error and result.error not in result.status else ""
+            return reject(f"{op['type']} : {result.status}{detail}")
         record.diff, record.lines_changed = result.diff, result.lines_changed
         if result.lines_changed > self.max_diff_lines:
             return reject(f"diff trop volumineux ({result.lines_changed} > {self.max_diff_lines} lignes)")
@@ -317,6 +339,11 @@ class OperationVerifier:
         record.validations["garde structurelle"] = "passed" if guard.ok else "failed"
         if not guard.ok:
             return reject(f"édition non limitée à un renommage de symboles : {guard.reason}")
+        if rel_file.endswith(".xml"):
+            problem = self._anchor_problem(before, result.new_content)
+            record.validations["ancre XPath unique"] = "failed" if problem else "passed"
+            if problem:
+                return reject(problem)
         tools._write_content(target, result.new_content)
 
         try:
@@ -591,17 +618,22 @@ class AutonomousRepairLoop:
                 session.highest_validation_level = "aucun diagnostic rejouable"
                 return session
 
-            feedback, seen_ops = "", set()
+            feedback, seen_ops, tried = "", set(), {}
             num_predict = 1024
             for number in range(1, self.max_attempts + 1):
                 remaining = self.max_seconds - (time.monotonic() - started)
                 if remaining < 10:
                     session.attempts.append(AttemptRecord(number, {}, "error", "temps maximal atteint"))
                     break
+                focus = self._next_focus(current, tried)
+                if focus is None:
+                    break  # every replayable diagnostic was already attempted
+                focus_key = diagnostic_key(focus)
+                tried[focus_key] = tried.get(focus_key, 0) + 1
                 budget = self.provider.context_budget(session.model, num_predict)
                 if self.max_context_chars:
                     budget = min(budget, self.max_context_chars)
-                prompt = self._build_prompt(staging, current, feedback, budget)
+                prompt = self._build_prompt(staging, current, feedback, budget, focus)
                 try:
                     response = self.provider.chat(
                         messages=[
@@ -616,14 +648,18 @@ class AutonomousRepairLoop:
                     )
                 except OllamaError as exc:
                     session.attempts.append(AttemptRecord(number, {}, "error", f"appel au modèle : {exc}"))
+                    tried[focus_key] -= 1  # the model never saw it: same target again
                     feedback = f"La réponse précédente était inutilisable ({exc}). Réponds avec le JSON demandé."
                     continue
                 operations = response.get("operations") if isinstance(response, dict) else None
                 if not isinstance(operations, list) or not operations:
+                    analysis = str(response.get("analysis", ""))[:500] if isinstance(response, dict) else ""
                     session.attempts.append(AttemptRecord(
-                        number, {}, "advice", str(response.get("analysis", ""))[:500] if isinstance(response, dict) else "",
+                        number, {"diagnostic": "{}:{}:{}".format(*diagnostic_key(focus))}, "advice", analysis,
                     ))
-                    break
+                    feedback = ""
+                    tried[focus_key] = 2
+                    continue  # nothing proven for this diagnostic: try the next one
                 op = operations[0]
                 signature = json.dumps(
                     {k: v for k, v in op.items() if k not in {"evidence", "description", "diagnostic"}}
@@ -631,8 +667,10 @@ class AutonomousRepairLoop:
                 )
                 if signature in seen_ops:
                     session.attempts.append(AttemptRecord(number, op if isinstance(op, dict) else {}, "rejected",
-                                                          "proposition identique à une tentative précédente : arrêt"))
-                    break
+                                                          "proposition identique à une tentative précédente"))
+                    tried[focus_key] = 2
+                    feedback = ""
+                    continue
                 seen_ops.add(signature)
                 record, verified_dir, new_diags = verifier.verify(workspace, staging, current, op, number)
                 session.attempts.append(record)
@@ -697,14 +735,45 @@ class AutonomousRepairLoop:
             + policy
         )
 
-    def _build_prompt(self, staging: pathlib.Path, diags: list[Any], feedback: str, budget: int) -> str:
-        diagnostics, _shown = _diagnostic_lines(diags, max(1500, int(budget * 0.2)))
+    def _next_focus(self, diags: list[Any], tried: dict) -> Any:
+        """Next diagnostic to submit (two chances each): the ones a proven
+        rename rule covers first, errors before warnings."""
+        candidates = [
+            d for d in diags
+            if tried.get(diagnostic_key(d), 0) < 2 and (
+                getattr(d, "file", "") in self.allowed_files
+                or getattr(d, "file", "") in {"__manifest__.py", "__openerp__.py"}
+            )
+        ]
+        if not candidates:
+            return None
+
+        def rank(diag):
+            if not self.rag.enabled:
+                return (getattr(diag, "level", "") != "ERROR",)
+            rules = self.rag.retrieve_rules([diag], None, 4000)
+            proven = bool(rename_targets(rules, self.rag._query([diag], None)[1]))
+            return (not proven, not any(c.is_proof for c in rules), getattr(diag, "level", "") != "ERROR")
+
+        return min(candidates, key=rank)
+
+    def _build_prompt(
+        self, staging: pathlib.Path, diags: list[Any], feedback: str, budget: int, focus: Any = None,
+    ) -> str:
+        focus = focus if focus is not None else (diags[0] if diags else None)
+        others = [d for d in diags if d is not focus]
+        diagnostics, _shown = _diagnostic_lines(others, max(800, int(budget * 0.1)))
+        target = json.dumps({
+            "level": getattr(focus, "level", ""), "file": getattr(focus, "file", ""),
+            "line": getattr(focus, "line", 0), "message": " ".join(str(getattr(focus, "message", "")).split())[:400],
+        }, ensure_ascii=False)
         files = json.dumps(self.allowed_files, ensure_ascii=False)
         if len(files) > 2000:
             relevant = sorted({getattr(d, "file", "") for d in diags} & set(self.allowed_files))
             files = json.dumps(relevant, ensure_ascii=False)
-        fixed = len(diagnostics) + len(files) + len(feedback) + 2500
-        rules, sources = self.rag.build_prompt_context(diags, staging, max(1500, budget - fixed))
+        fixed = len(diagnostics) + len(target) + len(files) + len(feedback) + 2500
+        rules, sources = self.rag.build_prompt_context([focus] if focus is not None else [], staging,
+                                                       max(1500, budget - fixed))
         feedback_block = f"\nRetour sur la tentative précédente : {feedback}\n" if feedback else ""
         operations = ", ".join(
             f"{name}({', '.join(f'{k}' + ('' if req else '?') for k, (_kind, req) in fields.items())})"
@@ -712,7 +781,10 @@ class AutonomousRepairLoop:
         )
         return f"""Module `{self.module_report.name}`, migration Odoo {self.init_version} -> {self.target_version}.
 
-Diagnostics déterministes restants (JSON, un par ligne) :
+Diagnostic à corriger maintenant :
+{target}
+
+Autres diagnostics restants, pour information (JSON, un par ligne) :
 {diagnostics}
 
 Fichiers modifiables : {files}
