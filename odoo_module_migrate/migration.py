@@ -49,6 +49,10 @@ class Migration:
         default_author="",
         ollama_review=False,
         ollama_apply=False,
+        ollama_repair=False,
+        ollama_max_attempts=3,
+        ollama_max_minutes=20,
+        ollama_max_diff_lines=200,
         ollama_url="http://127.0.0.1:11434",
         ollama_model="",
         ollama_timeout=600,
@@ -71,8 +75,12 @@ class Migration:
         self._manifest_layout = manifest_layout
         self._default_website = default_website
         self._default_author = default_author
-        self._ollama_review = ollama_review or ollama_apply
+        self._ollama_review = ollama_review or ollama_apply or ollama_repair
         self._ollama_apply = ollama_apply
+        self._ollama_repair = ollama_repair
+        self._ollama_max_attempts = ollama_max_attempts
+        self._ollama_max_minutes = ollama_max_minutes
+        self._ollama_max_diff_lines = ollama_max_diff_lines
         self._ollama_url = ollama_url
         self._ollama_model = ollama_model
         self._ollama_timeout = ollama_timeout
@@ -316,7 +324,7 @@ class Migration:
             if self.report_collector and self._ollama_review:
                 self._run_intelligent_review(init_version, target_version)
                 # Exact model edits can make a regex diagnostic obsolete.
-                if self._ollama_apply:
+                if self._ollama_apply or self._ollama_repair:
                     if self._format_code or self._clean_imports:
                         self._format_changed_files()
                     self._reconcile_text_rule_diagnostics()
@@ -437,7 +445,32 @@ class Migration:
                     timeout=self._ollama_timeout,
                     max_context=self._ollama_max_context,
                 )
-                if self._ollama_apply:
+                if self._ollama_repair:
+                    def diag_checker(mpath):
+                        self._reconcile_text_rule_diagnostics()
+                        rep = self.report_collector.reports[item._module_name]
+                        return len(rep.todos), len(rep.errors)
+
+                    session = intelligent_review.repair_module(
+                        item._module_path,
+                        module_report,
+                        init_version,
+                        target_version,
+                        url=self._ollama_url,
+                        model=intelligent_review.configured_model(self._ollama_model),
+                        max_attempts=self._ollama_max_attempts,
+                        max_minutes=self._ollama_max_minutes,
+                        max_diff_lines=self._ollama_max_diff_lines,
+                        diagnostics_checker=diag_checker,
+                    )
+                    review.repair_session = session
+                    for op in session.applied_operations:
+                        path = item._module_path / op.get("file", "")
+                        logger.info(
+                            "Ollama autonomous repair applied: %s on %s. File %s:1",
+                            op.get("type"), op.get("file"), path,
+                        )
+                elif self._ollama_apply:
                     intelligent_review.apply_safe_edits(item._module_path, review)
                     for recommendation in review.recommendations:
                         if recommendation.status == "applied":

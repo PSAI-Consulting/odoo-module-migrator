@@ -10,6 +10,22 @@ from .log import _close_handlers, setup_logger
 from .migration import Migration
 
 
+class OllamaInfoAction(argparse.Action):
+    def __init__(self, option_strings, dest, default=argparse.SUPPRESS, help=None):
+        super().__init__(option_strings=option_strings, dest=dest, default=default, nargs=0, help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        from .intelligence.system_profile import get_ollama_info_text
+        url = "http://127.0.0.1:11434"
+        for i, arg in enumerate(sys.argv):
+            if arg == "--ollama-url" and i + 1 < len(sys.argv):
+                url = sys.argv[i + 1]
+            elif arg.startswith("--ollama-url="):
+                url = arg.split("=", 1)[1]
+        print(get_ollama_info_text(url))
+        parser.exit(0)
+
+
 def get_parser():
     main_parser = argparse.ArgumentParser(
         prog="odoo-module-migrate",
@@ -152,6 +168,26 @@ def get_parser():
              "Only Python/XML edits with a unique match and valid syntax are accepted.",
     )
     ai_group.add_argument(
+        "--ollama-repair", action="store_true",
+        help="Run bounded, autonomous repair loop on diagnostics with rollback and proofs.",
+    )
+    ai_group.add_argument(
+        "--ollama-max-attempts", type=int, default=3,
+        help="Maximum repair attempts per module (default: 3).",
+    )
+    ai_group.add_argument(
+        "--ollama-max-minutes", type=int, default=20,
+        help="Maximum minutes allocated to repair loop per module (default: 20).",
+    )
+    ai_group.add_argument(
+        "--ollama-max-diff-lines", type=int, default=200,
+        help="Maximum diff lines accepted per repair (default: 200).",
+    )
+    ai_group.add_argument(
+        "--ollama-info", action=OllamaInfoAction,
+        help="Display local Ollama, hardware, and model recommendation diagnostics and exit.",
+    )
+    ai_group.add_argument(
         "--ollama-model", default="",
         help="Installed Ollama model (otherwise choose a local coding model automatically).",
     )
@@ -182,14 +218,20 @@ def main(args=None):
     parser = get_parser()
     argcomplete.autocomplete(parser, always_complete_options=False)
     args = parser.parse_args(args)
-    if (args.ollama_review or args.ollama_apply) and not args.write_report:
-        parser.error("--ollama/--ollama-apply requires migration reports (remove --no-report)")
-    if (args.ollama_review or args.ollama_apply) and args.dry_run and not args.report_dir:
+    if (args.ollama_review or args.ollama_apply or args.ollama_repair) and not args.write_report:
+        parser.error("--ollama/--ollama-apply/--ollama-repair requires migration reports (remove --no-report)")
+    if (args.ollama_review or args.ollama_apply or args.ollama_repair) and args.dry_run and not args.report_dir:
         parser.error("with --dry-run, Ollama review requires --report-dir to keep the report")
     if args.ollama_timeout <= 0:
         parser.error("--ollama-timeout must be greater than zero")
     if args.ollama_max_context < 1000:
         parser.error("--ollama-max-context must be at least 1000 characters")
+    if args.ollama_max_attempts <= 0:
+        parser.error("--ollama-max-attempts must be greater than zero")
+    if args.ollama_max_minutes <= 0:
+        parser.error("--ollama-max-minutes must be greater than zero")
+    if args.ollama_max_diff_lines <= 0:
+        parser.error("--ollama-max-diff-lines must be greater than zero")
     
     setup_logger(args.log_level, args.log_path, args.log_path_warninglevelonly)
     
@@ -243,6 +285,10 @@ def main(args=None):
             default_author=args.default_author,
             ollama_review=args.ollama_review,
             ollama_apply=args.ollama_apply,
+            ollama_repair=args.ollama_repair,
+            ollama_max_attempts=args.ollama_max_attempts,
+            ollama_max_minutes=args.ollama_max_minutes,
+            ollama_max_diff_lines=args.ollama_max_diff_lines,
             ollama_url=args.ollama_url,
             ollama_model=args.ollama_model,
             ollama_timeout=args.ollama_timeout,

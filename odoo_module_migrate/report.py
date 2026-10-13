@@ -247,28 +247,63 @@ def render(report, init_version, target_version, changed_files=()):
             ]
             if review.summary:
                 lines += [review.summary, ""]
+
+            # Summary metrics
+            applied_count = sum(1 for item in review.recommendations if item.status == "applied")
+            rejected_count = sum(1 for item in review.recommendations if item.status.startswith("rejected"))
+            proposed_count = len(review.recommendations)
+
+            lines += [
+                "### Bilan de l'assistance locale",
+                "",
+                "| Indicateur | Valeur |",
+                "|---|---|",
+                f"| Modèle utilisé | `{review.model}` |",
+                f"| Propositions du modèle | {proposed_count} |",
+                f"| Réellement validées & appliquées | {applied_count} |",
+                f"| Rejetées par les garde-fous | {rejected_count} |",
+                f"| Temps de calcul | {review.elapsed_seconds:.1f} s |",
+            ]
+            if review.context_chars:
+                lines.append(f"| Contexte analysé | {review.context_chars} caractères |")
+            if review.repair_session:
+                sess = review.repair_session
+                lines.append(f"| Tentatives de réparation | {len(sess.attempts)} |")
+                lines.append(f"| Évolution des TODOs | {sess.initial_todos} → {sess.final_todos} (erreurs : {sess.initial_errors} → {sess.final_errors}) |")
+                lines.append(f"| Niveau de validation atteint | {sess.highest_validation_level} |")
+            lines.append("")
+
             if not review.recommendations:
                 lines += ["Aucune recommandation supplémentaire.", ""]
             confidence = {"high": "haute", "medium": "moyenne", "low": "faible"}
             for index, item in enumerate(review.recommendations, 1):
                 location = item.file + (f":{item.line}" if item.line else "")
-                status = {
+                status_str = {
                     "applied": " ✅ appliquée et syntaxe validée",
                     "advice": "",
                     "proposed: texte exact et syntaxe validés":
                         " ✅ texte exact et syntaxe validés (non appliquée)",
                 }.get(item.status, f" ⚠️ {item.status}")
+
+                conf_label = confidence.get(item.confidence, item.confidence)
                 lines += [
                     f"### {index}. {item.title}",
                     "",
-                    f"- **Confiance :** {confidence.get(item.confidence, item.confidence)}{status}",
+                    f"- **Origine :** IA locale (`{review.model}`)",
+                    f"- **Confiance :** {conf_label}{status_str}",
                 ]
+                if getattr(item, "objective_confidence", "") and item.objective_confidence != conf_label:
+                    lines.append(f"- **Confiance objective vérifiée :** {item.objective_confidence} (score: {item.objective_score:.2f})")
+                if getattr(item, "validation_level", ""):
+                    lines.append(f"- **Niveau de validation :** {item.validation_level}")
+                if getattr(item, "operation_type", ""):
+                    lines.append(f"- **Opération :** `{item.operation_type}`")
                 if location:
                     lines.append(f"- **Emplacement :** `{location}`")
                 if item.diagnosis:
                     lines.append(f"- **Diagnostic :** {item.diagnosis}")
                 if item.evidence:
-                    lines.append(f"- **Indice :** {item.evidence}")
+                    lines.append(f"- **Preuve / Règle :** {item.evidence}")
                 if item.action:
                     lines.append(f"- **Action :** {item.action}")
                 if item.old and item.status != "applied":
@@ -278,6 +313,14 @@ def render(report, init_version, target_version, changed_files=()):
                         "```diff",
                         *[f"- {line}" for line in item.old.splitlines()],
                         *[f"+ {line}" for line in item.new.splitlines()],
+                        "```",
+                    ]
+                elif getattr(item, "diff", "") and item.status == "applied":
+                    lines += [
+                        "- **Diff appliqué :**",
+                        "",
+                        "```diff",
+                        *[line for line in item.diff.splitlines()],
                         "```",
                     ]
                 lines.append("")
