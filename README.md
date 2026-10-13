@@ -76,6 +76,28 @@ Les scripts officiels et les références Odoo Community 18, 19 et 20 sont
 embarqués et utilisés par défaut, sans serveur Odoo ni téléchargement au moment
 de la migration. La première utilisation prépare un cache local.
 
+### Relecture intelligente locale avec Ollama
+
+Une seconde lecture optionnelle peut être confiée à un modèle installé dans
+[Ollama](https://ollama.com/). Le code reste sur la machine : seules les URL
+loopback (`localhost`, `127.0.0.1`, `::1`) sont acceptées. Le migrateur fournit
+au modèle les diagnostics, le manifeste et des extraits locaux retrouvés près
+des lignes concernées, puis ajoute au rapport des explications, indices et
+corrections proposées :
+
+```powershell
+ollama pull qwen2.5-coder:7b
+ollama serve
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
+    --ollama --ollama-model qwen2.5-coder:7b --no-commit
+```
+
+`--ollama` ne modifie jamais le code. `--ollama-apply` est un mode explicite :
+il n'accepte que les remplacements déclarés de confiance haute, dont l'ancien
+texte existe une seule fois, limités aux fichiers Python/XML, puis vérifiés par
+le parseur correspondant. Les contrôles déterministes restent prioritaires et
+les propositions du modèle restent visibles dans le rapport.
+
 `--odoo-root` permet de choisir d'autres sources cibles. `--addons-path` ajoute
 notamment les sources Enterprise et `--context-path` les autres modules métier.
 `--no-upgrade-code` limite l'exécution aux règles du migrateur.

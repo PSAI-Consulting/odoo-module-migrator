@@ -6,3 +6,5 @@ pyyaml
 requests
 polib
 ruff
+# Optional local-AI review uses Python's standard HTTP client. The Ollama
+# Windows/Linux/macOS application is a system prerequisite, not a pip package.

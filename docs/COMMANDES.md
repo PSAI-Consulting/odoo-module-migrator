@@ -212,6 +212,31 @@ Relancer la migration sur un module déjà migré ne change rien
 | `-lp`, `--log-path FICHIER` | Écrire le journal dans un fichier |
 | `-lpwo`, `--log-path-warninglevelonly FICHIER` | Écrire seulement les avertissements et erreurs (Markdown) |
 
+### Relecture intelligente locale (Ollama)
+
+| Option | Rôle |
+|---|---|
+| `--ollama` / `--ollama-review` | Ajouter au rapport une analyse locale des TODO et extraits de code retrouvés |
+| `--ollama-apply` | Appliquer aussi les remplacements exacts de confiance haute qui passent les validations Python/XML |
+| `--ollama-model NOM` | Choisir un modèle installé ; sinon le migrateur préfère automatiquement un modèle de code |
+| `--ollama-url URL` | URL locale d'Ollama (défaut : `http://127.0.0.1:11434`, accès distant refusé) |
+| `--ollama-timeout SECONDES` | Temps maximal par module (défaut : 600, adapté à un CPU sans GPU dédié) |
+| `--ollama-max-context CARACTÈRES` | Budget maximal d'extraits retrouvés par module (défaut : 10000 ; au-delà de 12000, contexte modèle 8192 plus lent) |
+
+Installation et utilisation typiques :
+
+```powershell
+ollama pull qwen2.5-coder:7b
+ollama serve
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
+    --ollama --ollama-model qwen2.5-coder:7b --no-commit
+```
+
+Le modèle peut aussi être défini par `ODOO_MIGRATOR_OLLAMA_MODEL`. Avec
+`--dry-run`, fournissez `--report-dir` afin que la relecture survive à la
+suppression de la copie temporaire. L'indisponibilité d'Ollama n'interrompt pas
+la migration : l'erreur et l'action à effectuer sont inscrites dans le rapport.
+
 ### Divers
 
 | Option | Rôle |

@@ -1,11 +1,12 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 import argparse
-import argcomplete
 import sys
 
+import argcomplete
+
 from . import __version__, tools
-from .log import setup_logger, _close_handlers
+from .log import _close_handlers, setup_logger
 from .migration import Migration
 
 
@@ -137,6 +138,36 @@ def get_parser():
              "migrated modules are looked for (read only).",
     )
 
+    ai_group = main_parser.add_argument_group(
+        "Local intelligent review (Ollama; no cloud service)"
+    )
+    ai_group.add_argument(
+        "--ollama", "--ollama-review", dest="ollama_review", action="store_true",
+        help="Review diagnostics and local source excerpts with an installed Ollama model.\n"
+             "Adds explanations and proposed fixes to the migration report.",
+    )
+    ai_group.add_argument(
+        "--ollama-apply", action="store_true",
+        help="Also apply high-confidence exact replacements proposed by Ollama.\n"
+             "Only Python/XML edits with a unique match and valid syntax are accepted.",
+    )
+    ai_group.add_argument(
+        "--ollama-model", default="",
+        help="Installed Ollama model (otherwise choose a local coding model automatically).",
+    )
+    ai_group.add_argument(
+        "--ollama-url", default="http://127.0.0.1:11434",
+        help="Local Ollama URL (loopback only; default: http://127.0.0.1:11434).",
+    )
+    ai_group.add_argument(
+        "--ollama-timeout", type=int, default=600,
+        help="Maximum seconds per module review (default: 600).",
+    )
+    ai_group.add_argument(
+        "--ollama-max-context", type=int, default=10000,
+        help="Maximum source characters retrieved per module (default: 10000).",
+    )
+
     main_parser.add_argument(
         "--oca-file-list",
         action="store_true",
@@ -151,6 +182,14 @@ def main(args=None):
     parser = get_parser()
     argcomplete.autocomplete(parser, always_complete_options=False)
     args = parser.parse_args(args)
+    if (args.ollama_review or args.ollama_apply) and not args.write_report:
+        parser.error("--ollama/--ollama-apply requires migration reports (remove --no-report)")
+    if (args.ollama_review or args.ollama_apply) and args.dry_run and not args.report_dir:
+        parser.error("with --dry-run, Ollama review requires --report-dir to keep the report")
+    if args.ollama_timeout <= 0:
+        parser.error("--ollama-timeout must be greater than zero")
+    if args.ollama_max_context < 1000:
+        parser.error("--ollama-max-context must be at least 1000 characters")
     
     setup_logger(args.log_level, args.log_path, args.log_path_warninglevelonly)
     
@@ -202,6 +241,12 @@ def main(args=None):
             manifest_layout=not args.no_manifest_format,
             default_website=args.default_website,
             default_author=args.default_author,
+            ollama_review=args.ollama_review,
+            ollama_apply=args.ollama_apply,
+            ollama_url=args.ollama_url,
+            ollama_model=args.ollama_model,
+            ollama_timeout=args.ollama_timeout,
+            ollama_max_context=args.ollama_max_context,
         )
 
         # run Migration

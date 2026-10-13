@@ -47,6 +47,12 @@ class Migration:
         manifest_layout=False,
         default_website="",
         default_author="",
+        ollama_review=False,
+        ollama_apply=False,
+        ollama_url="http://127.0.0.1:11434",
+        ollama_model="",
+        ollama_timeout=600,
+        ollama_max_context=10000,
     ):
         if not module_names:
             module_names = []
@@ -65,6 +71,12 @@ class Migration:
         self._manifest_layout = manifest_layout
         self._default_website = default_website
         self._default_author = default_author
+        self._ollama_review = ollama_review or ollama_apply
+        self._ollama_apply = ollama_apply
+        self._ollama_url = ollama_url
+        self._ollama_model = ollama_model
+        self._ollama_timeout = ollama_timeout
+        self._ollama_max_context = ollama_max_context
         self._format_config_root = pathlib.Path(format_config_root).resolve() if format_config_root else None
         self.report_collector = None
         self._migration_steps = []
@@ -299,6 +311,17 @@ class Migration:
                 self._format_changed_files()
             if float(init_version) < 20 <= float(target_version):
                 self._check_access_records_left()
+            if self.report_collector:
+                self._reconcile_text_rule_diagnostics()
+            if self.report_collector and self._ollama_review:
+                self._run_intelligent_review(init_version, target_version)
+                # Exact model edits can make a regex diagnostic obsolete.
+                if self._ollama_apply:
+                    if self._format_code or self._clean_imports:
+                        self._format_changed_files()
+                    self._reconcile_text_rule_diagnostics()
+            # Ollama edits, when explicitly enabled, must pass through the
+            # project's hooks too. This remains after every source mutation.
             self._run_pre_commit_if_configured()
             if self.report_collector:
                 self._reconcile_text_rule_diagnostics()
@@ -396,6 +419,50 @@ class Migration:
             (self._report_dir / "README.md").write_text(
                 report.render_summary(reports, init_version, target_version), encoding="utf-8"
             )
+
+    def _run_intelligent_review(self, init_version, target_version):
+        """Attach an optional local Ollama review; never abort the migration."""
+        from . import intelligent_review
+
+        for item in self._module_migrations:
+            module_report = self.report_collector.reports[item._module_name]
+            self.report_collector.current = module_report
+            try:
+                review = intelligent_review.review_module(
+                    module_report,
+                    init_version,
+                    target_version,
+                    url=self._ollama_url,
+                    model=intelligent_review.configured_model(self._ollama_model),
+                    timeout=self._ollama_timeout,
+                    max_context=self._ollama_max_context,
+                )
+                if self._ollama_apply:
+                    intelligent_review.apply_safe_edits(item._module_path, review)
+                    for recommendation in review.recommendations:
+                        if recommendation.status == "applied":
+                            path = item._module_path / recommendation.file
+                            logger.info(
+                                "Ollama applied a validated exact edit: %s. File %s:%s",
+                                recommendation.title,
+                                path,
+                                recommendation.line or 1,
+                            )
+                else:
+                    # Even advice-only output is fact-checked: a hallucinated
+                    # exact snippet is visibly rejected in the human report.
+                    intelligent_review.assess_safe_edits(item._module_path, review)
+                module_report.intelligent_review = review
+            except intelligent_review.OllamaError as exc:
+                module_report.intelligent_review = intelligent_review.Review(
+                    model=self._ollama_model,
+                    error=str(exc),
+                )
+                # The optional reviewer being offline must not create a
+                # migration TODO or change the module risk level.
+                self.report_collector.current = None
+                logger.warning("Local Ollama review unavailable: %s", exc)
+        self.report_collector.current = None
 
     def _reconcile_text_rule_diagnostics(self):
         """Re-evaluate regex TODOs against the final migrated sources.

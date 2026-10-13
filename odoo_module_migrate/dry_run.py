@@ -90,6 +90,12 @@ def run_dry(args, module_names, upgrade_code_options=None, out=None):
             manifest_layout=not getattr(args, "no_manifest_format", True),
             default_website=getattr(args, "default_website", ""),
             default_author=getattr(args, "default_author", ""),
+            ollama_review=getattr(args, "ollama_review", False),
+            ollama_apply=getattr(args, "ollama_apply", False),
+            ollama_url=getattr(args, "ollama_url", "http://127.0.0.1:11434"),
+            ollama_model=getattr(args, "ollama_model", ""),
+            ollama_timeout=getattr(args, "ollama_timeout", 600),
+            ollama_max_context=getattr(args, "ollama_max_context", 10000),
         )
         migration.run()
         for name in module_names:

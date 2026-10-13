@@ -45,6 +45,7 @@ class ModuleReport:
     name: str
     path: pathlib.Path
     entries: list = field(default_factory=list)
+    intelligent_review: object = None
 
     @property
     def todos(self):
@@ -230,6 +231,56 @@ def render(report, init_version, target_version, changed_files=()):
     if changed_files:
         lines += ["## Fichiers modifiés", ""]
         lines += [f"- `{f}`" for f in sorted(changed_files)] + [""]
+    if report.intelligent_review:
+        review = report.intelligent_review
+        lines += ["## Relecture intelligente locale", ""]
+        if review.error:
+            lines += [
+                "> ⚠️ Ollama n'a pas pu effectuer la relecture : " + review.error,
+                "",
+            ]
+        else:
+            lines += [
+                f"> Modèle local : `{review.model}`. Ces propositions complètent les contrôles",
+                "> déterministes ; elles restent à vérifier humainement.",
+                "",
+            ]
+            if review.summary:
+                lines += [review.summary, ""]
+            if not review.recommendations:
+                lines += ["Aucune recommandation supplémentaire.", ""]
+            confidence = {"high": "haute", "medium": "moyenne", "low": "faible"}
+            for index, item in enumerate(review.recommendations, 1):
+                location = item.file + (f":{item.line}" if item.line else "")
+                status = {
+                    "applied": " ✅ appliquée et syntaxe validée",
+                    "advice": "",
+                    "proposed: texte exact et syntaxe validés":
+                        " ✅ texte exact et syntaxe validés (non appliquée)",
+                }.get(item.status, f" ⚠️ {item.status}")
+                lines += [
+                    f"### {index}. {item.title}",
+                    "",
+                    f"- **Confiance :** {confidence.get(item.confidence, item.confidence)}{status}",
+                ]
+                if location:
+                    lines.append(f"- **Emplacement :** `{location}`")
+                if item.diagnosis:
+                    lines.append(f"- **Diagnostic :** {item.diagnosis}")
+                if item.evidence:
+                    lines.append(f"- **Indice :** {item.evidence}")
+                if item.action:
+                    lines.append(f"- **Action :** {item.action}")
+                if item.old and item.status != "applied":
+                    lines += [
+                        "- **Modification proposée :**",
+                        "",
+                        "```diff",
+                        *[f"- {line}" for line in item.old.splitlines()],
+                        *[f"+ {line}" for line in item.new.splitlines()],
+                        "```",
+                    ]
+                lines.append("")
     return "\n".join(lines)
 
 
@@ -237,14 +288,20 @@ def render_summary(reports, init_version, target_version):
     lines = [
         f"# Migration {init_version} → {target_version}",
         "",
-        "| Module | Risque | TODO | Erreurs | Transformations |",
-        "|---|---|---|---|---|",
+        "| Module | Risque | TODO | Erreurs | Transformations | IA locale |",
+        "|---|---|---|---|---|---|",
     ]
     order = {"élevé": 0, "inconnu": 1, "moyen": 2, "faible": 3, "aucun": 4}
     for report in sorted(reports, key=lambda r: (order.get(r.risk, 99), r.name)):
+        ai_status = (
+            "erreur" if report.intelligent_review and report.intelligent_review.error
+            else "oui" if report.intelligent_review
+            else "non"
+        )
         lines.append(
             f"| [{report.name}]({report.name}.md) | {report.risk} | {len(report.todos)} |"
             f" {len(report.errors)} | {len(report.transformations)} |"
+            f" {ai_status} |"
         )
     # most frequent TODO: what to handle once for all the modules
     modules_by_todo = collections.defaultdict(set)

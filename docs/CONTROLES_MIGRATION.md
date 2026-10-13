@@ -198,3 +198,32 @@ valeur d'auteur, de nom ou de site d'une équipe à un autre client.
 `invisible` et `column_invisible` sont conservés distincts : le premier peut
 dépendre des valeurs de la ligne, le second masque la colonne entière sans ce
 contexte. La conversion globale de l'un vers l'autre a été retirée.
+# Relecture locale Ollama
+
+La relecture Ollama est une couche complémentaire, jamais une source de vérité.
+Le moteur construit localement un petit contexte de recherche (RAG) : manifeste,
+diagnostics structurés, voisinage des lignes signalées, puis autres fichiers
+Python/XML/JS/CSV jusqu'au budget configuré. Ce contexte est envoyé uniquement
+à une URL loopback d'Ollama et la réponse JSON est rendue lisiblement dans le
+rapport.
+
+Le RAG interroge également, à chaque exécution, les vrais fichiers Python et
+YAML de `migration_scripts/` correspondant à l'intervalle de versions. Une
+recherche lexicale pondérée privilégie les identifiants techniques (`model.field`,
+méthodes, XML IDs), les expressions exactes et les règles `curated.yaml`. La
+politique embarquée fixe l'ordre de confiance et les invariants métier. Ce
+choix est volontairement préférable à un fine-tuning : une règle corrigée dans
+le dépôt devient immédiatement disponible, conserve son chemin comme preuve et
+ne nécessite pas de réentraîner un modèle.
+
+Par défaut (`--ollama`), aucune proposition ne touche les sources. Avec
+`--ollama-apply`, une édition doit cumuler toutes les garanties suivantes :
+
+- confiance `high` annoncée par le modèle ;
+- ancien texte exact présent une seule fois dans le fichier annoncé ;
+- chemin situé dans le module, fichier `.py` ou `.xml`, taille limitée ;
+- syntaxe Python ou XML encore valide après remplacement.
+
+Une édition refusée reste documentée avec sa raison. Ces validations détectent
+les sorties techniquement invalides, mais ne prouvent pas le comportement
+métier : revue Git, tests et installation sur une base de test restent requis.

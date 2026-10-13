@@ -1,3 +1,4 @@
 include requirements.txt
 recursive-include odoo_module_migrate/migration_scripts/ *.py *.yaml
 recursive-include odoo_module_migrate/upgrade_code/bundles/ *.zip *.json
+recursive-include odoo_module_migrate/knowledge/ *.md

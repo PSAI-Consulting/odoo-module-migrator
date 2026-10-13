@@ -2,6 +2,13 @@
 
 ## Non publié
 
+- Relecture optionnelle 100 % locale avec Ollama : contexte RAG ciblé sur les
+  diagnostics et sources du module, réponse structurée intégrée aux rapports,
+  sélection automatique d'un modèle de code et échec non bloquant.
+- Mode explicite `--ollama-apply` limité aux remplacements exacts de confiance
+  haute dans Python/XML, avec confinement au module et validation syntaxique ;
+  aucun envoi vers une URL distante n'est accepté.
+
 - Python 3.12 minimum ; scripts officiels Community 18/19/20 et références
   intégrés pour une utilisation hors ligne, avec provenance et empreintes.
 - Modèle générique de manifeste et nettoyage des imports inutilisés par défaut ;
