@@ -212,41 +212,53 @@ Relancer la migration sur un module déjà migré ne change rien
 | `-lp`, `--log-path FICHIER` | Écrire le journal dans un fichier |
 | `-lpwo`, `--log-path-warninglevelonly FICHIER` | Écrire seulement les avertissements et erreurs (Markdown) |
 
-### Relecture et réparation intelligentes locales (Ollama)
+### Assistance locale Ollama (optionnelle)
 
 | Option | Rôle |
 |---|---|
-| `--ollama-info` | Diagnostiquer l'environnement Ollama local (version, modèles, RAM, GPU, recommandations) et quitter |
-| `--ollama` / `--ollama-review` | Ajouter au rapport une analyse locale des TODO et extraits de code retrouvés |
-| `--ollama-apply` | Appliquer les remplacements exacts vérifiés par score objectif et validés syntaxiquement |
-| `--ollama-repair` | Lancer la boucle autonome de réparation (opérations typées, transactions, vérification et rollback en cas d'échec) |
-| `--ollama-max-attempts N` | Nombre maximal de tentatives par module pour la boucle de réparation (défaut : 3) |
-| `--ollama-max-minutes MIN` | Temps maximal alloué à la réparation par module (défaut : 20) |
-| `--ollama-max-diff-lines L` | Nombre maximal de lignes modifiées accepté par réparation (défaut : 200) |
-| `--ollama-model NOM` | Choisir un modèle installé ; sinon le migrateur adapte automatiquement le modèle au matériel détecté |
+| `--ollama-info` | Version d'Ollama, modèles installés (taille, quantification, contexte), RAM, CPU, GPU, contexte maximal utilisé, puis quitter |
+| `--ollama` / `--ollama-review` | Revue : explications et propositions vérifiées sur une copie ; aucune écriture |
+| `--ollama-apply` | Revue puis application atomique des seules propositions vérifiées |
+| `--ollama-repair` | Boucle bornée : à chaque appel au plus une opération typée, vérifiée puis cumulée ; publication atomique à la fin |
+| `--ollama-max-attempts N` | Nombre maximal d'appels au modèle par module en réparation (défaut : 3, maximum 10) |
+| `--ollama-max-minutes MIN` | Temps maximal de réparation par module (défaut : 20) |
+| `--ollama-max-diff-lines L` | Lignes modifiées maximales par opération (défaut : 200) |
+| `--ollama-model NOM` | Modèle installé à utiliser, avec son tag exact (`qwen2.5-coder:14b`) ; sans tag, `:latest` ou l'unique tag installé. Aucune substitution silencieuse. Sans option : choix automatique parmi les modèles installés |
 | `--ollama-url URL` | URL locale d'Ollama (défaut : `http://127.0.0.1:11434`, accès distant refusé) |
-| `--ollama-timeout SECONDES` | Temps maximal par module (défaut : 600, adapté à un CPU sans GPU dédié) |
-| `--ollama-max-context CARACTÈRES` | Budget maximal d'extraits retrouvés par module (défaut : 10000 ; au-delà de 12000, contexte modèle 8192 plus lent) |
+| `--ollama-timeout SECONDES` | Délai maximal d'un appel au modèle (défaut : 600) |
+| `--ollama-max-context CARACTÈRES` | Plafond de l'invite (défaut : 10000) ; la fenêtre `num_ctx` est calculée pour chaque appel et ne dépasse ni le modèle ni le plafond matériel |
 
-Diagnostic et utilisation typiques :
+Commandes complètes (Odoo 17 vers 20, sources Enterprise et modules voisins) :
 
 ```powershell
-# Vérifier l'état local et les recommandations adaptées à la machine
+# Vérifier l'état local
 odoo-module-migrate --ollama-info
 
-# Relecture conseil (aucune modification de code)
+# Revue seule
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
-    --ollama --no-commit
+    --addons-path D:/Odoo/enterprise/20.0 --context-path ./autres_modules `
+    --ollama --ollama-model qwen2.5-coder:7b --no-commit
 
-# Réparation autonome prouvée (boucle bornée et vérifiable avec rollback)
+# Application prudente
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
-    --ollama-repair --ollama-max-attempts 3 --no-commit
+    --addons-path D:/Odoo/enterprise/20.0 --context-path ./autres_modules `
+    --ollama-apply --ollama-model qwen2.5-coder:7b --no-commit
+
+# Réparation bornée
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
+    --addons-path D:/Odoo/enterprise/20.0 --context-path ./autres_modules `
+    --ollama-repair --ollama-max-attempts 3 --ollama-max-minutes 20 `
+    --ollama-model qwen2.5-coder:7b --no-commit
 ```
 
+Sans sources cibles indexées (`--no-upgrade-code`), seules la syntaxe, les
+règles textuelles et le manifeste sont rejoués : le rapport l'indique et les
+diagnostics de vues ou de modèles ne peuvent pas être réparés automatiquement.
 Le modèle peut aussi être défini par `ODOO_MIGRATOR_OLLAMA_MODEL`. Avec
-`--dry-run`, fournissez `--report-dir` afin que la relecture survive à la
-suppression de la copie temporaire. L'indisponibilité d'Ollama n'interrompt pas
-la migration : l'erreur et l'action à effectuer sont inscrites dans le rapport.
+`--dry-run`, fournissez `--report-dir`. L'indisponibilité d'Ollama n'interrompt
+pas la migration et n'ajoute aucun TODO : l'erreur est inscrite dans le rapport.
+Sur une machine de 16 Go sans GPU, un modèle 7B quantifié prend plusieurs
+minutes par appel.
 
 ### Divers
 

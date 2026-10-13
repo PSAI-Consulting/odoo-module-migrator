@@ -76,32 +76,37 @@ Les scripts officiels et les références Odoo Community 18, 19 et 20 sont
 embarqués et utilisés par défaut, sans serveur Odoo ni téléchargement au moment
 de la migration. La première utilisation prépare un cache local.
 
-### Relecture intelligente locale avec Ollama
+### Assistance locale avec Ollama (optionnelle)
 
-Une seconde lecture ou une réparation autonome optionnelle peut être confiée à un modèle installé dans
-[Ollama](https://ollama.com/). Le code reste sur la machine : seules les URL
-loopback (`localhost`, `127.0.0.1`, `::1`) sont acceptées. Le migrateur fournit
-au modèle les diagnostics, le manifeste et des extraits locaux retrouvés près
-des lignes concernées, puis ajoute au rapport des explications, indices et
-corrections proposées :
+Un modèle installé dans [Ollama](https://ollama.com/) peut relire les TODO et
+proposer des corrections. Le code reste sur la machine : seules les URL
+loopback (`localhost`, `127.0.0.1`, `::1`) sont acceptées. **Le modèle propose,
+le migrateur décide** : aucune proposition n'est écrite sans avoir été
+vérifiée sur une copie du module.
 
 ```powershell
-# Diagnostic du matériel et des modèles recommandés
+# Matériel, modèles installés et contexte utilisable
 odoo-module-migrate --ollama-info
 
-# Relecture conseil sans modification
+# Revue : explications et propositions vérifiées sur copie, aucune écriture
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
     --ollama --no-commit
 
-# Réparation autonome vérifiable (boucle bornée, applicateurs typés, rollback)
+# Application prudente des propositions vérifiées
+odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
+    --ollama-apply --no-commit
+
+# Réparation bornée (une opération typée par appel, 3 appels maximum)
 odoo-module-migrate -d ./mes_modules -m mon_module -i 17.0 -t 20.0 `
     --ollama-repair --ollama-max-attempts 3 --no-commit
 ```
 
-`--ollama` ne modifie jamais le code. `--ollama-apply` applique les remplacements exacts
-de confiance objective validés syntaxiquement. `--ollama-repair` exécute une boucle bornée
-de réparation utilisant des applicateurs structurés (Python, XML, manifestes, CSV) avec
-rollback complet en cas d'échec ou de régression. Les contrôles déterministes restent prioritaires.
+Une édition n'est appliquée que si elle se limite à renommer des symboles
+(structure du fichier inchangée), résout un diagnostic de son fichier à la
+réanalyse déterministe sans en créer, et cite exactement une règle du
+migrateur ou un script officiel `upgrade_code` mentionnant l'ancien et le
+nouveau symbole. Tout le reste reste une recommandation dans le rapport, avec
+la raison du refus. Voir [CONTROLES_MIGRATION.md](docs/CONTROLES_MIGRATION.md#assistance-locale-ollama).
 
 `--odoo-root` permet de choisir d'autres sources cibles. `--addons-path` ajoute
 notamment les sources Enterprise et `--context-path` les autres modules métier.

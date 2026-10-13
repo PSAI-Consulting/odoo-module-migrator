@@ -198,41 +198,89 @@ valeur d'auteur, de nom ou de site d'une équipe à un autre client.
 `invisible` et `column_invisible` sont conservés distincts : le premier peut
 dépendre des valeurs de la ligne, le second masque la colonne entière sans ce
 contexte. La conversion globale de l'un vers l'autre a été retirée.
-# Relecture locale Ollama
+# Assistance locale Ollama
 
-La relecture Ollama est une couche complémentaire, jamais une source de vérité.
-Le moteur construit localement un petit contexte de recherche (RAG) : manifeste,
-diagnostics structurés, voisinage des lignes signalées, puis autres fichiers
-Python/XML/JS/CSV jusqu'au budget configuré. Ce contexte est envoyé uniquement
-à une URL loopback d'Ollama et la réponse JSON est rendue lisiblement dans le
-rapport.
+L'assistance Ollama est une couche complémentaire, jamais une source de vérité.
+Elle ne s'exécute qu'après la migration déterministe et n'envoie rien hors de
+la machine (URL loopback uniquement).
 
-Le RAG interroge également, à chaque exécution, les vrais fichiers Python et
-YAML de `migration_scripts/` correspondant à l'intervalle de versions. Une
-recherche lexicale pondérée privilégie les identifiants techniques (`model.field`,
-méthodes, XML IDs), les expressions exactes et les règles `curated.yaml`. La
-politique embarquée fixe l'ordre de confiance et les invariants métier. Ce
-choix est volontairement préférable à un fine-tuning : une règle corrigée dans
-le dépôt devient immédiatement disponible, conserve son chemin comme preuve et
-ne nécessite pas de réentraîner un modèle.
+## Ce que voit le modèle (RAG)
 
-Par défaut (`--ollama`), aucune proposition ne touche les sources. Avec
-`--ollama-apply`, une édition doit cumuler toutes les garanties suivantes :
+Pour chaque appel, le contexte est reconstruit à partir de l'état courant du
+module et borné par la taille de contexte réellement disponible :
 
-- confiance `high` annoncée par le modèle ;
-- ancien texte exact présent une seule fois dans le fichier annoncé ;
-- chemin situé dans le module, fichier `.py` ou `.xml`, taille limitée ;
-- syntaxe Python ou XML encore valide après remplacement.
+| Bloc | Origine | Peut prouver une édition |
+|---|---|---|
+| `rule_curated` | règles vérifiées à la main (une règle YAML par bloc, avec son commentaire de source) | oui |
+| `rule_generated` | règles extraites d'Odoo / OpenUpgrade | oui |
+| `upgrade_code` | scripts officiels `upgrade_code` de l'intervalle de versions | oui |
+| `target_odoo` | définitions trouvées dans la fermeture de dépendances des sources cibles (`--addons-path`, Community embarqué) | soutien du score |
+| `context_module` | modules de `--context-path` | non |
+| `rule_script`, `module_source`, `applied_transformation` | scripts du migrateur, extraits du module, transformations déjà faites | non |
 
-Avec `--ollama-repair`, la réparation autonome applique un niveau d'exigence strict :
+Les fichiers `candidates.yaml` (renommages non vérifiés) ne sont jamais
+retrouvés. Les règles sont filtrées par intervalle de versions et doivent
+nommer exactement un symbole du diagnostic. Chaque bloc porte une provenance
+`chemin:ligne` et une empreinte ; le texte retrouvé est encadré par une balise
+à nonce aléatoire et toute balise de fermeture qu'il contiendrait est
+neutralisée (injection de prompt). La politique de relecture embarquée est
+placée dans le message système, jamais parmi les données.
 
-- **Isolation transactionnelle** : chaque tentative s'exécute dans un espace de travail temporaire jetable (`tempfile.TemporaryDirectory`). Aucun fichier final du module n'est touché tant que la totalité des vérifications n'a pas réussi. Tout échec ou exception déclenche un rollback complet immédiat.
-- **Zéro amélioration simulée** : les heuristiques de décompte d'erreurs théoriques sont proscrites. Pour être retenue, une tentative doit éliminer de manière vérifiable au moins un diagnostic existant et n'introduire strictement aucun nouveau diagnostic (comparaison par identifiants stables `fichier:ligne:niveau:message`).
-- **Ré-analyse déterministe complète** : après chaque modification, le module est ré-analysé de fond en comble (`FullModuleDiagnosticsChecker`) : syntaxe AST Python, arbres XML lxml, syntaxe CSV, structure du manifeste, analyse des modèles, champs, méthodes, vues, XPath, dépendances et règles textuelles.
-- **Confiance objective sans hallucination** : une opération n'est écrite que si son rapport de confiance calculé (`ConfidenceReport.is_applicable`) est vrai. Toute preuve avancée par le modèle doit correspondre à un chunk RAG réel et vérifié (empreinte et provenance certifiées) sous peine de rejet immédiat pour hallucination.
-- **Applicateurs structurés déterministes** : ciblages par positions AST/lxml sans remplacements globaux ambigus ; vérification d'unicité des clés de dictionnaires ; préservation stricte des shebangs, encodages, docstrings et imports `__future__` ; contrôle des dépendances de manifeste contre les cycles et modules manquants ; préservation octet-par-octet des fichiers CSV ; interdiction de toute auto-application JavaScript non validable.
-- **Statuts audités non trompeurs** : distinction explicite entre `passed`, `failed` et `skipped` pour les bancs et tests unitaires, un statut `skipped` n'étant jamais assimilé ni comptabilisé comme un succès.
+## Vérification d'une proposition
 
-Une édition refusée reste documentée avec sa raison. Ces validations détectent
-les sorties techniquement invalides ou régressives, mais ne remplacent pas la
-revue Git et l'évaluation finale sur une base Odoo réelle.
+`--ollama`, `--ollama-apply` et `--ollama-repair` utilisent le même
+vérificateur, sur une copie du module portant son nom :
+
+1. schéma strict de l'opération typée (type et propriétés connus, types de
+   valeurs, fichier `.py`/`.xml`/`.csv` régulier du module ; JavaScript, liens
+   symboliques et chemins sortants refusés) ;
+2. applicateur typé : cible unique localisée par l'AST, lxml ou le parseur CSV ;
+   seuls les caractères de la cible changent ;
+3. syntaxe, taille du diff et **garde structurelle** : la structure du fichier
+   doit rester identique et seuls des symboles (identifiants, noms pointés)
+   peuvent être renommés ; ajout/suppression d'instruction, d'élément, de ligne
+   CSV ou de clé de manifeste, nombre, booléen ou texte libre modifié : refus.
+   Exceptions bornées : `add_import` / `replace_import` ne changent que des
+   imports, `manifest_add_dependency` n'ajoute qu'un module existant dont toute
+   la fermeture est connue (pas de cycle) ;
+4. **réanalyse déterministe** de la copie avec les mêmes analyseurs et le même
+   libellé que le rapport : syntaxe, manifeste, règles textuelles, vues/XPath/
+   XML ids, modèles/champs/méthodes/dépendances Python, imports, enregistrements
+   d'accès restants. Les index de vues et de modèles sont recomposés avec la
+   copie à la place du module. Une exception d'analyseur rend la vérification
+   impossible (rejet), elle n'est jamais un diagnostic « disparu ». Les
+   diagnostics sont comparés comme un multiensemble `(fichier, niveau, message)` :
+   un déplacement de ligne n'est ni résolu ni nouveau ;
+5. au moins un diagnostic **du fichier modifié** résolu (tout fichier pour une
+   dépendance de manifeste), aucun nouveau ;
+6. **preuve** : `evidence` doit citer exactement la provenance ou l'empreinte
+   d'un bloc *montré dans cet appel* de type règle ou `upgrade_code`, qui
+   mentionne chaque symbole retiré et introduit. Une référence absente est une
+   preuve inventée : rejet ;
+7. tests et installation Odoo si configurés (`skipped` n'est jamais `passed`) ;
+8. score objectif = somme des poids des faits vérifiés (affichés un par un dans
+   le rapport). `haute` exige une édition applicable et un score >= 0,85.
+
+Les éditions vérifiées s'accumulent sur une copie ; le module réel n'est écrit
+qu'une fois, par une publication atomique (fichiers temporaires uniques, mode
+conservé, restauration octet pour octet de tous les fichiers déjà remplacés en
+cas d'erreur ou d'interruption Ctrl+C). Un arrêt brutal du processus entre deux
+remplacements ne peut pas être annulé par l'outil : travaillez sur un dépôt Git.
+
+Les diagnostics résolus et vérifiés sont retirés de la liste des TODO ; les
+diagnostics émis pendant les scripts de transformation ne peuvent pas être
+rejoués et ne sont donc jamais comptés comme résolus.
+
+## Ce qui reste manuel
+
+Toute correction qui n'est pas un renommage prouvé : logique métier, suppression
+de code, nouvelles méthodes, signatures, domaines, textes, JavaScript, ajout
+d'une dépendance Enterprise, et tout cas où aucune règle ne mentionne le nouveau
+symbole. Ces propositions restent dans le rapport avec la raison de leur refus.
+
+## Mesures
+
+`ODOO_MIGRATOR_METRICS=<fichier>` ajoute, par module, une ligne JSON (appels au
+modèle, durées, temps de chargement, jetons, taille d'invite, blocs RAG,
+réanalyses) sans modifier le rapport.
+

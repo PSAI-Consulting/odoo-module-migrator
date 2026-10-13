@@ -2,6 +2,32 @@
 
 ## Non publié
 
+- Assistance Ollama : audit contradictoire et durcissement.
+  - `--ollama-apply` n'accepte plus le texte du modèle comme preuve : revue,
+    application et réparation passent par le même vérificateur sur copie et
+    une publication atomique unique.
+  - Garde structurelle : seules les éditions qui renomment des symboles sont
+    automatiques ; preuve obligatoire et exacte (provenance ou empreinte d'une
+    règle ou d'un script `upgrade_code` montré au modèle, mentionnant l'ancien
+    et le nouveau symbole). La politique et les extraits du module ne prouvent rien.
+  - Réanalyse réellement complète et fail-closed : mêmes analyseurs et mêmes
+    libellés que la migration (les vues n'étaient jamais rejouées, la copie
+    portait un autre nom que le module), index recomposés avec la copie,
+    comparaison indépendante des numéros de ligne.
+  - Applicateurs : élément XML exact (plus de modification d'un voisin ou d'un
+    commentaire), imports partagés sur une ligne refusés, cellule CSV seule
+    réécrite, `depends` modifié via l'AST avec graphe complet exigé, offsets UTF-8,
+    noms insérés validés.
+  - RAG : une règle YAML par bloc, `candidates.yaml` exclus, scripts officiels
+    `upgrade_code` indexés par version, définitions cibles cherchées dans la
+    fermeture de dépendances et dans la vue parente citée, expansion par les
+    renommages prouvés, balises à nonce contre l'injection, jeu d'évaluation.
+  - Fournisseur : tag de modèle exact, choix automatique ouvert à tout modèle,
+    `num_ctx` calculé, invite bornée, réponse tronquée détectée, métriques
+    optionnelles `ODOO_MIGRATOR_METRICS`.
+  - Rapport : toutes les tentatives, facteurs du score, preuves, validations
+    exécutées ou non, périmètre réel de la réanalyse ; TODO résolus retirés.
+
 - Relecture et réparation 100 % locales avec Ollama :
   - Abstraction de fournisseur (`BaseLLMProvider`), profilage matériel sans dépendance lourde et commande de diagnostic `--ollama-info`.
   - RAG hybride auditable : recherche lexicale BM25 et symbolique, indexation des sources cibles (`reference_paths`, `context_paths`), filtrage strict par version, priorisation curated, invalidation récursive et isolation des invites contre les injections.
