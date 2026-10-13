@@ -11,17 +11,12 @@ from .migration import Migration
 
 
 class OllamaInfoAction(argparse.Action):
-    def __init__(self, option_strings, dest, default=argparse.SUPPRESS, help=None):
+    def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
         super().__init__(option_strings=option_strings, dest=dest, default=default, nargs=0, help=help)
 
     def __call__(self, parser, namespace, values, option_string=None):
         from .intelligence.system_profile import get_ollama_info_text
-        url = "http://127.0.0.1:11434"
-        for i, arg in enumerate(sys.argv):
-            if arg == "--ollama-url" and i + 1 < len(sys.argv):
-                url = sys.argv[i + 1]
-            elif arg.startswith("--ollama-url="):
-                url = arg.split("=", 1)[1]
+        url = getattr(namespace, "ollama_url", "http://127.0.0.1:11434")
         print(get_ollama_info_text(url))
         parser.exit(0)
 

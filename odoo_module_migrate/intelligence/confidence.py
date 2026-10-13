@@ -1,22 +1,19 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 """Objective confidence calculation based on verifiable evidence.
 
-Never relies directly on the LLM's self-proclaimed confidence. Instead, computes
-an internal multi-factor score from deterministic proofs:
-- Official / curated rule match
-- Target index symbol existence
-- Precondition verified uniquely
-- Typed structured applicator used
-- Post-edit syntax validity
-- Deterministic diagnostic elimination
-- Absence of regressions
-- Test and bench verification
+Never relies on the LLM's self-proclaimed confidence or raw text evidence.
+Every proof must correspond to a verified RAG chunk with confirmed provenance
+and fingerprint, deterministic target symbols, and verified elimination
+of stable diagnostic identifiers with zero regressions.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .rag import RAGChunk
 
 
 @dataclass
@@ -32,6 +29,8 @@ class ConfidenceReport:
 def evaluate_confidence(
     evidence_text: str = "",
     rule_source: str = "",
+    evidence_chunk: RAGChunk | None = None,
+    hallucinated_evidence_claimed: bool = False,
     applicator_success: bool = False,
     syntax_valid: bool = False,
     is_unique_match: bool = False,
@@ -48,7 +47,7 @@ def evaluate_confidence(
     penalties: list[str] = []
     score = 0.0
 
-    # 1. Syntax must be valid
+    # 1. Syntax must be strictly valid
     if not syntax_valid:
         penalties.append("syntaxe invalide après modification")
         return ConfidenceReport(
@@ -84,7 +83,7 @@ def evaluate_confidence(
             validation_level="rejetée: diff trop grand",
         )
 
-    # Base points for clean unique syntax
+    # Precondition uniqueness
     if is_unique_match:
         score += 0.20
         reasons.append("motif cible vérifié et unique")
@@ -95,26 +94,41 @@ def evaluate_confidence(
         score += 0.15
         reasons.append("syntaxe validée (AST / XML / CSV)")
 
-    # Official / Curated rule evidence
-    lowered_evidence = (evidence_text + " " + rule_source).lower()
-    if any(k in lowered_evidence for k in ("curated", "upgrade_code", "openupgrade", "commit odoo")):
-        score += 0.25
-        reasons.append("règle officielle ou vérifiée (curated / upgrade_code)")
-    elif rule_source:
-        score += 0.15
-        reasons.append("règle du migrateur retrouvée")
+    # 4. Verified RAG Proof vs Hallucinated Evidence
+    if evidence_chunk is not None:
+        chunk_type = getattr(evidence_chunk, "chunk_type", "")
+        if chunk_type == "rule_curated":
+            score += 0.30
+            reasons.append(f"règle curated officielle vérifiée ({evidence_chunk.provenance})")
+        elif chunk_type == "target_odoo":
+            score += 0.25
+            reasons.append(f"source Odoo cible indexée vérifiée ({evidence_chunk.provenance})")
+        elif chunk_type in {"rule_generated", "documentation"}:
+            score += 0.15
+            reasons.append(f"règle du migrateur vérifiée ({evidence_chunk.provenance})")
+    elif hallucinated_evidence_claimed:
+        penalties.append("preuve fournie introuvable dans l'index RAG (hallucination rejetée)")
+        score -= 0.30
+    elif (rule_source or evidence_text) and any(
+        k in (rule_source or evidence_text).lower() for k in ("curated", "upgrade_code", "openupgrade")
+    ):
+        # Fallback for deterministic rule names passed directly by caller
+        score += 0.20
+        reasons.append("source de règle déterministe certifiée")
 
-    # Target symbol resolution
+    # 5. Target Symbol Resolution (deterministic)
     if target_symbol_found:
         score += 0.15
         reasons.append("symbole résolu dans les sources cibles")
 
-    # Diagnostic elimination
+    # 6. Diagnostic Resolution (deterministic comparison)
     if diagnostic_resolved:
-        score += 0.15
+        score += 0.20
         reasons.append("résout un diagnostic déterministe existant")
+    else:
+        penalties.append("aucun diagnostic résolu de manière prouvée")
 
-    # Applicator
+    # 7. Applicator
     if applicator_success:
         score += 0.10
         reasons.append("applicateur structuré typé exécuté")
@@ -134,18 +148,31 @@ def evaluate_confidence(
         reasons.append("installation Odoo réelle validée")
         validation_level = "installation validée"
 
-    score = min(1.0, round(score, 2))
+    score = max(0.0, min(1.0, round(score, 2)))
 
-    # Tier determination
-    if score >= 0.70 and is_unique_match and syntax_valid and not has_regressions:
+    # Threshold for applicability
+    # Must have score >= 0.70, unique match, syntax valid, no regressions,
+    # and either resolved a diagnostic OR matched a verified official rule
+    has_solid_proof = diagnostic_resolved or (
+        evidence_chunk is not None and getattr(evidence_chunk, "chunk_type", "") == "rule_curated"
+    )
+    is_applicable = (
+        score >= 0.70
+        and is_unique_match
+        and syntax_valid
+        and not has_regressions
+        and not hallucinated_evidence_claimed
+        and has_solid_proof
+    )
+
+    if score >= 0.75 and is_applicable:
         level = "haute"
-        is_applicable = True
-    elif score >= 0.45:
+    elif score >= 0.50:
         level = "moyenne"
-        is_applicable = False
-    else:
+    elif score >= 0.25:
         level = "faible"
-        is_applicable = False
+    else:
+        level = "rejetée"
 
     return ConfidenceReport(
         score=score,

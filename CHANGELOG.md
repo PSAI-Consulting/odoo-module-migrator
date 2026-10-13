@@ -4,10 +4,10 @@
 
 - Relecture et réparation 100 % locales avec Ollama :
   - Abstraction de fournisseur (`BaseLLMProvider`), profilage matériel sans dépendance lourde et commande de diagnostic `--ollama-info`.
-  - RAG hybride auditable : recherche lexicale BM25 et symbolique, filtrage strict par version, priorisation curated et isolation des invites contre les injections.
-  - Boucle autonome de réparation bornée (`--ollama-repair`, `--ollama-max-attempts`, `--ollama-max-minutes`, `--ollama-max-diff-lines`) opérant dans des copies/transactions et annulant tout échec ou régression.
-  - Applicateurs structurés déterministes pour Python (imports, dictionnaires, AST), XML (attributs, XPath), manifestes et CSV.
-  - Score de confiance objectif fondé sur des preuves vérifiables (règles officielles, résolution des symboles, syntaxe et tests).
+  - RAG hybride auditable : recherche lexicale BM25 et symbolique, indexation des sources cibles (`reference_paths`, `context_paths`), filtrage strict par version, priorisation curated, invalidation récursive et isolation des invites contre les injections.
+  - Boucle autonome de réparation transactionnelle (`--ollama-repair`, `--ollama-max-attempts`, `--ollama-max-minutes`, `--ollama-max-diff-lines`) opérant dans une copie isolée, sans amélioration simulée, avec ré-analyse déterministe complète après chaque essai et rollback total sur exception ou régression.
+  - Applicateurs structurés déterministes pour Python (imports préservant shebang/docstring/__future__, clés uniques de dictionnaires via AST), XML (attributs ciblés, validation XPath), manifestes (détection de cycles et existence des modules) et CSV (conservation exacte des octets hors cellule). Auto-application JavaScript proscrite.
+  - Score de confiance objectif multi-critères rejetant toute preuve hallucinée et exigeant une résolution prouvée d'au moins un diagnostic.
   - Mode explicite `--ollama-apply` sécurisé contre les conflits et chevauchements, confinement strict au module et validation syntaxique.
   - Rapports Markdown enrichis avec bilan des indicateurs, niveau de validation atteint et diffs audités.
 

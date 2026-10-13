@@ -3,6 +3,7 @@
 
 from .applicators import (
     ApplicatorResult,
+    CsvValueApplicator,
     ExactTextApplicator,
     ManifestDependencyApplicator,
     PythonDictKeyApplicator,
@@ -12,8 +13,13 @@ from .applicators import (
     apply_typed_operation,
     validate_syntax,
 )
-from .bench_verifier import BenchVerifier
+from .bench_verifier import BenchVerifier, VerificationResult
 from .confidence import ConfidenceReport, evaluate_confidence
+from .diagnostics import (
+    DiagnosticItem,
+    FullModuleDiagnosticsChecker,
+    stable_diagnostic_id,
+)
 from .provider import (
     BaseLLMProvider,
     OllamaError,
@@ -38,7 +44,10 @@ __all__ = [
     "BaseLLMProvider",
     "BenchVerifier",
     "ConfidenceReport",
+    "CsvValueApplicator",
+    "DiagnosticItem",
     "ExactTextApplicator",
+    "FullModuleDiagnosticsChecker",
     "HybridRAG",
     "ManifestDependencyApplicator",
     "ModelProfile",
@@ -50,6 +59,7 @@ __all__ = [
     "RepairAttempt",
     "RepairSession",
     "SystemHardware",
+    "VerificationResult",
     "XmlAttributeApplicator",
     "XmlXPathApplicator",
     "apply_typed_operation",
@@ -60,5 +70,6 @@ __all__ = [
     "get_ollama_info_text",
     "is_loopback_url",
     "recommend_model",
+    "stable_diagnostic_id",
     "validate_syntax",
 ]

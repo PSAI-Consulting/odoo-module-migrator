@@ -7,18 +7,25 @@ CRITICAL SAFETY CONSTRAINTS:
 - STRICT database prefix: only databases matching `migrator_bench_*` are touched.
 - Never accesses or modifies an existing user database.
 - Databases are dropped in `finally:` blocks.
-- Execution timeout is strictly enforced.
+- Distinguishes passed / failed / skipped; skipped is never reported as success.
 """
 
 from __future__ import annotations
 
+import logging
 import pathlib
-import subprocess
-import time
 import uuid
-from typing import Any
+from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 BENCH_DB_PREFIX = "migrator_bench_"
+
+
+@dataclass
+class VerificationResult:
+    status: str  # "passed", "failed", "skipped"
+    message: str = ""
 
 
 class BenchVerifier:
@@ -52,13 +59,13 @@ class BenchVerifier:
         self,
         module_path: pathlib.Path,
         addons_paths: list[pathlib.Path | str] | None = None,
-    ) -> tuple[bool, str]:
+    ) -> VerificationResult:
         """Try installing module on a throwaway database.
 
-        Returns (success: bool, failure_detail: str).
+        Returns VerificationResult with status "passed", "failed", or "skipped".
         """
         if not self.is_configured:
-            return True, ""  # Not configured, skip gracefully
+            return VerificationResult(status="skipped", message="Banc Odoo non configuré")
 
         module_name = module_path.name
         temp_db_name = f"{BENCH_DB_PREFIX}repair_{uuid.uuid4().hex[:8]}"
@@ -71,13 +78,14 @@ class BenchVerifier:
         if addons_paths:
             all_addons.extend(str(p) for p in addons_paths)
 
+        installer = None
         try:
             # Import bench_install helpers if available
             bench_install_path = (
                 pathlib.Path(__file__).parent.parent.parent / "tools" / "bench" / "bench_install.py"
             )
             if not bench_install_path.is_file():
-                return True, ""
+                return VerificationResult(status="skipped", message="bench_install.py introuvable")
 
             import sys
             sys.path.insert(0, str(bench_install_path.parent))
@@ -98,22 +106,21 @@ class BenchVerifier:
             installer.create_from(self.template_db, temp_db_name)
 
             # Test installation
-            ok, output, duration = installer._try([module_name])
+            ok, output, _duration = installer._try([module_name])
             if ok:
-                return True, ""
+                return VerificationResult(status="passed", message="Installation réussie")
 
             # Extract concise failure error
             match = bi.FAILURE_RE.search(output)
             detail = match.group(0) if match else output[-1500:]
-            return False, detail.strip()
+            return VerificationResult(status="failed", message=detail.strip())
 
-        except Exception as exc:
-            return False, f"Erreur de banc Odoo: {exc}"
+        except Exception as exc:  # noqa: BLE001
+            return VerificationResult(status="failed", message=f"Erreur de banc Odoo: {exc}")
 
         finally:
-            # Ensure throwaway DB is unconditionally dropped
-            try:
-                if 'installer' in locals():
+            if installer is not None:
+                try:
                     installer.drop(temp_db_name)
-            except Exception:
-                pass
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("Database drop error on %s: %s", temp_db_name, exc)

@@ -20,7 +20,6 @@ from .system_profile import (
     ModelProfile,
     detect_hardware,
     parse_model_profiles,
-    query_ollama_tags,
     recommend_model,
 )
 

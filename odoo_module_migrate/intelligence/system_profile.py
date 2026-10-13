@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import ctypes
 import json
+import logging
 import os
 import platform
 import shutil
@@ -18,6 +19,8 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 CODER_FAMILIES = (
     "qwen2.5-coder",
@@ -97,8 +100,8 @@ def detect_hardware() -> SystemHardware:
             if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
                 total_ram = round(stat.ullTotalPhys / (1024**3), 1)
                 avail_ram = round(stat.ullAvailPhys / (1024**3), 1)
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Windows RAM query error: %s", exc)
     elif os.path.exists("/proc/meminfo"):
         try:
             with open("/proc/meminfo", "r", encoding="utf-8") as f:
@@ -108,16 +111,16 @@ def detect_hardware() -> SystemHardware:
                     total_ram = round(int(line.split()[1]) / (1024 * 1024), 1)
                 elif line.startswith("MemAvailable:"):
                     avail_ram = round(int(line.split()[1]) / (1024 * 1024), 1)
-        except Exception:
-            pass
+        except OSError as exc:
+            logger.debug("Linux meminfo read error: %s", exc)
     else:
         try:
             pages = os.sysconf("SC_PHYS_PAGES")
             page_size = os.sysconf("SC_PAGE_SIZE")
             total_ram = round((pages * page_size) / (1024**3), 1)
             avail_ram = round(total_ram * 0.5, 1)
-        except Exception:
-            pass
+        except (AttributeError, ValueError, OSError) as exc:
+            logger.debug("POSIX sysconf RAM query error: %s", exc)
 
     # GPU detection
     gpu_name = ""
@@ -139,8 +142,8 @@ def detect_hardware() -> SystemHardware:
                 if len(parts) > 1 and parts[1].isdigit():
                     vram_gb = round(float(parts[1]) / 1024, 1)
                 has_dedicated = True
-        except Exception:
-            pass
+        except (subprocess.SubprocessError, OSError) as exc:
+            logger.debug("nvidia-smi query error: %s", exc)
 
     if not gpu_name and os.name == "nt":
         # Check Windows display adapters
@@ -166,8 +169,8 @@ def detect_hardware() -> SystemHardware:
                     if not gpu_name and name:
                         gpu_name = name
                         vram_gb = round(raw_ram / (1024**3), 1)
-        except Exception:
-            pass
+        except (subprocess.SubprocessError, OSError, json.JSONDecodeError) as exc:
+            logger.debug("Win32_VideoController query error: %s", exc)
 
     return SystemHardware(
         total_ram_gb=total_ram,
@@ -187,7 +190,8 @@ def query_ollama_version(url: str = "http://127.0.0.1:11434", timeout: int = 2) 
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             return str(data.get("version", ""))
-    except Exception:
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
+        logger.debug("Ollama version query error: %s", exc)
         return ""
 
 
@@ -198,7 +202,8 @@ def query_ollama_tags(url: str = "http://127.0.0.1:11434", timeout: int = 5) -> 
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             return data.get("models", [])
-    except Exception:
+    except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError) as exc:
+        logger.debug("Ollama tags query error: %s", exc)
         return []
 
 

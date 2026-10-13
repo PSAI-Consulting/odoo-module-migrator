@@ -3,23 +3,24 @@
 
 Combines lexical BM25-style scoring with structural symbol extraction.
 Strictly filters migration rules by version range, prioritizes curated rules,
+indexes real target Odoo sources (Community, Enterprise, OCA),
 preserves provenance, tracks budgets, and protects against prompt injection.
 """
 
 from __future__ import annotations
 
-import ast
 import functools
 import hashlib
-import json
-import math
-import os
+import logging
 import pathlib
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 from .. import tools
+
+logger = logging.getLogger(__name__)
 
 _STOP_WORDS = {
     "a", "about", "after", "against", "all", "an", "and", "any", "are", "as",
@@ -37,16 +38,23 @@ _STOP_WORDS = {
 @dataclass
 class RAGChunk:
     chunk_type: str  # diagnostic | module_source | target_odoo | rule_curated | rule_generated | documentation | applied_transformation
-    provenance: str  # path:line
+    provenance: str  # path:start_line-end_line or path:line
     title: str
     content: str
+    fingerprint: str = ""
     symbols: list[str] = field(default_factory=list)
     score: float = 0.0
 
+    def __post_init__(self):
+        if not self.fingerprint:
+            raw = f"{self.chunk_type}:{self.provenance}:{self.content.strip()}"
+            self.fingerprint = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
     def render_tagged(self) -> str:
-        """Render safely delimited chunk."""
+        """Render safely delimited chunk with verifiable provenance and fingerprint."""
         return (
-            f'<retrieved_context type="{self.chunk_type}" source="{self.provenance}" title="{self.title}">\n'
+            f'<retrieved_context type="{self.chunk_type}" source="{self.provenance}" '
+            f'fingerprint="{self.fingerprint}" title="{self.title}">\n'
             f"{self.content}\n"
             f"</retrieved_context>"
         )
@@ -64,14 +72,11 @@ def _tokenize(text: str) -> list[str]:
 def _extract_symbols(text: str) -> list[str]:
     """Find specific Odoo symbols like models, fields, methods, XML IDs."""
     symbols = set()
-    # Model names: e.g. res.partner, stock.picking, account.move.line
     for match in re.findall(r"\b[a-z][a-z0-9_]+(?:\.[a-z][a-z0-9_]+)+\b", text):
         symbols.add(match)
-    # Identifiers with underscores: e.g. uom_id, product_uom, _select_seller
     for match in re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]{3,}\b", text):
         if "_" in match:
             symbols.add(match)
-    # XML IDs: e.g. module.view_id
     for match in re.findall(r"\b[a-z0-9_]+\.[a-z0-9_]+\b", text):
         symbols.add(match)
     return sorted(symbols)
@@ -100,13 +105,11 @@ def _load_cached_corpus(cache_key: str, package_dir_str: str) -> tuple[str, tupl
             is_curated = "curated.yaml" in rel_path or "curated" in path.name
             rule_type = "rule_curated" if is_curated else "rule_generated"
 
-            # Parse steps
             steps = re.findall(r"migrate_(\d+)_(\d+)", rel_path)
             step_range = None
             if steps:
                 step_range = (int(steps[0][0]), int(steps[0][1]))
 
-            # Slide over lines with overlap
             step_size = 16
             window_size = 24
             for start in range(0, len(lines), step_size):
@@ -131,19 +134,28 @@ def _load_cached_corpus(cache_key: str, package_dir_str: str) -> tuple[str, tupl
 
 
 def _get_corpus() -> tuple[str, tuple[dict[str, Any], ...]]:
+    """Derive cache key recursively from all rule files."""
     package = pathlib.Path(__file__).parent.parent
-    # Derive hash from modtimes
     hasher = hashlib.sha256()
+
+    policy_file = package / "knowledge" / "ollama_migration_policy.md"
+    if policy_file.is_file():
+        stat = policy_file.stat()
+        hasher.update(f"{stat.st_mtime_ns}:{stat.st_size}".encode())
+
     rules_dir = package / "migration_scripts"
     if rules_dir.is_dir():
-        for p in sorted(rules_dir.glob("*")):
-            hasher.update(str(p.stat().st_mtime_ns).encode("utf-8"))
+        for p in sorted(rules_dir.rglob("*")):
+            if p.is_file() and p.suffix in {".yaml", ".py"}:
+                stat = p.stat()
+                hasher.update(f"{p.name}:{stat.st_mtime_ns}:{stat.st_size}".encode())
+
     key = hasher.hexdigest()[:16]
     return _load_cached_corpus(key, str(package))
 
 
 class HybridRAG:
-    """Retrieves targeted context and auditable migration rules for a module."""
+    """Retrieves targeted context, real target Odoo sources, and auditable rules."""
 
     def __init__(
         self,
@@ -166,11 +178,13 @@ class HybridRAG:
 
         # Build query profile
         self.query_text = " ".join([
-            module_report.name,
-            *[f"{t.message} {t.source}" for t in getattr(module_report, "todos", [])],
+            getattr(module_report, "name", ""),
+            *[f"{t.message} {getattr(t, 'source', '')}" for t in getattr(module_report, "todos", [])],
         ])
         self.query_tokens = set(_tokenize(self.query_text))
         self.query_symbols = set(_extract_symbols(self.query_text))
+
+        self.retrieved_chunks: list[RAGChunk] = []
 
     def _score_tokens(self, chunk_tokens: set[str], chunk_symbols: list[str], is_curated: bool = False) -> float:
         """BM25-inspired scoring prioritizing exact symbol matches."""
@@ -179,12 +193,10 @@ class HybridRAG:
             return 0.0
 
         score = 0.0
-        # Token weight
         for tok in overlap:
             weight = 3.0 if ("." in tok or "_" in tok) else 1.0
             score += weight
 
-        # Symbol match boost
         for sym in chunk_symbols:
             if sym in self.query_symbols:
                 score += 15.0
@@ -194,7 +206,57 @@ class HybridRAG:
 
         return score
 
-    def retrieve_rules(self, budget_chars: int = 5000) -> list[RAGChunk]:
+    def retrieve_target_sources(self, budget_chars: int = 3500) -> list[RAGChunk]:
+        """Index and retrieve actual target Odoo definitions matching query symbols."""
+        chunks: list[RAGChunk] = []
+        if not self.query_symbols:
+            return chunks
+
+        all_target_dirs = [*self.reference_paths, *self.context_paths]
+        used_chars = 0
+
+        for base_dir in all_target_dirs:
+            if not base_dir.is_dir():
+                continue
+            for ext in (".py", ".xml"):
+                for p in tools.get_files(base_dir, (ext,)):
+                    try:
+                        content = tools._read_content(p)
+                    except OSError:
+                        continue
+
+                    # Search matching symbol definitions
+                    for sym in self.query_symbols:
+                        if sym not in content:
+                            continue
+                        rel_path = p.relative_to(base_dir).as_posix() if base_dir in p.parents else p.name
+                        lines = content.splitlines()
+
+                        for line_idx, line_text in enumerate(lines):
+                            if sym in line_text and any(kw in line_text for kw in ("class ", "fields.", "def ", "id=", "name=")):
+                                start_idx = max(0, line_idx - 4)
+                                end_idx = min(len(lines), line_idx + 12)
+                                excerpt = "\n".join(lines[start_idx:end_idx])
+
+                                chunk = RAGChunk(
+                                    chunk_type="target_odoo",
+                                    provenance=f"{rel_path}:{start_idx + 1}-{end_idx}",
+                                    title=f"Source Odoo cible ({base_dir.name}/{rel_path})",
+                                    content=excerpt,
+                                    symbols=[sym],
+                                    score=35.0,
+                                )
+                                if used_chars + len(excerpt) > budget_chars:
+                                    return chunks
+                                chunks.append(chunk)
+                                used_chars += len(excerpt)
+                                break
+                        if used_chars >= budget_chars:
+                            return chunks
+
+        return chunks
+
+    def retrieve_rules(self, budget_chars: int = 4500) -> list[RAGChunk]:
         """Retrieve relevant packaged migration rules filtered by version."""
         policy, corpus = _get_corpus()
         results: list[RAGChunk] = []
@@ -203,7 +265,7 @@ class HybridRAG:
             results.append(RAGChunk(
                 chunk_type="documentation",
                 provenance="knowledge/ollama_migration_policy.md:1",
-                title="Politique de relecture Odoo",
+                title="Politique de migration Odoo",
                 content=policy.strip(),
                 score=100.0,
             ))
@@ -250,97 +312,103 @@ class HybridRAG:
 
         return results
 
-    def retrieve_module_sources(self, budget_chars: int = 8000) -> list[RAGChunk]:
-        """Retrieve module files focusing on diagnostic lines."""
+    def retrieve_module_sources(self, budget_chars: int = 4000) -> list[RAGChunk]:
+        """Extract focused snippets from module files around diagnostics."""
         results: list[RAGChunk] = []
-        module_path = getattr(self.module_report, "path", None)
-        if not module_path or not module_path.is_dir():
+        m_path = getattr(self.module_report, "path", None)
+        if not m_path or not pathlib.Path(m_path).is_dir():
             return results
 
-        # 1. Manifest
+        module_dir = pathlib.Path(m_path)
+        used_chars = 0
+
+        # Manifest
         manifest_path = next(
-            (module_path / name for name in ("__manifest__.py", "__openerp__.py")
-             if (module_path / name).is_file()),
+            (module_dir / name for name in ("__manifest__.py", "__openerp__.py") if (module_dir / name).is_file()),
             None,
         )
         if manifest_path:
             try:
-                manifest_text = tools._read_content(manifest_path)
+                m_content = manifest_path.read_text(encoding="utf-8")
                 results.append(RAGChunk(
                     chunk_type="module_source",
                     provenance=f"{manifest_path.name}:1",
                     title="Manifeste du module",
-                    content=manifest_text[:3000],
+                    content=m_content[:1500],
                     score=50.0,
                 ))
-            except Exception:
-                pass
+                used_chars += len(results[-1].content)
+            except OSError as exc:
+                logger.debug("Manifest read skipped: %s", exc)
 
-        # 2. Files from diagnostics
-        seen_locations = set()
-        candidates: list[tuple[pathlib.Path, int, str]] = []
-        for todo in getattr(self.module_report, "todos", []):
-            if not getattr(todo, "file", None):
+        # Files from diagnostics
+        for entry in getattr(self.module_report, "todos", []):
+            if not getattr(entry, "file", None):
                 continue
-            fpath = (module_path / todo.file).resolve()
-            try:
-                fpath.relative_to(module_path.resolve())
-            except ValueError:
+            path = module_dir / entry.file
+            if not path.is_file():
                 continue
-            candidates.append((fpath, getattr(todo, "line", 1) or 1, todo.message))
 
-        # 3. Supplemental module sources
-        for path in sorted(module_path.rglob("*")):
-            if path.is_file() and path.suffix in {".py", ".xml", ".csv"}:
-                candidates.append((path.resolve(), 1, "source du module"))
-
-        used_chars = sum(len(c.content) for c in results)
-
-        for path, line, reason in candidates:
-            loc_key = (str(path), line)
-            if loc_key in seen_locations or not path.is_file():
-                continue
-            seen_locations.add(loc_key)
-
+            line = getattr(entry, "line", 1) or 1
             try:
                 lines = tools._read_content(path).splitlines()
-            except Exception:
+            except OSError:
                 continue
 
             center = max(0, line - 1)
-            radius = 12 if "source du module" not in reason else 35
-            start = max(0, center - radius)
-            end = min(len(lines), center + radius + 1)
-            snippet = "\n".join(f"{i + 1:>5}: {lines[i]}" for i in range(start, end))
+            start = max(0, center - 8)
+            end = min(len(lines), center + 12)
+            snippet = "\n".join(lines[start:end])
 
-            rel_file = path.relative_to(module_path).as_posix()
             chunk = RAGChunk(
                 chunk_type="module_source",
-                provenance=f"{rel_file}:{line}",
-                title=f"Source ({rel_file}) - {reason}",
+                provenance=f"{entry.file}:{start + 1}-{end}",
+                title=f"Extrait de {entry.file}:{line}",
                 content=snippet,
-                symbols=_extract_symbols(snippet),
-                score=10.0 if "source du module" not in reason else 2.0,
+                score=30.0,
             )
-
             if used_chars + len(snippet) > budget_chars:
                 break
             results.append(chunk)
             used_chars += len(snippet)
-            if len(results) >= 12:
-                break
 
         return results
 
     def build_prompt_context(self) -> tuple[str, str]:
-        """Return (tagged_rules_string, tagged_sources_string)."""
-        rule_budget = min(6000, max(2500, self.max_context_chars // 2))
-        source_budget = max(3000, self.max_context_chars - rule_budget)
+        """Build sandbox-delimited prompt sections for rules, targets, and sources."""
+        rule_chunks = self.retrieve_rules(budget_chars=4000)
+        target_chunks = self.retrieve_target_sources(budget_chars=3000)
+        source_chunks = self.retrieve_module_sources(budget_chars=3500)
 
-        rule_chunks = self.retrieve_rules(budget_chars=rule_budget)
-        source_chunks = self.retrieve_module_sources(budget_chars=source_budget)
+        self.retrieved_chunks = [*rule_chunks, *target_chunks, *source_chunks]
 
-        rules_rendered = "\n\n".join(c.render_tagged() for c in rule_chunks)
-        sources_rendered = "\n\n".join(c.render_tagged() for c in source_chunks)
+        rules_str = "\n".join(c.render_tagged() for c in rule_chunks)
+        if target_chunks:
+            rules_str += "\n" + "\n".join(c.render_tagged() for c in target_chunks)
 
-        return rules_rendered, sources_rendered
+        sources_str = "\n".join(c.render_tagged() for c in source_chunks)
+        return rules_str, sources_str
+
+    def find_matching_chunk(self, evidence_str: str, proposed_op: dict[str, Any] | None = None) -> RAGChunk | None:
+        """Find a verified RAG chunk corresponding to an evidence string or operation."""
+        if not evidence_str and not proposed_op:
+            return None
+
+        clean_evidence = (evidence_str or "").strip().lower()
+
+        for chunk in self.retrieved_chunks:
+            # 1. Exact fingerprint match
+            if chunk.fingerprint and chunk.fingerprint.lower() in clean_evidence:
+                return chunk
+            # 2. Exact provenance match (file:line)
+            prov_norm = chunk.provenance.replace("\\", "/").lower()
+            if prov_norm in clean_evidence or clean_evidence in prov_norm:
+                return chunk
+            # 3. Source content verification
+            if proposed_op:
+                old_val = str(proposed_op.get("old") or proposed_op.get("old_module") or proposed_op.get("old_key") or "")
+                new_val = str(proposed_op.get("new") or proposed_op.get("new_module") or proposed_op.get("new_key") or "")
+                if old_val and new_val and old_val in chunk.content and new_val in chunk.content:
+                    return chunk
+
+        return None

@@ -431,25 +431,23 @@ class Migration:
     def _run_intelligent_review(self, init_version, target_version):
         """Attach an optional local Ollama review; never abort the migration."""
         from . import intelligent_review
+        from .intelligence.diagnostics import FullModuleDiagnosticsChecker
+
+        reference_paths = list(self._upgrade_code_options.addons_path) if self._upgrade_code_options else []
+        context_paths = list(self._upgrade_code_options.context_path) if self._upgrade_code_options else []
 
         for item in self._module_migrations:
             module_report = self.report_collector.reports[item._module_name]
             self.report_collector.current = module_report
             try:
-                review = intelligent_review.review_module(
-                    module_report,
-                    init_version,
-                    target_version,
-                    url=self._ollama_url,
-                    model=intelligent_review.configured_model(self._ollama_model),
-                    timeout=self._ollama_timeout,
-                    max_context=self._ollama_max_context,
-                )
                 if self._ollama_repair:
-                    def diag_checker(mpath):
-                        self._reconcile_text_rule_diagnostics()
-                        rep = self.report_collector.reports[item._module_name]
-                        return len(rep.todos), len(rep.errors)
+                    checker = FullModuleDiagnosticsChecker(
+                        target_version=target_version,
+                        migration_scripts=self._migration_scripts,
+                        model_index=getattr(self, "_cached_model_index", None),
+                        view_index=getattr(self, "_cached_view_index", None),
+                        import_index=getattr(self, "_cached_import_index", None),
+                    )
 
                     session = intelligent_review.repair_module(
                         item._module_path,
@@ -461,31 +459,68 @@ class Migration:
                         max_attempts=self._ollama_max_attempts,
                         max_minutes=self._ollama_max_minutes,
                         max_diff_lines=self._ollama_max_diff_lines,
-                        diagnostics_checker=diag_checker,
+                        diagnostics_checker=checker.check_module,
+                        reference_paths=reference_paths,
+                        context_paths=context_paths,
                     )
-                    review.repair_session = session
+
+                    review = intelligent_review.Review(
+                        model=session.model,
+                        summary=f"Réparation autonome exécutée ({len(session.applied_operations)} opération(s) appliquée(s)).",
+                        elapsed_seconds=session.total_time_seconds,
+                        repair_session=session,
+                    )
                     for op in session.applied_operations:
                         path = item._module_path / op.get("file", "")
                         logger.info(
                             "Ollama autonomous repair applied: %s on %s. File %s:1",
                             op.get("type"), op.get("file"), path,
                         )
-                elif self._ollama_apply:
-                    intelligent_review.apply_safe_edits(item._module_path, review)
-                    for recommendation in review.recommendations:
-                        if recommendation.status == "applied":
-                            path = item._module_path / recommendation.file
-                            logger.info(
-                                "Ollama applied a validated exact edit: %s. File %s:%s",
-                                recommendation.title,
-                                path,
-                                recommendation.line or 1,
-                            )
+                        rec = intelligent_review.Recommendation(
+                            title=f"Réparation {op.get('type')}",
+                            diagnosis=op.get("description", ""),
+                            action=f"Appliqué sur {op.get('file')}",
+                            confidence="high",
+                            file=op.get("file", ""),
+                            line=op.get("line") or 1,
+                            evidence=op.get("evidence", ""),
+                            operation_type=op.get("type", "exact_text_replace"),
+                            status="applied",
+                            objective_score=0.90,
+                            objective_confidence="haute",
+                            validation_level=session.highest_validation_level,
+                        )
+                        review.recommendations.append(rec)
+
+                    module_report.intelligent_review = review
                 else:
-                    # Even advice-only output is fact-checked: a hallucinated
-                    # exact snippet is visibly rejected in the human report.
-                    intelligent_review.assess_safe_edits(item._module_path, review)
-                module_report.intelligent_review = review
+                    review = intelligent_review.review_module(
+                        module_report,
+                        init_version,
+                        target_version,
+                        url=self._ollama_url,
+                        model=intelligent_review.configured_model(self._ollama_model),
+                        timeout=self._ollama_timeout,
+                        max_context=self._ollama_max_context,
+                        reference_paths=reference_paths,
+                        context_paths=context_paths,
+                    )
+                    if self._ollama_apply:
+                        intelligent_review.apply_safe_edits(item._module_path, review)
+                        for recommendation in review.recommendations:
+                            if recommendation.status == "applied":
+                                path = item._module_path / recommendation.file
+                                logger.info(
+                                    "Ollama applied a validated exact edit: %s. File %s:%s",
+                                    recommendation.title,
+                                    path,
+                                    recommendation.line or 1,
+                                )
+                    else:
+                        # Even advice-only output is fact-checked: a hallucinated
+                        # exact snippet is visibly rejected in the human report.
+                        intelligent_review.assess_safe_edits(item._module_path, review)
+                    module_report.intelligent_review = review
             except intelligent_review.OllamaError as exc:
                 module_report.intelligent_review = intelligent_review.Review(
                     model=self._ollama_model,
@@ -621,6 +656,7 @@ class Migration:
         index = views.ViewIndex.build(
             reference + list(options.context_path) + [self._directory_path]
         )
+        self._cached_view_index = index
         reference_modules = {m.name for m in views._module_dirs(reference)}
         self._resolve_index_dependencies(index)
         menu_parent_hints = []
@@ -660,6 +696,7 @@ class Migration:
         model_index = models.ModelIndex.build(
             reference + list(options.context_path) + [self._directory_path]
         )
+        self._cached_model_index = model_index
         self._resolve_index_dependencies(model_index)
         for script in self._migration_scripts:
             for rule in script._RENAMED_METHODS:
@@ -788,6 +825,7 @@ class Migration:
         from .analysis import imports
 
         import_index = imports.ImportIndex(reference)
+        self._cached_import_index = import_index
         for module_migration in self._module_migrations:
             for path, line, message in imports.check_module(
                 module_migration._module_path, import_index

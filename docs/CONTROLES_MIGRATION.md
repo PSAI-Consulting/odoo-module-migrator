@@ -224,6 +224,15 @@ Par défaut (`--ollama`), aucune proposition ne touche les sources. Avec
 - chemin situé dans le module, fichier `.py` ou `.xml`, taille limitée ;
 - syntaxe Python ou XML encore valide après remplacement.
 
+Avec `--ollama-repair`, la réparation autonome applique un niveau d'exigence strict :
+
+- **Isolation transactionnelle** : chaque tentative s'exécute dans un espace de travail temporaire jetable (`tempfile.TemporaryDirectory`). Aucun fichier final du module n'est touché tant que la totalité des vérifications n'a pas réussi. Tout échec ou exception déclenche un rollback complet immédiat.
+- **Zéro amélioration simulée** : les heuristiques de décompte d'erreurs théoriques sont proscrites. Pour être retenue, une tentative doit éliminer de manière vérifiable au moins un diagnostic existant et n'introduire strictement aucun nouveau diagnostic (comparaison par identifiants stables `fichier:ligne:niveau:message`).
+- **Ré-analyse déterministe complète** : après chaque modification, le module est ré-analysé de fond en comble (`FullModuleDiagnosticsChecker`) : syntaxe AST Python, arbres XML lxml, syntaxe CSV, structure du manifeste, analyse des modèles, champs, méthodes, vues, XPath, dépendances et règles textuelles.
+- **Confiance objective sans hallucination** : une opération n'est écrite que si son rapport de confiance calculé (`ConfidenceReport.is_applicable`) est vrai. Toute preuve avancée par le modèle doit correspondre à un chunk RAG réel et vérifié (empreinte et provenance certifiées) sous peine de rejet immédiat pour hallucination.
+- **Applicateurs structurés déterministes** : ciblages par positions AST/lxml sans remplacements globaux ambigus ; vérification d'unicité des clés de dictionnaires ; préservation stricte des shebangs, encodages, docstrings et imports `__future__` ; contrôle des dépendances de manifeste contre les cycles et modules manquants ; préservation octet-par-octet des fichiers CSV ; interdiction de toute auto-application JavaScript non validable.
+- **Statuts audités non trompeurs** : distinction explicite entre `passed`, `failed` et `skipped` pour les bancs et tests unitaires, un statut `skipped` n'étant jamais assimilé ni comptabilisé comme un succès.
+
 Une édition refusée reste documentée avec sa raison. Ces validations détectent
-les sorties techniquement invalides, mais ne prouvent pas le comportement
-métier : revue Git, tests et installation sur une base de test restent requis.
+les sorties techniquement invalides ou régressives, mais ne remplacent pas la
+revue Git et l'évaluation finale sur une base Odoo réelle.

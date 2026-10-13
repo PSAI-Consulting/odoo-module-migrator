@@ -9,10 +9,8 @@ to any cloud service and edits are strictly verified.
 
 from __future__ import annotations
 
-import ast
 import functools
 import json
-import os
 import pathlib
 import re
 import time
@@ -21,8 +19,6 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
-
-from lxml import etree
 
 from . import tools
 from .intelligence.applicators import (
@@ -51,6 +47,39 @@ from .intelligence.system_profile import (
     get_ollama_info_text,
     recommend_model,
 )
+
+__all__ = [
+    "DEFAULT_TIMEOUT",
+    "DEFAULT_URL",
+    "ApplicatorResult",
+    "AutonomousRepairLoop",
+    "BaseLLMProvider",
+    "ConfidenceReport",
+    "ExactTextApplicator",
+    "HybridRAG",
+    "ModelProfile",
+    "OllamaError",
+    "OllamaProvider",
+    "RAGChunk",
+    "Recommendation",
+    "RepairSession",
+    "Review",
+    "apply_safe_edits",
+    "apply_typed_operation",
+    "assess_safe_edits",
+    "choose_model",
+    "configured_model",
+    "detect_hardware",
+    "evaluate_confidence",
+    "extract_json_response",
+    "generate_diff",
+    "get_ollama_info_text",
+    "is_loopback_url",
+    "recommend_model",
+    "repair_module",
+    "review_module",
+    "validate_syntax",
+]
 
 PREFERRED_MODELS = (
     "qwen3-coder",
@@ -481,7 +510,14 @@ def _valid_after(path: pathlib.Path, text: str) -> tuple[bool, str]:
     return validate_syntax(path, text)
 
 
-def assess_safe_edits(module_path: pathlib.Path | str, review: Review, *, apply: bool = False, max_edit_chars: int = 8000) -> Review:
+def assess_safe_edits(
+    module_path: pathlib.Path | str,
+    review: Review,
+    *,
+    apply: bool = False,
+    max_edit_chars: int = 8000,
+    max_diff_lines: int = 200,
+) -> Review:
     """Fact-check exact replacements with objective proofs and transactional isolation."""
     root = pathlib.Path(module_path).resolve()
     allowed_files = {
@@ -556,13 +592,18 @@ def assess_safe_edits(module_path: pathlib.Path | str, review: Review, *, apply:
                 continue
 
             next_text = current_text.replace(item.old, item.new, 1)
+            diff_str, changed_lines = generate_diff(current_text, next_text, rel_file)
+            if changed_lines > max_diff_lines:
+                item.status = "rejected: taille de diff excessive"
+                item.objective_confidence = "rejetée"
+                continue
+
             valid, reason = _valid_after(path, next_text)
             if not valid:
                 item.status = f"rejected: {reason}"
                 item.objective_confidence = "rejetée"
                 continue
 
-            diff_str, changed_lines = generate_diff(current_text, next_text, rel_file)
             conf = evaluate_confidence(
                 evidence_text=item.evidence,
                 rule_source=item.evidence,
@@ -572,6 +613,7 @@ def assess_safe_edits(module_path: pathlib.Path | str, review: Review, *, apply:
                 diagnostic_resolved=bool(item.evidence),
                 has_regressions=False,
                 diff_lines=changed_lines,
+                max_diff_lines=max_diff_lines,
             )
 
             item.diff = diff_str
@@ -589,10 +631,19 @@ def assess_safe_edits(module_path: pathlib.Path | str, review: Review, *, apply:
     return review
 
 
-def apply_safe_edits(module_path: pathlib.Path | str, review: Review, max_edit_chars: int = 8000) -> Review:
+def apply_safe_edits(
+    module_path: pathlib.Path | str,
+    review: Review,
+    max_edit_chars: int = 8000,
+    max_diff_lines: int = 200,
+) -> Review:
     """Apply high-confidence exact replacements, with objective proof & syntax validation."""
     return assess_safe_edits(
-        module_path, review, apply=True, max_edit_chars=max_edit_chars
+        module_path,
+        review,
+        apply=True,
+        max_edit_chars=max_edit_chars,
+        max_diff_lines=max_diff_lines,
     )
 
 
@@ -610,9 +661,22 @@ def repair_module(
     diagnostics_checker: Any = None,
     test_runner: Any = None,
     bench_verifier: Any = None,
+    reference_paths: Any = (),
+    context_paths: Any = (),
+    known_modules: set[str] | None = None,
+    dependency_graph: dict[str, list[str]] | None = None,
+    target_view_tree: Any | None = None,
 ) -> RepairSession:
     """Run autonomous, bounded repair loop on the module."""
     provider = OllamaProvider(url, model)
+    rag = HybridRAG(
+        module_report,
+        init_version,
+        target_version,
+        reference_paths=reference_paths,
+        context_paths=context_paths,
+        max_context_chars=10000,
+    )
     loop = AutonomousRepairLoop(
         pathlib.Path(module_path),
         module_report,
@@ -625,5 +689,9 @@ def repair_module(
         diagnostics_checker=diagnostics_checker,
         test_runner=test_runner,
         bench_verifier=bench_verifier,
+        rag=rag,
+        known_modules=known_modules,
+        dependency_graph=dependency_graph,
+        target_view_tree=target_view_tree,
     )
     return loop.run()
