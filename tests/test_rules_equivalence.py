@@ -144,3 +144,20 @@ def test_python_transforms_are_all_inventoried():
     snapshot = rules_baseline.snapshot()
     expected = sum(len(v["_GLOBAL_FUNCTIONS"]) for k, v in snapshot.items() if k != "<readers>")
     assert len(transforms) == expected
+
+
+def test_resolved_field_rename_pass_honours_curated_blockers():
+    """migration.py renames resolved fields (order.order_line.x) with
+    effective_field_renames(): a curated [model, field, null] blocks the
+    generated rename there too (it used to be applied: requested_date was
+    renamed to commitment_date by that second pass)."""
+    from odoo_module_migrate.migration_scripts.migrate_110_120 import MigrationScript
+
+    script = MigrationScript()
+    script.parse_rules()
+    raw = {(r[0], r[1]): r[2] for r in script._RENAMED_FIELDS}  # last one: the generated rule
+    assert raw[("sale.order", "requested_date")] == "commitment_date"
+    renames = script.effective_field_renames()
+    assert ("sale.order", "requested_date") not in renames
+    assert ("hr.holidays", "number_of_days_temp") not in renames
+    assert renames[("maintenance.equipment", "warranty")] == "warranty_date"

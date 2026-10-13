@@ -332,7 +332,7 @@ def test_rejected_candidates_reported_190_200(tmp_path, caplog):
     )
     script = MigrationScript()
     script.parse_rules()
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate.log"):
         script.handle_fields(module)
     assert "self.deductible_amount" in (module / "models.py").read_text()
     assert any(
@@ -410,7 +410,7 @@ def test_model_rules_190_200(tmp_path, caplog):
         "other = self.env['hr.contract.type.x']\n"
         "scraps = self.env['stock.scrap']\n"
     )
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate.log"):
         script.process_file(str(tmp_path), "models.py", ".py", {}, tmp_path, False)
     text = path.read_text()
     assert "self.env['hr.employee.type'].search([])" in text
@@ -560,7 +560,7 @@ def test_openupgrade_column_renames_not_applied_170_180(tmp_path, caplog):
     py = (module / "models.py").read_text()
     script = MigrationScript()
     script.parse_rules()
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate.log"):
         script.handle_fields(module)
     assert (module / "models.py").read_text() == py
     assert (module / "views" / "views.xml").read_text() == xml

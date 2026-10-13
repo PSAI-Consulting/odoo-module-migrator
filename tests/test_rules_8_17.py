@@ -325,7 +325,7 @@ def test_curated_renames_160_170(tmp_path, caplog):
     (module / "models.py").write_text(EXPENSE_PY)
     script = MigrationScript()
     script.parse_rules()
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate.log"):
         script.handle_fields(module)
     py = (module / "models.py").read_text()
     assert '@api.depends("price_unit", "total_amount", "total_amount_company")' in py
@@ -538,7 +538,7 @@ def test_blocked_swaps_130_140(tmp_path, caplog):
     (module / "models.py").write_text(text)
     script = MigrationScript()
     script.parse_rules()
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate.log"):
         script.handle_fields(module)
     new = (module / "models.py").read_text()
     assert "return self.planned_revenue, self.expected_revenue\n" in new
@@ -618,7 +618,7 @@ def test_invoice_fields_follow_account_move_120_130(tmp_path, caplog):
     )
     script = MigrationScript()
     script.parse_rules()
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.WARNING, logger="odoo_module_migrate.log"):
         script.handle_fields(module)
     text = (module / "models.py").read_text()
     assert "return self.invoice_date, self.name, self.name\n" in text
