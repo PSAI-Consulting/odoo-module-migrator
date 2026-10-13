@@ -1,122 +1,1150 @@
 # Champs supprimés 18.0 -> 19.0 : messages avec le remplaçant (prioritaires sur
 # generated.yaml). Vérifiés dans le commit de suppression (git log -S, git show) ;
 # le remplaçant n'est JAMAIS appliqué automatiquement (sémantique différente).
-# Format : [modèle, champ, message]
-- ["res.partner", "mobile", "phone (« relying solely on the phone field ») - odoo 6b820eb6fc6 '[REM] base: remove mobile field'"]
-- ["res.company", "mobile", "phone - odoo 6b820eb6fc6 '[REM] base: remove mobile field'"]
-- ["account.account", "deprecated", "active (archived accounts) - odoo d44f924779b '[IMP] account,*: account.deprecated rename'"]
-- ["res.partner", "sale_warn", "blocking warnings removed: non-blocking warning box in views - odoo 5ad26943c26 '[REM] account,product,purchase,sale,stock: remove blocking warnings'"]
-- ["res.partner", "purchase_warn", "blocking warnings removed: non-blocking warning box in views - odoo 5ad26943c26"]
-- ["res.partner", "picking_warn", "blocking warnings removed: internal instructions on pickings - odoo 5ad26943c26"]
-- ["res.partner", "invoice_warn", "blocking warnings removed - odoo 5ad26943c26"]
-- ["res.partner", "invoice_warn_msg", "blocking warnings removed - odoo 5ad26943c26"]
-- ["product.template", "sale_line_warn", "blocking warnings removed - odoo 5ad26943c26"]
-- ["product.template", "purchase_line_warn", "blocking warnings removed - odoo 5ad26943c26"]
-- ["stock.move", "group_id", "reference_ids (procurement.group replaced by stock.reference) - odoo 2713876dbc7 '[REF] stock, *: add reference'"]
-- ["sale.order", "procurement_group_id", "stock_reference_ids (procurement.group replaced by stock.reference) - odoo 2713876dbc7 '[REF] stock, *: add reference'"]
-- ["purchase.order", "group_id", "reference_ids (procurement.group replaced by stock.reference) - odoo 2713876dbc7 '[REF] stock, *: add reference'"]
-- ["purchase.order.line", "group_id", "procurement.group replaced by stock.reference - odoo 2713876dbc7 '[REF] stock, *: add reference'"]
-- ["mrp.production", "procurement_group_id", "reference_ids (stock.reference) / production_group_id (mrp.production.group) - odoo 2713876dbc7 '[REF] stock, *: add reference'"]
-- ["sale.order.line", "route_id", "route_ids (Many2many) - odoo b7a9196366e '[IMP] sale_stock: change `route_id` field on SO line to be many2many'"]
-- ["sale.order.line", "product_packaging_id", "packagings merged into units of measure (product_uom_id) - odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"]
-- ["sale.order.line", "product_packaging_qty", "packagings merged into units of measure - odoo dc24a1d1c93"]
-- ["purchase.order.line", "product_packaging_id", "packagings merged into units of measure (product_uom_id) - odoo dc24a1d1c93"]
-- ["purchase.order.line", "product_packaging_qty", "packagings merged into units of measure - odoo dc24a1d1c93"]
-- ["product.product", "packaging_ids", "product_uom_ids (product.uom, unit barcodes) - odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"]
-- ["product.template", "uom_po_id", "product.supplierinfo.product_uom_id (purchase unit per vendor) - odoo 91032eefdbf '[IMP] product,*: remove purchase unit field from product'"]
-- ["sale.order", "sale_order_option_ids", "optional sections: order_line with is_optional - odoo 5f4db1d08a9 '[REF] sale(_management): replace optional products with optional sections'"]
-- ["sale.order.line", "sale_order_option_ids", "is_optional - odoo 5f4db1d08a9 '[REF] sale(_management): replace optional products with optional sections'"]
-- ["sale.order.template", "sale_order_template_option_ids", "optional sections on template lines - odoo 5f4db1d08a9"]
-- ["mrp.production", "lot_producing_id", "lot_producing_ids (several serials per MO) - odoo 4bb4e080664 '[IMP] mrp[*]: Produce Multiple Serials in one MO'"]
-- ["stock.move", "order_finished_lot_id", "order_finished_lot_ids - odoo 4bb4e080664 '[IMP] mrp[*]: Produce Multiple Serials in one MO'"]
-- ["account.move", "expense_sheet_id", "expense_ids (expense reports removed) - odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"]
-- ["hr.employee", "candidate_id", "applicant_ids (hr.candidate removed) - odoo 66856ad6a4d '[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool'"]
-- ["hr.employee", "contract_id", "version_id (hr.contract merged into hr.version) - odoo 21f18b1a6fd '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.employee", "contract_ids", "version_ids (hr.contract merged into hr.version) - odoo 21f18b1a6fd"]
-- ["product.template", "create_repair", "service_tracking = 'repair' - odoo 60fa831bfa9 '[IMP] repair: move `create_repair` to `service_tracking` selection'"]
-- ["stock.warehouse.orderpoint", "vendor_id", "effective_vendor_id / supplier_id - odoo 60993a956f1 '[IMP] mrp,{purchase_,}stock: add dynamic placeholders to RR view'"]
-- ["stock.warehouse.orderpoint", "purchase_visibility_days", "horizon_days - odoo 613e170853f '[REF] (purchase,sale)_stock, mrp: use horizon_days'"]
-- ["stock.warehouse.orderpoint", "manufacturing_visibility_days", "horizon_days - odoo 613e170853f '[REF] (purchase,sale)_stock, mrp: use horizon_days'"]
-- ["res.company", "po_lead", "security lead time removed - odoo 1d30ecfc568 '[REF] mrp_*, purchase_*: remove security lead time'"]
-- ["res.company", "manufacturing_lead", "security lead time removed - odoo 1d30ecfc568"]
-- ["stock.move", "is_done", "removed: test the state ('done') - odoo 1f86028ef51 '[IMP] mrp,*: remove stock.move is_done field'"]
-- ["purchase.order", "mail_reception_confirmed", "accept / decline replaced by acknowledge - odoo 87d0d70fd84 '[REF] purchase: remove all accept/decline and use acknowledge'"]
-- ["purchase.order", "mail_reception_declined", "accept / decline replaced by acknowledge - odoo 87d0d70fd84"]
+# Format : schema_version 2 (voir docs/migration_rules.md)
+- schema_version: 2
+  kind: removed_field
+  model: res.partner
+  field: mobile
+  change: replaced
+  replacement: phone
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 6b820eb6fc6f
+      title: "[REM] base: remove mobile field"
+  message: "phone (« relying solely on the phone field ») - odoo 6b820eb6fc6 '[REM] base: remove mobile field'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "mobile"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6b820eb6fc6f"
+      title: "[REM] base: remove mobile field"
+  message: "phone - odoo 6b820eb6fc6 '[REM] base: remove mobile field'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.account"
+  field: "deprecated"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "d44f924779be"
+      title: "[IMP] account,*: account.deprecated rename"
+  message: "active (archived accounts) - odoo d44f924779b '[IMP] account,*: account.deprecated rename'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "sale_warn"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad26943c26a"
+      title: "[REM] account,product,purchase,sale,stock: remove blocking warnings"
+  message: "blocking warnings removed: non-blocking warning box in views - odoo 5ad26943c26 '[REM] account,product,purchase,sale,stock: remove blocking warnings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "purchase_warn"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad26943c26a"
+      title: "[REM] account,product,purchase,sale,stock: remove blocking warnings"
+  message: "blocking warnings removed: non-blocking warning box in views - odoo 5ad26943c26"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "picking_warn"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad26943c26a"
+      title: "[REM] account,product,purchase,sale,stock: remove blocking warnings"
+  message: "blocking warnings removed: internal instructions on pickings - odoo 5ad26943c26"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "invoice_warn"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad26943c26a"
+      title: "[REM] account,product,purchase,sale,stock: remove blocking warnings"
+  message: "blocking warnings removed - odoo 5ad26943c26"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "invoice_warn_msg"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad26943c26a"
+      title: "[REM] account,product,purchase,sale,stock: remove blocking warnings"
+  message: "blocking warnings removed - odoo 5ad26943c26"
+- schema_version: 2
+  kind: removed_field
+  model: "product.template"
+  field: "sale_line_warn"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad26943c26a"
+      title: "[REM] account,product,purchase,sale,stock: remove blocking warnings"
+  message: "blocking warnings removed - odoo 5ad26943c26"
+- schema_version: 2
+  kind: removed_field
+  model: "product.template"
+  field: "purchase_line_warn"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad26943c26a"
+      title: "[REM] account,product,purchase,sale,stock: remove blocking warnings"
+  message: "blocking warnings removed - odoo 5ad26943c26"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "group_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "reference_ids (procurement.group replaced by stock.reference) - odoo 2713876dbc7 '[REF] stock, *: add reference'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order"
+  field: "procurement_group_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "stock_reference_ids (procurement.group replaced by stock.reference) - odoo 2713876dbc7 '[REF] stock, *: add reference'"
+- schema_version: 2
+  kind: removed_field
+  model: "purchase.order"
+  field: "group_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "reference_ids (procurement.group replaced by stock.reference) - odoo 2713876dbc7 '[REF] stock, *: add reference'"
+- schema_version: 2
+  kind: removed_field
+  model: "purchase.order.line"
+  field: "group_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "procurement.group replaced by stock.reference - odoo 2713876dbc7 '[REF] stock, *: add reference'"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.production"
+  field: "procurement_group_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "reference_ids (stock.reference) / production_group_id (mrp.production.group) - odoo 2713876dbc7 '[REF] stock, *: add reference'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order.line"
+  field: "route_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "b7a9196366eb"
+      title: "[IMP] sale_stock: change `route_id` field on SO line to be many2many"
+  message: "route_ids (Many2many) - odoo b7a9196366e '[IMP] sale_stock: change `route_id` field on SO line to be many2many'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order.line"
+  field: "product_packaging_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dc24a1d1c93c"
+      title: "[IMP] product,*: merge product packagings into units of measure"
+  message: "packagings merged into units of measure (product_uom_id) - odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order.line"
+  field: "product_packaging_qty"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dc24a1d1c93c"
+      title: "[IMP] product,*: merge product packagings into units of measure"
+  message: "packagings merged into units of measure - odoo dc24a1d1c93"
+- schema_version: 2
+  kind: removed_field
+  model: "purchase.order.line"
+  field: "product_packaging_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dc24a1d1c93c"
+      title: "[IMP] product,*: merge product packagings into units of measure"
+  message: "packagings merged into units of measure (product_uom_id) - odoo dc24a1d1c93"
+- schema_version: 2
+  kind: removed_field
+  model: "purchase.order.line"
+  field: "product_packaging_qty"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dc24a1d1c93c"
+      title: "[IMP] product,*: merge product packagings into units of measure"
+  message: "packagings merged into units of measure - odoo dc24a1d1c93"
+- schema_version: 2
+  kind: removed_field
+  model: "product.product"
+  field: "packaging_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dc24a1d1c93c"
+      title: "[IMP] product,*: merge product packagings into units of measure"
+  message: "product_uom_ids (product.uom, unit barcodes) - odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"
+- schema_version: 2
+  kind: removed_field
+  model: "product.template"
+  field: "uom_po_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "91032eefdbfb"
+      title: "[IMP] product,*: remove purchase unit field from product"
+  message: "product.supplierinfo.product_uom_id (purchase unit per vendor) - odoo 91032eefdbf '[IMP] product,*: remove purchase unit field from product'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order"
+  field: "sale_order_option_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5f4db1d08a9a"
+      title: "[REF] sale(_management): replace optional products with optional sections"
+  message: "optional sections: order_line with is_optional - odoo 5f4db1d08a9 '[REF] sale(_management): replace optional products with optional sections'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order.line"
+  field: "sale_order_option_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5f4db1d08a9a"
+      title: "[REF] sale(_management): replace optional products with optional sections"
+  message: "is_optional - odoo 5f4db1d08a9 '[REF] sale(_management): replace optional products with optional sections'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order.template"
+  field: "sale_order_template_option_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5f4db1d08a9a"
+      title: "[REF] sale(_management): replace optional products with optional sections"
+  message: "optional sections on template lines - odoo 5f4db1d08a9"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.production"
+  field: "lot_producing_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "4bb4e0806644"
+      title: "[IMP] mrp[*]: Produce Multiple Serials in one MO"
+  message: "lot_producing_ids (several serials per MO) - odoo 4bb4e080664 '[IMP] mrp[*]: Produce Multiple Serials in one MO'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "order_finished_lot_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "4bb4e0806644"
+      title: "[IMP] mrp[*]: Produce Multiple Serials in one MO"
+  message: "order_finished_lot_ids - odoo 4bb4e080664 '[IMP] mrp[*]: Produce Multiple Serials in one MO'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.move"
+  field: "expense_sheet_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "704a5a194994"
+      title: "[IMP] *expense*: Bye Bye reports"
+  message: "expense_ids (expense reports removed) - odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.employee"
+  field: "candidate_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "66856ad6a4da"
+      title: "[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool"
+  message: "applicant_ids (hr.candidate removed) - odoo 66856ad6a4d '[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.employee"
+  field: "contract_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "21f18b1a6fdb"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "version_id (hr.contract merged into hr.version) - odoo 21f18b1a6fd '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.employee"
+  field: "contract_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "21f18b1a6fdb"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "version_ids (hr.contract merged into hr.version) - odoo 21f18b1a6fd"
+- schema_version: 2
+  kind: removed_field
+  model: "product.template"
+  field: "create_repair"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "60fa831bfa9c"
+      title: "[IMP] repair: move `create_repair` to `service_tracking` selection"
+  message: "service_tracking = 'repair' - odoo 60fa831bfa9 '[IMP] repair: move `create_repair` to `service_tracking` selection'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.warehouse.orderpoint"
+  field: "vendor_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "60993a956f12"
+      title: "[IMP] mrp,{purchase_,}stock: add dynamic placeholders to RR view"
+  message: "effective_vendor_id / supplier_id - odoo 60993a956f1 '[IMP] mrp,{purchase_,}stock: add dynamic placeholders to RR view'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.warehouse.orderpoint"
+  field: "purchase_visibility_days"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "613e170853f6"
+      title: "[REF] (purchase,sale)_stock, mrp: use horizon_days"
+  message: "horizon_days - odoo 613e170853f '[REF] (purchase,sale)_stock, mrp: use horizon_days'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.warehouse.orderpoint"
+  field: "manufacturing_visibility_days"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "613e170853f6"
+      title: "[REF] (purchase,sale)_stock, mrp: use horizon_days"
+  message: "horizon_days - odoo 613e170853f '[REF] (purchase,sale)_stock, mrp: use horizon_days'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "po_lead"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "1d30ecfc5681"
+      title: "[REF] mrp_*, purchase_*: remove security lead time"
+  message: "security lead time removed - odoo 1d30ecfc568 '[REF] mrp_*, purchase_*: remove security lead time'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "manufacturing_lead"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "1d30ecfc5681"
+      title: "[REF] mrp_*, purchase_*: remove security lead time"
+  message: "security lead time removed - odoo 1d30ecfc568"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "is_done"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "1f86028ef514"
+      title: "[IMP] mrp,*: remove stock.move is_done field"
+  message: "removed: test the state ('done') - odoo 1f86028ef51 '[IMP] mrp,*: remove stock.move is_done field'"
+- schema_version: 2
+  kind: removed_field
+  model: "purchase.order"
+  field: "mail_reception_confirmed"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "87d0d70fd845"
+      title: "[REF] purchase: remove all accept/decline and use acknowledge"
+  message: "accept / decline replaced by acknowledge - odoo 87d0d70fd84 '[REF] purchase: remove all accept/decline and use acknowledge'"
+- schema_version: 2
+  kind: removed_field
+  model: "purchase.order"
+  field: "mail_reception_declined"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "87d0d70fd845"
+      title: "[REF] purchase: remove all accept/decline and use acknowledge"
+  message: "accept / decline replaced by acknowledge - odoo 87d0d70fd84"
 # Stock (commits lus) :
-- ["stock.picking", "group_id", "reference_ids (procurement.group replaced by stock.reference) - odoo 2713876dbc7 '[REF] stock, *: add reference'"]
-- ["stock.rule", "group_id", "procurement.group replaced by stock.reference - odoo 2713876dbc7"]
-- ["stock.rule", "group_propagation_option", "procurement.group replaced by stock.reference - odoo 2713876dbc7"]
-- ["stock.rule", "propagate_warehouse_id", "removed with procurement groups - odoo 2713876dbc7"]
-- ["stock.warehouse.orderpoint", "group_id", "procurement.group replaced by stock.reference - odoo 2713876dbc7"]
-- ["stock.move", "product_packaging_id", "packaging_uom_id / packaging_uom_qty (packagings merged into units of measure) - odoo dc24a1d1c93"]
-- ["stock.move", "package_level_id", "stock.package_level removed - odoo 6adaab6abb5 '[IMP] stock, *: remove stock.package_level'"]
-- ["stock.picking", "move_ids_without_package", "move_ids (stock.package_level removed) - odoo 6adaab6abb5 '[IMP] stock, *: remove stock.package_level'"]
-- ["stock.picking", "move_line_ids_without_package", "move_line_ids (stock.package_level removed) - odoo 6adaab6abb5"]
-- ["stock.picking", "package_level_ids_details", "stock.package_level removed - odoo 6adaab6abb5"]
-- ["stock.picking", "date", "create_date - odoo 50516eac504 '[IMP] various: replace picking `date` with `create_date`'"]
-- ["stock.location", "scrap_location", "usage 'inventory' (inventory loss location type) - odoo 53181c7ac4d '[IMP] stock,*: replace is scrap location with inventory loss type'"]
-- ["stock.move", "scrapped", "location_dest_id usage 'inventory' - odoo 53181c7ac4d"]
-- ["stock.warehouse.orderpoint", "qty_multiple", "replenishment_uom_id - odoo 09d6c79f0e4 '[IMP] stock: replace `qty_multiple` by replenishment unit in orderpoints'"]
-- ["stock.location", "valuation_in_account_id", "valuation_account_id - odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"]
-- ["stock.location", "valuation_out_account_id", "valuation_account_id - odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"]
-- ["account.move", "stock_move_id", "stock_move_ids - odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"]
-- ["stock.move", "stock_valuation_layer_ids", "stock.valuation.layer removed: valuation on stock.move (value) - odoo 08b62a4bbcc"]
-- ["product.product", "stock_valuation_layer_ids", "stock.valuation.layer removed (new inventory valuation) - odoo 08b62a4bbcc"]
-- ["stock.lot", "stock_valuation_layer_ids", "stock.valuation.layer removed (avg_cost, total_value on the lot) - odoo 08b62a4bbcc"]
-- ["account.move", "stock_valuation_layer_ids", "stock.valuation.layer removed: stock_move_ids - odoo 08b62a4bbcc"]
-- ["stock.warehouse", "crossdock_route_id", "cross-dock route removed - odoo c2bf8b10d76"]
+- schema_version: 2
+  kind: removed_field
+  model: "stock.picking"
+  field: "group_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "reference_ids (procurement.group replaced by stock.reference) - odoo 2713876dbc7 '[REF] stock, *: add reference'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.rule"
+  field: "group_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "procurement.group replaced by stock.reference - odoo 2713876dbc7"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.rule"
+  field: "group_propagation_option"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "procurement.group replaced by stock.reference - odoo 2713876dbc7"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.rule"
+  field: "propagate_warehouse_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "removed with procurement groups - odoo 2713876dbc7"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.warehouse.orderpoint"
+  field: "group_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2713876dbc70"
+      title: "[REF] stock, *: add reference"
+  message: "procurement.group replaced by stock.reference - odoo 2713876dbc7"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "product_packaging_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dc24a1d1c93c"
+      title: "[IMP] product,*: merge product packagings into units of measure"
+  message: "packaging_uom_id / packaging_uom_qty (packagings merged into units of measure) - odoo dc24a1d1c93"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "package_level_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6adaab6abb54"
+      title: "[IMP] stock, *: remove stock.package_level"
+  message: "stock.package_level removed - odoo 6adaab6abb5 '[IMP] stock, *: remove stock.package_level'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.picking"
+  field: "move_ids_without_package"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6adaab6abb54"
+      title: "[IMP] stock, *: remove stock.package_level"
+  message: "move_ids (stock.package_level removed) - odoo 6adaab6abb5 '[IMP] stock, *: remove stock.package_level'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.picking"
+  field: "move_line_ids_without_package"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6adaab6abb54"
+      title: "[IMP] stock, *: remove stock.package_level"
+  message: "move_line_ids (stock.package_level removed) - odoo 6adaab6abb5"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.picking"
+  field: "package_level_ids_details"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6adaab6abb54"
+      title: "[IMP] stock, *: remove stock.package_level"
+  message: "stock.package_level removed - odoo 6adaab6abb5"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.picking"
+  field: "date"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "50516eac504a"
+      title: "[IMP] various: replace picking `date` with `create_date`"
+  message: "create_date - odoo 50516eac504 '[IMP] various: replace picking `date` with `create_date`'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.location"
+  field: "scrap_location"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "53181c7ac4d9"
+      title: "[IMP] stock,*: replace is scrap location with inventory loss type"
+  message: "usage 'inventory' (inventory loss location type) - odoo 53181c7ac4d '[IMP] stock,*: replace is scrap location with inventory loss type'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "scrapped"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "53181c7ac4d9"
+      title: "[IMP] stock,*: replace is scrap location with inventory loss type"
+  message: "location_dest_id usage 'inventory' - odoo 53181c7ac4d"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.warehouse.orderpoint"
+  field: "qty_multiple"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "09d6c79f0e40"
+      title: "[IMP] stock: replace `qty_multiple` by replenishment unit in orderpoints"
+  message: "replenishment_uom_id - odoo 09d6c79f0e4 '[IMP] stock: replace `qty_multiple` by replenishment unit in orderpoints'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.location"
+  field: "valuation_in_account_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "08b62a4bbcc6"
+      title: "[REF] stock_account: New inventory valuation"
+  message: "valuation_account_id - odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.location"
+  field: "valuation_out_account_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "08b62a4bbcc6"
+      title: "[REF] stock_account: New inventory valuation"
+  message: "valuation_account_id - odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.move"
+  field: "stock_move_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "08b62a4bbcc6"
+      title: "[REF] stock_account: New inventory valuation"
+  message: "stock_move_ids - odoo 08b62a4bbcc '[REF] stock_account: New inventory valuation'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "stock_valuation_layer_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "08b62a4bbcc6"
+      title: "[REF] stock_account: New inventory valuation"
+  message: "stock.valuation.layer removed: valuation on stock.move (value) - odoo 08b62a4bbcc"
+- schema_version: 2
+  kind: removed_field
+  model: "product.product"
+  field: "stock_valuation_layer_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "08b62a4bbcc6"
+      title: "[REF] stock_account: New inventory valuation"
+  message: "stock.valuation.layer removed (new inventory valuation) - odoo 08b62a4bbcc"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.lot"
+  field: "stock_valuation_layer_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "08b62a4bbcc6"
+      title: "[REF] stock_account: New inventory valuation"
+  message: "stock.valuation.layer removed (avg_cost, total_value on the lot) - odoo 08b62a4bbcc"
+- schema_version: 2
+  kind: removed_field
+  model: "account.move"
+  field: "stock_valuation_layer_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "08b62a4bbcc6"
+      title: "[REF] stock_account: New inventory valuation"
+  message: "stock.valuation.layer removed: stock_move_ids - odoo 08b62a4bbcc"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.warehouse"
+  field: "crossdock_route_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c2bf8b10d765"
+      title: "[FIX] {sale_purchase_,}stock: remove the cross-dock route"
+  message: "cross-dock route removed - odoo c2bf8b10d76"
 #
 # Candidats au renommage refusés (renamed_fields/migrate_180_190/candidates.yaml, « # non : »)
 # absents de generated.yaml (OpenUpgrade ne les voit pas) : signalés ici, sans renommage automatique.
-- ["account.batch.payment", "account_online_linked", "enterprise a89d1aed466 '[IMP] account_online_{synchronization,payment}: Better payment status management'"]
-- ["account.move", "tax_closing_report_id", "voir closing_return_id (pas un renommage : comodel différent (account.return)) - enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["account.move.send.wizard", "mail_template_id", "odoo 7ad7a1d9763 '[IMP] account: send wizard'"]
-- ["account.reconcile.model", "show_decimal_separator", "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"]
-- ["account.report.annotation", "report_id", "enterprise 8fae6a058bc '[IMP] account_reports: Replace annotations by chatter'"]
-- ["calendar.event", "on_leave_resource_ids", "enterprise 0cd76b99761 '[IMP] appointment: warning on already booked resource'"]
-- ["hr.applicant", "candidate_skill_ids", "voir applicant_skill_ids (pas un renommage : comodel différent) - odoo 66856ad6a4d '[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool'"]
-- ["hr.attendance", "no_validated_overtime_hours", "odoo 6d7f4012cfa '[IMP] hr_attendance: Add overtime rulesets'"]
-- ["hr.contract.sign.document.wizard", "contract_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.department", "expense_sheets_to_approve_count", "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"]
-- ["hr.departure.wizard", "cancel_appraisal", "enterprise dee57c5a85e '[IMP] hr_appraisal: simplifiy UI'"]
-- ["hr.employee", "last_appraisal_date", "enterprise 58fba3098f3 '[IMP] hr_appraisal{,_survey,_skills}: improve appraisal UX'"]
-- ["hr.expense.refuse.wizard", "sheet_ids", "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"]
-- ["hr.job", "activities_overdue", "odoo 9d24acbec86 '[IMP] hr_recruitment: homepage (job position) UI/X'"]
-- ["hr.job", "activities_today", "odoo 9d24acbec86 '[IMP] hr_recruitment: homepage (job position) UI/X'"]
-- ["hr.job", "default_contract_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.payslip", "expense_sheet_ids", "voir expense_ids (pas un renommage : comodel différent (hr.expense.sheet -> hr.expense)) - enterprise 02188680071 '[IMP] *expense*: Bye Bye reports'"]
-- ["hr.salary.rule", "condition_range", "enterprise bd2ee7546df '[ADD] hr_payroll: Add domain condition feature on salary rules'"]
-- ["mail.message", "account_audit_log_activated", "odoo f280f762b64 '[IMP] account : Improve Audit Trail feature and make it default'"]
-- ["mrp.production.split", "counter", "odoo bf95d3c2cd9 '[IMP] mrp: improve MO splitting process'"]
-- ["mrp.workcenter", "workorder_pending_count", "odoo 5767cf0c0cb '[IMP] mrp: workorder revamp'"]
-- ["product.pricelist", "product_subscription_pricing_ids", "voir subscription_item_ids (pas un renommage : comodel différent (sale.subscription.pricing -> product.pricelist.item)) - enterprise 7e39d776f05 '[IMP] (website_)sale_subscription,*: unified price rules'"]
-- ["purchase.order.line", "product_uom_category_id", "voir product_uom_id (pas un renommage : catégories d'unités supprimées) - odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]
-- ["res.company", "documents_payroll_folder_id", "enterprise 63eea91b7ba \"[REF] documents_hr(_payroll): rework payroll and employee's document folders\""]
-- ["res.config.settings", "documents_payroll_folder_id", "enterprise 63eea91b7ba \"[REF] documents_hr(_payroll): rework payroll and employee's document folders\""]
-- ["res.config.settings", "enabled_buy_now_button", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]
-- ["res.config.settings", "enabled_extra_checkout_step", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]
-- ["res.config.settings", "group_show_purchase_receipts", "odoo 919c5515d60 '[IMP] account: Ease receipt UI/UX'"]
-- ["res.config.settings", "group_show_sale_receipts", "odoo 919c5515d60 '[IMP] account: Ease receipt UI/UX'"]
-- ["res.config.settings", "is_edi_proxy_active", "odoo f48835581fe '[IMP] l10n_it_edi: simplify Fattura settings'"]
-- ["res.config.settings", "module_account", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]
-- ["res.config.settings", "module_delivery_mondialrelay", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]
-- ["res.config.settings", "module_marketing_automation", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]
-- ["res.config.settings", "module_website_sale_comparison", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]
-- ["res.config.settings", "module_website_sale_wishlist", "odoo b798db1b2fa '[IMP] website*: reorganize settings'"]
-- ["res.config.settings", "pos_takeaway", "odoo 4d22fbf9789 '[IMP] web, point_of_sale, pos_*: Add pos presets, quick selection taxes'"]
-- ["res.config.settings", "pos_takeaway_fp_id", "odoo 4d22fbf9789 '[IMP] web, point_of_sale, pos_*: Add pos presets, quick selection taxes'"]
-- ["res.config.settings", "providers_state", "odoo 5a8be1dfdef '[IMP] payment, _*: onboard user with stripe or razorpay'"]
-- ["res.partner", "l10n_mx_edi_no_tax_breakdown", "enterprise dcf0b7c87c1 \"[IMP] l10n_mx_edi: Improve 'objetoImp' / tax objected on CFDI\""]
-- ["res.users", "vehicle", "odoo 21f18b1a6fd '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["sale.order.line", "product_uom_category_id", "voir product_uom_id (pas un renommage : catégories d'unités supprimées) - odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]
-- ["stock.move", "l10n_in_ewaybill_id", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]
-- ["stock.move", "picking_type_entire_packs", "odoo 6ea74b70d87 '[IMP] stock, *: allow multi-level packages'"]
-- ["stock.move", "product_packaging_qty", "odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"]
-- ["stock.move", "product_packaging_quantity", "odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"]
-- ["stock.move.line", "picking_type_entire_packs", "odoo 6ea74b70d87 '[IMP] stock, *: allow multi-level packages'"]
-- ["stock.move.line", "product_packaging_id", "voir packaging_uom_id (pas un renommage : comodel différent (product.packaging -> uom.uom)) - enterprise b4f285138ed '[IMP] stock_barcode,*: merge product packagins into units of measure'"]
-- ["stock.move.line", "product_packaging_uom_qty", "enterprise b4f285138ed '[IMP] stock_barcode,*: merge product packagins into units of measure'"]
-- ["stock.replenishment.info", "json_replenishment_history", "odoo ec2b1b42351 '[IMP] stock: replenishment forecast graph'"]
-- ["stock.warehouse.orderpoint", "lead_days_date", "odoo 613e170853f '[REF] (purchase,sale)_stock, mrp: use horizon_days'"]
-- ["uom.uom", "factor_inv", "voir relative_factor (pas un renommage : catégories d'unités supprimées) - odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]
-- ["uom.uom", "ratio", "voir relative_factor (pas un renommage : catégories d'unités supprimées) - odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"]
+- schema_version: 2
+  kind: removed_field
+  model: "account.batch.payment"
+  field: "account_online_linked"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "a89d1aed4661"
+      title: "[IMP] account_online_{synchronization,payment}: Better payment status management"
+  message: "enterprise a89d1aed466 '[IMP] account_online_{synchronization,payment}: Better payment status management'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.move"
+  field: "tax_closing_report_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "voir closing_return_id (pas un renommage : comodel différent (account.return)) - enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.move.send.wizard"
+  field: "mail_template_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "7ad7a1d97639"
+      title: "[IMP] account: send wizard"
+  message: "odoo 7ad7a1d9763 '[IMP] account: send wizard'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.reconcile.model"
+  field: "show_decimal_separator"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ec115df5a61e"
+      title: "[IMP] account, account_accountant: new bank reconciliation widget"
+  message: "odoo ec115df5a61 '[IMP] account, account_accountant: new bank reconciliation widget'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.report.annotation"
+  field: "report_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "8fae6a058bc2"
+      title: "[IMP] account_reports: Replace annotations by chatter"
+  message: "enterprise 8fae6a058bc '[IMP] account_reports: Replace annotations by chatter'"
+- schema_version: 2
+  kind: removed_field
+  model: "calendar.event"
+  field: "on_leave_resource_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "0cd76b99761b"
+      title: "[IMP] appointment: warning on already booked resource"
+  message: "enterprise 0cd76b99761 '[IMP] appointment: warning on already booked resource'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.applicant"
+  field: "candidate_skill_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "66856ad6a4da"
+      title: "[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool"
+  message: "voir applicant_skill_ids (pas un renommage : comodel différent) - odoo 66856ad6a4d '[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.attendance"
+  field: "no_validated_overtime_hours"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6d7f4012cfa0"
+      title: "[IMP] hr_attendance: Add overtime rulesets"
+  message: "odoo 6d7f4012cfa '[IMP] hr_attendance: Add overtime rulesets'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.contract.sign.document.wizard"
+  field: "contract_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.department"
+  field: "expense_sheets_to_approve_count"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "704a5a194994"
+      title: "[IMP] *expense*: Bye Bye reports"
+  message: "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.departure.wizard"
+  field: "cancel_appraisal"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "dee57c5a85e2"
+      title: "[IMP] hr_appraisal: simplifiy UI"
+  message: "enterprise dee57c5a85e '[IMP] hr_appraisal: simplifiy UI'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.employee"
+  field: "last_appraisal_date"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "58fba3098f33"
+      title: "[IMP] hr_appraisal{,_survey,_skills}: improve appraisal UX"
+  message: "enterprise 58fba3098f3 '[IMP] hr_appraisal{,_survey,_skills}: improve appraisal UX'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.expense.refuse.wizard"
+  field: "sheet_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "704a5a194994"
+      title: "[IMP] *expense*: Bye Bye reports"
+  message: "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.job"
+  field: "activities_overdue"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9d24acbec865"
+      title: "[IMP] hr_recruitment: homepage (job position) UI/X"
+  message: "odoo 9d24acbec86 '[IMP] hr_recruitment: homepage (job position) UI/X'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.job"
+  field: "activities_today"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9d24acbec865"
+      title: "[IMP] hr_recruitment: homepage (job position) UI/X"
+  message: "odoo 9d24acbec86 '[IMP] hr_recruitment: homepage (job position) UI/X'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.job"
+  field: "default_contract_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.payslip"
+  field: "expense_sheet_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "02188680071f"
+      title: "[IMP] *expense*: Bye Bye reports"
+  message: "voir expense_ids (pas un renommage : comodel différent (hr.expense.sheet -> hr.expense)) - enterprise 02188680071 '[IMP] *expense*: Bye Bye reports'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.salary.rule"
+  field: "condition_range"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "bd2ee7546df3"
+      title: "[ADD] hr_payroll: Add domain condition feature on salary rules"
+  message: "enterprise bd2ee7546df '[ADD] hr_payroll: Add domain condition feature on salary rules'"
+- schema_version: 2
+  kind: removed_field
+  model: "mail.message"
+  field: "account_audit_log_activated"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "f280f762b641"
+      title: "[IMP] account : Improve Audit Trail feature and make it default"
+  message: "odoo f280f762b64 '[IMP] account : Improve Audit Trail feature and make it default'"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.production.split"
+  field: "counter"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "bf95d3c2cd99"
+      title: "[IMP] mrp: improve MO splitting process"
+  message: "odoo bf95d3c2cd9 '[IMP] mrp: improve MO splitting process'"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.workcenter"
+  field: "workorder_pending_count"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5767cf0c0cbf"
+      title: "[IMP] mrp: workorder revamp"
+  message: "odoo 5767cf0c0cb '[IMP] mrp: workorder revamp'"
+- schema_version: 2
+  kind: removed_field
+  model: "product.pricelist"
+  field: "product_subscription_pricing_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "7e39d776f05b"
+      title: "[IMP] (website_)sale_subscription,*: unified price rules"
+  message: "voir subscription_item_ids (pas un renommage : comodel différent (sale.subscription.pricing -> product.pricelist.item)) - enterprise 7e39d776f05 '[IMP] (website_)sale_subscription,*: unified price rules'"
+- schema_version: 2
+  kind: removed_field
+  model: "purchase.order.line"
+  field: "product_uom_category_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "28b69daefddb"
+      title: "[IMP] uom,*: remove units of measure categories"
+  message: "voir product_uom_id (pas un renommage : catégories d'unités supprimées) - odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "documents_payroll_folder_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "63eea91b7bab"
+      title: "[REF] documents_hr(_payroll): rework payroll and employee's document folders"
+  message: "enterprise 63eea91b7ba \"[REF] documents_hr(_payroll): rework payroll and employee's document folders\""
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "documents_payroll_folder_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "63eea91b7bab"
+      title: "[REF] documents_hr(_payroll): rework payroll and employee's document folders"
+  message: "enterprise 63eea91b7ba \"[REF] documents_hr(_payroll): rework payroll and employee's document folders\""
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "enabled_buy_now_button"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "b798db1b2faa"
+      title: "[IMP] website*: reorganize settings"
+  message: "odoo b798db1b2fa '[IMP] website*: reorganize settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "enabled_extra_checkout_step"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "b798db1b2faa"
+      title: "[IMP] website*: reorganize settings"
+  message: "odoo b798db1b2fa '[IMP] website*: reorganize settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "group_show_purchase_receipts"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "919c5515d60b"
+      title: "[IMP] account: Ease receipt UI/UX"
+  message: "odoo 919c5515d60 '[IMP] account: Ease receipt UI/UX'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "group_show_sale_receipts"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "919c5515d60b"
+      title: "[IMP] account: Ease receipt UI/UX"
+  message: "odoo 919c5515d60 '[IMP] account: Ease receipt UI/UX'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "is_edi_proxy_active"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "f48835581fe7"
+      title: "[IMP] l10n_it_edi: simplify Fattura settings"
+  message: "odoo f48835581fe '[IMP] l10n_it_edi: simplify Fattura settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "module_account"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "b798db1b2faa"
+      title: "[IMP] website*: reorganize settings"
+  message: "odoo b798db1b2fa '[IMP] website*: reorganize settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "module_delivery_mondialrelay"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "b798db1b2faa"
+      title: "[IMP] website*: reorganize settings"
+  message: "odoo b798db1b2fa '[IMP] website*: reorganize settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "module_marketing_automation"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "b798db1b2faa"
+      title: "[IMP] website*: reorganize settings"
+  message: "odoo b798db1b2fa '[IMP] website*: reorganize settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "module_website_sale_comparison"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "b798db1b2faa"
+      title: "[IMP] website*: reorganize settings"
+  message: "odoo b798db1b2fa '[IMP] website*: reorganize settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "module_website_sale_wishlist"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "b798db1b2faa"
+      title: "[IMP] website*: reorganize settings"
+  message: "odoo b798db1b2fa '[IMP] website*: reorganize settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "pos_takeaway"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "4d22fbf9789a"
+      title: "[IMP] web, point_of_sale, pos_*: Add pos presets, quick selection taxes"
+  message: "odoo 4d22fbf9789 '[IMP] web, point_of_sale, pos_*: Add pos presets, quick selection taxes'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "pos_takeaway_fp_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "4d22fbf9789a"
+      title: "[IMP] web, point_of_sale, pos_*: Add pos presets, quick selection taxes"
+  message: "odoo 4d22fbf9789 '[IMP] web, point_of_sale, pos_*: Add pos presets, quick selection taxes'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "providers_state"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5a8be1dfdefa"
+      title: "[IMP] payment, _*: onboard user with stripe or razorpay"
+  message: "odoo 5a8be1dfdef '[IMP] payment, _*: onboard user with stripe or razorpay'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "l10n_mx_edi_no_tax_breakdown"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "dcf0b7c87c16"
+      title: "[IMP] l10n_mx_edi: Improve 'objetoImp' / tax objected on CFDI"
+  message: "enterprise dcf0b7c87c1 \"[IMP] l10n_mx_edi: Improve 'objetoImp' / tax objected on CFDI\""
+- schema_version: 2
+  kind: removed_field
+  model: "res.users"
+  field: "vehicle"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "21f18b1a6fdb"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "odoo 21f18b1a6fd '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order.line"
+  field: "product_uom_category_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "28b69daefddb"
+      title: "[IMP] uom,*: remove units of measure categories"
+  message: "voir product_uom_id (pas un renommage : catégories d'unités supprimées) - odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "l10n_in_ewaybill_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ce313d875ad8"
+      title: "[REF] l10n_in*: remove edi dependency from ewaybill"
+  message: "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "picking_type_entire_packs"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6ea74b70d877"
+      title: "[IMP] stock, *: allow multi-level packages"
+  message: "odoo 6ea74b70d87 '[IMP] stock, *: allow multi-level packages'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "product_packaging_qty"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dc24a1d1c93c"
+      title: "[IMP] product,*: merge product packagings into units of measure"
+  message: "odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "product_packaging_quantity"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dc24a1d1c93c"
+      title: "[IMP] product,*: merge product packagings into units of measure"
+  message: "odoo dc24a1d1c93 '[IMP] product,*: merge product packagings into units of measure'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move.line"
+  field: "picking_type_entire_packs"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6ea74b70d877"
+      title: "[IMP] stock, *: allow multi-level packages"
+  message: "odoo 6ea74b70d87 '[IMP] stock, *: allow multi-level packages'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move.line"
+  field: "product_packaging_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "b4f285138edc"
+      title: "[IMP] stock_barcode,*: merge product packagins into units of measure"
+  message: "voir packaging_uom_id (pas un renommage : comodel différent (product.packaging -> uom.uom)) - enterprise b4f285138ed '[IMP] stock_barcode,*: merge product packagins into units of measure'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move.line"
+  field: "product_packaging_uom_qty"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "b4f285138edc"
+      title: "[IMP] stock_barcode,*: merge product packagins into units of measure"
+  message: "enterprise b4f285138ed '[IMP] stock_barcode,*: merge product packagins into units of measure'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.replenishment.info"
+  field: "json_replenishment_history"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ec2b1b423512"
+      title: "[IMP] stock: replenishment forecast graph"
+  message: "odoo ec2b1b42351 '[IMP] stock: replenishment forecast graph'"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.warehouse.orderpoint"
+  field: "lead_days_date"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "613e170853f6"
+      title: "[REF] (purchase,sale)_stock, mrp: use horizon_days"
+  message: "odoo 613e170853f '[REF] (purchase,sale)_stock, mrp: use horizon_days'"
+- schema_version: 2
+  kind: removed_field
+  model: "uom.uom"
+  field: "factor_inv"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "28b69daefddb"
+      title: "[IMP] uom,*: remove units of measure categories"
+  message: "voir relative_factor (pas un renommage : catégories d'unités supprimées) - odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"
+- schema_version: 2
+  kind: removed_field
+  model: "uom.uom"
+  field: "ratio"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "28b69daefddb"
+      title: "[IMP] uom,*: remove units of measure categories"
+  message: "voir relative_factor (pas un renommage : catégories d'unités supprimées) - odoo 28b69daefdd '[IMP] uom,*: remove units of measure categories'"

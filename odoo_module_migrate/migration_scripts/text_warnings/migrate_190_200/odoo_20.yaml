@@ -4,17 +4,61 @@
 # n'est pas supprimé mais déplacé.)
 .py:
   # odoo 7809101d2dec "[IMP] orm: remove Model._table_query"
-  '\b_table_query\b': "[20] Model._table_query was removed (odoo 7809101d2dec): turn the report model into _auto = False + init() creating a SQL view"
+  '\b_table_query\b':
+    schema_version: 2
+    kind: text_warning
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "7809101d2dec"
+        title: "[IMP] orm: remove Model._table_query"
+    message: "[20] Model._table_query was removed (odoo 7809101d2dec): turn the report model into _auto = False + init() creating a SQL view"
   # odoo dd0c51ec1855 "[ADD] mail, mail_tracking: move mail tracking value model to a separate module"
-  '[''"]mail\.tracking\.value[''"]': "[20] mail.tracking.value moved to the new module mail_tracking (odoo dd0c51ec1855): add it to the depends"
+  '[''"]mail\.tracking\.value[''"]':
+    schema_version: 2
+    kind: text_warning
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "dd0c51ec1855"
+        title: "[ADD] mail, mail_tracking: move mail tracking value model to a separate module"
+    message: "[20] mail.tracking.value moved to the new module mail_tracking (odoo dd0c51ec1855): add it to the depends"
   # odoo 20.0 odoo/orm/models.py: read_group(domain, groupby, aggregates, having, offset, limit, order) -> list[tuple]
-  '\.read_group\(': "[20] read_group() now has the signature of _read_group() and returns tuples: use _read_group(), or formatted_read_group() (web) for the former dict result"
+  '\.read_group\(':
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[20] read_group() now has the signature of _read_group() and returns tuples: use _read_group(), or formatted_read_group() (web) for the former dict result"
   # 20.0: ir.model.access and ir.rule replaced by ir.access (odoo/addons/base/models)
-  '[''"]ir\.model\.access[''"]': "[20] ir.model.access was replaced by ir.access"
-  '[''"]ir\.rule[''"]': "[20] ir.rule was replaced by ir.access"
+  '[''"]ir\.model\.access[''"]':
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[20] ir.model.access was replaced by ir.access"
+  '[''"]ir\.rule[''"]':
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[20] ir.rule was replaced by ir.access"
   # odoo 9f2b9e2d3ac '[IMP] tools: reimplement frozendict' : « ReadonlyDict is deprecated starting Odoo 20, use frozendict »
-  '\bReadonlyDict\b': "[20] ReadonlyDict is deprecated since 20.0: use odoo.tools.frozendict"
+  '\bReadonlyDict\b':
+    schema_version: 2
+    kind: text_warning
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "9f2b9e2d3acd"
+        title: "[IMP] tools: reimplement frozendict"
+    message: "[20] ReadonlyDict is deprecated since 20.0: use odoo.tools.frozendict"
 .xml:
   # ir.rule / ir.model.access records left in XML: reported after the conversions
   # (upgrade_code.prepare.access_records_left, called by Migration.run)
-  '["'']mail\.tracking\.value["'']': "[20] mail.tracking.value moved to the new module mail_tracking (odoo dd0c51ec1855): add it to the depends"
+  '["'']mail\.tracking\.value["'']':
+    schema_version: 2
+    kind: text_warning
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "dd0c51ec1855"
+        title: "[ADD] mail, mail_tracking: move mail tracking value model to a separate module"
+    message: "[20] mail.tracking.value moved to the new module mail_tracking (odoo dd0c51ec1855): add it to the depends"

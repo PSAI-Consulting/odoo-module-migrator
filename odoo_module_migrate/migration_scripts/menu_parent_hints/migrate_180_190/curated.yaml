@@ -1,5 +1,16 @@
 # The 18.0 Management menu was removed in 19.0 and its children were split.
 # Keep one row per surviving child: consumers must present candidates, not
 # assume that the removed menu has one universal replacement.
-- [account.account_management_menu, account.menu_product_product_categories, account.account_invoicing_menu, "Odoo 18.0 -> 19.0 menu hierarchy"]
-- [account.account_management_menu, account.menu_action_rounding_form_view, account.account_account_menu, "Odoo 18.0 -> 19.0 menu hierarchy"]
+- schema_version: 2
+  kind: menu_parent_hint
+  removed_parent: account.account_management_menu
+  surviving_child: account.menu_product_product_categories
+  candidate_parent: account.account_invoicing_menu
+  automation: recommendation_only
+  message: "Odoo 18.0 -> 19.0 menu hierarchy"
+- schema_version: 2
+  kind: menu_parent_hint
+  removed_parent: "account.account_management_menu"
+  surviving_child: "account.menu_action_rounding_form_view"
+  candidate_parent: "account.account_account_menu"
+  message: "Odoo 18.0 -> 19.0 menu hierarchy"

@@ -6,7 +6,8 @@ import pathlib
 import re
 
 import pytest
-import yaml
+
+from odoo_module_migrate.migration_rules import loader
 
 SCRIPTS = pathlib.Path(__file__).resolve().parent.parent / "odoo_module_migrate" / "migration_scripts"
 
@@ -29,8 +30,10 @@ FILES = sorted(
 
 @pytest.mark.parametrize("path", FILES, ids=lambda p: str(p.relative_to(SCRIPTS)))
 def test_rule_file(path):
+    """Read through the common loader (legacy and v2 entries): what the
+    scripts consume is the historical projection, checked here."""
     kind = path.relative_to(SCRIPTS).parts[0]
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data = loader.load_file(path, kind).document
     if data is None:
         return  # empty file: skipped by the loader
     if kind in LIST_TYPES:

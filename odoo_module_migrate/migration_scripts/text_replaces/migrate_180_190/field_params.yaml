@@ -1,2 +1,5 @@
 .py:
-  auto_join=: bypass_search_access=
+  auto_join=:
+    schema_version: 2
+    kind: text_replace
+    replacement: "bypass_search_access="

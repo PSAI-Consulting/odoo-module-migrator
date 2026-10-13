@@ -122,15 +122,9 @@ def run_upgrade_code(options, module_paths, from_version, to_version, dry_run=Fa
             "--to", to_version,
             "--output", str(output),
         ]
-        import yaml
-        aliases = {}
-        rules_root = pathlib.Path(__file__).parent.parent / "migration_scripts/deprecated_modules"
-        for major in range(int(float(from_version)), int(float(to_version))):
-            step = rules_root / f"migrate_{major * 10:03d}_{(major + 1) * 10:03d}"
-            for rule_file in sorted(step.glob("*.yaml")):
-                for row in yaml.safe_load(rule_file.read_text(encoding="utf-8")) or []:
-                    if len(row) > 2 and row[1] in {"merged", "renamed"} and row[2]:
-                        aliases.setdefault(row[0], row[2])
+        from ..migration_rules import module_aliases
+
+        aliases = module_aliases(from_version, to_version)
         args += ["--module-aliases", json.dumps(aliases)]
         if target_major >= 20:
             args.append("--owl3")

@@ -1,4 +1,19 @@
 # SQL report APIs rewritten around TableSQL in Odoo 20.
-- [sale.report, _select_additional_fields, _select_dict, "Odoo 20 addons/sale/report/sale_report.py TableSQL API"]
-- [sale.report, _group_by_sale, _groupby_list, "Odoo 20 addons/sale/report/sale_report.py TableSQL API"]
-- [account.invoice.report, _select, _select_list, "Odoo 20 addons/account/report/account_invoice_report.py TableSQL API"]
+- schema_version: 2
+  kind: renamed_method
+  model: "sale.report"
+  old_method: "_select_additional_fields"
+  new_method: "_select_dict"
+  message: "Odoo 20 addons/sale/report/sale_report.py TableSQL API"
+- schema_version: 2
+  kind: renamed_method
+  model: "sale.report"
+  old_method: "_group_by_sale"
+  new_method: "_groupby_list"
+  message: "Odoo 20 addons/sale/report/sale_report.py TableSQL API"
+- schema_version: 2
+  kind: renamed_method
+  model: "account.invoice.report"
+  old_method: "_select"
+  new_method: "_select_list"
+  message: "Odoo 20 addons/account/report/account_invoice_report.py TableSQL API"

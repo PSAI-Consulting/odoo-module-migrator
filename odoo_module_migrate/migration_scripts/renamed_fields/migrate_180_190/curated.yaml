@@ -4,75 +4,635 @@
 # (account.account.deprecated -> active n'est PAS un renommage : logique inversée, voir removed_fields.)
 # (groups_id -> group_ids : déjà réécrit par text_replaces/migrate_180_190/rename_groups_id.yaml.)
 # odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id' :
-- ["product.supplierinfo", "product_uom", "product_uom_id", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
-- ["project.milestone", "product_uom", "product_uom_id", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
-- ["purchase.report", "product_uom", "product_uom_id", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
-- ["sale.report", "product_uom", "product_uom_id", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "product.supplierinfo"
+  old_field: "product_uom"
+  new_field: "product_uom_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c8461a5f382b"
+      title: "[CLN] various: rename product_uom field to product_uom_id"
+  message: "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"
+- schema_version: 2
+  kind: renamed_field
+  model: "project.milestone"
+  old_field: "product_uom"
+  new_field: "product_uom_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c8461a5f382b"
+      title: "[CLN] various: rename product_uom field to product_uom_id"
+  message: "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"
+- schema_version: 2
+  kind: renamed_field
+  model: "purchase.report"
+  old_field: "product_uom"
+  new_field: "product_uom_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c8461a5f382b"
+      title: "[CLN] various: rename product_uom field to product_uom_id"
+  message: "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"
+- schema_version: 2
+  kind: renamed_field
+  model: "sale.report"
+  old_field: "product_uom"
+  new_field: "product_uom_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c8461a5f382b"
+      title: "[CLN] various: rename product_uom field to product_uom_id"
+  message: "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"
 #   18.0 product_uom = fields.Char(related='product_tmpl_id.uom_name') ; 19.0 product_uom_name (même related)
-- ["product.pricelist.item", "product_uom", "product_uom_name", "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"]
-- ["sale.rental.report", "product_uom", "product_uom_id", "enterprise e98f1bc5433 '[CLN] various: rename product_uom field to product_uom_id'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "product.pricelist.item"
+  old_field: "product_uom"
+  new_field: "product_uom_name"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c8461a5f382b"
+      title: "[CLN] various: rename product_uom field to product_uom_id"
+  message: "odoo c8461a5f382 '[CLN] various: rename product_uom field to product_uom_id'"
+- schema_version: 2
+  kind: renamed_field
+  model: "sale.rental.report"
+  old_field: "product_uom"
+  new_field: "product_uom_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "e98f1bc5433f"
+      title: "[CLN] various: rename product_uom field to product_uom_id"
+  message: "enterprise e98f1bc5433 '[CLN] various: rename product_uom field to product_uom_id'"
 # enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids' (même One2many)
-- ["sale.subscription.plan", "product_subscription_pricing_ids", "subscription_rule_ids", "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"]
-- ["product.template", "product_subscription_pricing_ids", "subscription_rule_ids", "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"]
-- ["product.product", "product_subscription_pricing_ids", "subscription_rule_ids", "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"]
-- ["calendar.popover.delete.wizard", "record", "calendar_event_id", "odoo 3662b558cfa '[REF] calendar: rename wizard record field'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "sale.subscription.plan"
+  old_field: "product_subscription_pricing_ids"
+  new_field: "subscription_rule_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "afcd9235212d"
+      title: "[IMP] sale_subscription: rename product_subscription_pricing_ids"
+  message: "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"
+- schema_version: 2
+  kind: renamed_field
+  model: "product.template"
+  old_field: "product_subscription_pricing_ids"
+  new_field: "subscription_rule_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "afcd9235212d"
+      title: "[IMP] sale_subscription: rename product_subscription_pricing_ids"
+  message: "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"
+- schema_version: 2
+  kind: renamed_field
+  model: "product.product"
+  old_field: "product_subscription_pricing_ids"
+  new_field: "subscription_rule_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "afcd9235212d"
+      title: "[IMP] sale_subscription: rename product_subscription_pricing_ids"
+  message: "enterprise afcd9235212 '[IMP] sale_subscription: rename product_subscription_pricing_ids'"
+- schema_version: 2
+  kind: renamed_field
+  model: "calendar.popover.delete.wizard"
+  old_field: "record"
+  new_field: "calendar_event_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "3662b558cfa8"
+      title: "[REF] calendar: rename wizard record field"
+  message: "odoo 3662b558cfa '[REF] calendar: rename wizard record field'"
 #
 # Candidats de fields --sources 18 -> 19 vérifiés modèle par modèle (avant / après le commit et en 19.0) :
 # odoo 9d676f246ea '[IMP] calendar(_sms): make notify responsible field general' : option de rappel généralisée (SMS -> tous moyens), même booléen
-- ["calendar.alarm", "sms_notify_responsible", "notify_responsible", "odoo 9d676f246ea '[IMP] calendar(_sms): make notify responsible field general'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "calendar.alarm"
+  old_field: "sms_notify_responsible"
+  new_field: "notify_responsible"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9d676f246ea1"
+      title: "[IMP] calendar(_sms): make notify responsible field general"
+  message: "odoo 9d676f246ea '[IMP] calendar(_sms): make notify responsible field general'"
 # odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports' : même Datetime de validation
-- ["hr.expense", "approved_on", "approval_date", "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.expense"
+  old_field: "approved_on"
+  new_field: "approval_date"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "704a5a194994"
+      title: "[IMP] *expense*: Bye Bye reports"
+  message: "odoo 704a5a19499 '[IMP] *expense*: Bye Bye reports'"
 # odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail' : option du module de réservation PdV
-- ["pos.config", "module_pos_restaurant_appointment", "module_pos_appointment", "odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail'"]
-- ["res.config.settings", "pos_module_pos_restaurant_appointment", "pos_module_pos_appointment", "odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "pos.config"
+  old_field: "module_pos_restaurant_appointment"
+  new_field: "module_pos_appointment"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ea0300708af9"
+      title: "[IMP] pos_restaurant, point_of_sale: allow online booking for retail"
+  message: "odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "pos_module_pos_restaurant_appointment"
+  new_field: "pos_module_pos_appointment"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ea0300708af9"
+      title: "[IMP] pos_restaurant, point_of_sale: allow online booking for retail"
+  message: "odoo ea0300708af '[IMP] pos_restaurant, point_of_sale: allow online booking for retail'"
 # odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com' : module pos_viva_wallet renommé pos_viva_com (apriori.py 19.0)
-- ["pos.payment.method", "viva_wallet_latest_response", "viva_com_latest_response", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]
-- ["pos.payment.method", "viva_wallet_test_mode", "viva_com_test_mode", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]
-- ["res.config.settings", "module_pos_viva_wallet", "module_pos_viva_com", "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "pos.payment.method"
+  old_field: "viva_wallet_latest_response"
+  new_field: "viva_com_latest_response"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6df4dbc6b2f2"
+      title: "[REF] pos_viva_com: adapt from Viva Wallet to Viva.com"
+  message: "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"
+- schema_version: 2
+  kind: renamed_field
+  model: "pos.payment.method"
+  old_field: "viva_wallet_test_mode"
+  new_field: "viva_com_test_mode"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6df4dbc6b2f2"
+      title: "[REF] pos_viva_com: adapt from Viva Wallet to Viva.com"
+  message: "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "module_pos_viva_wallet"
+  new_field: "module_pos_viva_com"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6df4dbc6b2f2"
+      title: "[REF] pos_viva_com: adapt from Viva Wallet to Viva.com"
+  message: "odoo 6df4dbc6b2f '[REF] pos_viva_com: adapt from Viva Wallet to Viva.com'"
 # odoo c277a5987b1 '[REF] product: move tags fields from website_sale to product' : champ déplacé de website_sale vers product (même booléen)
-- ["product.tag", "visible_on_ecommerce", "visible_to_customers", "odoo c277a5987b1 '[REF] product: move tags fields from website_sale to product'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "product.tag"
+  old_field: "visible_on_ecommerce"
+  new_field: "visible_to_customers"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c277a5987b16"
+      title: "[REF] product: move tags fields from website_sale to product"
+  message: "odoo c277a5987b1 '[REF] product: move tags fields from website_sale to product'"
 # odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill' : module l10n_in_edi_ewaybill renommé l10n_in_ewaybill (apriori.py 19.0)
-- ["res.company", "l10n_in_edi_ewaybill_auth_validity", "l10n_in_ewaybill_auth_validity", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]
-- ["res.config.settings", "module_l10n_in_edi_ewaybill", "module_l10n_in_ewaybill", "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "l10n_in_edi_ewaybill_auth_validity"
+  new_field: "l10n_in_ewaybill_auth_validity"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ce313d875ad8"
+      title: "[REF] l10n_in*: remove edi dependency from ewaybill"
+  message: "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "module_l10n_in_edi_ewaybill"
+  new_field: "module_l10n_in_ewaybill"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ce313d875ad8"
+      title: "[REF] l10n_in*: remove edi dependency from ewaybill"
+  message: "odoo ce313d875ad '[REF] l10n_in*: remove edi dependency from ewaybill'"
 # odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework' : titre : « renaming fields »
-- ["res.company", "l10n_sa_additional_identification_number", "l10n_sa_edi_additional_identification_number", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]
-- ["res.company", "l10n_sa_additional_identification_scheme", "l10n_sa_edi_additional_identification_scheme", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]
-- ["res.partner", "l10n_sa_additional_identification_number", "l10n_sa_edi_additional_identification_number", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]
-- ["res.partner", "l10n_sa_additional_identification_scheme", "l10n_sa_edi_additional_identification_scheme", "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "l10n_sa_additional_identification_number"
+  new_field: "l10n_sa_edi_additional_identification_number"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a6def627e5fa"
+      title: "[IMP] l10n_sa_edi: renaming fields and invisible rework"
+  message: "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "l10n_sa_additional_identification_scheme"
+  new_field: "l10n_sa_edi_additional_identification_scheme"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a6def627e5fa"
+      title: "[IMP] l10n_sa_edi: renaming fields and invisible rework"
+  message: "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.partner"
+  old_field: "l10n_sa_additional_identification_number"
+  new_field: "l10n_sa_edi_additional_identification_number"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a6def627e5fa"
+      title: "[IMP] l10n_sa_edi: renaming fields and invisible rework"
+  message: "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.partner"
+  old_field: "l10n_sa_additional_identification_scheme"
+  new_field: "l10n_sa_edi_additional_identification_scheme"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a6def627e5fa"
+      title: "[IMP] l10n_sa_edi: renaming fields and invisible rework"
+  message: "odoo a6def627e5f '[IMP] l10n_sa_edi: renaming fields and invisible rework'"
 # odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp' : confirmation de livraison par SMS étendue (même booléen)
-- ["res.company", "stock_move_sms_validation", "stock_text_confirmation", "odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp'"]
-- ["res.config.settings", "stock_move_sms_validation", "stock_text_confirmation", "odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "stock_move_sms_validation"
+  new_field: "stock_text_confirmation"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "889848aa65b4"
+      title: "[IMP] stock(_sms): support delivery order confirmation via whatsapp"
+  message: "odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "stock_move_sms_validation"
+  new_field: "stock_text_confirmation"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "889848aa65b4"
+      title: "[IMP] stock(_sms): support delivery order confirmation via whatsapp"
+  message: "odoo 889848aa65b '[IMP] stock(_sms): support delivery order confirmation via whatsapp'"
 # odoo 8cbd8114244 '[FIX] sale_pdf_quote_builder: fix misnaming' : titre : « fix misnaming » (même Many2many)
-- ["sale.order", "available_product_document_ids", "available_quotation_document_ids", "odoo 8cbd8114244 '[FIX] sale_pdf_quote_builder: fix misnaming'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "sale.order"
+  old_field: "available_product_document_ids"
+  new_field: "available_quotation_document_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8cbd8114244b"
+      title: "[FIX] sale_pdf_quote_builder: fix misnaming"
+  message: "odoo 8cbd8114244 '[FIX] sale_pdf_quote_builder: fix misnaming'"
 # enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns' : mêmes clés de périodicité (+ fiscalyear), même journal, même jour de rappel
-- ["account.financial.year.op", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["account.financial.year.op", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["account.financial.year.op", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["res.company", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["res.company", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["res.company", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["res.config.settings", "account_tax_periodicity", "account_return_periodicity", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["res.config.settings", "account_tax_periodicity_journal_id", "account_tax_return_journal_id", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
-- ["res.config.settings", "account_tax_periodicity_reminder_day", "account_return_reminder_day", "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "account.financial.year.op"
+  old_field: "account_tax_periodicity"
+  new_field: "account_return_periodicity"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: renamed_field
+  model: "account.financial.year.op"
+  old_field: "account_tax_periodicity_journal_id"
+  new_field: "account_tax_return_journal_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: renamed_field
+  model: "account.financial.year.op"
+  old_field: "account_tax_periodicity_reminder_day"
+  new_field: "account_return_reminder_day"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "account_tax_periodicity"
+  new_field: "account_return_periodicity"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "account_tax_periodicity_journal_id"
+  new_field: "account_tax_return_journal_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "account_tax_periodicity_reminder_day"
+  new_field: "account_return_reminder_day"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "account_tax_periodicity"
+  new_field: "account_return_periodicity"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "account_tax_periodicity_journal_id"
+  new_field: "account_tax_return_journal_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "account_tax_periodicity_reminder_day"
+  new_field: "account_return_reminder_day"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "647699eeb4b8"
+      title: "[IMP] account_reports, l10n_*: Introduce Accounting Returns"
+  message: "enterprise 647699eeb4b '[IMP] account_reports, l10n_*: Introduce Accounting Returns'"
 # enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model' : hr.contract renommé hr.version (renamed_models 18->19, OpenUpgrade) : contract_id -> version_id
-- ["hr.payroll.edit.payslip.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.payroll.headcount.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.payslip", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.payslip.input", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.payslip.line", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.payslip.worked_days", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n.be.december.slip.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n.be.dimona.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n.be.double.pay.recovery.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n.in.tds.computation.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n.mx.hr.fonacot", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n.mx.hr.infonavit", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n_au.payroll.finalisation.wizard.emp", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n_au.termination.payment", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n_be.hr.payroll.schedule.change.wizard", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["l10n_be.schedule.change.allocation", "contract_id", "version_id", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.payroll.headcount.line", "contract_names", "version_names", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.payroll.index", "contract_ids", "version_ids", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
-- ["hr.work.entry.export.employee.mixin", "contract_ids", "version_ids", "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.payroll.edit.payslip.line"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.payroll.headcount.line"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.payslip"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.payslip.input"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.payslip.line"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.payslip.worked_days"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n.be.december.slip.wizard"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n.be.dimona.wizard"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n.be.double.pay.recovery.wizard"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n.in.tds.computation.wizard"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n.mx.hr.fonacot"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n.mx.hr.infonavit"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n_au.payroll.finalisation.wizard.emp"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n_au.termination.payment"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n_be.hr.payroll.schedule.change.wizard"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "l10n_be.schedule.change.allocation"
+  old_field: "contract_id"
+  new_field: "version_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.payroll.headcount.line"
+  old_field: "contract_names"
+  new_field: "version_names"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.payroll.index"
+  old_field: "contract_ids"
+  new_field: "version_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.work.entry.export.employee.mixin"
+  old_field: "contract_ids"
+  new_field: "version_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "46052c4bc5ad"
+      title: "[REF] hr_contract: Merge contracts into versioned employee model"
+  message: "enterprise 46052c4bc5a '[REF] hr_contract: Merge contracts into versioned employee model'"
 # enterprise fa08eac1419 '[IMP] account_{*}: reconciliation using end to end ID' : même identifiant Char
-- ["account.payment", "end_to_end_id", "end_to_end_uuid", "enterprise fa08eac1419 '[IMP] account_{*}: reconciliation using end to end ID'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "account.payment"
+  old_field: "end_to_end_id"
+  new_field: "end_to_end_uuid"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "fa08eac14195"
+      title: "[IMP] account_{*}: reconciliation using end to end ID"
+  message: "enterprise fa08eac1419 '[IMP] account_{*}: reconciliation using end to end ID'"

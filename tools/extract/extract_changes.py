@@ -115,12 +115,13 @@ def target_from_subject(subject, module, after):
 
 
 def load_curated(path):
-    """Hand-written rules (curated.yaml): they win over generated ones."""
+    """Hand-written rules (curated.yaml, legacy or v2 entries): they win over
+    generated ones."""
     if not path or not pathlib.Path(path).exists():
         return set()
-    import yaml
+    from odoo_module_migrate.migration_rules import curated_keys
 
-    return {item[0] for item in yaml.safe_load(pathlib.Path(path).read_text(encoding="utf-8")) or []}
+    return curated_keys(path)
 
 
 def resolve_chains(rules):

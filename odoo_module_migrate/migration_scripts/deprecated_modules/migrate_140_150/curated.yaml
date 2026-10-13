@@ -3,9 +3,27 @@
 #
 # Modules marqués « removed » dans modules.yaml alors que le commit les fusionne :
 # enterprise 74ebd3a79a1 '[IMP] helpdesk_sale_timesheet: merge helpdesk_sale_timesheet_edit'
-- ["helpdesk_sale_timesheet_edit", "merged", "helpdesk_sale_timesheet"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "helpdesk_sale_timesheet_edit"
+  change: "merged"
+  target: "helpdesk_sale_timesheet"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "74ebd3a79a14"
+      title: "[IMP] helpdesk_sale_timesheet: merge helpdesk_sale_timesheet_edit"
 # enterprise f39e03dc9bb '[MOV] l10n_be_hr_payroll_impulsion: Merge into l10n_be_hr_payroll'
-- ["l10n_be_hr_payroll_impulsion", "merged", "l10n_be_hr_payroll"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "l10n_be_hr_payroll_impulsion"
+  change: "merged"
+  target: "l10n_be_hr_payroll"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "f39e03dc9bb1"
+      title: "[MOV] l10n_be_hr_payroll_impulsion: Merge into l10n_be_hr_payroll"
 #
 # Laissés « removed » après vérification : payment_odoo_by_adyen (odoo 471a1f39f549 le renomme
 # payment_odoo, lui-même supprimé avant 15.0 avec adyen_platforms, odoo fbfd99e68054) ;

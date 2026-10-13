@@ -1,3 +1,6 @@
 .py:
   env\.\w+\s*=(?!=):
-    "[19] Environment is read-only: avoid assigning attributes to 'env.<field_name>'. More info: https://github.com/odoo/odoo/pull/188584"
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[19] Environment is read-only: avoid assigning attributes to 'env.<field_name>'. More info: https://github.com/odoo/odoo/pull/188584"

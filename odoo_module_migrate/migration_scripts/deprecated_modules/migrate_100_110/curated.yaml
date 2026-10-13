@@ -3,7 +3,17 @@
 #
 # odoo af0048679183 '[REM] hr_timesheet_sheet: kill the module' ; repris par l'OCA sous le même
 # nom (OCA/hr-timesheet 11.0). Conservé de l'ancienne liste _DEPRECATED_MODULES (oca_moved).
-- ["hr_timesheet_sheet", "oca_moved", "hr_timesheet_sheet", "Moved to OCA/hr-timesheet"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "hr_timesheet_sheet"
+  change: "oca_moved"
+  target: "hr_timesheet_sheet"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "af0048679183"
+      title: "[REM] hr_timesheet_sheet: kill the module"
+  message: "Moved to OCA/hr-timesheet"
 #
 # Retirés de l'ancienne liste _DEPRECATED_MODULES de migrate_100_110.py : account_accountant
 # « removed » (présent dans enterprise 11.0) ; crm_project_issue renommé vers lui-même (OpenUpgrade

@@ -5,4 +5,7 @@
 # (Python, autre mise en forme) restent signalés par
 # text_errors/migrate_170_180/ir_cron.yaml.
 .xml:
-  '(?m)^[ \t]*<field\b(?=[^>]*\bname=["''](?:numbercall|doall)["''])[^>]*?(?:/>|>[^<]*</field>)[ \t]*\n': ''
+  '(?m)^[ \t]*<field\b(?=[^>]*\bname=["''](?:numbercall|doall)["''])[^>]*?(?:/>|>[^<]*</field>)[ \t]*\n':
+    schema_version: 2
+    kind: text_replace
+    replacement: ""

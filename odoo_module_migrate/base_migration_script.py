@@ -4,16 +4,13 @@ import re
 import pathlib
 import traceback
 import inspect
-import glob
-import yaml
-import importlib
 import copy
 from typing import Dict, List, Any, Tuple
 
 from .config import _ALLOWED_EXTENSIONS
 from .tools import _rename_path, _replace_in_file, _read_content, _write_content
 from .log import logger
-from . import manifest, tools
+from . import manifest, migration_rules, tools
 from .analysis import fields as analysis_fields
 
 # Models whose XML / CSV records are converted by Odoo's official upgrade_code
@@ -74,7 +71,6 @@ class BaseMigrationScript:
         self._rules_parsed = True
         script_file = inspect.getfile(self.__class__)
         migrate_from_to = os.path.basename(script_file).split(".")[0]
-        migration_scripts_dir = os.path.dirname(script_file)
 
         TYPE_ARRAY = "TYPE_ARRAY"
         TYPE_DICT = "TYPE_DICT"
@@ -134,25 +130,23 @@ class BaseMigrationScript:
                 "doc": [],
             },
         }
-        # read
+        # read: the common loader returns, file by file in the historical
+        # order (curated.yaml before generated.yaml), the historical data of
+        # the rule files (structured v2 entries projected to it)
         for rule_name, rule_data in rules.items():
             rule_folder = rule_name[1:].lower()
-            file_pattern = os.path.join(migration_scripts_dir, rule_folder, migrate_from_to, "*.yaml")
-            # sorted: same order on every OS (curated.yaml before generated.yaml)
-            for filename in sorted(glob.glob(file_pattern)):
-                with open(filename, encoding='utf-8') as f:
-                    new_rules = yaml.safe_load(f)
-                    if not new_rules:  # empty or comments only
-                        continue
-                    if rule_data["type"] == TYPE_DICT_OF_DICT:
-                        for f_type, data in new_rules.items():
-                            if f_type not in rule_data["doc"]:
-                                rule_data["doc"][f_type] = {}
-                            rule_data["doc"][f_type].update(data)
-                    elif rule_data["type"] == TYPE_DICT:
-                        rule_data["doc"].update(new_rules)
-                    elif rule_data["type"] == TYPE_ARRAY:
-                        rule_data["doc"].extend(new_rules)
+            if rule_folder not in migration_rules.CATEGORIES:
+                continue  # _FILE_RENAMES: Python only
+            for _path, new_rules in migration_rules.legacy_documents(rule_folder, migrate_from_to):
+                if rule_data["type"] == TYPE_DICT_OF_DICT:
+                    for f_type, data in new_rules.items():
+                        if f_type not in rule_data["doc"]:
+                            rule_data["doc"][f_type] = {}
+                        rule_data["doc"][f_type].update(data)
+                elif rule_data["type"] == TYPE_DICT:
+                    rule_data["doc"].update(new_rules)
+                elif rule_data["type"] == TYPE_ARRAY:
+                    rule_data["doc"].extend(new_rules)
         # extend
         for rule_name, data in rules.items():
             rtype = data["type"]
@@ -171,20 +165,8 @@ class BaseMigrationScript:
                     rvalues.setdefault(filetype, {})
                     rvalues[filetype].update(values or {})
 
-        file_pattern = os.path.join(migration_scripts_dir, "python_scripts", migrate_from_to, "*.py")
-        for path in glob.glob(file_pattern):
-            module_name = os.path.basename(path).split(".")[0]
-            module_name = ".".join(
-                [
-                    "odoo_module_migrate.migration_scripts.python_scripts",
-                    migrate_from_to,
-                    module_name,
-                ]
-            )
-            module = importlib.import_module(module_name)
-            for name, value in inspect.getmembers(module, inspect.isfunction):
-                if not name.startswith("_"):
-                    self._GLOBAL_FUNCTIONS.append(value)
+        # sorted files: the same order on every OS
+        self._GLOBAL_FUNCTIONS.extend(migration_rules.python_transform_functions(migrate_from_to))
 
     def run(
         self,
@@ -568,6 +550,18 @@ class BaseMigrationScript:
                             usage.context, path, usage.line,
                         )
                     )
+
+    def effective_field_renames(self) -> Dict[Tuple[str, str], str]:
+        """{(model, old field): new field} applied by this step: first rule
+        wins, a curated null or same-name rename blocks the generated one
+        (same semantics as handle_fields)."""
+        renames = {}
+        for r in self._RENAMED_FIELDS:
+            if len(r) > 2 and r[2] is None:
+                renames.setdefault((r[0], r[1]), None)
+            elif len(r) > 2 and re.fullmatch(r"[A-Za-z_]\w*", str(r[2] or "")):
+                renames.setdefault((r[0], r[1]), r[2])
+        return {k: v for k, v in renames.items() if v is not None and v != k[1]}
 
     def handle_deprecated_modules(
         self,

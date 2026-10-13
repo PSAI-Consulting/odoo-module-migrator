@@ -4,4 +4,7 @@
 # Décorateur sur une seule ligne uniquement ; les autres cas restent signalés
 # par text_errors/migrate_180_190/api_returns.yaml.
 .py:
-  '(?m)^[ \t]*@api\.returns\([^\n]*\)[ \t]*\n': ''
+  '(?m)^[ \t]*@api\.returns\([^\n]*\)[ \t]*\n':
+    schema_version: 2
+    kind: text_replace
+    replacement: ""

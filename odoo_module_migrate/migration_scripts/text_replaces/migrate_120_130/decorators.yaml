@@ -1,2 +1,5 @@
 .py:
     .*@api.multi.*\n:
+      schema_version: 2
+      kind: text_replace
+      replacement: null

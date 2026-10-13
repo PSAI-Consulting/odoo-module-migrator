@@ -1,3 +1,5 @@
 .py:
   def\s+_name_search\(([^)]*)\):
-    "[Error] The method '_name_search' is deprecated and replaced by '_search_display_name'. More details: https://github.com/odoo/odoo/pull/174967"
+    schema_version: 2
+    kind: text_error
+    message: "[Error] The method '_name_search' is deprecated and replaced by '_search_display_name'. More details: https://github.com/odoo/odoo/pull/174967"

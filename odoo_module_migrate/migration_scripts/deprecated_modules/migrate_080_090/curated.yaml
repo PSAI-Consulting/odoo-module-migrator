@@ -3,12 +3,30 @@
 #
 # procurement_jit_stock (8.0 : pont auto_install procurement_jit + stock) : 9.0 procurement_jit
 # dépend de sale_stock (addons/procurement_jit/__openerp__.py)
-- ["procurement_jit_stock", "merged", "procurement_jit"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "procurement_jit_stock"
+  change: "merged"
+  target: "procurement_jit"
 # odoo c9492f890459 '[IMP] report: adapt report to use web_editor and remove website_report'
-- ["website_report", "merged", "report"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "website_report"
+  change: "merged"
+  target: "report"
 # knowledge : supprimé d'Odoo 9.0 (odoo e6a3672f9ebc), repris par OCA/knowledge 9.0
 # (conservé de l'ancienne liste _DEPRECATED_MODULES de migrate_080_090.py)
-- ["knowledge", "oca_moved", "knowledge", "Moved to OCA/knowledge"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "knowledge"
+  change: "oca_moved"
+  target: "knowledge"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "e6a3672f9ebc"
+      title: "[IMP] Menuitem refactoring, may the 4th be with you Modification summary: KNOWLEDGE get rid of the module Knwoledge, keep Document Management for docusign, which will be name eSign when merged SALE/CRM –  Phone Calls becomes Calls, remove scheduled calls menuitem –  Merge Sales/CRM menuitem into Sales/Sales –  Page Views into scoring page views –  Configuration : Attribute, Attribute value in technical features LEAD AUTOMATION – Group Campaign and segment – Report : Move Follow-up into it WAREHOUSE – Move traceability menuitems into inventory control PROJECT – Service, move it to Configuration, get rid of Products menu – Invoicing : remove it, there are stat buttons, and contracts are managed in sales. Timesheet : – Timesheet profit, rename into Profits."
+  message: "Moved to OCA/knowledge"
 #
 # Retirés de l'ancienne liste _DEPRECATED_MODULES : email_template -> mail_template (module
 # inexistant ; odoo d88c34d11e87 : mail), portal_project_issue -> project_issue (renommé

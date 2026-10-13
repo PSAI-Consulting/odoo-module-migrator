@@ -3,8 +3,28 @@
 # le remplacer par UserError ne change rien au comportement.
 # L'ancienne regex ([^,\n]*,\s*)*Warning... perdait des noms importés (groupe répété).
 .py:
-  '(?m)^(from\s+odoo\.exceptions\s+import\s+(?:[^\n]*[,(\s])?)Warning\b': '\1UserError'
-  '(?m)^(from\s+odoo\.exceptions\s+import\s+[^\n]*\bUserError\b[^\n]*), UserError\b': '\1'
-  '(?m)^(from\s+odoo\.exceptions\s+import\s+)UserError, ([^\n]*\bUserError\b)': '\1\2'
-  '\braise\s+Warning\(': "raise UserError("
-  '\bexcept\s+Warning\b': "except UserError"
+  '(?m)^(from\s+odoo\.exceptions\s+import\s+(?:[^\n]*[,(\s])?)Warning\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "\\1UserError"
+  '(?m)^(from\s+odoo\.exceptions\s+import\s+[^\n]*\bUserError\b[^\n]*), UserError\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "\\1"
+  '(?m)^(from\s+odoo\.exceptions\s+import\s+)UserError, ([^\n]*\bUserError\b)':
+    schema_version: 2
+    kind: text_replace
+    replacement: "\\1\\2"
+  '\braise\s+Warning\(':
+    schema_version: 2
+    kind: text_replace
+    confidence: verified
+    evidence:
+      repository: odoo
+      file: odoo/exceptions.py
+      note: "12.0 and 13.0: Warning = UserError (alias)"
+    replacement: "raise UserError("
+  '\bexcept\s+Warning\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "except UserError"

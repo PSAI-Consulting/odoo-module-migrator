@@ -4,6 +4,22 @@
 # Formes non traitées par python_scripts/migrate_170_180/product_storable.py (modèle inconnu :
 # signalé, pas remplacé). Repéré par tools/ground_truth.py (tests OCA 17 -> 18).
 .py:
-  '[''"](?:detailed_)?type[''"]\s*:\s*[''"]product[''"]': "[18] Product type 'product' was removed: use 'type': 'consu' with 'is_storable': True (odoo 728d9f83f6d)"
+  '[''"](?:detailed_)?type[''"]\s*:\s*[''"]product[''"]':
+    schema_version: 2
+    kind: text_warning
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "728d9f83f6d1"
+        title: "[REF] stock: remove product type"
+    message: "[18] Product type 'product' was removed: use 'type': 'consu' with 'is_storable': True (odoo 728d9f83f6d)"
 .xml:
-  '<field\s+name=[''"](?:detailed_)?type[''"]\s*>\s*product\s*</field>': "[18] Product type 'product' was removed: use type consu and <field name=\"is_storable\" eval=\"True\"/> (odoo 728d9f83f6d)"
+  '<field\s+name=[''"](?:detailed_)?type[''"]\s*>\s*product\s*</field>':
+    schema_version: 2
+    kind: text_warning
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "728d9f83f6d1"
+        title: "[REF] stock: remove product type"
+    message: "[18] Product type 'product' was removed: use type consu and <field name=\"is_storable\" eval=\"True\"/> (odoo 728d9f83f6d)"

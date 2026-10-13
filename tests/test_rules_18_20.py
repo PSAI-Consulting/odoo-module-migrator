@@ -1,11 +1,12 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 """Unit tests of the 17→18, 18→19 and 19→20 transformations."""
 
+import pathlib
 import re
 
 import pytest
-import yaml
 
+from odoo_module_migrate.migration_rules import loader
 from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180 import (
     http_routing_helpers as hr,
 )
@@ -13,8 +14,15 @@ from odoo_module_migrate.migration_scripts.python_scripts.migrate_170_180 import
 SCRIPTS = "odoo_module_migrate/migration_scripts"
 
 
+def _rule_doc(path):
+    """Historical data of a rule file (legacy and v2 entries), as the
+    migration scripts receive it."""
+    path = pathlib.Path(path)
+    return loader.load_file(path.resolve(), path.parent.parent.name).document
+
+
 def _apply_yaml(path, ext, text):
-    rules = yaml.safe_load(open(path, encoding="utf-8"))[ext]
+    rules = _rule_doc(path)[ext]
     for pattern, repl in rules.items():
         text = re.sub(pattern, repl, text)
     return text
@@ -216,7 +224,7 @@ def _module_rules(step):
 
     rules = []
     for path in sorted(glob.glob(f"{SCRIPTS}/deprecated_modules/{step}/*.yaml")):
-        rules += yaml.safe_load(open(path, encoding="utf-8")) or []
+        rules += _rule_doc(path) or []
     return rules
 
 
@@ -366,7 +374,7 @@ def test_core_api_replaces_190_200():
 
 
 def test_core_api_errors_190_200():
-    rules = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_190_200/core_api.yaml", encoding="utf-8"))[".py"]
+    rules = _rule_doc(f"{SCRIPTS}/text_errors/migrate_190_200/core_api.yaml")[".py"]
 
     def hits(text):
         return [p for p in rules if re.search(p, text)]
@@ -415,7 +423,7 @@ def test_model_rules_190_200(tmp_path, caplog):
 
 
 def test_product_type_warning_170_180():
-    rules = yaml.safe_load(open(f"{SCRIPTS}/text_warnings/migrate_170_180/product_type.yaml", encoding="utf-8"))
+    rules = _rule_doc(f"{SCRIPTS}/text_warnings/migrate_170_180/product_type.yaml")
     assert any(re.search(p, '{"name": "x", "type": "product"}') for p in rules[".py"])
     assert not any(re.search(p, '{"display_type": "product", "type": "consu"}') for p in rules[".py"])
     assert any(re.search(p, '<field name="type">product</field>') for p in rules[".xml"])
@@ -445,9 +453,9 @@ def test_curated_field_renames_170_180(tmp_path):
 def test_js_and_view_rules_190_200_no_false_positive():
     """Generated JS / view rules: imports and views still present in 20.0
     are never reported, rewrites are idempotent."""
-    errors = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_190_200/js_modules.yaml", encoding="utf-8"))
-    replaces = yaml.safe_load(open(f"{SCRIPTS}/text_replaces/migrate_190_200/js_modules.yaml", encoding="utf-8"))
-    views = yaml.safe_load(open(f"{SCRIPTS}/text_errors/migrate_190_200/views.yaml", encoding="utf-8"))
+    errors = _rule_doc(f"{SCRIPTS}/text_errors/migrate_190_200/js_modules.yaml")
+    replaces = _rule_doc(f"{SCRIPTS}/text_replaces/migrate_190_200/js_modules.yaml")
+    views = _rule_doc(f"{SCRIPTS}/text_errors/migrate_190_200/views.yaml")
     js = (
         'import { registry } from "@web/core/registry";\n'
         "import { useService } from '@web/core/utils/hooks';\n"
@@ -495,8 +503,8 @@ def test_curated_field_renames_180_190(tmp_path):
 
 @pytest.mark.parametrize("step", ["migrate_170_180", "migrate_180_190"])
 def test_js_and_view_rules_no_false_positive(step):
-    errors = yaml.safe_load(open(f"{SCRIPTS}/text_errors/{step}/js_modules.yaml", encoding="utf-8"))
-    views = yaml.safe_load(open(f"{SCRIPTS}/text_errors/{step}/views.yaml", encoding="utf-8"))
+    errors = _rule_doc(f"{SCRIPTS}/text_errors/{step}/js_modules.yaml")
+    views = _rule_doc(f"{SCRIPTS}/text_errors/{step}/views.yaml")
     js = ('import { registry } from "@web/core/registry";\n'
           'import { useService } from "@web/core/utils/hooks";\n'
           'import { _t } from "@web/core/l10n/translation";\n')
@@ -598,7 +606,9 @@ def test_search_group_attrs_removed_in_place():
     """<group expand string> of search views (not allowed by common.rng in
     19.0): only these attributes change, the file is not serialized again
     (multi-line attributes joined, XML declaration rewritten...)."""
-    from odoo_module_migrate.migration_scripts.migrate_180_190 import remove_search_group_attrs
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import (
+        remove_search_group_attrs,
+    )
 
     text = (
         "<?xml version='1.0' encoding='utf-8' ?>\n<odoo>\n"
@@ -626,8 +636,12 @@ def test_auto_added_fields_notice_only_from_17():
     """Fields used by view expressions are added automatically since 18.0
     (odoo 6f06420e4a94, not in 17.0): an 18.0 module already works so, the
     notice is not repeated by the 18.0 -> 19.0 step."""
-    from odoo_module_migrate.migration_scripts.migrate_170_180 import MigrationScript as M18
-    from odoo_module_migrate.migration_scripts.migrate_180_190 import MigrationScript as M19
+    from odoo_module_migrate.migration_scripts.migrate_170_180 import (
+        MigrationScript as M18,
+    )
+    from odoo_module_migrate.migration_scripts.migrate_180_190 import (
+        MigrationScript as M19,
+    )
 
     def warnings(script_class):
         script = script_class()

@@ -4,4 +4,7 @@
 # par défaut « current » s'applique) ; OpenUpgrade 19.0 base upgrade_analysis :
 # ir.actions.act_window target selection_keys removed: [inline].
 .xml:
-  '(?m)^[ \t]*<field\s+name=["'']target["'']\s*>\s*inline\s*</field>[ \t]*\n': ''
+  '(?m)^[ \t]*<field\s+name=["'']target["'']\s*>\s*inline\s*</field>[ \t]*\n':
+    schema_version: 2
+    kind: text_replace
+    replacement: ""

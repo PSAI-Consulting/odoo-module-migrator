@@ -2,40 +2,253 @@
 # Hors OpenUpgrade (tools/extract_changes.py fields --sources, odoo + fork Enterprise),
 # vérifiés modèle par modèle (champs avant / après le commit et en 15.0) :
 # odoo c1693581d794 '[IMP] account: payment method improvements' : même booléen calculé (lignes de méthodes de paiement)
-- ["account.payment", "hide_payment_method", "hide_payment_method_line", "odoo c1693581d794 '[IMP] account: payment method improvements'"]
-- ["account.payment.register", "hide_payment_method", "hide_payment_method_line", "odoo c1693581d794 '[IMP] account: payment method improvements'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "account.payment"
+  old_field: "hide_payment_method"
+  new_field: "hide_payment_method_line"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c1693581d794"
+      title: "[IMP] account: payment method improvements"
+  message: "odoo c1693581d794 '[IMP] account: payment method improvements'"
+- schema_version: 2
+  kind: renamed_field
+  model: "account.payment.register"
+  old_field: "hide_payment_method"
+  new_field: "hide_payment_method_line"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c1693581d794"
+      title: "[IMP] account: payment method improvements"
+  message: "odoo c1693581d794 '[IMP] account: payment method improvements'"
 # odoo 5ad660877f48 '[IMP] account: Improve reconciliation Models usability' : related des champs renommés sur account.reconcile.model (OpenUpgrade 15.0)
-- ["account.reconcile.model.line", "match_total_amount", "allow_payment_tolerance", "odoo 5ad660877f48 '[IMP] account: Improve reconciliation Models usability'"]
-- ["account.reconcile.model.line", "match_total_amount_param", "payment_tolerance_param", "odoo 5ad660877f48 '[IMP] account: Improve reconciliation Models usability'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "account.reconcile.model.line"
+  old_field: "match_total_amount"
+  new_field: "allow_payment_tolerance"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad660877f48"
+      title: "[IMP] account: Improve reconciliation Models usability"
+  message: "odoo 5ad660877f48 '[IMP] account: Improve reconciliation Models usability'"
+- schema_version: 2
+  kind: renamed_field
+  model: "account.reconcile.model.line"
+  old_field: "match_total_amount_param"
+  new_field: "payment_tolerance_param"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5ad660877f48"
+      title: "[IMP] account: Improve reconciliation Models usability"
+  message: "odoo 5ad660877f48 '[IMP] account: Improve reconciliation Models usability'"
 # odoo a99d882c0222 '[IMP] crm,*_crm: better merge leads side documents' : même compteur « # Meetings »
-- ["crm.lead", "meeting_count", "calendar_event_count", "odoo a99d882c0222 '[IMP] crm,*_crm: better merge leads side documents'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "crm.lead"
+  old_field: "meeting_count"
+  new_field: "calendar_event_count"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a99d882c0222"
+      title: "[IMP] crm,*_crm: better merge leads side documents"
+  message: "odoo a99d882c0222 '[IMP] crm,*_crm: better merge leads side documents'"
 # odoo 254d6a71e8d5 '[IMP] hr_holidays: Improve Accruals, dashboards and general UX (Back2basics)' : même champ calculé (_compute_valid, _search_valid)
-- ["hr.leave.type", "valid", "has_valid_allocation", "odoo 254d6a71e8d5 '[IMP] hr_holidays: Improve Accruals, dashboards and general UX (Back2basics)'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.leave.type"
+  old_field: "valid"
+  new_field: "has_valid_allocation"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "254d6a71e8d5"
+      title: "[IMP] hr_holidays: Improve Accruals, dashboards and general UX (Back2basics)"
+  message: "odoo 254d6a71e8d5 '[IMP] hr_holidays: Improve Accruals, dashboards and general UX (Back2basics)'"
 # odoo 8aa1d6ff02b6 '[IMP] mail: revamp the activity type form view' : mêmes champs (formulaire du type d'activité revu)
-- ["mail.activity.type", "default_description", "default_note", "odoo 8aa1d6ff02b6 '[IMP] mail: revamp the activity type form view'"]
-- ["mail.activity.type", "default_next_type_id", "triggered_next_type_id", "odoo 8aa1d6ff02b6 '[IMP] mail: revamp the activity type form view'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "mail.activity.type"
+  old_field: "default_description"
+  new_field: "default_note"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8aa1d6ff02b6"
+      title: "[IMP] mail: revamp the activity type form view"
+  message: "odoo 8aa1d6ff02b6 '[IMP] mail: revamp the activity type form view'"
+- schema_version: 2
+  kind: renamed_field
+  model: "mail.activity.type"
+  old_field: "default_next_type_id"
+  new_field: "triggered_next_type_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8aa1d6ff02b6"
+      title: "[IMP] mail: revamp the activity type form view"
+  message: "odoo 8aa1d6ff02b6 '[IMP] mail: revamp the activity type form view'"
 # odoo 5553ad50bf54 '[MOV] mail: reorder model files' : même Many2many (table mail_activity_rel)
-- ["mail.activity.type", "next_type_ids", "suggested_next_type_ids", "odoo 5553ad50bf54 '[MOV] mail: reorder model files'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "mail.activity.type"
+  old_field: "next_type_ids"
+  new_field: "suggested_next_type_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "5553ad50bf54"
+      title: "[MOV] mail: reorder model files"
+  message: "odoo 5553ad50bf54 '[MOV] mail: reorder model files'"
 # odoo 59ce7d396930 '[IMP] mail, mass_mailing: ease "reply to" fields understanding' : même booléen (renommé aussi sur mail.message, odoo e4cace71152b)
-- ["mail.compose.message", "no_auto_thread", "reply_to_force_new", "odoo 59ce7d396930 '[IMP] mail, mass_mailing: ease \"reply to\" fields understanding'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "mail.compose.message"
+  old_field: "no_auto_thread"
+  new_field: "reply_to_force_new"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "59ce7d396930"
+      title: "[IMP] mail, mass_mailing: ease \"reply to\" fields understanding"
+    - repository: "odoo"
+      commit: "e4cace71152b"
+      title: "[IMP] mail, test_mail, website_(form,sale): rename no_auto_thread field"
+  message: "odoo 59ce7d396930 '[IMP] mail, mass_mailing: ease \"reply to\" fields understanding'"
 # odoo 573ed74c121c '[REF] payment, *: refactor online payments API' : même compteur de factures
-- ["payment.transaction", "invoice_ids_nbr", "invoices_count", "odoo 573ed74c121c '[REF] payment, *: refactor online payments API'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "payment.transaction"
+  old_field: "invoice_ids_nbr"
+  new_field: "invoices_count"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "573ed74c121c"
+      title: "[REF] payment, *: refactor online payments API"
+  message: "odoo 573ed74c121c '[REF] payment, *: refactor online payments API'"
 # odoo 7b165cd55508 '[REF] payment_paypal: migrate PayPal to the new payment API' : même Char (type de transaction PayPal)
-- ["payment.transaction", "paypal_txn_type", "paypal_type", "odoo 7b165cd55508 '[REF] payment_paypal: migrate PayPal to the new payment API'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "payment.transaction"
+  old_field: "paypal_txn_type"
+  new_field: "paypal_type"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "7b165cd55508"
+      title: "[REF] payment_paypal: migrate PayPal to the new payment API"
+  message: "odoo 7b165cd55508 '[REF] payment_paypal: migrate PayPal to the new payment API'"
 # odoo 27538bca036a '[IMP] project,hr(_timesheet)_holidays: usability improvement for project' : même projet interne, déplacé dans hr_timesheet
-- ["res.company", "leave_timesheet_project_id", "internal_project_id", "odoo 27538bca036a '[IMP] project,hr(_timesheet)_holidays: usability improvement for project'"]
-- ["res.config.settings", "leave_timesheet_project_id", "internal_project_id", "odoo 27538bca036a '[IMP] project,hr(_timesheet)_holidays: usability improvement for project'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "leave_timesheet_project_id"
+  new_field: "internal_project_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "27538bca036a"
+      title: "[IMP] project,hr(_timesheet)_holidays: usability improvement for project"
+  message: "odoo 27538bca036a '[IMP] project,hr(_timesheet)_holidays: usability improvement for project'"
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "leave_timesheet_project_id"
+  new_field: "internal_project_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "27538bca036a"
+      title: "[IMP] project,hr(_timesheet)_holidays: usability improvement for project"
+  message: "odoo 27538bca036a '[IMP] project,hr(_timesheet)_holidays: usability improvement for project'"
 # odoo 8eacdca93780 '[MOV] crm_iap_mine: rename ``crm_iap_lead`` module' : module crm_iap_lead renommé crm_iap_mine
-- ["res.config.settings", "module_crm_iap_lead", "module_crm_iap_mine", "odoo 8eacdca93780 '[MOV] crm_iap_mine: rename ``crm_iap_lead`` module'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "module_crm_iap_lead"
+  new_field: "module_crm_iap_mine"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8eacdca93780"
+      title: "[MOV] crm_iap_mine: rename ``crm_iap_lead`` module"
+  message: "odoo 8eacdca93780 '[MOV] crm_iap_mine: rename ``crm_iap_lead`` module'"
 # odoo 98d2f4452637 '[MOV] crm_iap_enrich: rename ``crm_iap_lead_enrich`` module' : module crm_iap_lead_enrich renommé crm_iap_enrich
-- ["res.config.settings", "module_crm_iap_lead_enrich", "module_crm_iap_enrich", "odoo 98d2f4452637 '[MOV] crm_iap_enrich: rename ``crm_iap_lead_enrich`` module'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "module_crm_iap_lead_enrich"
+  new_field: "module_crm_iap_enrich"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "98d2f4452637"
+      title: "[MOV] crm_iap_enrich: rename ``crm_iap_lead_enrich`` module"
+  message: "odoo 98d2f4452637 '[MOV] crm_iap_enrich: rename ``crm_iap_lead_enrich`` module'"
 # odoo 528880aa9cde '[MOV] website_crm_iap_reveal: rename ``crm_iap_lead_website`` module' : module crm_iap_lead_website renommé website_crm_iap_reveal
-- ["res.config.settings", "module_crm_iap_lead_website", "module_website_crm_iap_reveal", "odoo 528880aa9cde '[MOV] website_crm_iap_reveal: rename ``crm_iap_lead_website`` module'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "module_crm_iap_lead_website"
+  new_field: "module_website_crm_iap_reveal"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "528880aa9cde"
+      title: "[MOV] website_crm_iap_reveal: rename ``crm_iap_lead_website`` module"
+  message: "odoo 528880aa9cde '[MOV] website_crm_iap_reveal: rename ``crm_iap_lead_website`` module'"
 # odoo cf98a525b7c9 '[MOV] website_event_(track_)exhibitor: FUUUUSION !' : module website_event_track_exhibitor renommé website_event_exhibitor
-- ["res.config.settings", "module_website_event_track_exhibitor", "module_website_event_exhibitor", "odoo cf98a525b7c9 '[MOV] website_event_(track_)exhibitor: FUUUUSION !'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "module_website_event_track_exhibitor"
+  new_field: "module_website_event_exhibitor"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "cf98a525b7c9"
+      title: "[MOV] website_event_(track_)exhibitor: FUUUUSION !"
+  message: "odoo cf98a525b7c9 '[MOV] website_event_(track_)exhibitor: FUUUUSION !'"
 # odoo 688d65530575 '[IMP] {purchase, sale}_stock, product: packaging revamp' : même Many2one product.packaging, déplacé de sale_stock vers sale
-- ["sale.order.line", "product_packaging", "product_packaging_id", "odoo 688d65530575 '[IMP] {purchase, sale}_stock, product: packaging revamp'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "sale.order.line"
+  old_field: "product_packaging"
+  new_field: "product_packaging_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "688d65530575"
+      title: "[IMP] {purchase, sale}_stock, product: packaging revamp"
+  message: "odoo 688d65530575 '[IMP] {purchase, sale}_stock, product: packaging revamp'"
 # enterprise 4641825daa0 '[IMP] account_reports: tax report: allow opening of foreign reports if needed' : related de res.company account_fiscal_country_id (renommé par OpenUpgrade 15.0)
-- ["res.config.settings", "account_tax_fiscal_country_id", "account_fiscal_country_id", "enterprise 4641825daa0 '[IMP] account_reports: tax report: allow opening of foreign reports if needed'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "account_tax_fiscal_country_id"
+  new_field: "account_fiscal_country_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "4641825daa0e"
+      title: "[IMP] account_reports: tax report: allow opening of foreign reports if needed"
+  message: "enterprise 4641825daa0 '[IMP] account_reports: tax report: allow opening of foreign reports if needed'"
 # enterprise 41b340d2020 '[REF] payment_sepa_direct_debit: migrate SEPA to the new payment API' : même champ calculé (crédits SMS SEPA)
-- ["payment.acquirer", "iap_sms_credits", "sdd_sms_credits", "enterprise 41b340d2020 '[REF] payment_sepa_direct_debit: migrate SEPA to the new payment API'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "payment.acquirer"
+  old_field: "iap_sms_credits"
+  new_field: "sdd_sms_credits"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "41b340d20205"
+      title: "[REF] payment_sepa_direct_debit: migrate SEPA to the new payment API"
+  message: "enterprise 41b340d2020 '[REF] payment_sepa_direct_debit: migrate SEPA to the new payment API'"

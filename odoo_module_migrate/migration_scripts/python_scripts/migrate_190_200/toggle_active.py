@@ -8,6 +8,20 @@ VIEW_RECORD_RE = re.compile(
 )
 TAG_RE = re.compile(r'''<!--[\s\S]*?-->|<(?:[^>"']|"[^"]*"|'[^']*')+>''')
 
+# Structured description of the public transformation (migration_rules):
+# read by the rule inventory and the validator, never by the migration itself.
+MIGRATION_RULES = {
+    "migrate_toggle_active_buttons": {
+        "description": "toggle_active buttons of the views become action_archive / action_unarchive "
+                       "when their visibility proves the direction; the others are reported.",
+        "automation": "deterministic_with_validation",
+        "confidence": "verified",
+        "evidence": {"repository": "odoo", "commit": "37ba3b162e7d",
+                     "title": "[REM] orm: remove cycle and toggle_active methods"},
+        "preconditions": [{"kind": "model_exists", "args": ["ir.ui.view"]}],
+    },
+}
+
 
 def _attribute(tag, name):
     return re.search(rf"\b{re.escape(name)}\s*=\s*(['\"])(.*?)\1", tag, re.DOTALL)

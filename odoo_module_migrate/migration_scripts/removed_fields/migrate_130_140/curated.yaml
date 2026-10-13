@@ -1,12 +1,43 @@
 # Champs supprimés 13.0 -> 14.0 : messages avec le remplaçant (prioritaires sur
 # generated.yaml). Vérifiés dans le commit ; jamais appliqués automatiquement.
-# Format : [modèle, champ, message]
+# Format : schema_version 2 (voir docs/migration_rules.md)
 #
 # odoo 8066ab43482a '[REF] crm: update revenue fields names' (échange de noms, renommage bloqué
 # dans renamed_fields/curated.yaml)
-- ["crm.lead", "planned_revenue", "renamed expected_revenue; the 13.0 expected_revenue (prorated) is now prorated_revenue - odoo 8066ab43482a '[REF] crm: update revenue fields names'"]
+- schema_version: 2
+  kind: removed_field
+  model: "crm.lead"
+  field: "planned_revenue"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8066ab43482a"
+      title: "[REF] crm: update revenue fields names"
+  message: "renamed expected_revenue; the 13.0 expected_revenue (prorated) is now prorated_revenue - odoo 8066ab43482a '[REF] crm: update revenue fields names'"
 # odoo 14.0 stock.move : date « Date Scheduled », date_deadline « Date Promise to the customer »
-- ["stock.move", "date_expected", "date (scheduled date) in 14.0; date_deadline is the customer promise (readonly) - OpenUpgrade 14.0 moves the data to date_deadline"]
+- schema_version: 2
+  kind: removed_field
+  model: "stock.move"
+  field: "date_expected"
+  message: "date (scheduled date) in 14.0; date_deadline is the customer promise (readonly) - OpenUpgrade 14.0 moves the data to date_deadline"
 # odoo c660770ebd84 '[REF] mrp: remove routing model'
-- ["mrp.routing.workcenter", "routing_id", "bom_id (operations are defined on the bill of materials) - odoo c660770ebd84 '[REF] mrp: remove routing model'"]
-- ["mrp.bom", "routing_id", "operation_ids (operations on the bill of materials) - odoo c660770ebd84"]
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.routing.workcenter"
+  field: "routing_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c660770ebd84"
+      title: "[REF] mrp: remove routing model"
+  message: "bom_id (operations are defined on the bill of materials) - odoo c660770ebd84 '[REF] mrp: remove routing model'"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.bom"
+  field: "routing_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c660770ebd84"
+      title: "[REF] mrp: remove routing model"
+  message: "operation_ids (operations on the bill of materials) - odoo c660770ebd84"

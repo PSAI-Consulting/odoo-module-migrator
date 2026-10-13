@@ -1,4 +1,10 @@
 .xml:
-  (?<=name=[\"'])groups_id(?=[\"']): group_ids
+  (?<=name=[\"'])groups_id(?=[\"']):
+    schema_version: 2
+    kind: text_replace
+    replacement: "group_ids"
 .py:
-  (?<=[\.\"'])groups_id(?=[\.\s,:)\]'\"]): group_ids
+  (?<=[\.\"'])groups_id(?=[\.\s,:)\]'\"]):
+    schema_version: 2
+    kind: text_replace
+    replacement: "group_ids"

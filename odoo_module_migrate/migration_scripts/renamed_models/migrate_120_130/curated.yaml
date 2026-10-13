@@ -3,10 +3,46 @@
 # account.invoice fusionné dans account.move : OpenUpgrade 13.0 account post-migration.py
 # merge_models('account.invoice', 'account.move', 'old_invoice_id') (ancienne règle
 # account_invoice.yaml)
-- ["account.invoice", "account.move", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py merge_models"]
-- ["account.invoice.line", "account.move.line", "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "account.invoice"
+  new_model: "account.move"
+  confidence: verified
+  evidence:
+    - repository: "openupgrade"
+      file: "addons/account/migrations/13.0.1.1/post-migration.py"
+      note: "OpenUpgrade 13.0"
+  message: "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py merge_models"
+- schema_version: 2
+  kind: renamed_model
+  old_model: "account.invoice.line"
+  new_model: "account.move.line"
+  confidence: verified
+  evidence:
+    - repository: "openupgrade"
+      file: "addons/account/migrations/13.0.1.1/post-migration.py"
+      note: "OpenUpgrade 13.0"
+  message: "OpenUpgrade 13.0 addons/account/migrations/13.0.1.1/post-migration.py"
 # Candidats de tools/extract_changes.py models vérifiés dans le commit :
 # enterprise e31148513f8 '[IMP] Sign: Move sign.item.value to sign.request.item.value' : commit : « Move sign.item.value to sign.request.item.value »
-- ["sign.item.value", "sign.request.item.value", "enterprise e31148513f8 '[IMP] Sign: Move sign.item.value to sign.request.item.value'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "sign.item.value"
+  new_model: "sign.request.item.value"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "e31148513f8b"
+      title: "[IMP] Sign: Move sign.item.value to sign.request.item.value"
+  message: "enterprise e31148513f8 '[IMP] Sign: Move sign.item.value to sign.request.item.value'"
 # enterprise 6cb107c42c1 '[IMP] account_asset, account_deferred_revenue: refactor account.asset' : account.asset.asset devient account.asset (refonte)
-- ["account.asset.asset", "account.asset", "enterprise 6cb107c42c1 '[IMP] account_asset, account_deferred_revenue: refactor account.asset'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "account.asset.asset"
+  new_model: "account.asset"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "6cb107c42c1e"
+      title: "[IMP] account_asset, account_deferred_revenue: refactor account.asset"
+  message: "enterprise 6cb107c42c1 '[IMP] account_asset, account_deferred_revenue: refactor account.asset'"

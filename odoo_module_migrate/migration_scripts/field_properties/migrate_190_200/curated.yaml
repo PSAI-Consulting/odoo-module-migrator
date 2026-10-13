@@ -1,3 +1,15 @@
 # Field metadata transitions that require review when custom modules redefine
 # the affected computed field.  Format: model, field, property, old, new, source.
-- ["product.product", "lst_price", "store", "False", "True", "odoo 92baf0a1df27: product.product.lst_price became stored in 20.0"]
+- schema_version: 2
+  kind: field_property
+  model: product.product
+  field: lst_price
+  property: store
+  old_value: "False"
+  new_value: "True"
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 92baf0a1df27
+      title: "[IMP] product: Edit price on variant"
+  message: "odoo 92baf0a1df27: product.product.lst_price became stored in 20.0"

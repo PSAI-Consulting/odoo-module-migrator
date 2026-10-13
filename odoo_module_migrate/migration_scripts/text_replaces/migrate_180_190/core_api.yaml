@@ -2,4 +2,7 @@
 .py:
   # odoo 18.0 odoo/models.py : "Deprecated model.clear_cache(), use registry.clear_cache()
   # instead" ; clear_caches() absent de BaseModel en 19.0
-  '\bself(?:\.env\[[^\]\n]+\]|\.sudo\(\))?\.clear_caches\(\)': 'self.env.registry.clear_cache()'
+  '\bself(?:\.env\[[^\]\n]+\]|\.sudo\(\))?\.clear_caches\(\)':
+    schema_version: 2
+    kind: text_replace
+    replacement: "self.env.registry.clear_cache()"

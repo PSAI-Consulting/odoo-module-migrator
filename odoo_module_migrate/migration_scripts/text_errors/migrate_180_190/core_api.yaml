@@ -1,16 +1,48 @@
 # API du framework supprimée en 19.0 (absente de la branche 19.0 :
 # tools/extract_changes.py api, vérifié dans odoo/orm/*.py).
 .py:
-  '\.clear_caches\(\)': "[19] clear_caches() was removed: use self.env.registry.clear_cache()"
-  '\._where_calc\(': "[19] _where_calc() was removed: use _search() (returns a Query)"
-  '\._apply_ir_rules\(': "[19] _apply_ir_rules() was removed: _search() applies the record rules"
-  '\._flush_search\(': "[19] _flush_search() was removed (deprecated since 18.0)"
-  '@api\.model_create_single\b': "[19] @api.model_create_single was removed: use @api.model_create_multi and handle a list of values"
-  '\b_transient_max_(?:count|hours)\b': "[19] _transient_max_count / _transient_max_hours were removed: transient records are vacuumed by the ORM settings"
-  '\bfrom odoo\.tools\.translate import[^\n]*\btrans_load': "[19] trans_load() / trans_load_data() were removed"
+  '\.clear_caches\(\)':
+    schema_version: 2
+    kind: text_error
+    message: "[19] clear_caches() was removed: use self.env.registry.clear_cache()"
+  '\._where_calc\(':
+    schema_version: 2
+    kind: text_error
+    message: "[19] _where_calc() was removed: use _search() (returns a Query)"
+  '\._apply_ir_rules\(':
+    schema_version: 2
+    kind: text_error
+    message: "[19] _apply_ir_rules() was removed: _search() applies the record rules"
+  '\._flush_search\(':
+    schema_version: 2
+    kind: text_error
+    message: "[19] _flush_search() was removed (deprecated since 18.0)"
+  '@api\.model_create_single\b':
+    schema_version: 2
+    kind: text_error
+    message: "[19] @api.model_create_single was removed: use @api.model_create_multi and handle a list of values"
+  '\b_transient_max_(?:count|hours)\b':
+    schema_version: 2
+    kind: text_error
+    message: "[19] _transient_max_count / _transient_max_hours were removed: transient records are vacuumed by the ORM settings"
+  '\bfrom odoo\.tools\.translate import[^\n]*\btrans_load':
+    schema_version: 2
+    kind: text_error
+    message: "[19] trans_load() / trans_load_data() were removed"
   # 18.0 odoo/modules/module.py : "Since 17.0: use tools.misc.file_path instead of
   # get_resource_path(...)" ; absent de 19.0 (alias get_module_resource, check_resource_path)
-  '\b(?:get_resource_path|get_module_resource|check_resource_path)\b': "[19] get_resource_path / get_module_resource were removed (deprecated since 17.0): use odoo.tools.misc.file_path('module/path/to/file'), which raises FileNotFoundError instead of returning False"
+  '\b(?:get_resource_path|get_module_resource|check_resource_path)\b':
+    schema_version: 2
+    kind: text_error
+    message: "[19] get_resource_path / get_module_resource were removed (deprecated since 17.0): use odoo.tools.misc.file_path('module/path/to/file'), which raises FileNotFoundError instead of returning False"
   # 18.0 odoo/fields.py « def first(records) » : absent de 19.0 (odoo.fields devient un package,
   # odoo 0a5b1f96b81 '[REF] core: odoo.orm package')
-  '\bfrom odoo\.fields import [^\n]*\bfirst\b|\bfields\.first\(': "[19] odoo.fields.first() was removed: use records[:1] (or next(iter(records)))"
+  '\bfrom odoo\.fields import [^\n]*\bfirst\b|\bfields\.first\(':
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "0a5b1f96b812"
+        title: "[REF] core: odoo.orm package"
+    message: "[19] odoo.fields.first() was removed: use records[:1] (or next(iter(records)))"

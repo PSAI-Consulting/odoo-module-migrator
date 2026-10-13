@@ -4,7 +4,12 @@
 # account_asset quitte la communauté en 12.0 (présent dans enterprise 12.0) ; l'OCA le
 # remplace par account_asset_management (OCA/account-financial-tools 12.0). Conservé de
 # l'ancienne liste _DEPRECATED_MODULES de migrate_110_120.py (avertissement « oca_moved »).
-- ["account_asset", "oca_moved", "account_asset_management", "Moved to OCA/account-financial-tools (Odoo Enterprise: account_asset)"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "account_asset"
+  change: "oca_moved"
+  target: "account_asset_management"
+  message: "Moved to OCA/account-financial-tools (Odoo Enterprise: account_asset)"
 #
 # Retirés de l'ancienne liste _DEPRECATED_MODULES (faux d'après OpenUpgrade 12.0 apriori.py
 # et les sources) : mrp_repair (renommé repair), product_extended (renommé mrp_bom_cost),

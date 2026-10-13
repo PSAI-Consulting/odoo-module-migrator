@@ -1,12 +1,38 @@
 # Champs supprimés 11.0 -> 12.0 : messages avec le remplaçant (prioritaires sur
 # generated.yaml). Jamais appliqués automatiquement.
-# Format : [modèle, champ, message]
+# Format : schema_version 2 (voir docs/migration_rules.md)
 #
 # OpenUpgrade 12.0 sale pre-migration : requested_date -> commitment_date (l'ancien
 # commitment_date calculé de sale_order_dates est mis de côté) : échange de noms.
-- ["sale.order", "requested_date", "commitment_date (12.0: date promised to the customer; the 11.0 computed commitment_date is gone, see expected_date) - OpenUpgrade 12.0 sale pre-migration"]
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order"
+  field: "requested_date"
+  message: "commitment_date (12.0: date promised to the customer; the 11.0 computed commitment_date is gone, see expected_date) - OpenUpgrade 12.0 sale pre-migration"
 # OpenUpgrade 12.0 hr_holidays : chaîne number_of_days_temp -> number_of_days -> number_of_days_display
-- ["hr.holidays", "number_of_days_temp", "number_of_days (hr.holidays split into hr.leave / hr.leave.allocation; the 11.0 number_of_days is number_of_days_display) - OpenUpgrade 12.0"]
+- schema_version: 2
+  kind: removed_field
+  model: "hr.holidays"
+  field: "number_of_days_temp"
+  message: "number_of_days (hr.holidays split into hr.leave / hr.leave.allocation; the 11.0 number_of_days is number_of_days_display) - OpenUpgrade 12.0"
 # odoo a35df8d37170 '[IMP] stock: merge push and pull rules'
-- ["stock.location.route", "pull_ids", "rule_ids (push and pull rules merged into stock.rule) - odoo a35df8d37170"]
-- ["stock.location.route", "push_ids", "rule_ids (push and pull rules merged into stock.rule) - odoo a35df8d37170"]
+- schema_version: 2
+  kind: removed_field
+  model: "stock.location.route"
+  field: "pull_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a35df8d37170"
+      title: "[IMP] stock: merge push and pull rules"
+  message: "rule_ids (push and pull rules merged into stock.rule) - odoo a35df8d37170"
+- schema_version: 2
+  kind: removed_field
+  model: "stock.location.route"
+  field: "push_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a35df8d37170"
+      title: "[IMP] stock: merge push and pull rules"
+  message: "rule_ids (push and pull rules merged into stock.rule) - odoo a35df8d37170"

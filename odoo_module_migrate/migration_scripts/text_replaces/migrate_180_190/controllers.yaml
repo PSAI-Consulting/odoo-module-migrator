@@ -1,2 +1,5 @@
 .py:
-  type=(['\"])json\1: type=\1jsonrpc\1
+  type=(['\"])json\1:
+    schema_version: 2
+    kind: text_replace
+    replacement: "type=\\1jsonrpc\\1"

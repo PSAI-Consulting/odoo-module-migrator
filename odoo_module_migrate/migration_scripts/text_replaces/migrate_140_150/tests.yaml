@@ -1,6 +1,15 @@
 # Source : odoo 15.0 odoo/tests/common.py : « Deprecated class SavepointCase has been merged
 # into TransactionCase » (SavepointCase n'est plus qu'un alias de TransactionCase).
 .py:
-  '\bSavepointCase,\s*TransactionCase\b': 'TransactionCase'
-  '\bTransactionCase,\s*SavepointCase\b': 'TransactionCase'
-  '(?<![\w.])SavepointCase\b': 'TransactionCase'
+  '\bSavepointCase,\s*TransactionCase\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "TransactionCase"
+  '\bTransactionCase,\s*SavepointCase\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "TransactionCase"
+  '(?<![\w.])SavepointCase\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "TransactionCase"

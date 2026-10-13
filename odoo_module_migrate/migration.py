@@ -367,19 +367,11 @@ class Migration:
         # Also inspect merges from earlier transitions. A stale OCA directory
         # can still be present when a user starts directly from 19.0 even if
         # that module was already merged while moving to 19.0.
-        import yaml
+        from .migration_rules import merged_module_rules
 
         rules = list(current_rules)
         target_code = int(float(self._migration_steps[-1]["target_version_name"]) * 10)
-        rules_root = pathlib.Path(__file__).parent / "migration_scripts/deprecated_modules"
-        for step in rules_root.glob("migrate_*_*"):
-            match = re.fullmatch(r"migrate_(\d+)_(\d+)", step.name)
-            if not match or int(match.group(2)) > target_code:
-                continue
-            for source in sorted(step.glob("*.yaml")):
-                for rule in yaml.safe_load(source.read_text(encoding="utf-8")) or []:
-                    if len(rule) > 2 and rule[1] == "merged":
-                        rules.append(rule)
+        rules.extend(merged_module_rules(target_code))
 
         reported = set()
         for rule in rules:
@@ -749,10 +741,9 @@ class Migration:
             # migration scripts cannot know (order.order_line -> line). Apply
             # each step in order so chained renames remain chained.
             for script in self._migration_scripts:
-                renames = {}
-                for rule in script._RENAMED_FIELDS:
-                    if len(rule) > 2 and rule[2]:
-                        renames.setdefault((rule[0], rule[1]), rule[2])
+                # the curated blockers ([model, field, null]) apply here too:
+                # a generated rename they cancel is never applied
+                renames = script.effective_field_renames()
                 changes = python_checks.apply_field_renames(
                     module_migration._module_path, model_index, renames
                 )

@@ -2,18 +2,25 @@
 """Unit tests of the rules of the 8.0 → 17.0 steps."""
 
 import glob
-
-import yaml
+import pathlib
 
 from odoo_module_migrate import manifest
+from odoo_module_migrate.migration_rules import loader
 
 SCRIPTS = "odoo_module_migrate/migration_scripts"
+
+
+def _rule_doc(path):
+    """Historical data of a rule file (legacy and v2 entries), as the
+    migration scripts receive it."""
+    path = pathlib.Path(path)
+    return loader.load_file(path.resolve(), path.parent.parent.name).document
 
 
 def _module_rules(step):
     rules = []
     for path in sorted(glob.glob(f"{SCRIPTS}/deprecated_modules/{step}/*.yaml")):
-        rules += yaml.safe_load(open(path, encoding="utf-8")) or []
+        rules += _rule_doc(path) or []
     return rules
 
 
@@ -254,7 +261,7 @@ def test_environment_manage_removed():
 def _yaml_rules(kind, step, ext):
     rules = {}
     for path in sorted(glob.glob(f"{SCRIPTS}/{kind}/{step}/*.yaml")):
-        rules.update((yaml.safe_load(open(path, encoding="utf-8")) or {}).get(ext, {}))
+        rules.update((_rule_doc(path) or {}).get(ext, {}))
     return rules
 
 
@@ -445,7 +452,7 @@ def test_rules_140_150():
     assert not _matching(errors, "html = html_escape(x)")
     rules = []
     for path in sorted(glob.glob(f"{SCRIPTS}/renamed_fields/migrate_140_150/*.yaml")):
-        rules += yaml.safe_load(open(path, encoding="utf-8")) or []
+        rules += _rule_doc(path) or []
     assert ["crm.lead", "meeting_count", "calendar_event_count"] in [r[:3] for r in rules]
 
 
@@ -626,7 +633,7 @@ def test_blocked_rules_are_loaded():
         ("migrate_130_140", ["crm.lead", "planned_revenue"]),
         ("migrate_160_170", ["hr.expense", "total_amount_company"]),
     ):
-        rows = yaml.safe_load(open(f"{SCRIPTS}/renamed_fields/{step}/curated.yaml", encoding="utf-8"))
+        rows = _rule_doc(f"{SCRIPTS}/renamed_fields/{step}/curated.yaml")
         assert [r[2] for r in rows if r[:2] == key] == [None], (step, key)
 
 
@@ -681,7 +688,7 @@ def test_rules_110_120():
     errors = _yaml_rules("text_errors", "migrate_110_120", ".py")
     assert _matching(errors, "    'test': ['test/sale_order.yml'],")
     assert not _matching(errors, "    'data': ['views/sale_order.xml'],")
-    rows = yaml.safe_load(open(f"{SCRIPTS}/renamed_models/migrate_110_120/curated.yaml", encoding="utf-8"))
+    rows = _rule_doc(f"{SCRIPTS}/renamed_models/migrate_110_120/curated.yaml")
     assert ["signature.request", "sign.request"] in [r[:2] for r in rows]
 
 

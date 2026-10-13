@@ -4,4 +4,7 @@
 # ir_ui_view.py _validate_qweb_directive n'autorise plus que t-out
 # (« Forbidden owl directive used in arch (t-esc) »).
 .xml:
-  '\bt-esc=': 't-out='
+  '\bt-esc=':
+    schema_version: 2
+    kind: text_replace
+    replacement: "t-out="

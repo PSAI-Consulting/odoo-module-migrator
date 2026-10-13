@@ -3,11 +3,28 @@
 #
 # odoo 4d23d241bfbc '[IMP] l10n_cn: keep only one CoA' : l10n_cn_standard supprimé, son plan
 # comptable gardé dans l10n_cn
-- ["l10n_cn_standard", "merged", "l10n_cn"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "l10n_cn_standard"
+  change: "merged"
+  target: "l10n_cn"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "4d23d241bfbc"
+      title: "[IMP] l10n_cn: keep only one CoA"
 #
 # Modules de correctifs (auto_install) de la branche stable 13.0, intégrés au module parent en 14.0 :
 # sale_amazon_authentication « Patch module for the authentication flow of the Amazon
 # Connector » (depends sale_amazon) ; social_linkedin_company_support « Post on your LinkedIn
 # company pages » (depends social_linkedin)
-- ["sale_amazon_authentication", "merged", "sale_amazon"]
-- ["social_linkedin_company_support", "merged", "social_linkedin"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "sale_amazon_authentication"
+  change: "merged"
+  target: "sale_amazon"
+- schema_version: 2
+  kind: deprecated_module
+  module: "social_linkedin_company_support"
+  change: "merged"
+  target: "social_linkedin"

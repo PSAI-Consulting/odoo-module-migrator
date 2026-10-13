@@ -24,7 +24,7 @@ there, so an already migrated file is unchanged (idempotent).
 """
 
 import ast
-import glob
+import pathlib
 import os
 import re
 
@@ -42,10 +42,12 @@ def load_rules(path):
 
 def load_error_patterns(step_dir):
     """Python ``text_errors`` patterns of a step (``migrate_XXX_YYY``)."""
+    from .migration_rules import legacy_documents
+
+    step_dir = os.path.normpath(step_dir)
+    root = os.path.dirname(os.path.dirname(step_dir))
     patterns = []
-    for path in sorted(glob.glob(os.path.join(step_dir, "*.yaml"))):
-        with open(path, encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
+    for _path, data in legacy_documents("text_errors", os.path.basename(step_dir), pathlib.Path(root)):
         patterns += list((data.get(".py") or {}).keys())
     return patterns
 

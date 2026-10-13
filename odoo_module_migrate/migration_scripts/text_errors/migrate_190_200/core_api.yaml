@@ -1,31 +1,116 @@
 # API du framework supprimée en 20.0 (absente de la branche 20.0 :
 # tools/extract_changes.py api, vérifié dans odoo/orm/*.py et odoo/tools).
 .py:
-  '\bfrom odoo\.osv\b|\bimport odoo\.osv\b|\bodoo\.osv\.': "[20] The odoo.osv package was removed: use odoo.fields.Domain (Domain.AND / Domain.OR...)"
-  '\.toggle_active\(': "[20] toggle_active() was removed: call action_archive() / action_unarchive()"
-  '\.copy_translations\(': "[20] copy_translations() was removed"
-  '\.check_field_access_rights\(': "[20] check_field_access_rights() was removed: use _check_field_access() / has_field_access()"
-  '\bfrom odoo\.tools\.pycompat\b|\bpycompat\.': "[20] odoo.tools.pycompat was removed: use the csv module"
-  '\blazy_property\b': "[20] lazy_property was removed: use functools.cached_property"
-  '\bormcache_context\b': "[20] ormcache_context was removed: use ormcache with the context keys"
+  '\bfrom odoo\.osv\b|\bimport odoo\.osv\b|\bodoo\.osv\.':
+    schema_version: 2
+    kind: text_error
+    message: "[20] The odoo.osv package was removed: use odoo.fields.Domain (Domain.AND / Domain.OR...)"
+  '\.toggle_active\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] toggle_active() was removed: call action_archive() / action_unarchive()"
+  '\.copy_translations\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] copy_translations() was removed"
+  '\.check_field_access_rights\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] check_field_access_rights() was removed: use _check_field_access() / has_field_access()"
+  '\bfrom odoo\.tools\.pycompat\b|\bpycompat\.':
+    schema_version: 2
+    kind: text_error
+    message: "[20] odoo.tools.pycompat was removed: use the csv module"
+  '\blazy_property\b':
+    schema_version: 2
+    kind: text_error
+    message: "[20] lazy_property was removed: use functools.cached_property"
+  '\bormcache_context\b':
+    schema_version: 2
+    kind: text_error
+    message: "[20] ormcache_context was removed: use ormcache with the context keys"
   # odoo 970e3d96abe3 '[REF] tools: Rename old populate -> duplicate' ; « from odoo.tools.populate
   # import X » est traité nom par nom par python_scripts/migrate_190_200/odoo_tools_imports.py
-  '(?<!from )\bodoo\.tools\.populate\b|\b_populate_factories\b': "[20] odoo.tools.populate was removed (renamed odoo.tools.duplicate, odoo 970e3d96abe3)"
+  '(?<!from )\bodoo\.tools\.populate\b|\b_populate_factories\b':
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "970e3d96abe3"
+        title: "[REF] tools: Rename old populate -> duplicate"
+    message: "[20] odoo.tools.populate was removed (renamed odoo.tools.duplicate, odoo 970e3d96abe3)"
   # odoo ef789d3c5086 '[MOV] core: move Query into odoo.orm' ; « from odoo.tools.query import Query »
   # est réécrit par python_scripts/migrate_190_200/odoo_tools_imports.py (-> from odoo.models import Query)
-  '(?<!from )\bodoo\.tools\.query\b': "[20] odoo.tools.query was moved to odoo.orm.query: import Query from odoo.models"
-  '\bfrom odoo\.service\.(?:db|security) import|\bodoo\.service\.(?:db|security)\b': "[20] odoo.service.db / odoo.service.security were removed"
+  '(?<!from )\bodoo\.tools\.query\b':
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "ef789d3c5086"
+        title: "[MOV] core: move Query into odoo.orm"
+    message: "[20] odoo.tools.query was moved to odoo.orm.query: import Query from odoo.models"
+  '\bfrom odoo\.service\.(?:db|security) import|\bodoo\.service\.(?:db|security)\b':
+    schema_version: 2
+    kind: text_error
+    message: "[20] odoo.service.db / odoo.service.security were removed"
   # odoo 0915e817f41 '[REM] orm: old check access methods' ; en 19.0 check_access_rights(op) valait
   # self.browse().check_access(op), et avec raise_exception=False self.browse().has_access(op)
-  '\.check_access_rights\(': "[20] check_access_rights() was removed: use self.browse().check_access(op), or self.browse().has_access(op) for raise_exception=False"
+  '\.check_access_rights\(':
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "0915e817f416"
+        title: "[REM] orm: old check access methods"
+    message: "[20] check_access_rights() was removed: use self.browse().check_access(op), or self.browse().has_access(op) for raise_exception=False"
   # odoo 080bbf6153a '[IMP] orm: remove stuff deprecated since Odoo 19' (messages de dépréciation 19.0)
-  '\bcreate_unique_index\(': "[20] create_unique_index() was removed: use create_index(..., unique=True)"
-  '\.split_for_in_conditions\(': "[20] cr.split_for_in_conditions() was removed: use split_every(cr.IN_MAX, ids)"
-  '\bcheck_method_name\(': "[20] check_method_name() was removed: use odoo.service.model.get_public_method"
-  '\bfrom odoo\.(?:tools(?:\.misc)?|loglevels) import [^\n]*\b(?:ustr|get_encodings)\b|\btools\.ustr\(': "[20] ustr() / get_encodings() were removed: use str() / bytes.decode()"
-  '\bfrom odoo\.tools(?:\.misc)? import [^\n]*\bflatten\b|\btools\.flatten\(': "[20] tools.flatten() was removed (deprecated since 18.0)"
-  '\b(?:load_manifest|get_modules_with_version)\(': "[20] load_manifest() / get_modules_with_version() were removed: use odoo.modules.Manifest (Manifest.for_addon / all_addon_manifests)"
-  '\.manage_changes\(': "[20] manage_changes() was removed: use registry.signal_changes() and registry.reset_changes()"
-  '\bfrom odoo\.tests\.common import [^\n]*\bForm\b': "[20] odoo.tests.common.Form was removed: import Form from odoo.tests"
+  '\bcreate_unique_index\(':
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "080bbf6153a0"
+        title: "[IMP] orm: remove stuff deprecated since Odoo 19"
+    message: "[20] create_unique_index() was removed: use create_index(..., unique=True)"
+  '\.split_for_in_conditions\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] cr.split_for_in_conditions() was removed: use split_every(cr.IN_MAX, ids)"
+  '\bcheck_method_name\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] check_method_name() was removed: use odoo.service.model.get_public_method"
+  '\bfrom odoo\.(?:tools(?:\.misc)?|loglevels) import [^\n]*\b(?:ustr|get_encodings)\b|\btools\.ustr\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] ustr() / get_encodings() were removed: use str() / bytes.decode()"
+  '\bfrom odoo\.tools(?:\.misc)? import [^\n]*\bflatten\b|\btools\.flatten\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] tools.flatten() was removed (deprecated since 18.0)"
+  '\b(?:load_manifest|get_modules_with_version)\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] load_manifest() / get_modules_with_version() were removed: use odoo.modules.Manifest (Manifest.for_addon / all_addon_manifests)"
+  '\.manage_changes\(':
+    schema_version: 2
+    kind: text_error
+    message: "[20] manage_changes() was removed: use registry.signal_changes() and registry.reset_changes()"
+  '\bfrom odoo\.tests\.common import [^\n]*\bForm\b':
+    schema_version: 2
+    kind: text_error
+    message: "[20] odoo.tests.common.Form was removed: import Form from odoo.tests"
   # odoo f371db62cc4 '[REF] core: remove pg_varchar()'
-  '\bpg_varchar\(': "[20] tools.sql.pg_varchar() was removed: write the SQL type ('VARCHAR' / 'VARCHAR(n)')"
+  '\bpg_varchar\(':
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "f371db62cc4e"
+        title: "[REF] core: remove pg_varchar()"
+    message: "[20] tools.sql.pg_varchar() was removed: write the SQL type ('VARCHAR' / 'VARCHAR(n)')"

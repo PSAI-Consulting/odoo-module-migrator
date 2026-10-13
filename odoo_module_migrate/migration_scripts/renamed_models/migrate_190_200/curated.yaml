@@ -2,11 +2,50 @@
 # tools/extract_changes.py models). Renommage automatique ('ancien' -> 'nouveau',
 # model_ancien -> model_nouveau) seulement quand le modèle reste dans le même module
 # (le préfixe de module des xmlids ne change pas) et que le commit annonce le renommage.
-# Format : [ancien_modèle, nouveau_modèle, source]
+# Format : schema_version 2 (voir docs/migration_rules.md)
 # odoo 6057e25f8c1 : « we renamed the field Contract Type to Employee Type » ; module hr,
 # champs name, code, sequence, country_id repris (hr_contract_type.py -> hr_employee_type.py)
-- ["hr.contract.type", "hr.employee.type", "odoo 6057e25f8c1 '[IMP] hr: Remove employee_type and use contract_type_id'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: hr.contract.type
+  new_model: hr.employee.type
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 6057e25f8c12
+      title: "[IMP] hr: Remove employee_type and use contract_type_id"
+      file: "addons/hr/models/hr_employee_type.py"
+  validation:
+    target_model_required: true
+  message: "odoo 6057e25f8c1 '[IMP] hr: Remove employee_type and use contract_type_id'"
 # Enterprise (fork LBruyere/enterprise), même module, titre explicite :
-- ["hr.payroll.dashboard.warning", "hr.payroll.warning", "enterprise 0cf9abad259 '[IMP] hr_payroll: renamed `hr.payroll.dashboard.warning` to `hr.payroll.warning`'"]
-- ["voip.country.code.mixin", "voip.phone.country.mixin", "enterprise 8d5d31abeba '[CLN] voip: rename voip.country.code.mixin to voip.phone.country.mixin'"]
-- ["ai.topic", "ai.skill", "enterprise f9e2f8cec44 '[REF] ai, ai_app, *: rename topics to skills'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "hr.payroll.dashboard.warning"
+  new_model: "hr.payroll.warning"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "0cf9abad259c"
+      title: "[IMP] hr_payroll: renamed `hr.payroll.dashboard.warning` to `hr.payroll.warning`"
+  message: "enterprise 0cf9abad259 '[IMP] hr_payroll: renamed `hr.payroll.dashboard.warning` to `hr.payroll.warning`'"
+- schema_version: 2
+  kind: renamed_model
+  old_model: "voip.country.code.mixin"
+  new_model: "voip.phone.country.mixin"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "8d5d31abeba2"
+      title: "[CLN] voip: rename voip.country.code.mixin to voip.phone.country.mixin"
+  message: "enterprise 8d5d31abeba '[CLN] voip: rename voip.country.code.mixin to voip.phone.country.mixin'"
+- schema_version: 2
+  kind: renamed_model
+  old_model: "ai.topic"
+  new_model: "ai.skill"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "f9e2f8cec44e"
+      title: "[REF] ai, ai_app, *: rename topics to skills"
+  message: "enterprise f9e2f8cec44 '[REF] ai, ai_app, *: rename topics to skills'"

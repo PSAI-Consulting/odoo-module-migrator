@@ -76,6 +76,11 @@ def evaluate_confidence(
     proof_detail = (
         f"{proof_type} {proof_chunk.provenance}" if proof_chunk is not None else "aucune référence de preuve vérifiée"
     )
+    if proof_chunk is not None and getattr(proof_chunk, "rule", None):
+        # reported only: the weights do not change, a structured verified
+        # rule does not open new automatic edits (Lot A)
+        proof_detail += (" (règle structurée vérifiée)" if proof_chunk.proof_strength == "strong"
+                         else " (règle historique, preuve non structurée)")
     if proof_chunk is not None and not proof_relevant:
         proof_detail += " (ne mentionne pas : " + ", ".join(proof_missing) + ")"
     factors = [

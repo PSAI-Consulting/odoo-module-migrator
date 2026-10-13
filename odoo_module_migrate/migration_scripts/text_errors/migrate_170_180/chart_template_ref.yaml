@@ -1,2 +1,5 @@
 .py:
-  setUpClass.*chart_template_ref: "[18] The 'chart_template_ref' argument has been removed from setUpClass. More details: https://github.com/odoo/odoo/pull/152899"
+  setUpClass.*chart_template_ref:
+    schema_version: 2
+    kind: text_error
+    message: "[18] The 'chart_template_ref' argument has been removed from setUpClass. More details: https://github.com/odoo/odoo/pull/152899"

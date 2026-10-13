@@ -1,2 +1,5 @@
 "*":
-  "('|\")ir.values('|\")": "[V11] Reference to 'ir.values'. This model has been removed."
+  "('|\")ir.values('|\")":
+    schema_version: 2
+    kind: text_error
+    message: "[V11] Reference to 'ir.values'. This model has been removed."

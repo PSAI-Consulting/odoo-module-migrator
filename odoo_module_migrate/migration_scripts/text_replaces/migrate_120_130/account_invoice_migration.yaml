@@ -10,16 +10,43 @@
 .py:
   # 12.0 account.invoice : action_invoice_open / _cancel / _draft ; 13.0 account.move :
   # action_post / button_cancel / button_draft
-  '\.action_invoice_open\(': ".action_post("
-  '\.action_invoice_cancel\(': ".button_cancel("
-  '\.action_invoice_draft\(': ".button_draft("
+  '\.action_invoice_open\(':
+    schema_version: 2
+    kind: text_replace
+    replacement: ".action_post("
+  '\.action_invoice_cancel\(':
+    schema_version: 2
+    kind: text_replace
+    replacement: ".button_cancel("
+  '\.action_invoice_draft\(':
+    schema_version: 2
+    kind: text_replace
+    replacement: ".button_draft("
 
 .xml:
   # vues supprimées en 13.0 (addons/account/views/account_invoice_view.xml) et leur
   # équivalent dans account_move_views.xml
-  '\baccount\.invoice_form\b': "account.view_move_form"
-  '\baccount\.invoice_supplier_form\b': "account.view_move_form"
-  '\baccount\.invoice_tree\b': "account.view_invoice_tree"
-  'name="action_invoice_open"': 'name="action_post"'
-  'name="action_invoice_cancel"': 'name="button_cancel"'
-  'name="action_invoice_draft"': 'name="button_draft"'
+  '\baccount\.invoice_form\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "account.view_move_form"
+  '\baccount\.invoice_supplier_form\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "account.view_move_form"
+  '\baccount\.invoice_tree\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "account.view_invoice_tree"
+  'name="action_invoice_open"':
+    schema_version: 2
+    kind: text_replace
+    replacement: "name=\"action_post\""
+  'name="action_invoice_cancel"':
+    schema_version: 2
+    kind: text_replace
+    replacement: "name=\"button_cancel\""
+  'name="action_invoice_draft"':
+    schema_version: 2
+    kind: text_replace
+    replacement: "name=\"button_draft\""

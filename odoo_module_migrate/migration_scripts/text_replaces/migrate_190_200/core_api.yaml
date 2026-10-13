@@ -2,25 +2,72 @@
 .py:
   # odoo 19.0 odoo/orm/models.py : def _check_recursion(self, parent=None):
   #     return not self._has_cycle(parent)      (supprimé en 20.0)
-  '\bnot\s+self\._check_(?:m2m_)?recursion\(': 'self._has_cycle('
-  '\bself\._check_(?:m2m_)?recursion\(': 'not self._has_cycle('
+  '\bnot\s+self\._check_(?:m2m_)?recursion\(':
+    schema_version: 2
+    kind: text_replace
+    replacement: "self._has_cycle("
+  '\bself\._check_(?:m2m_)?recursion\(':
+    schema_version: 2
+    kind: text_replace
+    replacement: "not self._has_cycle("
   # odoo 0915e817f41 '[REM] orm: old check access methods' ; en 19.0 (odoo/orm/models.py) :
   #     def _filter_access_rules(self, operation): return self._filtered_access(operation)
   #     def _filter_access_rules_python(self, operation): return self._filtered_access(operation)
   #     def check_access_rule(self, operation): self.check_access(operation)
-  '\._filter_access_rules(?:_python)?\(': '._filtered_access('
-  '\.check_access_rule\(': '.check_access('
+  '\._filter_access_rules(?:_python)?\(':
+    schema_version: 2
+    kind: text_replace
+    replacement: "._filtered_access("
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "0915e817f416"
+        title: "[REM] orm: old check access methods"
+  '\.check_access_rule\(':
+    schema_version: 2
+    kind: text_replace
+    replacement: ".check_access("
   # odoo 080bbf6153a '[IMP] orm: remove stuff deprecated since Odoo 19' ; en 19.0 (odoo/orm/fields.py) :
   #     attrs['aggregator'] = attrs.pop('group_operator')   (même règle qu'en 17→18)
-  '\bgroup_operator(\s*=)': 'aggregator\1'
+  '\bgroup_operator(\s*=)':
+    schema_version: 2
+    kind: text_replace
+    replacement: "aggregator\\1"
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "080bbf6153a0"
+        title: "[IMP] orm: remove stuff deprecated since Odoo 19"
   # odoo 4f6f4efbad0 '[MOV] tests: test_reports is not a tool' : odoo/tools/test_reports.py ->
   # odoo/tests/reports.py, try_report / try_report_action à signature identique
-  '\bodoo\.tools\.test_reports\b': 'odoo.tests.reports'
+  '\bodoo\.tools\.test_reports\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "odoo.tests.reports"
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "4f6f4efbad0e"
+        title: "[MOV] tests: test_reports is not a tool"
   # seul sur sa ligne (« import test_reports, ustr » donnerait « reports as test_reports, ustr »
   # importé de odoo.tests ; ce cas est signalé par python_scripts/migrate_190_200/odoo_tools_imports.py)
-  '(?m)^([ \t]*)from odoo\.tools import test_reports[ \t]*$': '\1from odoo.tests import reports as test_reports'
+  '(?m)^([ \t]*)from odoo\.tools import test_reports[ \t]*$':
+    schema_version: 2
+    kind: text_replace
+    replacement: "\\1from odoo.tests import reports as test_reports"
   # odoo 080bbf6153a : odoo/tests/common.py __getattr__ « Since 18.0: odoo.tests.common.Form
   # is deprecated, use odoo.tests.Form » (supprimé en 20.0)
-  '(?m)^(\s*)from odoo\.tests\.common import Form$': '\1from odoo.tests import Form'
+  '(?m)^(\s*)from odoo\.tests\.common import Form$':
+    schema_version: 2
+    kind: text_replace
+    replacement: "\\1from odoo.tests import Form"
+    confidence: verified
+    evidence:
+      - repository: "odoo"
+        commit: "080bbf6153a0"
+        title: "[IMP] orm: remove stuff deprecated since Odoo 19"
   # odoo 61fc60768b79 '[IMP] mail: do not create mail notification on create'
-  '\bDISABLED_MAIL_CONTEXT\b': 'DISABLED_MAIL_CREATE_CONTEXT'
+  '\bDISABLED_MAIL_CONTEXT\b':
+    schema_version: 2
+    kind: text_replace
+    replacement: "DISABLED_MAIL_CREATE_CONTEXT"

@@ -2,6 +2,18 @@
 # Ces motifs étaient des remplacements automatiques non vérifiés (fork, 2025-09) ;
 # ils sont rétrogradés en avertissements (voir CHANGELOG, lot 0).
 .py:
-  'self\.pool\b': "[16] 'self.pool' (API OpenERP) : utiliser self.env[...] ou self.env.registry."
-  '\.render_template\(': "[16] render_template() : vérifier l'API cible (_render_template / ir.qweb._render)."
-  '\.currency_id\.compute\(': "[16] res.currency.compute() n'existe plus : utiliser currency._convert(amount, to_currency, company, date)."
+  'self\.pool\b':
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[16] 'self.pool' (API OpenERP) : utiliser self.env[...] ou self.env.registry."
+  '\.render_template\(':
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[16] render_template() : vérifier l'API cible (_render_template / ir.qweb._render)."
+  '\.currency_id\.compute\(':
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[16] res.currency.compute() n'existe plus : utiliser currency._convert(amount, to_currency, company, date)."

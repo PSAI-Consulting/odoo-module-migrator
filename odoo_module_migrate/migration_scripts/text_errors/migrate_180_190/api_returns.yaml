@@ -1,3 +1,11 @@
 # Source : odoo commit 76967686cc07 (19.0) : api.returns n'existe plus
 .py:
-  '@api\.returns\b': "[19] @api.returns was removed (odoo 76967686cc07): remove the decorator"
+  '@api\.returns\b':
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 76967686cc07
+      title: "[IMP] core: remove @api.returns and move call_kw to odoo.service.model"
+    message: "[19] @api.returns was removed (odoo 76967686cc07): remove the decorator"

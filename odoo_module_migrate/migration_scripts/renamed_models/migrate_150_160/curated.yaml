@@ -1,18 +1,108 @@
 # Modèles renommés 15.0 -> 16.0 vérifiés à la main : prioritaires sur generated.yaml
 # (OpenUpgrade). Candidats de tools/extract_changes.py models vérifiés dans le commit :
 # odoo 6a23b9bcd6ae '[REF] *stock*: rename model `stock.production.lot` into `stock.lot`' : commit : « rename model stock.production.lot into stock.lot »
-- ["stock.production.lot", "stock.lot", "odoo 6a23b9bcd6ae '[REF] *stock*: rename model `stock.production.lot` into `stock.lot`'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "stock.production.lot"
+  new_model: "stock.lot"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "6a23b9bcd6ae"
+      title: "[REF] *stock*: rename model `stock.production.lot` into `stock.lot`"
+  message: "odoo 6a23b9bcd6ae '[REF] *stock*: rename model `stock.production.lot` into `stock.lot`'"
 # odoo c146c7d16f20 '[REF] *stock*: rename model `stock.location.route` into `stock.route`' : commit : « rename model stock.location.route into stock.route »
-- ["stock.location.route", "stock.route", "odoo c146c7d16f20 '[REF] *stock*: rename model `stock.location.route` into `stock.route`'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "stock.location.route"
+  new_model: "stock.route"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c146c7d16f20"
+      title: "[REF] *stock*: rename model `stock.location.route` into `stock.route`"
+  message: "odoo c146c7d16f20 '[REF] *stock*: rename model `stock.location.route` into `stock.route`'"
 # odoo fdcaa53ca0b5 '[IMP] mail, *: rename mail.channel.partner to mail.channel.member' : commit : « rename mail.channel.partner to mail.channel.member »
-- ["mail.channel.partner", "mail.channel.member", "odoo fdcaa53ca0b5 '[IMP] mail, *: rename mail.channel.partner to mail.channel.member'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "mail.channel.partner"
+  new_model: "mail.channel.member"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "fdcaa53ca0b5"
+      title: "[IMP] mail, *: rename mail.channel.partner to mail.channel.member"
+  message: "odoo fdcaa53ca0b5 '[IMP] mail, *: rename mail.channel.partner to mail.channel.member'"
 # enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment' : commit : « rename models and files to better represent appointment »
-- ["calendar.appointment.question", "appointment.question", "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"]
-- ["calendar.appointment.slot", "appointment.slot", "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"]
-- ["calendar.appointment.type", "appointment.type", "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "calendar.appointment.question"
+  new_model: "appointment.question"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "a300580d1d86"
+      title: "[MOV] *appointment*: rename models and files to better represent appointment"
+  message: "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"
+- schema_version: 2
+  kind: renamed_model
+  old_model: "calendar.appointment.slot"
+  new_model: "appointment.slot"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "a300580d1d86"
+      title: "[MOV] *appointment*: rename models and files to better represent appointment"
+  message: "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"
+- schema_version: 2
+  kind: renamed_model
+  old_model: "calendar.appointment.type"
+  new_model: "appointment.type"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "a300580d1d86"
+      title: "[MOV] *appointment*: rename models and files to better represent appointment"
+  message: "enterprise a300580d1d8 '[MOV] *appointment*: rename models and files to better represent appointment'"
 # enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model' : commit : « Merge sale.subscription into sale.order model » (modèles annexes renommés)
-- ["sale.subscription.alert", "sale.order.alert", "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"]
-- ["sale.subscription.log", "sale.order.log", "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"]
-- ["sale.subscription.stage", "sale.order.stage", "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "sale.subscription.alert"
+  new_model: "sale.order.alert"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "8fe6c96558bc"
+      title: "[IMP] sale_subscription: Merge sale.subscription into sale.order model"
+  message: "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"
+- schema_version: 2
+  kind: renamed_model
+  old_model: "sale.subscription.log"
+  new_model: "sale.order.log"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "8fe6c96558bc"
+      title: "[IMP] sale_subscription: Merge sale.subscription into sale.order model"
+  message: "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"
+- schema_version: 2
+  kind: renamed_model
+  old_model: "sale.subscription.stage"
+  new_model: "sale.order.stage"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "8fe6c96558bc"
+      title: "[IMP] sale_subscription: Merge sale.subscription into sale.order model"
+  message: "enterprise 8fe6c96558b '[IMP] sale_subscription: Merge sale.subscription into sale.order model'"
 # enterprise ca650eb57ca '[IMP] l10n_lu_reports: merge reports modules' : module l10n_lu_reports_annual_vat fusionné dans l10n_lu_reports
-- ["l10n_lu_reports_annual_vat.report.appendix.expenditures", "l10n_lu_reports.report.appendix.expenditures", "enterprise ca650eb57ca '[IMP] l10n_lu_reports: merge reports modules'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "l10n_lu_reports_annual_vat.report.appendix.expenditures"
+  new_model: "l10n_lu_reports.report.appendix.expenditures"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ca650eb57ca4"
+      title: "[IMP] l10n_lu_reports: merge reports modules"
+  message: "enterprise ca650eb57ca '[IMP] l10n_lu_reports: merge reports modules'"

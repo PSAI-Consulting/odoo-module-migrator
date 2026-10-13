@@ -2,5 +2,11 @@
 # (16.0 : get_xml_id() « use get_external_id() instead », fields_get_keys() « use
 # `_fields` », 15.0 : return list(self._fields))
 .py:
-  \.get_xml_id\(: ".get_external_id("
-  '((?:\bself|\b[a-z_]\w*)(?:\.\w+|\[[^\[\]\n]+\])*)\.fields_get_keys\(\)': 'list(\1._fields)'
+  \.get_xml_id\(:
+    schema_version: 2
+    kind: text_replace
+    replacement: ".get_external_id("
+  '((?:\bself|\b[a-z_]\w*)(?:\.\w+|\[[^\[\]\n]+\])*)\.fields_get_keys\(\)':
+    schema_version: 2
+    kind: text_replace
+    replacement: "list(\\1._fields)"

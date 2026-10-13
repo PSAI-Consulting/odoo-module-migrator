@@ -17,13 +17,20 @@ import pytest
 
 from odoo_module_migrate import report
 from odoo_module_migrate.intelligence.rag import HybridRAG, contains_symbol, rule_corpus
+from odoo_module_migrate.migration_rules import loader
 
 PACKAGE = pathlib.Path(__file__).resolve().parent.parent / "odoo_module_migrate" / "migration_scripts"
 
 
 def _rule_line(rel, needle):
+    """Provenance of the rule naming ``needle``: its first line (a v2 rule
+    spans several lines, its provenance is the line of the entry)."""
+    category = rel.split("/", 1)[0]
+    for rule in loader.load_file(PACKAGE / rel, category).rules:
+        if needle in str(rule.legacy) or any(needle in str(v) for v in rule.payload.key()):
+            return f"migration_scripts/{rel}:{rule.origin.line}"
     for number, line in enumerate((PACKAGE / rel).read_text(encoding="utf-8").splitlines(), 1):
-        if needle in line and not line.lstrip().startswith("#"):
+        if needle in line and not line.lstrip().startswith("#"):  # raw text of a legacy entry
             return f"migration_scripts/{rel}:{number}"
     raise AssertionError(f"{needle} not in {rel}")
 

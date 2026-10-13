@@ -3,11 +3,42 @@
 #
 # Modules marqués « removed » dans modules.yaml alors que le commit les fusionne :
 # enterprise 0efd3f52948 '[DEL] l10n_mx_edi_cancellation: Features in l10n_mx_edi'
-- ["l10n_mx_edi_cancellation", "merged", "l10n_mx_edi"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "l10n_mx_edi_cancellation"
+  change: "merged"
+  target: "l10n_mx_edi"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "0efd3f529487"
+      title: "[DEL] l10n_mx_edi_cancellation: Features in l10n_mx_edi"
 # enterprise 85bcf2b686f '[FIX]: l10n_uk_reports(_hmrc): adapt to new tax model and merge modules'
-- ["l10n_uk_reports_hmrc", "merged", "l10n_uk_reports"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "l10n_uk_reports_hmrc"
+  change: "merged"
+  target: "l10n_uk_reports"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "85bcf2b686fd"
+      title: "[FIX]: l10n_uk_reports(_hmrc): adapt to new tax model and merge modules"
 # enterprise dbb8753057e '[REF] website_form_editor: move to community' (13.0 : addons/website_form)
-- ["website_form_editor", "merged", "website_form"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "website_form_editor"
+  change: "merged"
+  target: "website_form"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "dbb8753057e5"
+      title: "[REF] website_form_editor: move to community"
 # Module de correctifs (auto_install) de la branche stable 12.0 « Improved Cash Flow Statement »
 # (depends account_reports), intégré au rapport de flux de trésorerie de account_reports en 13.0
-- ["account_reports_cash_flow", "merged", "account_reports"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "account_reports_cash_flow"
+  change: "merged"
+  target: "account_reports"

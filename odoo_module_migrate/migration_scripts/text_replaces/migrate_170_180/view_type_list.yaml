@@ -3,4 +3,7 @@
 # Source : 18.0 odoo/addons/base/models/ir_ui_view.py, type = Selection([('list', 'List'), ...])
 # (plus de 'tree') : un record ir.ui.view avec type tree est refusé à l'installation.
 .xml:
-  '(<field\s+name=["'']type["'']\s*>)\s*tree\s*(</field>)': '\1list\2'
+  '(<field\s+name=["'']type["'']\s*>)\s*tree\s*(</field>)':
+    schema_version: 2
+    kind: text_replace
+    replacement: "\\1list\\2"

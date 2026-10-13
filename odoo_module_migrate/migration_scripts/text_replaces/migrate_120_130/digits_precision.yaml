@@ -1,4 +1,13 @@
 .py:
   import\sodoo\.addons\.decimal_precision\b.*\n:
+    schema_version: 2
+    kind: text_replace
+    replacement: null
   from\sodoo\.addons\simport\sdecimal_precision\b.*\n:
-  digits\=dp\.get_precision\((?P<field>[^/)]+?)\): digits=\g<field>
+    schema_version: 2
+    kind: text_replace
+    replacement: null
+  digits\=dp\.get_precision\((?P<field>[^/)]+?)\):
+    schema_version: 2
+    kind: text_replace
+    replacement: "digits=\\g<field>"

@@ -1,4 +1,13 @@
 # Modèles renommés 10.0 -> 11.0 vérifiés à la main : prioritaires sur generated.yaml.
 # odoo ddf2b21bdf38 '[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line'
 # (10.0 : stock.pack.operation ; 11.0 : stock.move.line)
-- ["stock.pack.operation", "stock.move.line", "odoo ddf2b21bdf38 '[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line'"]
+- schema_version: 2
+  kind: renamed_model
+  old_model: "stock.pack.operation"
+  new_model: "stock.move.line"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ddf2b21bdf38"
+      title: "[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line"
+  message: "odoo ddf2b21bdf38 '[REF] stock: adapt to rename of stock.pack.operation into stock.mode.line'"

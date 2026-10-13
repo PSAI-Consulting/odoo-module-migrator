@@ -1,40 +1,340 @@
 # Modèles supprimés 19.0 -> 20.0 : messages vérifiés (successeur probable), prioritaires
 # sur generated.yaml. Les candidats au renommage refusés (changement de module ou de
 # sens, voir renamed_models/migrate_190_200/candidates.yaml) sont ici, signalés sans
-# remplacement automatique. Format : [modèle, message]
-- ["ir.model.access", "Replaced by ir.access (security/ir.access.csv): converted by Odoo's 19.4-00-ir-access.py with --odoo-root, or by the migrator fallback - odoo 26cc6ac18fe"]
-- ["ir.rule", "Replaced by ir.access (rows without group = restrictions): converted by Odoo's 19.4-00-ir-access.py with --odoo-root, or by the migrator fallback - odoo 26cc6ac18fe"]
-- ["hr.leave.type", "Merged into hr.work.entry.type (29 of its 35 fields kept; holiday_status_id -> work_entry_type_id) - odoo d37cf89a6ff '[IMP] hr_work_entry: Refactor work entries / time off management'"]
-- ["account.group", "Replaced by account.account.parent_id (Odoo's 19.3-00-account-groups.py converts the code) - odoo c3313b336b9 '[IMP] account: Replace account groups with account parent'"]
-- ["res.bank", "Bank data moved to res.partner.bank (acc_number -> account_number...) - odoo 113d77eb35a '[IMP] *: Improve UX of bank accounts'"]
-- ["stock.scrap", "Scraps are stock.move records now (stock.warn.insufficient.qty.scrap.scrap_move_id) - odoo 1c7d80a10b5 '[IMP] stock,*: remove scrap model'"]
-- ["website.base.unit", "Moved to product as product.base.unit (xmlids now product.model_product_base_unit) - odoo 92cbd03df00"]
-- ["purchase.requisition.alternative.warning", "Moved to purchase_alternative as purchase.alternative.warning - odoo a190a179988 '[MOV] purchase_alternative*: separate wizard'"]
-- ["purchase.requisition.create.alternative", "Moved to purchase_alternative as purchase.alternative.create - odoo a190a179988 '[MOV] purchase_alternative*: separate wizard'"]
-- ["hr.attendance.overtime.rule", "Replaced by hr.time.rule (hr_work_entry, new rule engine) - odoo dce36b04166"]
-- ["hr.attendance.overtime.ruleset", "Replaced by hr.time.rule (hr_work_entry, new rule engine) - odoo dce36b04166"]
-- ["google.calendar.sync", "Generic part extracted to google.sync - odoo ff1dbb66b86 '[MOV] google_calendar: extract generic behavior of sync files'"]
-- ["calendar.popover.delete.wizard", "See calendar.event.archive.or.unlink.wizard (appointment) - odoo 2a9413ea4de"]
-- ["sdd.mandate", "Replaced by account.direct.debit.mandate (module account_direct_debit) - enterprise 3cd11e664cb '[ADD] account_direct_debit,*: extract mandate logic'"]
-- ["sdd.mandate.send", "Replaced by account.mandate.send.wizard (module account_direct_debit) - enterprise 3cd11e664cb"]
-- ["fsm.stock.tracking", "Moved to planning_field_service_sale_stock as field.service.stock.tracking - enterprise 44c7df6b5cf"]
-- ["fsm.stock.tracking.line", "Moved to planning_field_service_sale_stock as field.service.stock.tracking.line - enterprise 44c7df6b5cf"]
-- ["l10n_co_dian.document", "Moved to l10n_co_edi as l10n_co_edi.document (modules merged) - enterprise 59e13fad4a5"]
-- ["l10n_co_dian.claim.wizard", "Moved to l10n_co_edi as l10n_co_edi.claim.wizard (modules merged) - enterprise 59e13fad4a5"]
-- ["l10n_co_dian.operation_mode", "Moved to l10n_co_edi as l10n_co_edi.operation_mode (modules merged) - enterprise 59e13fad4a5"]
-- ["l10n_mx_xml_polizas.xml_polizas_wizard", "Moved to l10n_mx_reports as l10n_mx_reports.xml_polizas_wizard - enterprise e8120496c6b"]
-- ["l10n_tr_nilvera_einvoice_extended.account.tax.code", "Moved to Enterprise l10n_tr_nilvera_einvoice (l10n_tr_nilvera_einvoice.account.tax.code) - odoo f5a2aed433c"]
-- ["l10n_tr_nilvera_einvoice_extended.tax.office", "See l10n_tr_nilvera_einvoice.account.tax.code (Enterprise) - odoo f5a2aed433c"]
-- ["sign.completed.document", "See sign.request.document (completed documents sealed by incremental signatures) - enterprise d542cb352d8"]
-- ["social.stream.post.image", "See social.stream.post.attachment (videos supported) - enterprise 0091b6992da"]
-- ["hr.payslip.employee.depature.holiday.attests.time.off.line", "See l10n.be.employee.departure.holiday.attest.line - enterprise d05822d8578"]
-- ["l10n.lu.monthly.declaration.wizard", "See l10n.lu.seculine.reports - enterprise 417a1edb87a"]
-- ["l10n.lu.situational.unemployment.wizard", "See l10n.lu.situational.unemployment - enterprise 417a1edb87a"]
-- ["l10n_be.273s", "See l10n_be.273_xx - enterprise 7f763bb5de4"]
-- ["l10n_be_reports.isoc.prepayment.pay.wizard", "See l10n_be_reports.isoc.prepayment.pay.form - enterprise c70b371052c"]
-- ["l10n_es_reports.aeat.boe.mod130.export.wizard", "See l10n_es_reports.mod130.submission.wizard (return engine) - enterprise ebfc571e49e"]
-- ["l10n_es_reports.aeat.boe.mod303.export.wizard", "See l10n_es_reports.mod303.submission.wizard (return engine) - enterprise ebfc571e49e"]
-- ["l10n_es_reports.aeat.boe.mod347.export.wizard", "See l10n_es_reports.mod347.submission.wizard (return engine) - enterprise ebfc571e49e"]
-- ["l10n_es_reports.aeat.boe.mod349.export.wizard", "See l10n_es_reports.mod349.submission.wizard (return engine) - enterprise ebfc571e49e"]
-- ["l10n_es_reports.aeat.boe.mod390.export.wizard", "See l10n_es_reports.mod390.submission.wizard (return engine) - enterprise ebfc571e49e"]
-- ["l10n_es_reports.aeat.mod347.manual.partner.data", "See l10n_es_reports.mod347.manual.partner.data - enterprise ebfc571e49e"]
+# remplacement automatique. Format : schema_version 2 (docs/migration_rules.md)
+- schema_version: 2
+  kind: removed_model
+  model: "ir.model.access"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "26cc6ac18fe9"
+      title: "[IMP] base: adapt code to use new model ir.access"
+  message: "Replaced by ir.access (security/ir.access.csv): converted by Odoo's 19.4-00-ir-access.py with --odoo-root, or by the migrator fallback - odoo 26cc6ac18fe"
+- schema_version: 2
+  kind: removed_model
+  model: "ir.rule"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "26cc6ac18fe9"
+      title: "[IMP] base: adapt code to use new model ir.access"
+  message: "Replaced by ir.access (rows without group = restrictions): converted by Odoo's 19.4-00-ir-access.py with --odoo-root, or by the migrator fallback - odoo 26cc6ac18fe"
+- schema_version: 2
+  kind: removed_model
+  model: hr.leave.type
+  change: merged
+  target_model: hr.work.entry.type
+  target_module: hr_work_entry
+  identity_preserved: false
+  field_mapping:
+    holiday_status_id: work_entry_type_id
+  automation: recommendation_only
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: d37cf89a6ff1
+      title: "[IMP] hr_work_entry: Refactor work entries / time off management"
+  validation:
+    target_model_required: true
+    target_fields_required:
+      - work_entry_type_id
+    installation_required: true
+  message: "Merged into hr.work.entry.type (29 of its 35 fields kept; holiday_status_id -> work_entry_type_id) - odoo d37cf89a6ff '[IMP] hr_work_entry: Refactor work entries / time off management'"
+- schema_version: 2
+  kind: removed_model
+  model: "account.group"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c3313b336b9f"
+      title: "[IMP] account: Replace account groups with account parent"
+  message: "Replaced by account.account.parent_id (Odoo's 19.3-00-account-groups.py converts the code) - odoo c3313b336b9 '[IMP] account: Replace account groups with account parent'"
+- schema_version: 2
+  kind: removed_model
+  model: "res.bank"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "113d77eb35aa"
+      title: "[IMP] *: Improve UX of bank accounts"
+  message: "Bank data moved to res.partner.bank (acc_number -> account_number...) - odoo 113d77eb35a '[IMP] *: Improve UX of bank accounts'"
+- schema_version: 2
+  kind: removed_model
+  model: "stock.scrap"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "1c7d80a10b5d"
+      title: "[IMP] stock,*: remove scrap model"
+  message: "Scraps are stock.move records now (stock.warn.insufficient.qty.scrap.scrap_move_id) - odoo 1c7d80a10b5 '[IMP] stock,*: remove scrap model'"
+- schema_version: 2
+  kind: removed_model
+  model: "website.base.unit"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "92cbd03df002"
+      title: "[MOV] point_of_sale, product, website_sale: migrate base unit model"
+  message: "Moved to product as product.base.unit (xmlids now product.model_product_base_unit) - odoo 92cbd03df00"
+- schema_version: 2
+  kind: removed_model
+  model: "purchase.requisition.alternative.warning"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a190a179988f"
+      title: "[MOV] purchase_alternative*: separate wizard"
+  message: "Moved to purchase_alternative as purchase.alternative.warning - odoo a190a179988 '[MOV] purchase_alternative*: separate wizard'"
+- schema_version: 2
+  kind: removed_model
+  model: "purchase.requisition.create.alternative"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "a190a179988f"
+      title: "[MOV] purchase_alternative*: separate wizard"
+  message: "Moved to purchase_alternative as purchase.alternative.create - odoo a190a179988 '[MOV] purchase_alternative*: separate wizard'"
+- schema_version: 2
+  kind: removed_model
+  model: "hr.attendance.overtime.rule"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dce36b041669"
+      title: "[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine"
+  message: "Replaced by hr.time.rule (hr_work_entry, new rule engine) - odoo dce36b04166"
+- schema_version: 2
+  kind: removed_model
+  model: "hr.attendance.overtime.ruleset"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dce36b041669"
+      title: "[IMP] hr_{work_entry,attendance,holidays,holidays_attendance}: sequential time rule pipeline engine"
+  message: "Replaced by hr.time.rule (hr_work_entry, new rule engine) - odoo dce36b04166"
+- schema_version: 2
+  kind: removed_model
+  model: "google.calendar.sync"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "ff1dbb66b86a"
+      title: "[MOV] google_calendar: extract generic behavior of sync files"
+  message: "Generic part extracted to google.sync - odoo ff1dbb66b86 '[MOV] google_calendar: extract generic behavior of sync files'"
+- schema_version: 2
+  kind: removed_model
+  model: "calendar.popover.delete.wizard"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2a9413ea4def"
+      title: "[IMP] {google_,microsoft_}calendar: display mail composer when the deletion and archiving"
+  message: "See calendar.event.archive.or.unlink.wizard (appointment) - odoo 2a9413ea4de"
+- schema_version: 2
+  kind: removed_model
+  model: "sdd.mandate"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "3cd11e664cb8"
+      title: "[ADD] account_direct_debit,*: extract mandate logic"
+  message: "Replaced by account.direct.debit.mandate (module account_direct_debit) - enterprise 3cd11e664cb '[ADD] account_direct_debit,*: extract mandate logic'"
+- schema_version: 2
+  kind: removed_model
+  model: "sdd.mandate.send"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "3cd11e664cb8"
+      title: "[ADD] account_direct_debit,*: extract mandate logic"
+  message: "Replaced by account.mandate.send.wizard (module account_direct_debit) - enterprise 3cd11e664cb"
+- schema_version: 2
+  kind: removed_model
+  model: "fsm.stock.tracking"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "44c7df6b5cfd"
+      title: "[REF] planning_field_service_sale_stock: migrate FSM Stock in planning field service"
+  message: "Moved to planning_field_service_sale_stock as field.service.stock.tracking - enterprise 44c7df6b5cf"
+- schema_version: 2
+  kind: removed_model
+  model: "fsm.stock.tracking.line"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "44c7df6b5cfd"
+      title: "[REF] planning_field_service_sale_stock: migrate FSM Stock in planning field service"
+  message: "Moved to planning_field_service_sale_stock as field.service.stock.tracking.line - enterprise 44c7df6b5cf"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_co_dian.document"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "59e13fad4a5a"
+      title: "[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules"
+  message: "Moved to l10n_co_edi as l10n_co_edi.document (modules merged) - enterprise 59e13fad4a5"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_co_dian.claim.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "59e13fad4a5a"
+      title: "[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules"
+  message: "Moved to l10n_co_edi as l10n_co_edi.claim.wizard (modules merged) - enterprise 59e13fad4a5"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_co_dian.operation_mode"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "59e13fad4a5a"
+      title: "[REF] l10n_co_{edi,dian,edi_pos,mandate}: merge modules"
+  message: "Moved to l10n_co_edi as l10n_co_edi.operation_mode (modules merged) - enterprise 59e13fad4a5"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_mx_xml_polizas.xml_polizas_wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "e8120496c6b7"
+      title: "[MERGE] l10n_mx_reports: merge Mexican reporting modules"
+  message: "Moved to l10n_mx_reports as l10n_mx_reports.xml_polizas_wizard - enterprise e8120496c6b"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_tr_nilvera_einvoice_extended.account.tax.code"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "f5a2aed433ce"
+      title: "[REF] l10n_tr_nilvera_einvoice_*: merge einvoice extended module"
+  message: "Moved to Enterprise l10n_tr_nilvera_einvoice (l10n_tr_nilvera_einvoice.account.tax.code) - odoo f5a2aed433c"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_tr_nilvera_einvoice_extended.tax.office"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "f5a2aed433ce"
+      title: "[REF] l10n_tr_nilvera_einvoice_*: merge einvoice extended module"
+  message: "See l10n_tr_nilvera_einvoice.account.tax.code (Enterprise) - odoo f5a2aed433c"
+- schema_version: 2
+  kind: removed_model
+  model: "sign.completed.document"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "d542cb352d83"
+      title: "[IMP] sign: seal completed documents through incremental signatures"
+  message: "See sign.request.document (completed documents sealed by incremental signatures) - enterprise d542cb352d8"
+- schema_version: 2
+  kind: removed_model
+  model: "social.stream.post.image"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "0091b6992daf"
+      title: "[IMP] social_*: support video in stream"
+  message: "See social.stream.post.attachment (videos supported) - enterprise 0091b6992da"
+- schema_version: 2
+  kind: removed_model
+  model: "hr.payslip.employee.depature.holiday.attests.time.off.line"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "d05822d85781"
+      title: "[IMP] hr_payroll{;*}: Belgian departure integration"
+  message: "See l10n.be.employee.departure.holiday.attest.line - enterprise d05822d8578"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n.lu.monthly.declaration.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "417a1edb87a1"
+      title: "[IMP] l10n_lu_hr_payroll: add DECMAL report and unify SECULine reports"
+  message: "See l10n.lu.seculine.reports - enterprise 417a1edb87a"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n.lu.situational.unemployment.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "417a1edb87a1"
+      title: "[IMP] l10n_lu_hr_payroll: add DECMAL report and unify SECULine reports"
+  message: "See l10n.lu.situational.unemployment - enterprise 417a1edb87a"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_be.273s"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "7f763bb5de4b"
+      title: "[IMP] l10n_be_hr_payroll: support Employee Participation in 273.XX reports"
+  message: "See l10n_be.273_xx - enterprise 7f763bb5de4"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_be_reports.isoc.prepayment.pay.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "c70b371052c0"
+      title: "[IMP] l10n_be_reports, account_reports: Advance payment return view improvements"
+  message: "See l10n_be_reports.isoc.prepayment.pay.form - enterprise c70b371052c"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_es_reports.aeat.boe.mod130.export.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ebfc571e49e0"
+      title: "[ADD] l10n_es: implement return engine"
+  message: "See l10n_es_reports.mod130.submission.wizard (return engine) - enterprise ebfc571e49e"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_es_reports.aeat.boe.mod303.export.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ebfc571e49e0"
+      title: "[ADD] l10n_es: implement return engine"
+  message: "See l10n_es_reports.mod303.submission.wizard (return engine) - enterprise ebfc571e49e"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_es_reports.aeat.boe.mod347.export.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ebfc571e49e0"
+      title: "[ADD] l10n_es: implement return engine"
+  message: "See l10n_es_reports.mod347.submission.wizard (return engine) - enterprise ebfc571e49e"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_es_reports.aeat.boe.mod349.export.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ebfc571e49e0"
+      title: "[ADD] l10n_es: implement return engine"
+  message: "See l10n_es_reports.mod349.submission.wizard (return engine) - enterprise ebfc571e49e"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_es_reports.aeat.boe.mod390.export.wizard"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ebfc571e49e0"
+      title: "[ADD] l10n_es: implement return engine"
+  message: "See l10n_es_reports.mod390.submission.wizard (return engine) - enterprise ebfc571e49e"
+- schema_version: 2
+  kind: removed_model
+  model: "l10n_es_reports.aeat.mod347.manual.partner.data"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ebfc571e49e0"
+      title: "[ADD] l10n_es: implement return engine"
+  message: "See l10n_es_reports.mod347.manual.partner.data - enterprise ebfc571e49e"

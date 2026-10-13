@@ -1,2 +1,6 @@
 .py:
-  url_?join\(: "[19] Review usage of URL joining functions (url_join, urljoin). Use 'tools.urls.urljoin' for safer URL joining. More information: https://github.com/odoo/odoo/commit/977e62d91f3e"
+  url_?join\(:
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[19] Review usage of URL joining functions (url_join, urljoin). Use 'tools.urls.urljoin' for safer URL joining. More information: https://github.com/odoo/odoo/commit/977e62d91f3e"

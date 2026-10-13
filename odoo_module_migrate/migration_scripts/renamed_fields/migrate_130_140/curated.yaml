@@ -1,31 +1,166 @@
 # Renommages 13.0 -> 14.0 vérifiés à la main : prioritaires sur generated.yaml (OpenUpgrade).
 # Vérifiés modèle par modèle (champs avant / après le commit et en 14.0) :
 # odoo d675dbaa4c71 '[IMP] account,* : Change type field to move_type in account.move' : commit : « Change type field to move_type in account.move » (ancienne règle account.yaml)
-- ["account.move", "type", "move_type", "odoo d675dbaa4c71 '[IMP] account,* : Change type field to move_type in account.move'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "account.move"
+  old_field: "type"
+  new_field: "move_type"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "d675dbaa4c71"
+      title: "[IMP] account,* : Change type field to move_type in account.move"
+  message: "odoo d675dbaa4c71 '[IMP] account,* : Change type field to move_type in account.move'"
 # odoo 8e4158af810b "[IMP] account: add 'partial' and 'reversed' payment states to invoices" : même Selection, valeurs partial / reversed ajoutées (ancienne règle account.yaml)
-- ["account.move", "invoice_payment_state", "payment_state", "odoo 8e4158af810b \"[IMP] account: add 'partial' and 'reversed' payment states to invoices\""]
-- ["account.invoice.report", "invoice_payment_state", "payment_state", "odoo 8e4158af810b \"[IMP] account: add 'partial' and 'reversed' payment states to invoices\""]
+- schema_version: 2
+  kind: renamed_field
+  model: "account.move"
+  old_field: "invoice_payment_state"
+  new_field: "payment_state"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8e4158af810b"
+      title: "[IMP] account: add 'partial' and 'reversed' payment states to invoices"
+  message: "odoo 8e4158af810b \"[IMP] account: add 'partial' and 'reversed' payment states to invoices\""
+- schema_version: 2
+  kind: renamed_field
+  model: "account.invoice.report"
+  old_field: "invoice_payment_state"
+  new_field: "payment_state"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8e4158af810b"
+      title: "[IMP] account: add 'partial' and 'reversed' payment states to invoices"
+  message: "odoo 8e4158af810b \"[IMP] account: add 'partial' and 'reversed' payment states to invoices\""
 # odoo caeb782841fc '[IMP] account,*: Improve bank statements/payments workflow' : mêmes champs (ancienne règle account.yaml pour invoice_sent)
-- ["account.move", "invoice_sent", "is_move_sent", "odoo caeb782841fc '[IMP] account,*: Improve bank statements/payments workflow'"]
-- ["account.move", "invoice_payment_ref", "payment_reference", "odoo caeb782841fc '[IMP] account,*: Improve bank statements/payments workflow'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "account.move"
+  old_field: "invoice_sent"
+  new_field: "is_move_sent"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "caeb782841fc"
+      title: "[IMP] account,*: Improve bank statements/payments workflow"
+  message: "odoo caeb782841fc '[IMP] account,*: Improve bank statements/payments workflow'"
+- schema_version: 2
+  kind: renamed_field
+  model: "account.move"
+  old_field: "invoice_payment_ref"
+  new_field: "payment_reference"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "caeb782841fc"
+      title: "[IMP] account,*: Improve bank statements/payments workflow"
+  message: "odoo caeb782841fc '[IMP] account,*: Improve bank statements/payments workflow'"
 # odoo efafadc3ee27 '[IMP] crm_iap_lead(_website): improve field naming' : commit : « improve field naming » (leads_count -> lead_count)
-- ["crm.iap.lead.mining.request", "leads_count", "lead_count", "odoo efafadc3ee27 '[IMP] crm_iap_lead(_website): improve field naming'"]
-- ["crm.reveal.rule", "leads_count", "lead_count", "odoo efafadc3ee27 '[IMP] crm_iap_lead(_website): improve field naming'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "crm.iap.lead.mining.request"
+  old_field: "leads_count"
+  new_field: "lead_count"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "efafadc3ee27"
+      title: "[IMP] crm_iap_lead(_website): improve field naming"
+  message: "odoo efafadc3ee27 '[IMP] crm_iap_lead(_website): improve field naming'"
+- schema_version: 2
+  kind: renamed_field
+  model: "crm.reveal.rule"
+  old_field: "leads_count"
+  new_field: "lead_count"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "efafadc3ee27"
+      title: "[IMP] crm_iap_lead(_website): improve field naming"
+  message: "odoo efafadc3ee27 '[IMP] crm_iap_lead(_website): improve field naming'"
 # odoo 4cf9fa928e25 '[IMP] account: redo the tour' : même état d'onboarding
-- ["res.company", "account_onboarding_sample_invoice_state", "account_onboarding_create_invoice_state", "odoo 4cf9fa928e25 '[IMP] account: redo the tour'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "account_onboarding_sample_invoice_state"
+  new_field: "account_onboarding_create_invoice_state"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "4cf9fa928e25"
+      title: "[IMP] account: redo the tour"
+  message: "odoo 4cf9fa928e25 '[IMP] account: redo the tour'"
 # odoo 0ea9254c81ea '[IMP] account: fusion wizards for automatic entries' : assistants fusionnés (account.automatic.entry.wizard), même journal par défaut
-- ["res.company", "accrual_default_journal_id", "automatic_entry_default_journal_id", "odoo 0ea9254c81ea '[IMP] account: fusion wizards for automatic entries'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.company"
+  old_field: "accrual_default_journal_id"
+  new_field: "automatic_entry_default_journal_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "0ea9254c81ea"
+      title: "[IMP] account: fusion wizards for automatic entries"
+  message: "odoo 0ea9254c81ea '[IMP] account: fusion wizards for automatic entries'"
 # odoo be2ee7707a4b '[IMP] inter_company_rules: split sale/purchase and account' : module inter_company_rules renommé account_inter_company_rules
-- ["res.config.settings", "module_inter_company_rules", "module_account_inter_company_rules", "odoo be2ee7707a4b '[IMP] inter_company_rules: split sale/purchase and account'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "res.config.settings"
+  old_field: "module_inter_company_rules"
+  new_field: "module_account_inter_company_rules"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "be2ee7707a4b"
+      title: "[IMP] inter_company_rules: split sale/purchase and account"
+  message: "odoo be2ee7707a4b '[IMP] inter_company_rules: split sale/purchase and account'"
 # enterprise 76f611ff8b3 '[IMP] planning: generic improvements' : même Many2one planning.role
-- ["hr.employee", "planning_role_id", "default_planning_role_id", "enterprise 76f611ff8b3 '[IMP] planning: generic improvements'"]
+- schema_version: 2
+  kind: renamed_field
+  model: "hr.employee"
+  old_field: "planning_role_id"
+  new_field: "default_planning_role_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "76f611ff8b32"
+      title: "[IMP] planning: generic improvements"
+  message: "enterprise 76f611ff8b3 '[IMP] planning: generic improvements'"
 #
 # Règles bloquées (null : jamais de renommage automatique) :
 # odoo 8066ab43482a '[REF] crm: update revenue fields names' : « changes the field name
 # expected_revenue into prorated_revenue and the field name planned_revenue into
 # expected_revenue » : échange de noms, non idempotent ; message dans removed_fields/curated.yaml.
-- ["crm.lead", "planned_revenue", null, "odoo 8066ab43482a : échange de noms avec expected_revenue"]
-- ["crm.lead", "expected_revenue", null, "odoo 8066ab43482a : expected_revenue réutilisé en 14.0"]
+- schema_version: 2
+  kind: renamed_field
+  model: "crm.lead"
+  old_field: "planned_revenue"
+  new_field: null
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8066ab43482a"
+      title: "[REF] crm: update revenue fields names"
+  message: "odoo 8066ab43482a : échange de noms avec expected_revenue"
+- schema_version: 2
+  kind: renamed_field
+  model: "crm.lead"
+  old_field: "expected_revenue"
+  new_field: null
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8066ab43482a"
+      title: "[REF] crm: update revenue fields names"
+  message: "odoo 8066ab43482a : expected_revenue réutilisé en 14.0"
 # OpenUpgrade 14.0 stock pre-migration renomme la colonne date_expected -> date_deadline, mais en
 # 14.0 la date prévue est stock.move.date (date_deadline : promesse client, en lecture seule).
-- ["stock.move", "date_expected", null, "date prévue = date en 14.0, pas date_deadline"]
+- schema_version: 2
+  kind: renamed_field
+  model: "stock.move"
+  old_field: "date_expected"
+  new_field: null
+  message: "date prévue = date en 14.0, pas date_deadline"

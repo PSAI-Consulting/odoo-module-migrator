@@ -4,9 +4,36 @@
 # Modules Enterprise marqués « removed » dans modules.yaml alors que le commit les fusionne
 # (fork LBruyere/enterprise, message du commit) :
 # enterprise f0c5b3e34f0 '[MERGE] l10n_be_hr_contract_salary: Merge mobility budget module in the standard belgian module'
-- ["l10n_be_hr_contract_salary_mobility_budget", "merged", "l10n_be_hr_contract_salary"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "l10n_be_hr_contract_salary_mobility_budget"
+  change: "merged"
+  target: "l10n_be_hr_contract_salary"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "f0c5b3e34f08"
+      title: "[MERGE] l10n_be_hr_contract_salary: Merge mobility budget module in the standard belgian module"
 # enterprise d04d2a2739c '[MERGE] l10n_in_reports_gstr: merge spreadsheet', puis l10n_in_reports_gstr
 # fusionné dans l10n_in_reports (a433371c22d, même saut)
-- ["l10n_in_reports_gstr_spreadsheet", "merged", "l10n_in_reports"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "l10n_in_reports_gstr_spreadsheet"
+  change: "merged"
+  target: "l10n_in_reports"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "d04d2a2739c3"
+      title: "[MERGE] l10n_in_reports_gstr: merge spreadsheet"
 # enterprise 29acaa3d078 '[REF] l10n_us_hr_payroll: merge l10n_us_hr_payroll_state_calculation'
-- ["l10n_us_hr_payroll_state_calculation", "merged", "l10n_us_hr_payroll"]
+- schema_version: 2
+  kind: deprecated_module
+  module: "l10n_us_hr_payroll_state_calculation"
+  change: "merged"
+  target: "l10n_us_hr_payroll"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "29acaa3d0785"
+      title: "[REF] l10n_us_hr_payroll: merge l10n_us_hr_payroll_state_calculation"

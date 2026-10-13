@@ -1,72 +1,639 @@
 # Champs supprimés 17.0 -> 18.0 : messages avec le remplaçant (prioritaires sur
 # generated.yaml). Vérifiés dans le commit de suppression (git log -S, git show) ;
 # le remplaçant n'est JAMAIS appliqué automatiquement (sémantique différente).
-# Format : [modèle, champ, message]
-- ["account.account", "company_id", "company_ids (accounts shared between companies) - odoo 854c3b27aa5 '[IMP] account: Share accounts between companies.'"]
-- ["account.move", "to_check", "checked, with the inverted logic (to_check == not checked) - odoo 242e1a04fc9 '[IMP] *: invert the logic of to check'"]
-- ["res.company", "period_lock_date", "sale_lock_date / purchase_lock_date (lock dates reworked) - odoo c73d430080d '[IMP] account: rework lock dates'"]
-- ["res.partner", "ubl_cii_format", "invoice_edi_format - odoo 9e769e1b11f '[REF] account,*: Print & Send - partner default sending settings'"]
-- ["res.company", "invoice_is_email", "sending settings are now partner defaults (Print & Send) - odoo 9e769e1b11f"]
-- ["res.company", "invoice_is_download", "sending settings are now partner defaults (Print & Send) - odoo 9e769e1b11f"]
-- ["res.company", "invoice_is_ubl_cii", "res.partner.invoice_edi_format (partner default sending settings) - odoo 9e769e1b11f"]
-- ["res.company", "invoice_is_snailmail", "sending settings are now partner defaults (Print & Send) - odoo 9e769e1b11f"]
-- ["res.partner", "account_peppol_is_endpoint_valid", "peppol_verification_state - odoo 8b8bc0724f7 '[IMP] account_peppol: refactor partner verification'"]
-- ["res.partner", "account_peppol_validity_last_check", "peppol_verification_state - odoo 8b8bc0724f7 '[IMP] account_peppol: refactor partner verification'"]
-- ["account.tax", "python_compute", "formula (amount_type 'code') - odoo 53631898426 '[IMP] account_tax_python: Make python taxes working in JS for POS'"]
-- ["account.tax", "python_applicable", "formula (amount_type 'code') - odoo 53631898426 '[IMP] account_tax_python: Make python taxes working in JS for POS'"]
-- ["product.template", "detailed_type", "type (consu / service / combo) and, with stock, is_storable - odoo d0c9ceeb684, 728d9f83f6d '[REF] stock: remove product type'"]
-- ["hr.employee", "applicant_id", "candidate_id (hr.candidate) - odoo 75b385bae03 '[IMP] hr_recruitment: Introduce hr.candidate model'"]
-- ["sale.order.template", "sale_header", "sale_header_ids (quotation documents) - odoo 91ddd31afef '[IMP] sale_pdf_quote_builder: use custom zones'"]
-- ["sale.order.template", "sale_footer", "sale_footer_ids (quotation documents) - odoo 91ddd31afef '[IMP] sale_pdf_quote_builder: use custom zones'"]
-- ["product.document", "attached_on", "attached_on_sale - odoo 85bf63d028f '[IMP] product,mrp,sale: mrp document refactor'"]
-- ["sale.order", "analytic_account_id", "analytic plans moved to projects (project_id / analytic_distribution) - odoo 238a41e3528 '[IMP] project,sale,purchase,stock,mrp: analytic plans on projects'"]
-- ["project.task", "analytic_account_id", "analytic plans moved to projects - odoo 238a41e3528"]
-- ["mrp.production", "analytic_account_ids", "analytic plans moved to projects - odoo 238a41e3528"]
-- ["product.pricelist", "discount_policy", "removed - odoo 2629ed0ff35 '[IMP] product,*: drop pricelist discount policy'"]
-- ["account.payment", "is_internal_transfer", "removed - odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]
+# Format : schema_version 2 (voir docs/migration_rules.md)
+- schema_version: 2
+  kind: removed_field
+  model: "account.account"
+  field: "company_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "854c3b27aa54"
+      title: "[IMP] account: Share accounts between companies."
+  message: "company_ids (accounts shared between companies) - odoo 854c3b27aa5 '[IMP] account: Share accounts between companies.'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.move"
+  field: "to_check"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "242e1a04fc97"
+      title: "[IMP] *: invert the logic of to check"
+  message: "checked, with the inverted logic (to_check == not checked) - odoo 242e1a04fc9 '[IMP] *: invert the logic of to check'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "period_lock_date"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "c73d430080da"
+      title: "[IMP] account: rework lock dates"
+  message: "sale_lock_date / purchase_lock_date (lock dates reworked) - odoo c73d430080d '[IMP] account: rework lock dates'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "ubl_cii_format"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9e769e1b11f2"
+      title: "[REF] account,*: Print & Send - partner default sending settings"
+  message: "invoice_edi_format - odoo 9e769e1b11f '[REF] account,*: Print & Send - partner default sending settings'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "invoice_is_email"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9e769e1b11f2"
+      title: "[REF] account,*: Print & Send - partner default sending settings"
+  message: "sending settings are now partner defaults (Print & Send) - odoo 9e769e1b11f"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "invoice_is_download"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9e769e1b11f2"
+      title: "[REF] account,*: Print & Send - partner default sending settings"
+  message: "sending settings are now partner defaults (Print & Send) - odoo 9e769e1b11f"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "invoice_is_ubl_cii"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9e769e1b11f2"
+      title: "[REF] account,*: Print & Send - partner default sending settings"
+  message: "res.partner.invoice_edi_format (partner default sending settings) - odoo 9e769e1b11f"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "invoice_is_snailmail"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9e769e1b11f2"
+      title: "[REF] account,*: Print & Send - partner default sending settings"
+  message: "sending settings are now partner defaults (Print & Send) - odoo 9e769e1b11f"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "account_peppol_is_endpoint_valid"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8b8bc0724f71"
+      title: "[IMP] account_peppol: refactor partner verification"
+  message: "peppol_verification_state - odoo 8b8bc0724f7 '[IMP] account_peppol: refactor partner verification'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "account_peppol_validity_last_check"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "8b8bc0724f71"
+      title: "[IMP] account_peppol: refactor partner verification"
+  message: "peppol_verification_state - odoo 8b8bc0724f7 '[IMP] account_peppol: refactor partner verification'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.tax"
+  field: "python_compute"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "536318984267"
+      title: "[IMP] account_tax_python: Make python taxes working in JS for POS"
+  message: "formula (amount_type 'code') - odoo 53631898426 '[IMP] account_tax_python: Make python taxes working in JS for POS'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.tax"
+  field: "python_applicable"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "536318984267"
+      title: "[IMP] account_tax_python: Make python taxes working in JS for POS"
+  message: "formula (amount_type 'code') - odoo 53631898426 '[IMP] account_tax_python: Make python taxes working in JS for POS'"
+- schema_version: 2
+  kind: removed_field
+  model: "product.template"
+  field: "detailed_type"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "d0c9ceeb684a"
+      title: "[IMP] {website_,}event{,booth}_sale: remove product types"
+  message: "type (consu / service / combo) and, with stock, is_storable - odoo d0c9ceeb684, 728d9f83f6d '[REF] stock: remove product type'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.employee"
+  field: "applicant_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "75b385bae036"
+      title: "[IMP] hr_recruitment: Introduce hr.candidate model"
+  message: "candidate_id (hr.candidate) - odoo 75b385bae03 '[IMP] hr_recruitment: Introduce hr.candidate model'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order.template"
+  field: "sale_header"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "91ddd31afef6"
+      title: "[IMP] sale_pdf_quote_builder: use custom zones"
+  message: "sale_header_ids (quotation documents) - odoo 91ddd31afef '[IMP] sale_pdf_quote_builder: use custom zones'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order.template"
+  field: "sale_footer"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "91ddd31afef6"
+      title: "[IMP] sale_pdf_quote_builder: use custom zones"
+  message: "sale_footer_ids (quotation documents) - odoo 91ddd31afef '[IMP] sale_pdf_quote_builder: use custom zones'"
+- schema_version: 2
+  kind: removed_field
+  model: "product.document"
+  field: "attached_on"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "85bf63d028ff"
+      title: "[IMP] product,mrp,sale: mrp document refactor"
+  message: "attached_on_sale - odoo 85bf63d028f '[IMP] product,mrp,sale: mrp document refactor'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.order"
+  field: "analytic_account_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "238a41e35280"
+      title: "[IMP] project,sale,purchase,stock,mrp: analytic plans on projects"
+  message: "analytic plans moved to projects (project_id / analytic_distribution) - odoo 238a41e3528 '[IMP] project,sale,purchase,stock,mrp: analytic plans on projects'"
+- schema_version: 2
+  kind: removed_field
+  model: "project.task"
+  field: "analytic_account_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "238a41e35280"
+      title: "[IMP] project,sale,purchase,stock,mrp: analytic plans on projects"
+  message: "analytic plans moved to projects - odoo 238a41e3528"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.production"
+  field: "analytic_account_ids"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "238a41e35280"
+      title: "[IMP] project,sale,purchase,stock,mrp: analytic plans on projects"
+  message: "analytic plans moved to projects - odoo 238a41e3528"
+- schema_version: 2
+  kind: removed_field
+  model: "product.pricelist"
+  field: "discount_policy"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "2629ed0ff353"
+      title: "[IMP] product,*: drop pricelist discount policy"
+  message: "removed - odoo 2629ed0ff35 '[IMP] product,*: drop pricelist discount policy'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.payment"
+  field: "is_internal_transfer"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "01b87f1230be"
+      title: "[IMP] account: make journal entry optional for payments"
+  message: "removed - odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"
 #
 # Candidats au renommage refusés (renamed_fields/migrate_170_180/candidates.yaml, « # non : »)
 # absents de generated.yaml (OpenUpgrade ne les voit pas) : signalés ici, sans renommage automatique.
-- ["account.analytic.account", "crossovered_budget_line", "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"]
-- ["account.asset", "l10n_in_fiscal_code", "enterprise 83fca11a8ae '[IMP] account_asset,l10n_(in_asset,ro_saft): add company fiscal country'"]
-- ["account.batch.payment", "sct_generic", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]
-- ["account.move", "made_sequence_hole", "voir made_sequence_gap (pas un renommage : calcul différent (premier mouvement qui casse la séquence, stocké)) - odoo dcba5edf315 '[IMP] account: store if a move made a gap'"]
-- ["account.payment", "l10n_latam_check_number", "odoo 9ef304be394 '[IMP] l10n_latam_checks: Pay with Multiples checks'"]
-- ["account.payment", "sepa_uetr", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]
-- ["account.report", "footnotes_ids", "voir annotations_ids (pas un renommage : comodel différent (account.report.annotation)) - enterprise 11ebeb00c76 '[IMP] account_reports: Annotalypse'"]
-- ["account.report.file.download.error.wizard", "file_generation_errors", "enterprise 855eb649126 '[IMP] account_reports: file_generation_error -> ActionableErrors'"]
-- ["hr.applicant", "application_count", "odoo 75b385bae03 '[IMP] hr_recruitment: Introduce hr.candidate model'"]
-- ["hr.contract", "l10n_ae_number_of_days", "enterprise 8973d4c773f '[IMP] l10n_ae_hr_payroll: Add additional rules and logic to structure'"]
-- ["hr.contract", "l10n_au_withholding_variation", "enterprise ed9e7ef5881 '[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp'"]
-- ["hr.contract", "l10n_au_withholding_variation_amount", "enterprise ed9e7ef5881 '[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp'"]
-- ["hr.contract.salary.benefit", "hide_description", "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"]
-- ["hr.contract.salary.benefit", "impacts_net_salary", "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"]
-- ["hr.contract.salary.benefit.value", "hide_description", "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"]
-- ["hr.employee", "l10n_lu_tax_card_number", "enterprise 256f551ae06 '[IMP] l10n_lu_hr_payroll: fix and improve Luxembourg loca'"]
-- ["hr.employee", "l10n_lu_travel_expense", "enterprise 256f551ae06 '[IMP] l10n_lu_hr_payroll: fix and improve Luxembourg loca'"]
-- ["hr.employee.base", "name_work_location_display", "odoo 7ccf39a0f2b '[IMP] mail,*: employee card from member list'"]
-- ["hr.payslip", "sepa_uetr", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]
-- ["hr.salary.attachment", "deduction_type_id", "enterprise 206f715b75b '[IMP] hr_payroll: Remove hr.salary.attachment.type model'"]
-- ["mail.message", "show_audit_log", "odoo af4384fc634 '[REF] account_audit_trail: slightly cleanup audit trail field usage'"]
-- ["mrp.eco", "mrp_document_count", "enterprise ec6b4717f49 '[IMP] mrp_plm: mrp document refactor'"]
-- ["mrp.eco", "mrp_document_ids", "voir document_ids (pas un renommage : comodel différent (mrp.document -> product.document)) - enterprise ec6b4717f49 '[IMP] mrp_plm: mrp document refactor'"]
-- ["mrp.production.schedule", "sequence", "enterprise becf2cb9fbb '[REF] mrp_mps: sequence and indirect demand'"]
-- ["pos.session", "total_base_of_measure_tax_a", "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"]
-- ["pos.session", "total_base_of_measure_tax_b", "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"]
-- ["pos.session", "total_base_of_measure_tax_c", "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"]
-- ["pos.session", "total_base_of_measure_tax_d", "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"]
-- ["project.project", "shared_document_ids", "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"]
-- ["project.project", "total_planned_amount", "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"]
-- ["project.project", "total_practical_amount", "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"]
-- ["res.company", "rule_type", "enterprise 6324a6bab04 '[IMP] {account,sale_purchase)_inter_company_rules: usability improvement'"]
-- ["res.config.settings", "account_journal_payment_credit_account_id", "odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]
-- ["res.config.settings", "account_journal_payment_debit_account_id", "odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]
-- ["res.config.settings", "pos_l10n_es_simplified_invoice_limit", "odoo 46096344cbb '[IMP] l10n_es*: enable pos orders to be sent to TBAI'"]
-- ["res.config.settings", "rule_type", "enterprise 6324a6bab04 '[IMP] {account,sale_purchase)_inter_company_rules: usability improvement'"]
-- ["res.partner", "account_sepa_lei", "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"]
-- ["res.partner", "l10n_mx_edi_addenda", "voir l10n_mx_edi_addenda_id (pas un renommage : comodel différent (ir.ui.view -> l10n_mx_edi.addenda)) - enterprise 6e54457bf94 '[REF] l10n_mx_edi: addenda'"]
-- ["sale.rental.schedule", "analytic_account_id", "voir project_id (pas un renommage : plans analytiques sur les projets (comodel / sens différent)) - enterprise c2648d6ff4a '[IMP] industry_fsm,sale_renting,sale_subscription: analytic plans on projects'"]
-- ["sale.report", "analytic_account_id", "voir project_id (pas un renommage : plans analytiques sur les projets (comodel / sens différent)) - odoo 238a41e3528 '[IMP] project,sale,purchase,stock,mrp: analytic plans on projects'"]
+- schema_version: 2
+  kind: removed_field
+  model: "account.analytic.account"
+  field: "crossovered_budget_line"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "14eb7afe3f65"
+      title: "[IMP] project(_account_budget): budget counting using analytical accounts only"
+  message: "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.asset"
+  field: "l10n_in_fiscal_code"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "83fca11a8aeb"
+      title: "[IMP] account_asset,l10n_(in_asset,ro_saft): add company fiscal country"
+  message: "enterprise 83fca11a8ae '[IMP] account_asset,l10n_(in_asset,ro_saft): add company fiscal country'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.batch.payment"
+  field: "sct_generic"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "67593e5ff9b3"
+      title: "[REF] account_sepa/account_iso20022: refactor and normalize"
+  message: "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.move"
+  field: "made_sequence_hole"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "dcba5edf3150"
+      title: "[IMP] account: store if a move made a gap"
+  message: "voir made_sequence_gap (pas un renommage : calcul différent (premier mouvement qui casse la séquence, stocké)) - odoo dcba5edf315 '[IMP] account: store if a move made a gap'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.payment"
+  field: "l10n_latam_check_number"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "9ef304be3946"
+      title: "[IMP] l10n_latam_checks: Pay with Multiples checks"
+  message: "odoo 9ef304be394 '[IMP] l10n_latam_checks: Pay with Multiples checks'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.payment"
+  field: "sepa_uetr"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "67593e5ff9b3"
+      title: "[REF] account_sepa/account_iso20022: refactor and normalize"
+  message: "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.report"
+  field: "footnotes_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "11ebeb00c76e"
+      title: "[IMP] account_reports: Annotalypse"
+  message: "voir annotations_ids (pas un renommage : comodel différent (account.report.annotation)) - enterprise 11ebeb00c76 '[IMP] account_reports: Annotalypse'"
+- schema_version: 2
+  kind: removed_field
+  model: "account.report.file.download.error.wizard"
+  field: "file_generation_errors"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "855eb6491261"
+      title: "[IMP] account_reports: file_generation_error -> ActionableErrors"
+  message: "enterprise 855eb649126 '[IMP] account_reports: file_generation_error -> ActionableErrors'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.applicant"
+  field: "application_count"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "75b385bae036"
+      title: "[IMP] hr_recruitment: Introduce hr.candidate model"
+  message: "odoo 75b385bae03 '[IMP] hr_recruitment: Introduce hr.candidate model'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.contract"
+  field: "l10n_ae_number_of_days"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "8973d4c773f9"
+      title: "[IMP] l10n_ae_hr_payroll: Add additional rules and logic to structure"
+  message: "enterprise 8973d4c773f '[IMP] l10n_ae_hr_payroll: Add additional rules and logic to structure'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.contract"
+  field: "l10n_au_withholding_variation"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ed9e7ef58813"
+      title: "[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp"
+  message: "enterprise ed9e7ef5881 '[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.contract"
+  field: "l10n_au_withholding_variation_amount"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ed9e7ef58813"
+      title: "[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp"
+  message: "enterprise ed9e7ef5881 '[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.contract.salary.benefit"
+  field: "hide_description"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "fbbffc8ea0c2"
+      title: "[IMP] hr_contract_salary: make better benefit UX"
+  message: "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.contract.salary.benefit"
+  field: "impacts_net_salary"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "fbbffc8ea0c2"
+      title: "[IMP] hr_contract_salary: make better benefit UX"
+  message: "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.contract.salary.benefit.value"
+  field: "hide_description"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "fbbffc8ea0c2"
+      title: "[IMP] hr_contract_salary: make better benefit UX"
+  message: "enterprise fbbffc8ea0c '[IMP] hr_contract_salary: make better benefit UX'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.employee"
+  field: "l10n_lu_tax_card_number"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "256f551ae066"
+      title: "[IMP] l10n_lu_hr_payroll: fix and improve Luxembourg loca"
+  message: "enterprise 256f551ae06 '[IMP] l10n_lu_hr_payroll: fix and improve Luxembourg loca'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.employee"
+  field: "l10n_lu_travel_expense"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "256f551ae066"
+      title: "[IMP] l10n_lu_hr_payroll: fix and improve Luxembourg loca"
+  message: "enterprise 256f551ae06 '[IMP] l10n_lu_hr_payroll: fix and improve Luxembourg loca'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.employee.base"
+  field: "name_work_location_display"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "7ccf39a0f2ba"
+      title: "[IMP] mail,*: employee card from member list"
+  message: "odoo 7ccf39a0f2b '[IMP] mail,*: employee card from member list'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.payslip"
+  field: "sepa_uetr"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "67593e5ff9b3"
+      title: "[REF] account_sepa/account_iso20022: refactor and normalize"
+  message: "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"
+- schema_version: 2
+  kind: removed_field
+  model: "hr.salary.attachment"
+  field: "deduction_type_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "206f715b75b0"
+      title: "[IMP] hr_payroll: Remove hr.salary.attachment.type model"
+  message: "enterprise 206f715b75b '[IMP] hr_payroll: Remove hr.salary.attachment.type model'"
+- schema_version: 2
+  kind: removed_field
+  model: "mail.message"
+  field: "show_audit_log"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "af4384fc6349"
+      title: "[REF] account_audit_trail: slightly cleanup audit trail field usage"
+  message: "odoo af4384fc634 '[REF] account_audit_trail: slightly cleanup audit trail field usage'"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.eco"
+  field: "mrp_document_count"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ec6b4717f49c"
+      title: "[IMP] mrp_plm: mrp document refactor"
+  message: "enterprise ec6b4717f49 '[IMP] mrp_plm: mrp document refactor'"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.eco"
+  field: "mrp_document_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "ec6b4717f49c"
+      title: "[IMP] mrp_plm: mrp document refactor"
+  message: "voir document_ids (pas un renommage : comodel différent (mrp.document -> product.document)) - enterprise ec6b4717f49 '[IMP] mrp_plm: mrp document refactor'"
+- schema_version: 2
+  kind: removed_field
+  model: "mrp.production.schedule"
+  field: "sequence"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "becf2cb9fbb0"
+      title: "[REF] mrp_mps: sequence and indirect demand"
+  message: "enterprise becf2cb9fbb '[REF] mrp_mps: sequence and indirect demand'"
+- schema_version: 2
+  kind: removed_field
+  model: "pos.session"
+  field: "total_base_of_measure_tax_a"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "54dbd77ee0d8"
+      title: "[IMP] pos*: pos_blackbox_be certification 18 update"
+  message: "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"
+- schema_version: 2
+  kind: removed_field
+  model: "pos.session"
+  field: "total_base_of_measure_tax_b"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "54dbd77ee0d8"
+      title: "[IMP] pos*: pos_blackbox_be certification 18 update"
+  message: "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"
+- schema_version: 2
+  kind: removed_field
+  model: "pos.session"
+  field: "total_base_of_measure_tax_c"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "54dbd77ee0d8"
+      title: "[IMP] pos*: pos_blackbox_be certification 18 update"
+  message: "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"
+- schema_version: 2
+  kind: removed_field
+  model: "pos.session"
+  field: "total_base_of_measure_tax_d"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "54dbd77ee0d8"
+      title: "[IMP] pos*: pos_blackbox_be certification 18 update"
+  message: "enterprise 54dbd77ee0d '[IMP] pos*: pos_blackbox_be certification 18 update'"
+- schema_version: 2
+  kind: removed_field
+  model: "project.project"
+  field: "shared_document_ids"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "a32825ee00f2"
+      title: "[IMP] documents, *: modernize access rights, sharing, and actions"
+  message: "enterprise a32825ee00f '[IMP] documents, *: modernize access rights, sharing, and actions'"
+- schema_version: 2
+  kind: removed_field
+  model: "project.project"
+  field: "total_planned_amount"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "14eb7afe3f65"
+      title: "[IMP] project(_account_budget): budget counting using analytical accounts only"
+  message: "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"
+- schema_version: 2
+  kind: removed_field
+  model: "project.project"
+  field: "total_practical_amount"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "14eb7afe3f65"
+      title: "[IMP] project(_account_budget): budget counting using analytical accounts only"
+  message: "enterprise 14eb7afe3f6 '[IMP] project(_account_budget): budget counting using analytical accounts only'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.company"
+  field: "rule_type"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "6324a6bab04f"
+      title: "[IMP] {account,sale_purchase)_inter_company_rules: usability improvement"
+  message: "enterprise 6324a6bab04 '[IMP] {account,sale_purchase)_inter_company_rules: usability improvement'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "account_journal_payment_credit_account_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "01b87f1230be"
+      title: "[IMP] account: make journal entry optional for payments"
+  message: "odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "account_journal_payment_debit_account_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "01b87f1230be"
+      title: "[IMP] account: make journal entry optional for payments"
+  message: "odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "pos_l10n_es_simplified_invoice_limit"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "46096344cbb3"
+      title: "[IMP] l10n_es*: enable pos orders to be sent to TBAI"
+  message: "odoo 46096344cbb '[IMP] l10n_es*: enable pos orders to be sent to TBAI'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.config.settings"
+  field: "rule_type"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "6324a6bab04f"
+      title: "[IMP] {account,sale_purchase)_inter_company_rules: usability improvement"
+  message: "enterprise 6324a6bab04 '[IMP] {account,sale_purchase)_inter_company_rules: usability improvement'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "account_sepa_lei"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "67593e5ff9b3"
+      title: "[REF] account_sepa/account_iso20022: refactor and normalize"
+  message: "enterprise 67593e5ff9b '[REF] account_sepa/account_iso20022: refactor and normalize'"
+- schema_version: 2
+  kind: removed_field
+  model: "res.partner"
+  field: "l10n_mx_edi_addenda"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "6e54457bf942"
+      title: "[REF] l10n_mx_edi: addenda"
+  message: "voir l10n_mx_edi_addenda_id (pas un renommage : comodel différent (ir.ui.view -> l10n_mx_edi.addenda)) - enterprise 6e54457bf94 '[REF] l10n_mx_edi: addenda'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.rental.schedule"
+  field: "analytic_account_id"
+  confidence: verified
+  evidence:
+    - repository: "enterprise"
+      commit: "c2648d6ff4a2"
+      title: "[IMP] industry_fsm,sale_renting,sale_subscription: analytic plans on projects"
+  message: "voir project_id (pas un renommage : plans analytiques sur les projets (comodel / sens différent)) - enterprise c2648d6ff4a '[IMP] industry_fsm,sale_renting,sale_subscription: analytic plans on projects'"
+- schema_version: 2
+  kind: removed_field
+  model: "sale.report"
+  field: "analytic_account_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "238a41e35280"
+      title: "[IMP] project,sale,purchase,stock,mrp: analytic plans on projects"
+  message: "voir project_id (pas un renommage : plans analytiques sur les projets (comodel / sens différent)) - odoo 238a41e3528 '[IMP] project,sale,purchase,stock,mrp: analytic plans on projects'"
 #
 # Supprimé, renommé à tort en journal_id par OpenUpgrade (colonne) : journal_id est le journal du paiement
-- ["account.payment", "destination_journal_id", "removed with internal transfers (journal_id is the journal of the payment, not the destination) - odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"]
+- schema_version: 2
+  kind: removed_field
+  model: "account.payment"
+  field: "destination_journal_id"
+  confidence: verified
+  evidence:
+    - repository: "odoo"
+      commit: "01b87f1230be"
+      title: "[IMP] account: make journal entry optional for payments"
+  message: "removed with internal transfers (journal_id is the journal of the payment, not the destination) - odoo 01b87f1230b '[IMP] account: make journal entry optional for payments'"
