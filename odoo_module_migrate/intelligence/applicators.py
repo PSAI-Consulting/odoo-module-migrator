@@ -127,6 +127,7 @@ class PythonImportApplicator:
         new_module: str,
         imported_name: str = "",
         current_content: str | None = None,
+        target_line: int | None = None,
     ) -> ApplicatorResult:
         content = current_content if current_content is not None else tools._read_content(file_path)
         try:
@@ -136,11 +137,22 @@ class PythonImportApplicator:
 
         found_nodes: list[ast.stmt] = []
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module == old_module:
-                if not imported_name or any(alias.name == imported_name for alias in node.names):
+            if isinstance(node, ast.ImportFrom):
+                dots = "." * getattr(node, "level", 0)
+                full_mod = f"{dots}{node.module or ''}"
+                mod_matches = (node.module == old_module or full_mod == old_module)
+                name_matches = any(alias.name == old_module for alias in node.names)
+                if (mod_matches or (node.module is None and name_matches)) and (
+                    not imported_name or any(alias.name == imported_name for alias in node.names)
+                ):
                     found_nodes.append(node)
             elif isinstance(node, ast.Import) and any(alias.name == old_module for alias in node.names):
                 found_nodes.append(node)
+
+        if target_line is not None:
+            matching = [n for n in found_nodes if n.lineno == target_line]
+            if matching:
+                found_nodes = matching
 
         if not found_nodes:
             return ApplicatorResult(False, "rejected: import attendu absent", f"import of {old_module} not found")
@@ -156,11 +168,34 @@ class PythonImportApplicator:
         indent_match = re.match(r"^(\s*)", orig_chunk)
         indent = indent_match.group(1) if indent_match else ""
 
+        # Preserve trailing comment on the import line
+        last_line_raw = lines[end_line - 1].rstrip("\r\n")
+        comment_match = re.search(r"(\s*#.*)$", last_line_raw)
+        trailing_comment = comment_match.group(1) if comment_match else ""
+
         if isinstance(target_node, ast.ImportFrom):
-            names_str = ", ".join(alias.name if not alias.asname else f"{alias.name} as {alias.asname}" for alias in target_node.names)
-            new_chunk = f"{indent}from {new_module} import {names_str}\n"
+            dots = "." * getattr(target_node, "level", 0)
+            if target_node.module is None:
+                aliases = []
+                for alias in target_node.names:
+                    if alias.name == old_module:
+                        alias_part = new_module if not alias.asname else f"{new_module} as {alias.asname}"
+                    else:
+                        alias_part = alias.name if not alias.asname else f"{alias.name} as {alias.asname}"
+                    aliases.append(alias_part)
+                new_chunk = f"{indent}from {dots} import {', '.join(aliases)}{trailing_comment}\n"
+            else:
+                names_str = ", ".join(alias.name if not alias.asname else f"{alias.name} as {alias.asname}" for alias in target_node.names)
+                new_chunk = f"{indent}from {new_module} import {names_str}{trailing_comment}\n"
         else:
-            new_chunk = f"{indent}import {new_module}\n"
+            aliases = []
+            for alias in target_node.names:
+                if alias.name == old_module:
+                    alias_part = new_module if not alias.asname else f"{new_module} as {alias.asname}"
+                else:
+                    alias_part = alias.name if not alias.asname else f"{alias.name} as {alias.asname}"
+                aliases.append(alias_part)
+            new_chunk = f"{indent}import {', '.join(aliases)}{trailing_comment}\n"
 
         new_lines = lines[:start_line] + [new_chunk] + lines[end_line:]
         new_content = "".join(new_lines)
@@ -296,7 +331,36 @@ class PythonDictKeyApplicator:
         end_col = getattr(target_key, "end_col_offset", start_col + len(old_key) + 2)
 
         raw_slice = line_text[start_col:end_col]
-        quote = "'" if raw_slice.startswith("'") else '"'
+        if not (
+            raw_slice.startswith(("'", '"'))
+            and raw_slice.endswith(("'", '"'))
+            and raw_slice[1:-1] == old_key
+        ):
+            single_quoted = f"'{old_key}'"
+            double_quoted = f'"{old_key}"'
+            found_pos = -1
+            found_quote = "'"
+            if line_text.count(single_quoted) == 1 and line_text.count(double_quoted) == 0:
+                found_pos = line_text.find(single_quoted)
+                found_quote = "'"
+            elif line_text.count(double_quoted) == 1 and line_text.count(single_quoted) == 0:
+                found_pos = line_text.find(double_quoted)
+                found_quote = '"'
+
+            if found_pos >= 0:
+                start_col = found_pos
+                end_col = found_pos + len(old_key) + 2
+                raw_slice = line_text[start_col:end_col]
+                quote = found_quote
+            else:
+                return ApplicatorResult(
+                    False,
+                    "rejected: décalage de colonne ou clé non concordante",
+                    f"slice at offset [{start_col}:{end_col}] ({raw_slice!r}) does not match {old_key!r}",
+                )
+        else:
+            quote = "'" if raw_slice.startswith("'") else '"'
+
         new_slice = f"{quote}{new_key}{quote}"
 
         new_line_text = line_text[:start_col] + new_slice + line_text[end_col:]
@@ -358,30 +422,51 @@ class XmlAttributeApplicator:
             )
 
         target_el = matched_elements[0]
-        sourceline = target_el.sourceline
+        sourceline = target_el.sourceline or 1
         lines = content.splitlines(keepends=True)
 
-        # Search around sourceline for the start tag
-        found_line_idx = None
-        for idx in range(max(0, sourceline - 2), min(len(lines), sourceline + 5)):
-            if element_tag in lines[idx] and attribute_name in lines[idx]:
-                found_line_idx = idx
+        start_line_idx = max(0, sourceline - 1)
+        tag_open = f"<{element_tag}"
+        if tag_open not in lines[start_line_idx]:
+            for b_idx in range(max(0, start_line_idx - 2), start_line_idx):
+                if tag_open in lines[b_idx]:
+                    start_line_idx = b_idx
+                    break
+
+        end_line_idx = start_line_idx
+        tag_chunk = ""
+        found_close = False
+        while end_line_idx < len(lines):
+            tag_chunk += lines[end_line_idx]
+            in_q = None
+            for char in tag_chunk:
+                if char in ("'", '"'):
+                    if in_q == char:
+                        in_q = None
+                    elif in_q is None:
+                        in_q = char
+                elif char == ">" and in_q is None:
+                    found_close = True
+                    break
+            if found_close:
                 break
+            end_line_idx += 1
 
-        if found_line_idx is None:
-            # Fallback to sourceline - 1
-            found_line_idx = sourceline - 1
-
-        line_str = lines[found_line_idx]
         attr_pattern = rf"""\b{re.escape(attribute_name)}\s*=\s*(?P<q>["']){re.escape(old_value)}(?P=q)"""
-        match = re.search(attr_pattern, line_str)
+        match = re.search(attr_pattern, tag_chunk, re.DOTALL)
         if not match:
-            return ApplicatorResult(False, "rejected: attribut introuvable sur la ligne de l'élément", "attribute regex mismatch on element line")
+            return ApplicatorResult(
+                False,
+                "rejected: attribut introuvable dans la balise de l'élément",
+                f"attribute {attribute_name}={old_value!r} not found in <{element_tag}> chunk",
+            )
 
         q = match.group("q")
         new_attr_str = f"{attribute_name}={q}{new_value}{q}"
-        lines[found_line_idx] = line_str[:match.start()] + new_attr_str + line_str[match.end():]
-        new_content = "".join(lines)
+        new_tag_chunk = tag_chunk[:match.start()] + new_attr_str + tag_chunk[match.end():]
+
+        new_lines = lines[:start_line_idx] + [new_tag_chunk] + lines[end_line_idx + 1:]
+        new_content = "".join(new_lines)
 
         valid, reason = validate_syntax(file_path, new_content)
         if not valid:
@@ -395,6 +480,38 @@ class XmlAttributeApplicator:
 # 5. XML XPath Applicator (Anchor Verified)
 # ---------------------------------------------------------------------------
 
+class TargetViewTrees:
+    """Collection of target view trees supporting XPath queries."""
+
+    def __init__(self, arches: Any = None):
+        if isinstance(arches, dict):
+            self.trees = [t for t in arches.values() if hasattr(t, "xpath")]
+        elif isinstance(arches, (list, tuple, set)):
+            self.trees = [t for t in arches if hasattr(t, "xpath")]
+        elif hasattr(arches, "xpath"):
+            self.trees = [arches]
+        else:
+            self.trees = []
+
+    def xpath(self, expr: str) -> list[Any]:
+        results = []
+        for tree in self.trees:
+            try:
+                res = tree.xpath(expr)
+                if res:
+                    if isinstance(res, list):
+                        results.extend(res)
+                    else:
+                        results.append(res)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("XPath evaluation error on view tree: %s", exc)
+                continue
+        return results
+
+    def __bool__(self) -> bool:
+        return bool(self.trees)
+
+
 class XmlXPathApplicator:
     """Updates xpath expr expressions with syntax and anchor verification."""
 
@@ -405,6 +522,7 @@ class XmlXPathApplicator:
         new_expr: str,
         current_content: str | None = None,
         target_view_tree: Any | None = None,
+        require_anchor: bool = False,
     ) -> ApplicatorResult:
         content = current_content if current_content is not None else tools._read_content(file_path)
         pattern = rf"""(?P<prefix><xpath[^>]+expr\s*=\s*)(?P<quote>["']){re.escape(old_expr)}(?P=quote)"""
@@ -420,14 +538,25 @@ class XmlXPathApplicator:
         except etree.XPathSyntaxError as exc:
             return ApplicatorResult(False, f"rejected: nouvelle expression XPath invalide ({exc})", str(exc))
 
+        if require_anchor and not target_view_tree:
+            return ApplicatorResult(
+                False,
+                "rejected: arbre de vues cibles absent pour valider l'ancre XPath",
+                "target_view_tree required to validate xpath expression anchor",
+            )
+
         # Check against target view tree anchor if provided
-        if target_view_tree is not None:
+        if target_view_tree:
             try:
                 anchor_matches = target_view_tree.xpath(new_expr)
                 if not anchor_matches:
                     return ApplicatorResult(False, "rejected: ancre XPath introuvable dans la vue cible", f"new_expr {new_expr!r} not in target view")
             except Exception as exc:  # noqa: BLE001
-                logger.debug("Target view XPath anchor check error: %s", exc)
+                return ApplicatorResult(
+                    False,
+                    f"rejected: échec de l'évaluation XPath sur la vue cible ({exc})",
+                    str(exc),
+                )
 
         def repl(m: re.Match[str]) -> str:
             prefix = m.group("prefix")
@@ -545,11 +674,24 @@ class CsvValueApplicator:
         row_filter_val: str = "",
         current_content: str | None = None,
     ) -> ApplicatorResult:
-        content = current_content if current_content is not None else tools._read_content(file_path)
+        if current_content is not None:
+            content = current_content
+        else:
+            raw = file_path.read_bytes()
+            content = raw.decode("utf-8-sig" if raw.startswith(b"\xef\xbb\xbf") else "utf-8", errors="replace")
         try:
             reader = list(csv.reader(io.StringIO(content)))
         except Exception as exc:  # noqa: BLE001
             return ApplicatorResult(False, f"rejected: CSV invalide ({exc})", str(exc))
+
+        # Reject multiline CSV cells as exact byte-for-byte preservation across lines is not supported
+        for row in reader:
+            if any("\n" in cell or "\r" in cell for cell in row):
+                return ApplicatorResult(
+                    False,
+                    "rejected: cellule CSV multiligne non prise en charge pour préservation exacte",
+                    "multiline CSV cell cannot be preserved byte-for-byte",
+                )
 
         matched_row_indices = []
         for i, row in enumerate(reader):
@@ -573,7 +715,7 @@ class CsvValueApplicator:
 
         out = io.StringIO()
         csv.writer(out, lineterminator="").writerow(row_cells)
-        ending = "\n" if target_line.endswith("\n") else ("\r\n" if target_line.endswith("\r\n") else "")
+        ending = "\r\n" if target_line.endswith("\r\n") else ("\n" if target_line.endswith("\n") else "")
         new_target_line = out.getvalue() + ending
 
         lines[target_row_idx] = new_target_line
@@ -655,19 +797,34 @@ def apply_typed_operation(
     if op_type == "xml_replace_xpath":
         old_e = str(op.get("old_expr", ""))
         new_e = str(op.get("new_expr", ""))
+        target_tree = ctx.get("target_view_tree")
+        if not target_tree:
+            return ApplicatorResult(
+                False,
+                "rejected: arbre de vues cibles absent pour valider l'ancre XPath",
+                "target_view_tree required to validate xpath expression anchor",
+            ), rel_file
         res = XmlXPathApplicator.replace_expr(
-            target_path, old_e, new_e, current_content=current_text, target_view_tree=ctx.get("target_view_tree")
+            target_path, old_e, new_e, current_content=current_text, target_view_tree=target_tree, require_anchor=True
         )
         return res, rel_file
 
     if op_type == "manifest_add_dependency":
         dep = str(op.get("dependency", ""))
+        known_mods = ctx.get("known_modules")
+        dep_graph = ctx.get("dependency_graph")
+        if not known_mods or dep_graph is None:
+            return ApplicatorResult(
+                False,
+                "rejected: informations de dépendances (known_modules ou dependency_graph) absentes",
+                "known_modules and dependency_graph required to validate dependency addition",
+            ), rel_file
         res = ManifestDependencyApplicator.add_dependency(
             target_path,
             dep,
             current_content=current_text,
-            known_modules=ctx.get("known_modules"),
-            dependency_graph=ctx.get("dependency_graph"),
+            known_modules=known_mods,
+            dependency_graph=dep_graph,
             module_name=str(ctx.get("module_name", module_path.name)),
         )
         return res, rel_file

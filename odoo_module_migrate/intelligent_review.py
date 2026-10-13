@@ -366,7 +366,7 @@ def _normalize(data: dict[str, Any], model: str) -> Review:
     for raw in data.get("recommendations", [])[:30]:
         if not isinstance(raw, dict):
             continue
-        edit = raw.get("edit") if isinstance(raw.get("edit"), dict) else {}
+        edit = raw.get("edit") if isinstance(raw.get("edit"), dict) else raw
         confidence = str(raw.get("confidence", "medium")).lower()
         if confidence not in {"high", "medium", "low"}:
             confidence = "medium"
@@ -400,6 +400,8 @@ def review_module(
     model: str = "",
     timeout: int = 600,
     max_context: int = 10000,
+    reference_paths: Any = (),
+    context_paths: Any = (),
 ) -> Review:
     """Analyze module migration diagnostics with local Ollama coding model."""
     start_time = time.time()
@@ -620,6 +622,10 @@ def assess_safe_edits(
             item.objective_score = conf.score
             item.objective_confidence = conf.level
             item.validation_level = conf.validation_level
+
+            if not conf.is_applicable:
+                item.status = f"rejected: confiance objective insuffisante ({conf.level})"
+                continue
 
             current_text = next_text
             if apply:

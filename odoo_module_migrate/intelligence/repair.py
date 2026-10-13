@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import pathlib
 import shutil
 import tempfile
@@ -34,7 +35,7 @@ REPAIR_PLAN_SCHEMA = {
         "analysis": {"type": "string"},
         "operations": {
             "type": "array",
-            "maxItems": 5,
+            "maxItems": 1,
             "items": {
                 "type": "object",
                 "properties": {
@@ -112,6 +113,81 @@ class RepairSession:
     total_time_seconds: float = 0.0
     highest_validation_level: str = "non validée"
     error: str = ""
+
+
+def publish_changes_atomically(
+    module_path: pathlib.Path,
+    temp_module: pathlib.Path,
+    allowed_files: list[str],
+) -> list[str]:
+    """Atomically publish modified files from temp_module to module_path.
+
+    1. Snapshots in-memory backups of all destination files to be overwritten.
+    2. Writes changes to temporary sibling files and replaces targets via os.replace.
+    3. In case of any error during write, completely restores all original files.
+    """
+    module_path = pathlib.Path(module_path).resolve()
+    temp_module = pathlib.Path(temp_module).resolve()
+
+    changed_map: dict[str, bytes] = {}
+    for rel_f in allowed_files:
+        temp_f = temp_module / rel_f
+        orig_f = module_path / rel_f
+        if temp_f.is_file():
+            temp_bytes = temp_f.read_bytes()
+            orig_bytes = orig_f.read_bytes() if orig_f.is_file() else b""
+            if temp_bytes != orig_bytes:
+                changed_map[rel_f] = temp_bytes
+
+    if not changed_map:
+        return []
+
+    # Snapshot in-memory backups of all files to be replaced
+    backups: dict[str, bytes | None] = {}
+    for rel_f in changed_map:
+        orig_f = module_path / rel_f
+        backups[rel_f] = orig_f.read_bytes() if orig_f.is_file() else None
+
+    written_files: list[str] = []
+    tmp_files: list[pathlib.Path] = []
+
+    try:
+        for rel_f, new_bytes in changed_map.items():
+            target_f = module_path / rel_f
+            target_f.parent.mkdir(parents=True, exist_ok=True)
+            tmp_f = target_f.with_name(f".tmp_repair_{target_f.name}")
+            tmp_files.append(tmp_f)
+            tmp_f.write_bytes(new_bytes)
+            os.replace(tmp_f, target_f)
+            written_files.append(rel_f)
+    except Exception as exc:
+        # Atomic rollback: restore all original files
+        for rel_f in written_files:
+            target_f = module_path / rel_f
+            orig_bytes = backups.get(rel_f)
+            if orig_bytes is not None:
+                target_f.write_bytes(orig_bytes)
+            elif target_f.exists():
+                try:
+                    target_f.unlink()
+                except OSError:
+                    pass
+        for tmp_f in tmp_files:
+            if tmp_f.exists():
+                try:
+                    tmp_f.unlink()
+                except OSError:
+                    pass
+        raise RuntimeError(f"Échec atomique lors de la publication des modifications : {exc}") from exc
+    finally:
+        for tmp_f in tmp_files:
+            if tmp_f.exists():
+                try:
+                    tmp_f.unlink()
+                except OSError:
+                    pass
+
+    return list(changed_map.keys())
 
 
 class AutonomousRepairLoop:
@@ -272,14 +348,14 @@ class AutonomousRepairLoop:
                     ))
                     break
 
+                # Requirement 3: Strictly one atomic operation per attempt
+                target_op = ops[0]
+                ops = [target_op]
+
                 # Create an isolated attempt workspace inside tmp_dir
                 attempt_dir = pathlib.Path(tmp_dir) / f"attempt_{attempt_idx}"
                 shutil.copytree(temp_module, attempt_dir, symlinks=True)
 
-                op_failed = False
-                failure_reason = ""
-                attempt_diffs = []
-                total_lines_changed = 0
                 context = {
                     "known_modules": self.known_modules,
                     "dependency_graph": self.dependency_graph,
@@ -287,32 +363,34 @@ class AutonomousRepairLoop:
                     "module_name": self.module_path.name,
                 }
 
-                applied_in_attempt = []
-                for op in ops:
-                    rel_file = str(op.get("file", "")).strip().replace("\\", "/")
-                    if rel_file.endswith(".js"):
-                        op_failed = True
-                        failure_reason = "modification automatique JavaScript interdite"
-                        break
-                    if rel_file not in self.allowed_files:
-                        op_failed = True
-                        failure_reason = f"fichier non autorisé ({rel_file})"
-                        break
+                rel_file = str(target_op.get("file", "")).strip().replace("\\", "/")
+                if rel_file.endswith(".js"):
+                    feedback = f"Tentative {attempt_idx} rejetée : modification automatique JavaScript interdite."
+                    session.attempts.append(RepairAttempt(
+                        attempt_number=attempt_idx,
+                        operations_proposed=ops,
+                        success=False,
+                        status="rejected: modification automatique JavaScript interdite",
+                        rejection_reason="JS auto-application forbidden",
+                        duration_seconds=round(time.time() - attempt_start, 2),
+                    ))
+                    continue
 
-                    res, _ = apply_typed_operation(attempt_dir, op, context=context)
-                    if not res.success:
-                        op_failed = True
-                        failure_reason = f"opération {op.get('type')} sur {rel_file} rejetée: {res.status}"
-                        break
+                if rel_file not in self.allowed_files:
+                    feedback = f"Tentative {attempt_idx} rejetée : fichier non autorisé ({rel_file})."
+                    session.attempts.append(RepairAttempt(
+                        attempt_number=attempt_idx,
+                        operations_proposed=ops,
+                        success=False,
+                        status=f"rejected: fichier non autorisé ({rel_file})",
+                        rejection_reason=f"file {rel_file} not in editable module files",
+                        duration_seconds=round(time.time() - attempt_start, 2),
+                    ))
+                    continue
 
-                    # Write immediately to attempt_dir
-                    target_file = attempt_dir / rel_file
-                    tools._write_content(target_file, res.new_content)
-                    attempt_diffs.append(res.diff)
-                    total_lines_changed += res.lines_changed
-                    applied_in_attempt.append(op)
-
-                if op_failed:
+                res, _ = apply_typed_operation(attempt_dir, target_op, context=context)
+                if not res.success:
+                    failure_reason = f"opération {target_op.get('type')} sur {rel_file} rejetée: {res.status}"
                     feedback = f"Tentative {attempt_idx} rejetée : {failure_reason}."
                     session.attempts.append(RepairAttempt(
                         attempt_number=attempt_idx,
@@ -324,8 +402,12 @@ class AutonomousRepairLoop:
                     ))
                     continue
 
-                if total_lines_changed > self.max_diff_lines:
-                    reason = f"diff trop volumineux ({total_lines_changed} > {self.max_diff_lines} lignes)"
+                # Write immediately to attempt_dir
+                target_file = attempt_dir / rel_file
+                tools._write_content(target_file, res.new_content)
+
+                if res.lines_changed > self.max_diff_lines:
+                    reason = f"diff trop volumineux ({res.lines_changed} > {self.max_diff_lines} lignes)"
                     feedback = f"Tentative {attempt_idx} rejetée : {reason}."
                     session.attempts.append(RepairAttempt(
                         attempt_number=attempt_idx,
@@ -333,23 +415,15 @@ class AutonomousRepairLoop:
                         success=False,
                         status="rejected: diff trop grand",
                         rejection_reason=reason,
-                        lines_changed=total_lines_changed,
+                        lines_changed=res.lines_changed,
                         duration_seconds=round(time.time() - attempt_start, 2),
                     ))
                     continue
 
-                # Syntax verification across all modified files
-                syntax_failed = False
-                for op in applied_in_attempt:
-                    target_file = attempt_dir / op["file"]
-                    content = tools._read_content(target_file)
-                    valid, rz = validate_syntax(target_file, content)
-                    if not valid:
-                        syntax_failed = True
-                        failure_reason = f"syntaxe invalide dans {op['file']}: {rz}"
-                        break
-
-                if syntax_failed:
+                # Syntax verification on the modified file
+                valid, rz = validate_syntax(target_file, res.new_content)
+                if not valid:
+                    failure_reason = f"syntaxe invalide dans {rel_file}: {rz}"
                     feedback = f"Tentative {attempt_idx} a corrompu la syntaxe : {failure_reason}."
                     session.attempts.append(RepairAttempt(
                         attempt_number=attempt_idx,
@@ -405,28 +479,25 @@ class AutonomousRepairLoop:
                     ))
                     continue
 
-                # Requirement 4: Verify confidence for every operation
-                confidence_rejected = False
-                for op in applied_in_attempt:
-                    ev_chunk = self.rag.find_matching_chunk(op.get("evidence", ""), op)
-                    hallucinated = bool(op.get("evidence")) and (ev_chunk is None)
-                    conf = evaluate_confidence(
-                        evidence_chunk=ev_chunk,
-                        hallucinated_evidence_claimed=hallucinated,
-                        applicator_success=True,
-                        syntax_valid=True,
-                        is_unique_match=True,
-                        diagnostic_resolved=bool(resolved_ids),
-                        has_regressions=bool(added_ids),
-                        diff_lines=total_lines_changed,
-                        max_diff_lines=self.max_diff_lines,
-                    )
-                    if not conf.is_applicable:
-                        confidence_rejected = True
-                        failure_reason = f"confiance non applicable pour {op.get('type')} (score {conf.score}, {conf.level})"
-                        break
+                # Requirement 3: Attribute resolved diagnostic IDs strictly to this atomic operation
+                target_op["resolved_diagnostic_ids"] = list(resolved_ids)
 
-                if confidence_rejected:
+                # Requirement 4: Verify confidence for this single operation
+                ev_chunk = self.rag.find_matching_chunk(target_op.get("evidence", ""), target_op)
+                hallucinated = bool(target_op.get("evidence")) and (ev_chunk is None)
+                conf = evaluate_confidence(
+                    evidence_chunk=ev_chunk,
+                    hallucinated_evidence_claimed=hallucinated,
+                    applicator_success=True,
+                    syntax_valid=True,
+                    is_unique_match=True,
+                    diagnostic_resolved=True,
+                    has_regressions=False,
+                    diff_lines=res.lines_changed,
+                    max_diff_lines=self.max_diff_lines,
+                )
+                if not conf.is_applicable:
+                    failure_reason = f"confiance non applicable pour {target_op.get('type')} (score {conf.score}, {conf.level})"
                     feedback = f"Tentative {attempt_idx} rejetée par le contrôle de confiance : {failure_reason}."
                     session.attempts.append(RepairAttempt(
                         attempt_number=attempt_idx,
@@ -492,13 +563,19 @@ class AutonomousRepairLoop:
                     ))
                     continue
 
+                # Requirement 8: Store actual ConfidenceReport and scores directly on operation
+                target_op["confidence_report"] = conf
+                target_op["objective_score"] = conf.score
+                target_op["objective_confidence"] = conf.level
+                target_op["validation_level"] = conf.validation_level
+
                 # SUCCESS! Accept attempt and update temp_module
                 shutil.rmtree(temp_module)
                 shutil.copytree(attempt_dir, temp_module, symlinks=True)
 
                 curr_ids = new_ids
                 curr_diags = new_diags
-                session.applied_operations.extend(applied_in_attempt)
+                session.applied_operations.append(target_op)
 
                 if bench_status == "passed":
                     session.highest_validation_level = "installation Odoo validée"
@@ -512,25 +589,23 @@ class AutonomousRepairLoop:
                     operations_proposed=ops,
                     success=True,
                     status="applied",
-                    diff="\n".join(attempt_diffs),
-                    lines_changed=total_lines_changed,
+                    diff=res.diff,
+                    lines_changed=res.lines_changed,
                     duration_seconds=round(time.time() - attempt_start, 2),
                 ))
 
                 if not curr_ids:
                     break
 
-            # Requirement 1: Commit to actual module path ONLY if changes were proven
+            # Requirement 1 & 4: Commit to actual module path ONLY if changes were proven, with atomic replacement
             if session.applied_operations:
-                # Copy only changed files from temp_module to self.module_path
-                for rel_f in self.allowed_files:
-                    temp_f = temp_module / rel_f
-                    orig_f = self.module_path / rel_f
-                    if temp_f.is_file():
-                        temp_bytes = temp_f.read_bytes()
-                        orig_bytes = orig_f.read_bytes() if orig_f.is_file() else b""
-                        if temp_bytes != orig_bytes:
-                            tools._write_content(orig_f, temp_bytes.decode("utf-8", errors="replace"))
+                try:
+                    publish_changes_atomically(
+                        self.module_path, temp_module, self.allowed_files
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    session.error = f"erreur lors de la publication atomique: {exc}"
+                    logger.error("Atomic publication failed: %s", exc)
 
             session.final_todos = len(curr_ids)
             session.final_errors = sum(1 for d in curr_diags if getattr(d, "level", "") == "ERROR")

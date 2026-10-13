@@ -441,13 +441,34 @@ class Migration:
             self.report_collector.current = module_report
             try:
                 if self._ollama_repair:
+                    view_index = getattr(self, "_cached_view_index", None)
+                    model_index = getattr(self, "_cached_model_index", None)
+                    import_index = getattr(self, "_cached_import_index", None)
+
                     checker = FullModuleDiagnosticsChecker(
                         target_version=target_version,
                         migration_scripts=self._migration_scripts,
-                        model_index=getattr(self, "_cached_model_index", None),
-                        view_index=getattr(self, "_cached_view_index", None),
-                        import_index=getattr(self, "_cached_import_index", None),
+                        model_index=model_index,
+                        view_index=view_index,
+                        import_index=import_index,
                     )
+
+                    known_modules: set[str] = set()
+                    dependency_graph: dict[str, list[str]] = {}
+                    if view_index:
+                        known_modules.update(view_index.depends.keys())
+                        for mod, deps in view_index.depends.items():
+                            dependency_graph[mod] = list(deps) if not isinstance(deps, list) else deps
+                    if model_index:
+                        known_modules.update(model_index.depends.keys())
+                        for mod, deps in model_index.depends.items():
+                            if mod not in dependency_graph:
+                                dependency_graph[mod] = list(deps) if not isinstance(deps, list) else deps
+
+                    target_view_tree = None
+                    if view_index and getattr(view_index, "arches", None):
+                        from .intelligence.applicators import TargetViewTrees
+                        target_view_tree = TargetViewTrees(view_index.arches)
 
                     session = intelligent_review.repair_module(
                         item._module_path,
@@ -462,6 +483,9 @@ class Migration:
                         diagnostics_checker=checker.check_module,
                         reference_paths=reference_paths,
                         context_paths=context_paths,
+                        known_modules=known_modules if known_modules else None,
+                        dependency_graph=dependency_graph if dependency_graph else None,
+                        target_view_tree=target_view_tree,
                     )
 
                     review = intelligent_review.Review(
@@ -476,6 +500,7 @@ class Migration:
                             "Ollama autonomous repair applied: %s on %s. File %s:1",
                             op.get("type"), op.get("file"), path,
                         )
+                        conf_rep = op.get("confidence_report")
                         rec = intelligent_review.Recommendation(
                             title=f"Réparation {op.get('type')}",
                             diagnosis=op.get("description", ""),
@@ -486,9 +511,9 @@ class Migration:
                             evidence=op.get("evidence", ""),
                             operation_type=op.get("type", "exact_text_replace"),
                             status="applied",
-                            objective_score=0.90,
-                            objective_confidence="haute",
-                            validation_level=session.highest_validation_level,
+                            objective_score=op.get("objective_score", getattr(conf_rep, "score", 0.0)),
+                            objective_confidence=op.get("objective_confidence", getattr(conf_rep, "level", "faible")),
+                            validation_level=op.get("validation_level", session.highest_validation_level),
                         )
                         review.recommendations.append(rec)
 

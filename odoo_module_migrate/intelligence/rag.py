@@ -390,25 +390,28 @@ class HybridRAG:
         return rules_str, sources_str
 
     def find_matching_chunk(self, evidence_str: str, proposed_op: dict[str, Any] | None = None) -> RAGChunk | None:
-        """Find a verified RAG chunk corresponding to an evidence string or operation."""
-        if not evidence_str and not proposed_op:
+        """Find a verified RAG chunk corresponding to an evidence string.
+
+        Empty or invalid evidence strings always return None.
+        Matches require either an exact fingerprint match or an exact normalized provenance match.
+        """
+        if not evidence_str or not evidence_str.strip():
             return None
 
-        clean_evidence = (evidence_str or "").strip().lower()
+        clean_evidence = evidence_str.strip().replace("\\", "/").lower()
+        if len(clean_evidence) < 5:
+            return None
 
         for chunk in self.retrieved_chunks:
             # 1. Exact fingerprint match
-            if chunk.fingerprint and chunk.fingerprint.lower() in clean_evidence:
+            if chunk.fingerprint and clean_evidence == chunk.fingerprint.lower():
                 return chunk
-            # 2. Exact provenance match (file:line)
+
+            # 2. Exact normalized provenance match (path:line)
             prov_norm = chunk.provenance.replace("\\", "/").lower()
-            if prov_norm in clean_evidence or clean_evidence in prov_norm:
+            if clean_evidence == prov_norm:
                 return chunk
-            # 3. Source content verification
-            if proposed_op:
-                old_val = str(proposed_op.get("old") or proposed_op.get("old_module") or proposed_op.get("old_key") or "")
-                new_val = str(proposed_op.get("new") or proposed_op.get("new_module") or proposed_op.get("new_key") or "")
-                if old_val and new_val and old_val in chunk.content and new_val in chunk.content:
-                    return chunk
+            if prov_norm.endswith(("/" + clean_evidence, "\\" + clean_evidence)):
+                return chunk
 
         return None

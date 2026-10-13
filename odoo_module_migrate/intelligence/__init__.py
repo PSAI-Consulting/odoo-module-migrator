@@ -8,6 +8,7 @@ from .applicators import (
     ManifestDependencyApplicator,
     PythonDictKeyApplicator,
     PythonImportApplicator,
+    TargetViewTrees,
     XmlAttributeApplicator,
     XmlXPathApplicator,
     apply_typed_operation,
@@ -29,7 +30,12 @@ from .provider import (
     is_loopback_url,
 )
 from .rag import HybridRAG, RAGChunk
-from .repair import AutonomousRepairLoop, RepairAttempt, RepairSession
+from .repair import (
+    AutonomousRepairLoop,
+    RepairAttempt,
+    RepairSession,
+    publish_changes_atomically,
+)
 from .system_profile import (
     ModelProfile,
     SystemHardware,
@@ -59,6 +65,7 @@ __all__ = [
     "RepairAttempt",
     "RepairSession",
     "SystemHardware",
+    "TargetViewTrees",
     "VerificationResult",
     "XmlAttributeApplicator",
     "XmlXPathApplicator",
@@ -69,6 +76,7 @@ __all__ = [
     "extract_json_response",
     "get_ollama_info_text",
     "is_loopback_url",
+    "publish_changes_atomically",
     "recommend_model",
     "stable_diagnostic_id",
     "validate_syntax",

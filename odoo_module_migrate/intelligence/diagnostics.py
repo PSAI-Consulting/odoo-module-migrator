@@ -197,7 +197,13 @@ class FullModuleDiagnosticsChecker:
                         line=line,
                     ))
             except Exception as exc:  # noqa: BLE001
-                logger.debug("View diagnostics check error: %s", exc)
+                logger.warning("View diagnostics check failure: %s", exc)
+                diagnostics.append(DiagnosticItem(
+                    level="ERROR",
+                    message=f"Échec de l'analyse interne des vues ({type(exc).__name__}: {exc})",
+                    file="__diagnostic_failure__",
+                    line=1,
+                ))
 
         # 5. Model and Python callbacks if model_index available
         if self.model_index:
@@ -222,7 +228,13 @@ class FullModuleDiagnosticsChecker:
                         line=line,
                     ))
             except Exception as exc:  # noqa: BLE001
-                logger.debug("Model diagnostics check error: %s", exc)
+                logger.warning("Model diagnostics check failure: %s", exc)
+                diagnostics.append(DiagnosticItem(
+                    level="ERROR",
+                    message=f"Échec de l'analyse interne des modèles ({type(exc).__name__}: {exc})",
+                    file="__diagnostic_failure__",
+                    line=1,
+                ))
 
         # 6. Import checks if import_index available
         if self.import_index:
@@ -237,6 +249,12 @@ class FullModuleDiagnosticsChecker:
                         line=line,
                     ))
             except Exception as exc:  # noqa: BLE001
-                logger.debug("Import diagnostics check error: %s", exc)
+                logger.warning("Import diagnostics check failure: %s", exc)
+                diagnostics.append(DiagnosticItem(
+                    level="ERROR",
+                    message=f"Échec de l'analyse interne des imports ({type(exc).__name__}: {exc})",
+                    file="__diagnostic_failure__",
+                    line=1,
+                ))
 
         return diagnostics

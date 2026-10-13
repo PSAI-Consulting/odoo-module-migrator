@@ -95,18 +95,29 @@ def test_review_refuses_non_local_url(tmp_path):
 
 def test_apply_safe_exact_python_edit_and_reject_invalid(tmp_path):
     root, _rep = _module(tmp_path)
+    # Unproven recommendation must be rejected without being written
+    unproven = intelligent_review.Recommendation(
+        "Unproven", "", "", "high", "models/partner.py", 5,
+        old="value = 1", new="value = 99",
+        evidence="",
+    )
+    # Proven recommendation with verified curated rule evidence is applicable
     valid = intelligent_review.Recommendation(
         "Safe", "", "", "high", "models/partner.py", 5,
         old="value = 1", new="value = 2",
+        evidence="migration_scripts/curated.yaml:10",
     )
     invalid = intelligent_review.Recommendation(
         "Broken", "", "", "high", "models/partner.py", 5,
         old="value = 2", new="value = (",
+        evidence="migration_scripts/curated.yaml:10",
     )
-    review = intelligent_review.Review(recommendations=[valid, invalid])
+    review = intelligent_review.Review(recommendations=[unproven, valid, invalid])
     intelligent_review.apply_safe_edits(root, review)
     text = (root / "models" / "partner.py").read_text(encoding="utf-8")
+    assert "value = 99" not in text
     assert "value = 2" in text
+    assert "confiance objective insuffisante" in unproven.status
     assert valid.status == "applied"
     assert invalid.status.startswith("rejected: syntaxe invalide")
 

@@ -18,13 +18,16 @@ from odoo_module_migrate.intelligence import (
     OllamaProvider,
     PythonDictKeyApplicator,
     PythonImportApplicator,
+    TargetViewTrees,
     VerificationResult,
     XmlAttributeApplicator,
     XmlXPathApplicator,
+    apply_typed_operation,
     detect_hardware,
     evaluate_confidence,
     extract_json_response,
     get_ollama_info_text,
+    publish_changes_atomically,
     recommend_model,
 )
 
@@ -214,12 +217,14 @@ def test_overlapping_edits_handled_safely(tmp_path):
         "Edit1", "", "", "high", "models/partner.py", 4,
         old="product_uom = fields.Char()",
         new="uom_id = fields.Many2one('uom.uom')",
+        evidence="openupgrade_rules:1",
     )
     # Attempting to edit the same old snippet twice in the same batch
     item2 = intelligent_review.Recommendation(
         "Edit2", "", "", "high", "models/partner.py", 4,
         old="product_uom = fields.Char()",
         new="uom_id = fields.Char()",
+        evidence="openupgrade_rules:1",
     )
     review = intelligent_review.Review(recommendations=[item1, item2])
     intelligent_review.assess_safe_edits(root, review)
@@ -673,6 +678,7 @@ def test_status_distinction_passed_failed_skipped(tmp_path):
                     "file": "models/partner.py",
                     "old_key": "product_uom",
                     "new_key": "uom_id",
+                    "evidence": "knowledge/ollama_migration_policy.md:1",
                 }],
             }
 
@@ -734,4 +740,396 @@ def test_real_migration_with_ollama_repair(tmp_path, monkeypatch):
     rep = mig.report_collector.reports["sample_addon"]
     assert rep.intelligent_review is not None
     assert rep.intelligent_review.repair_session is not None
+
+
+# 30. RAG Matching Chunk Rejects Empty or Short Evidence
+def test_rag_find_matching_chunk_empty_evidence_and_edge_cases(tmp_path):
+    _root, rep = _setup_test_addon(tmp_path)
+    rag = HybridRAG(rep, "17.0", "20.0")
+    rag.build_prompt_context()
+
+    op = {"type": "exact_text_replace", "file": "models/partner.py"}
+    # Empty string must always return None
+    assert rag.find_matching_chunk("", op) is None
+    # Whitespace only must return None
+    assert rag.find_matching_chunk("   ", op) is None
+    # Substrings < 5 characters must return None
+    assert rag.find_matching_chunk("a", op) is None
+    assert rag.find_matching_chunk("abcd", op) is None
+    # Hallucinated string must return None
+    assert rag.find_matching_chunk("nonexistent_path/fake.py:42", op) is None
+
+
+# 31. Atomic Publication Rollback on Write Failure
+def test_atomic_publication_rollback_on_failure(tmp_path, monkeypatch):
+    import os
+
+    module_dir = tmp_path / "target_addon"
+    module_dir.mkdir()
+    file_a = module_dir / "file_a.py"
+    file_b = module_dir / "file_b.py"
+
+    orig_a = "content_a = 1\n"
+    orig_b = "content_b = 2\n"
+    file_a.write_text(orig_a, encoding="utf-8")
+    file_b.write_text(orig_b, encoding="utf-8")
+
+    temp_dir = tmp_path / "temp_addon"
+    temp_dir.mkdir()
+    (temp_dir / "file_a.py").write_text("content_a = 99\n", encoding="utf-8")
+    (temp_dir / "file_b.py").write_text("content_b = 88\n", encoding="utf-8")
+
+    real_replace = os.replace
+
+    def broken_replace(src, dst):
+        if "file_b.py" in str(dst):
+            raise OSError("Simulated disk error during second file replacement")
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(os, "replace", broken_replace)
+
+    with pytest.raises(Exception, match="Simulated disk error"):
+        publish_changes_atomically(module_dir, temp_dir, ["file_a.py", "file_b.py"])
+
+    # Both files must remain in their original state (file_a rolled back, file_b untouched)
+    assert file_a.read_text(encoding="utf-8") == orig_a
+    assert file_b.read_text(encoding="utf-8") == orig_b
+
+    # No leftover temporary files in target directory
+    leftovers = list(module_dir.glob(".tmp_repair_*"))
+    assert len(leftovers) == 0
+
+
+# 32. Full Diagnostics Checker Fails Closed on Internal Exception
+def test_full_diagnostics_fails_closed_on_internal_exception(tmp_path, monkeypatch):
+    root, _rep = _setup_test_addon(tmp_path)
+
+    # 1. View failure check
+    from odoo_module_migrate.analysis import models, python_checks, views
+
+    def exploding_views(*args, **kwargs):
+        raise RuntimeError("Crash inside view analysis")
+
+    monkeypatch.setattr(views, "check_module", exploding_views)
+    checker = FullModuleDiagnosticsChecker("20.0", view_index="dummy_index")
+    diags = checker.check_module(root)
+
+    view_failures = [d for d in diags if d.file == "__diagnostic_failure__" and "Crash inside view analysis" in d.message]
+    assert len(view_failures) == 1
+    assert view_failures[0].level == "ERROR"
+
+    # 2. Model failure check
+    def exploding_models(*args, **kwargs):
+        raise ValueError("Crash inside model analysis")
+
+    monkeypatch.setattr(python_checks, "check_module", lambda *a, **kw: [])
+    monkeypatch.setattr(models, "check_module", exploding_models)
+    checker_models = FullModuleDiagnosticsChecker("20.0", model_index="dummy_index")
+    diags_m = checker_models.check_module(root)
+
+    model_failures = [d for d in diags_m if d.file == "__diagnostic_failure__" and "Crash inside model analysis" in d.message]
+    assert len(model_failures) == 1
+    assert model_failures[0].level == "ERROR"
+
+
+# 33. Context Requirements Rejection for Dependency and XPath
+def test_applicators_context_requirement_rejections(tmp_path):
+    root = tmp_path / "context_addon"
+    root.mkdir()
+    manifest = root / "__manifest__.py"
+    manifest.write_text("{'name': 'test', 'depends': ['base']}\n", encoding="utf-8")
+    view_xml = root / "view.xml"
+    view_xml.write_text(
+        '<odoo><record id="v1" model="ir.ui.view"><field name="arch" type="xml">'
+        '<xpath expr="//field[@name=\'foo\']" position="after"><field name="bar"/></xpath>'
+        '</field></record></odoo>',
+        encoding="utf-8",
+    )
+
+    # Missing known_modules or dependency_graph for manifest_add_dependency
+    res_manifest, _ = apply_typed_operation(
+        root,
+        {"type": "manifest_add_dependency", "file": "__manifest__.py", "dependency": "sale"},
+        context={},
+    )
+    assert res_manifest.success is False
+    assert "informations de dépendances" in res_manifest.status
+
+    # Missing target_view_tree for xml_replace_xpath
+    res_xpath, _ = apply_typed_operation(
+        root,
+        {
+            "type": "xml_replace_xpath",
+            "file": "view.xml",
+            "old_expr": "//field[@name='foo']",
+            "new_expr": "//field[@name='baz']",
+        },
+        context={},
+    )
+    assert res_xpath.success is False
+    assert "arbre de vues cibles absent" in res_xpath.status
+
+    # TargetViewTrees behavior
+    tv_empty = TargetViewTrees()
+    assert bool(tv_empty) is False
+    assert tv_empty.xpath("//field") == []
+
+
+# 34. Python Import Applicator: Relative Imports, Aliases, Multi-Imports and Comments
+def test_python_import_relative_aliases_and_comments(tmp_path):
+    f = tmp_path / "test_import.py"
+    initial = (
+        "# encoding: utf-8\n"
+        "from . import helpers  # internal helper\n"
+        "import math as m, os as operating_system  # dual alias import\n"
+        "from odoo import api, fields, models\n"
+    )
+    f.write_text(initial, encoding="utf-8")
+
+    # 1. Update module in dual alias import: math -> standard_math
+    res_alias = PythonImportApplicator.replace_import(
+        f, old_module="math", new_module="standard_math", target_line=3
+    )
+    assert res_alias.success is True
+    # Verify alias and trailing comment preserved
+    assert "import standard_math as m, os as operating_system  # dual alias import" in res_alias.new_content
+
+    # 2. Update relative import: helpers -> new_helpers
+    res_rel = PythonImportApplicator.replace_import(
+        f, old_module="helpers", new_module="new_helpers", target_line=2
+    )
+    assert res_rel.success is True
+    assert "from . import new_helpers  # internal helper" in res_rel.new_content
+
+
+# 35. Python Dict Key Applicator with Unicode Preceding Characters
+def test_python_dict_key_with_unicode_preceding(tmp_path):
+    f = tmp_path / "test_dict.py"
+    initial = (
+        "# Données pré-existantes : café, coût élevé et références\n"
+        "vals = {'coût_total': 150, 'résumé_global': 'complet'}\n"
+    )
+    f.write_text(initial, encoding="utf-8")
+
+    # Rename 'coût_total' -> 'cout_total'
+    res = PythonDictKeyApplicator.rename_key(f, "coût_total", "cout_total", target_line=2)
+    assert res.success is True
+    assert "'cout_total': 150" in res.new_content
+    assert "'résumé_global': 'complet'" in res.new_content
+    assert "café, coût élevé" in res.new_content
+
+    # Attempt renaming a non-existent key on that line
+    res_nonexistent = PythonDictKeyApplicator.rename_key(f, "absent_key", "new_k", target_line=2)
+    assert res_nonexistent.success is False
+
+
+# 36. XML Attributes: Adjacent Tags and Multiline Attributes
+def test_xml_adjacent_tags_and_multiline_attributes(tmp_path):
+    f = tmp_path / "test_view.xml"
+    initial = (
+        '<odoo>\n'
+        '  <record id="view_test" model="ir.ui.view">\n'
+        '    <field name="arch" type="xml">\n'
+        '      <form>\n'
+        '        <field name="a"/><field name="b"/>\n'
+        '        <page\n'
+        '          name="info"\n'
+        '          string="Informations Initiales">\n'
+        '          <field name="desc"/>\n'
+        '        </page>\n'
+        '      </form>\n'
+        '    </field>\n'
+        '  </record>\n'
+        '</odoo>\n'
+    )
+    f.write_text(initial, encoding="utf-8")
+
+    # Set attribute on multiline <page ...> tag
+    res = XmlAttributeApplicator.set_attribute(
+        f,
+        element_tag="page",
+        attribute_name="string",
+        old_value="Informations Initiales",
+        new_value="Détails Mis à Jour",
+        identifier="info",
+    )
+    assert res.success is True
+    assert 'string="Détails Mis à Jour"' in res.new_content
+    # Ensure adjacent tags <field name="a"/><field name="b"/> were unaffected
+    assert '<field name="a"/><field name="b"/>' in res.new_content
+
+
+# 37. CSV CRLF Preservation and Multiline Cell Rejection
+def test_csv_crlf_and_multiline_cell_rejection(tmp_path):
+    f = tmp_path / "ir.model.access.csv"
+    crlf_content = (
+        "id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink\r\n"
+        "access_test,access.test,model_res_partner,,1,0,0,0\r\n"
+    )
+    f.write_bytes(crlf_content.encode("utf-8"))
+
+    # 1. Update cell with CRLF preservation
+    res = CsvValueApplicator.replace_value(
+        f,
+        column_index=5,  # perm_write
+        old_value="0",
+        new_value="1",
+        row_filter_col=0,
+        row_filter_val="access_test",
+    )
+    assert res.success is True
+    assert b"\r\n" in res.new_content.encode("utf-8")
+    assert "access_test,access.test,model_res_partner,,1,1,0,0\r\n" in res.new_content
+
+    # 2. Rejection of multiline cell
+    f_multi = tmp_path / "multiline.csv"
+    multi_content = (
+        'id,name,description\r\n'
+        'row_1,name_1,"Première ligne\nDeuxième ligne"\r\n'
+    )
+    f_multi.write_bytes(multi_content.encode("utf-8"))
+
+    res_multi = CsvValueApplicator.replace_value(
+        f_multi,
+        column_index=1,
+        old_value="name_1",
+        new_value="new_name",
+        row_filter_col=0,
+        row_filter_val="row_1",
+    )
+    assert res_multi.success is False
+    assert "multiligne" in res_multi.status
+
+
+# 38. Real Migration Integration Test for --ollama-apply and --ollama-repair
+def test_real_integration_ollama_apply_and_ollama_repair(tmp_path, monkeypatch):
+    from odoo_module_migrate.migration import Migration
+
+    root, _rep = _setup_test_addon(tmp_path, name="addon_repair")
+    partner_file = root / "models" / "partner.py"
+
+    # 1. Test --ollama-apply flow
+    import json
+
+    apply_payload = {
+        "summary": "Application d'un remplacement exact prouvé.",
+        "recommendations": [
+            {
+                "title": "Renommer champ uom",
+                "diagnosis": "product_uom renommé",
+                "action": "Remplacer product_uom",
+                "confidence": "high",
+                "file": "models/partner.py",
+                "line": 4,
+                "old": "product_uom = fields.Char()",
+                "new": "uom_id = fields.Many2one('uom.uom')",
+                "evidence": "openupgrade_rules:1",
+            },
+            {
+                "title": "Remplacement non prouvé",
+                "diagnosis": "sans preuve",
+                "action": "Ne doit pas être appliqué",
+                "confidence": "high",
+                "file": "models/partner.py",
+                "line": 5,
+                "old": "def action_test(self):",
+                "new": "def action_new(self):",
+                "evidence": "",
+            },
+        ],
+    }
+
+    def fake_request(url, path, payload=None, timeout=600):
+        if path == "/api/tags":
+            return {"models": [{"name": "fake-coder:7b"}]}
+        return {"message": {"content": json.dumps(apply_payload)}}
+
+    monkeypatch.setattr("odoo_module_migrate.intelligent_review._request", fake_request)
+
+    mig_apply = Migration(
+        tmp_path,
+        "17.0",
+        "20.0",
+        ["addon_repair"],
+        commit_enabled=False,
+        pre_commit=False,
+        write_report=True,
+        ollama_review=True,
+        ollama_apply=True,
+    )
+    mig_apply.run()
+
+    applied_content = partner_file.read_text(encoding="utf-8")
+    assert "uom_id = fields.Many2one('uom.uom')" in applied_content
+    # Unproven edit was not applied
+    assert "def action_test(self):" in applied_content
+
+    # 2. Test --ollama-repair flow with actual diagnostic resolution and score persistence
+    root_rep, _ = _setup_test_addon(tmp_path, name="addon_repair2")
+    partner_file2 = root_rep / "models" / "partner.py"
+
+    class RepairProvider(OllamaProvider):
+        def choose_model(self, requested=""):
+            return "fake-coder:7b"
+
+        def chat(self, messages, **kwargs):
+            return {
+                "analysis": "Réparation atomique d'un dict key.",
+                "operations": [
+                    {
+                        "type": "rename_dict_key",
+                        "file": "models/partner.py",
+                        "old_key": "product_uom",
+                        "new_key": "uom_id",
+                        "line": 7,
+                        "evidence": "knowledge/ollama_migration_policy.md:1",
+                    }
+                ],
+            }
+
+    monkeypatch.setattr(
+        "odoo_module_migrate.intelligent_review.OllamaProvider",
+        RepairProvider,
+    )
+
+    checker_calls = [0]
+
+    def mock_checker(*args, **kwargs):
+        checker_calls[0] += 1
+        if checker_calls[0] == 1:
+            return [DiagnosticItem("WARNING", "diag uom", "models/partner.py", 7)]
+        return []
+
+    monkeypatch.setattr(
+        "odoo_module_migrate.intelligence.diagnostics.FullModuleDiagnosticsChecker.check_module",
+        mock_checker,
+    )
+
+    mig_repair = Migration(
+        tmp_path,
+        "17.0",
+        "20.0",
+        ["addon_repair2"],
+        commit_enabled=False,
+        pre_commit=False,
+        write_report=True,
+        ollama_review=True,
+        ollama_repair=True,
+    )
+    mig_repair.run()
+    rep_final = mig_repair.report_collector.reports["addon_repair2"]
+
+    partner_content2 = partner_file2.read_text(encoding="utf-8")
+    assert "'uom_id': 'unit'" in partner_content2
+    assert rep_final.intelligent_review is not None
+    assert rep_final.intelligent_review.repair_session is not None
+    assert len(rep_final.intelligent_review.recommendations) == 1
+
+    rec = rep_final.intelligent_review.recommendations[0]
+    assert rec.status == "applied"
+    # Real objective confidence score stored (not hardcoded 0.90)
+    assert rec.objective_score >= 0.70
+    assert rec.objective_confidence in {"haute", "moyenne"}
+
+
 
