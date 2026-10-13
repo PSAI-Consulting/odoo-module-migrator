@@ -232,99 +232,142 @@ def render(report, init_version, target_version, changed_files=()):
         lines += ["## Fichiers modifiés", ""]
         lines += [f"- `{f}`" for f in sorted(changed_files)] + [""]
     if report.intelligent_review:
-        review = report.intelligent_review
-        lines += ["## Relecture intelligente locale", ""]
-        if review.error:
-            lines += [
-                "> ⚠️ Ollama n'a pas pu effectuer la relecture : " + review.error,
-                "",
-            ]
-        else:
-            lines += [
-                f"> Modèle local : `{review.model}`. Ces propositions complètent les contrôles",
-                "> déterministes ; elles restent à vérifier humainement.",
-                "",
-            ]
-            if review.summary:
-                lines += [review.summary, ""]
-
-            # Summary metrics
-            applied_count = sum(1 for item in review.recommendations if item.status == "applied")
-            rejected_count = sum(1 for item in review.recommendations if item.status.startswith("rejected"))
-            proposed_count = len(review.recommendations)
-
-            lines += [
-                "### Bilan de l'assistance locale",
-                "",
-                "| Indicateur | Valeur |",
-                "|---|---|",
-                f"| Modèle utilisé | `{review.model}` |",
-                f"| Propositions du modèle | {proposed_count} |",
-                f"| Réellement validées & appliquées | {applied_count} |",
-                f"| Rejetées par les garde-fous | {rejected_count} |",
-                f"| Temps de calcul | {review.elapsed_seconds:.1f} s |",
-            ]
-            if review.context_chars:
-                lines.append(f"| Contexte analysé | {review.context_chars} caractères |")
-            if review.repair_session:
-                sess = review.repair_session
-                lines.append(f"| Tentatives de réparation | {len(sess.attempts)} |")
-                lines.append(f"| Évolution des TODOs | {sess.initial_todos} → {sess.final_todos} (erreurs : {sess.initial_errors} → {sess.final_errors}) |")
-                lines.append(f"| Niveau de validation atteint | {sess.highest_validation_level} |")
-            lines.append("")
-
-            if not review.recommendations:
-                lines += ["Aucune recommandation supplémentaire.", ""]
-            confidence = {"high": "haute", "medium": "moyenne", "low": "faible"}
-            for index, item in enumerate(review.recommendations, 1):
-                location = item.file + (f":{item.line}" if item.line else "")
-                status_str = {
-                    "applied": " ✅ appliquée et syntaxe validée",
-                    "advice": "",
-                    "proposed: texte exact et syntaxe validés":
-                        " ✅ texte exact et syntaxe validés (non appliquée)",
-                }.get(item.status, f" ⚠️ {item.status}")
-
-                conf_label = confidence.get(item.confidence, item.confidence)
-                lines += [
-                    f"### {index}. {item.title}",
-                    "",
-                    f"- **Origine :** IA locale (`{review.model}`)",
-                    f"- **Confiance :** {conf_label}{status_str}",
-                ]
-                if getattr(item, "objective_confidence", "") and item.objective_confidence != conf_label:
-                    lines.append(f"- **Confiance objective vérifiée :** {item.objective_confidence} (score: {item.objective_score:.2f})")
-                if getattr(item, "validation_level", ""):
-                    lines.append(f"- **Niveau de validation :** {item.validation_level}")
-                if getattr(item, "operation_type", ""):
-                    lines.append(f"- **Opération :** `{item.operation_type}`")
-                if location:
-                    lines.append(f"- **Emplacement :** `{location}`")
-                if item.diagnosis:
-                    lines.append(f"- **Diagnostic :** {item.diagnosis}")
-                if item.evidence:
-                    lines.append(f"- **Preuve / Règle :** {item.evidence}")
-                if item.action:
-                    lines.append(f"- **Action :** {item.action}")
-                if item.old and item.status != "applied":
-                    lines += [
-                        "- **Modification proposée :**",
-                        "",
-                        "```diff",
-                        *[f"- {line}" for line in item.old.splitlines()],
-                        *[f"+ {line}" for line in item.new.splitlines()],
-                        "```",
-                    ]
-                elif getattr(item, "diff", "") and item.status == "applied":
-                    lines += [
-                        "- **Diff appliqué :**",
-                        "",
-                        "```diff",
-                        *[line for line in item.diff.splitlines()],
-                        "```",
-                    ]
-                lines.append("")
+        lines += render_intelligent_review(report.intelligent_review)
     return "\n".join(lines)
+
+
+_STATUS_LABELS = {
+    "applied": "✅ appliquée après vérification déterministe",
+    "verified": "☑️ vérifiée sur copie, non publiée",
+    "advice": "💬 conseil (aucune édition)",
+}
+
+
+def _status_label(status):
+    if status in _STATUS_LABELS:
+        return _STATUS_LABELS[status]
+    if status.startswith("proposed"):
+        return "☑️ vérifiée sur copie, non appliquée (mode revue)"
+    if status.startswith("rejected"):
+        return "⛔ rejetée — " + status.split(":", 1)[-1].strip()
+    if status.startswith("error"):
+        return "⚠️ erreur — " + status.split(":", 1)[-1].strip()
+    return status
+
+
+def render_intelligent_review(review):
+    """Human section of the optional Ollama layer. Nothing is presented as
+    verified unless the corresponding check actually ran and passed."""
+    lines = ["## Assistance IA locale (Ollama)", ""]
+    if review.error and not review.recommendations:
+        return lines + [f"> ⚠️ Assistance indisponible : {review.error}", "",
+                        "Aucune modification n'a été faite par l'IA.", ""]
+    mode = getattr(review, "mode", "revue")
+    lines += [
+        f"> Mode : **{mode}** — modèle local `{review.model}`. Le modèle propose ; seul le migrateur",
+        "> décide, après réanalyse déterministe d'une copie. Le score ci-dessous est calculé, jamais déclaré",
+        "> par le modèle. Une revue Git et une installation Odoo restent nécessaires.",
+        "",
+    ]
+    if review.error:
+        lines += [f"> ⚠️ {review.error}", ""]
+    if review.summary:
+        lines += [review.summary, ""]
+    recommendations = review.recommendations
+    applied = [r for r in recommendations if r.status == "applied"]
+    rejected = [r for r in recommendations if r.status.startswith(("rejected", "error"))]
+    verified = [r for r in recommendations if r.status.startswith("proposed")]
+    lines += [
+        "| Indicateur | Valeur |",
+        "|---|---|",
+        f"| Propositions du modèle | {len(recommendations)} |",
+        f"| Appliquées (vérifiées puis publiées) | {len(applied)} |",
+        f"| Vérifiées mais non appliquées (mode revue) | {len(verified)} |",
+        f"| Rejetées par les garde-fous | {len(rejected)} |",
+        f"| Durée | {review.elapsed_seconds:.1f} s |",
+    ]
+    session = getattr(review, "repair_session", None)
+    if session is not None:
+        lines += [
+            (
+                f"| Diagnostics rejouables avant → après | {session.initial_todos} → {session.final_todos} "
+                f"(erreurs {session.initial_errors} → {session.final_errors}) |"
+            ),
+            f"| Diagnostics résolus et retirés de la liste TODO | {len(session.resolved)} |",
+        ]
+    lines.append("")
+    coverage = getattr(review, "coverage", None) or []
+    if coverage:
+        lines += ["**Réanalyse déterministe rejouée après chaque édition :**", ""]
+        for name, done, reason in coverage:
+            lines.append(f"- {'✅' if done else '➖ non rejouée'} {name}" + (f" — {reason}" if reason else ""))
+        lines.append("")
+    for index, item in enumerate(recommendations, 1):
+        lines += [f"### {index}. {item.title}", "", f"- **Décision :** {_status_label(item.status)}"]
+        if item.file:
+            lines.append(f"- **Emplacement :** `{item.file}" + (f":{item.line}`" if item.line else "`"))
+        if item.operation_type and item.old or item.diff:
+            lines.append(f"- **Opération :** `{item.operation_type}`")
+        if item.diagnosis:
+            lines.append(f"- **Diagnostic (selon le modèle) :** {item.diagnosis}")
+        if item.action:
+            lines.append(f"- **Action proposée :** {item.action}")
+        if item.confidence:
+            lines.append(f"- **Auto-évaluation du modèle (non prise en compte) :** {item.confidence}")
+        if item.objective_score is not None:
+            lines.append(
+                f"- **Confiance objective :** {item.objective_confidence} — score calculé "
+                f"{item.objective_score:.2f} / 1.00"
+            )
+        else:
+            lines.append(f"- **Confiance objective :** {item.objective_confidence} (aucun score calculé)")
+        if item.factors:
+            lines.append("- **Facteurs du score :**")
+            for factor in item.factors:
+                mark = "✅" if factor.satisfied else ("⛔" if factor.mandatory else "➖")
+                weight = f" (+{factor.weight:.2f})" if factor.weight else ""
+                detail = f" — {factor.detail}" if factor.detail else ""
+                required = " *(obligatoire)*" if factor.mandatory else ""
+                lines.append(f"  - {mark} {factor.name}{weight}{required}{detail}")
+        chunks = getattr(item, "evidence_chunks", None) or []
+        if chunks:
+            lines.append("- **Preuves vérifiées (provenance exacte) :**")
+            for chunk in chunks:
+                lines.append(f"  - `{chunk.provenance}` ({chunk.chunk_type}, empreinte `{chunk.fingerprint}`)")
+        elif item.evidence:
+            lines.append(f"- **Références citées par le modèle, non retrouvées :** `{item.evidence}`")
+        if item.resolved:
+            lines.append("- **Diagnostics résolus (réanalyse) :**")
+            for file, level, message in item.resolved:
+                lines.append(f"  - {level} `{file}` : {message}")
+        if item.validations:
+            lines.append("- **Validations :** " + ", ".join(
+                f"{name} = {value}" for name, value in item.validations.items()
+            ))
+        if item.reason and not item.status.startswith("rejected"):
+            lines.append(f"- **Motif :** {item.reason}")
+        if item.diff:
+            label = "Diff appliqué" if item.status == "applied" else "Diff proposé (non appliqué)"
+            lines += [f"- **{label} :**", "", "```diff", *item.diff.splitlines(), "```"]
+        elif item.old and item.status != "applied":
+            lines += [
+                "- **Remplacement proposé (non appliqué) :**", "", "```diff",
+                *[f"- {line}" for line in item.old.splitlines()],
+                *[f"+ {line}" for line in item.new.splitlines()],
+                "```",
+            ]
+        lines.append("")
+    manual = [r for r in recommendations if r.status != "applied"]
+    if manual:
+        lines += [
+            (
+                "**Reste manuel :** toute proposition non appliquée ci-dessus. Une édition n'est appliquée "
+                "automatiquement que si elle renomme seulement des symboles, résout un diagnostic de son fichier "
+                "sans en créer, et cite une règle vérifiée mentionnant l'ancien et le nouveau symbole."
+            ),
+            "",
+        ]
+    return lines
 
 
 def render_summary(reports, init_version, target_version):

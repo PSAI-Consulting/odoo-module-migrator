@@ -271,10 +271,11 @@ class ViewIndex:
                     self.xmlids.add(_qualify(row[0], module))
 
     @classmethod
-    def build(cls, paths):
+    def build(cls, paths, exclude=()):
         index = cls()
         for module in _module_dirs(paths):
-            index.add_module(module)
+            if module.name not in exclude:
+                index.add_module(module)
         return index
 
     def root(self, xid):

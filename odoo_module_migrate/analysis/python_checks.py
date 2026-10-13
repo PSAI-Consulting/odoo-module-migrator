@@ -1469,21 +1469,15 @@ def dependency_message(index, module, what, owners):
     return f"{what}: add a provider to 'depends': {', '.join(o for o in owners if o not in circular)}"
 
 
-def apply_unambiguous_dependencies(module, index, with_manual=False):
-    """Add safe Python providers and retain Enterprise providers for review."""
+def dependency_needs(module, index):
+    """(Community providers to add, Enterprise providers to review) of the
+    Python symbols used by the module, without modifying anything."""
     module = Path(module)
     if index.unknown_dependencies(module.name):
-        return ([], []) if with_manual else []
+        return set(), []
     closure = index.closure(module.name)
     providers = set()
     manual = set()
-
-    def result(additions):
-        if not with_manual:
-            return additions
-        return additions, sorted(
-            manual, key=lambda item: (str(item[0]), *item[1:])
-        )
 
     def consider(owners, symbol, path, line):
         owners = set(owners)
@@ -1529,6 +1523,22 @@ def apply_unambiguous_dependencies(module, index, with_manual=False):
                 path,
                 node.lineno,
             )
+    return providers, sorted(manual, key=lambda item: (str(item[0]), *item[1:]))
+
+
+def manual_dependencies(module, index):
+    """(path, line, Enterprise module, symbol) left for a human decision."""
+    return dependency_needs(module, index)[1]
+
+
+def apply_unambiguous_dependencies(module, index, with_manual=False):
+    """Add safe Python providers and retain Enterprise providers for review."""
+    module = Path(module)
+    providers, manual = dependency_needs(module, index)
+
+    def result(additions):
+        return (additions, manual) if with_manual else additions
+
     if not providers:
         return result([])
     manifest_path = module / "__manifest__.py"
@@ -1538,7 +1548,7 @@ def apply_unambiguous_dependencies(module, index, with_manual=False):
         dependencies = list(data.get("depends", []))
         additions = sorted(providers - set(dependencies))
         if not additions:
-            return []
+            return result([])
         from ..manifest import rewrite_list
 
         text = rewrite_list(text, "depends", dependencies + additions)

@@ -8,6 +8,7 @@ import pathlib
 import pkgutil
 import re
 import subprocess
+import time
 import traceback
 
 from . import report, tools
@@ -67,6 +68,8 @@ class Migration:
         self._upgrade_code_options = upgrade_code_options
         self._dry_run = dry_run
         self.upgrade_code_result = None
+        # Target indexes of the view/model/import checks (None without sources)
+        self._target_indexes = None
         self._report = write_report
         self._set_installable = set_installable
         self._report_dir = pathlib.Path(report_dir).resolve() if report_dir else None
@@ -428,124 +431,126 @@ class Migration:
                 report.render_summary(reports, init_version, target_version), encoding="utf-8"
             )
 
+    def _intelligence_context(self, init_version, target_version, item):
+        """Checker, target data and repair context shared by review and repair."""
+        from .intelligence.applicators import TargetViewTrees
+        from .intelligence.diagnostics import FullModuleDiagnosticsChecker
+
+        indexes = self._target_indexes
+        checker = FullModuleDiagnosticsChecker(
+            target_version,
+            self._migration_scripts,
+            indexes=indexes,
+            init_version=init_version,
+            module_name=item._module_name,
+        )
+        context = {"known_modules": None, "dependency_graph": None, "target_view_tree": None}
+        lookup = None
+        if indexes is not None:
+            graph = {}
+            for index in (indexes.view_index, indexes.model_index):
+                for name, depends in (getattr(index, "depends", None) or {}).items():
+                    graph.setdefault(name, list(depends))
+            if graph:
+                context["known_modules"] = set(graph)
+                context["dependency_graph"] = graph
+            if indexes.view_index is not None:
+                context["target_view_tree"] = TargetViewTrees(indexes.view_index)
+            lookup = _target_symbol_lookup(indexes)
+        options = self._upgrade_code_options
+        upgrade_code_dir = None
+        if options is not None and (pathlib.Path(options.odoo_root) / "odoo" / "upgrade_code").is_dir():
+            upgrade_code_dir = pathlib.Path(options.odoo_root) / "odoo" / "upgrade_code"
+        return {
+            "checker": checker,
+            "context": context,
+            "symbol_lookup": lookup,
+            "reference_paths": list(options.addons_path) if options else [],
+            "context_paths": list(options.context_path) if options else [],
+            "upgrade_code_dir": upgrade_code_dir,
+        }
+
     def _run_intelligent_review(self, init_version, target_version):
         """Attach an optional local Ollama review; never abort the migration."""
         from . import intelligent_review
-        from .intelligence.diagnostics import FullModuleDiagnosticsChecker
+        from .intelligence.provider import OllamaProvider
 
-        reference_paths = list(self._upgrade_code_options.addons_path) if self._upgrade_code_options else []
-        context_paths = list(self._upgrade_code_options.context_path) if self._upgrade_code_options else []
-
+        provider = None
         for item in self._module_migrations:
             module_report = self.report_collector.reports[item._module_name]
             self.report_collector.current = module_report
+            started = time.monotonic()
             try:
-                if self._ollama_repair:
-                    view_index = getattr(self, "_cached_view_index", None)
-                    model_index = getattr(self, "_cached_model_index", None)
-                    import_index = getattr(self, "_cached_import_index", None)
-
-                    checker = FullModuleDiagnosticsChecker(
-                        target_version=target_version,
-                        migration_scripts=self._migration_scripts,
-                        model_index=model_index,
-                        view_index=view_index,
-                        import_index=import_index,
+                if provider is None:
+                    # One provider for every module: model choice, hardware
+                    # probing and the loaded model are reused.
+                    provider = OllamaProvider(
+                        self._ollama_url,
+                        intelligent_review.configured_model(self._ollama_model),
+                        self._ollama_timeout,
                     )
-
-                    known_modules: set[str] = set()
-                    dependency_graph: dict[str, list[str]] = {}
-                    if view_index:
-                        known_modules.update(view_index.depends.keys())
-                        for mod, deps in view_index.depends.items():
-                            dependency_graph[mod] = list(deps) if not isinstance(deps, list) else deps
-                    if model_index:
-                        known_modules.update(model_index.depends.keys())
-                        for mod, deps in model_index.depends.items():
-                            if mod not in dependency_graph:
-                                dependency_graph[mod] = list(deps) if not isinstance(deps, list) else deps
-
-                    target_view_tree = None
-                    if view_index and getattr(view_index, "arches", None):
-                        from .intelligence.applicators import TargetViewTrees
-                        target_view_tree = TargetViewTrees(view_index.arches)
-
+                shared = self._intelligence_context(init_version, target_version, item)
+                checker = shared["checker"]
+                if self._ollama_repair:
                     session = intelligent_review.repair_module(
                         item._module_path,
                         module_report,
                         init_version,
                         target_version,
-                        url=self._ollama_url,
-                        model=intelligent_review.configured_model(self._ollama_model),
+                        provider=provider,
                         max_attempts=self._ollama_max_attempts,
                         max_minutes=self._ollama_max_minutes,
                         max_diff_lines=self._ollama_max_diff_lines,
                         diagnostics_checker=checker.check_module,
-                        reference_paths=reference_paths,
-                        context_paths=context_paths,
-                        known_modules=known_modules if known_modules else None,
-                        dependency_graph=dependency_graph if dependency_graph else None,
-                        target_view_tree=target_view_tree,
+                        reference_paths=shared["reference_paths"],
+                        context_paths=shared["context_paths"],
+                        upgrade_code_dir=shared["upgrade_code_dir"],
+                        timeout=self._ollama_timeout,
+                        max_context=self._ollama_max_context,
+                        coverage=checker.coverage(),
+                        symbol_lookup=shared["symbol_lookup"],
+                        **shared["context"],
                     )
-
-                    review = intelligent_review.Review(
-                        model=session.model,
-                        summary=f"Réparation autonome exécutée ({len(session.applied_operations)} opération(s) appliquée(s)).",
-                        elapsed_seconds=session.total_time_seconds,
-                        repair_session=session,
-                    )
-                    for op in session.applied_operations:
-                        path = item._module_path / op.get("file", "")
-                        logger.info(
-                            "Ollama autonomous repair applied: %s on %s. File %s:1",
-                            op.get("type"), op.get("file"), path,
-                        )
-                        conf_rep = op.get("confidence_report")
-                        rec = intelligent_review.Recommendation(
-                            title=f"Réparation {op.get('type')}",
-                            diagnosis=op.get("description", ""),
-                            action=f"Appliqué sur {op.get('file')}",
-                            confidence="high",
-                            file=op.get("file", ""),
-                            line=op.get("line") or 1,
-                            evidence=op.get("evidence", ""),
-                            operation_type=op.get("type", "exact_text_replace"),
-                            status="applied",
-                            objective_score=op.get("objective_score", getattr(conf_rep, "score", 0.0)),
-                            objective_confidence=op.get("objective_confidence", getattr(conf_rep, "level", "faible")),
-                            validation_level=op.get("validation_level", session.highest_validation_level),
-                        )
-                        review.recommendations.append(rec)
-
-                    module_report.intelligent_review = review
+                    review = _review_from_session(intelligent_review, session)
+                    resolved = session.resolved
                 else:
                     review = intelligent_review.review_module(
                         module_report,
                         init_version,
                         target_version,
-                        url=self._ollama_url,
-                        model=intelligent_review.configured_model(self._ollama_model),
+                        provider=provider,
                         timeout=self._ollama_timeout,
                         max_context=self._ollama_max_context,
-                        reference_paths=reference_paths,
-                        context_paths=context_paths,
+                        reference_paths=shared["reference_paths"],
+                        context_paths=shared["context_paths"],
+                        upgrade_code_dir=shared["upgrade_code_dir"],
                     )
-                    if self._ollama_apply:
-                        intelligent_review.apply_safe_edits(item._module_path, review)
-                        for recommendation in review.recommendations:
-                            if recommendation.status == "applied":
-                                path = item._module_path / recommendation.file
-                                logger.info(
-                                    "Ollama applied a validated exact edit: %s. File %s:%s",
-                                    recommendation.title,
-                                    path,
-                                    recommendation.line or 1,
-                                )
-                    else:
-                        # Even advice-only output is fact-checked: a hallucinated
-                        # exact snippet is visibly rejected in the human report.
-                        intelligent_review.assess_safe_edits(item._module_path, review)
-                    module_report.intelligent_review = review
+                    review.mode = "application vérifiée" if self._ollama_apply else "revue"
+                    review.coverage = checker.coverage()
+                    intelligent_review.assess_safe_edits(
+                        item._module_path,
+                        review,
+                        apply=self._ollama_apply,
+                        checker=checker.check_module,
+                        max_diff_lines=self._ollama_max_diff_lines,
+                        symbol_lookup=shared["symbol_lookup"],
+                    )
+                    resolved = [
+                        key for rec in review.recommendations if rec.status == "applied" for key in rec.resolved
+                    ]
+                for rec in review.recommendations:
+                    if rec.status == "applied":
+                        logger.info(
+                            "Ollama edit applied after deterministic verification (%s, score %.2f). File %s:%s",
+                            rec.operation_type, rec.objective_score or 0.0,
+                            item._module_path / rec.file, rec.line or 1,
+                        )
+                _drop_resolved_entries(module_report, resolved)
+                review.metrics["llm"] = [vars(call) for call in provider.stats.calls]
+                provider.stats.calls = []
+                review.metrics["seconds"] = round(time.monotonic() - started, 2)
+                module_report.intelligent_review = review
+                _write_metrics(item._module_name, review)
             except intelligent_review.OllamaError as exc:
                 module_report.intelligent_review = intelligent_review.Review(
                     model=self._ollama_model,
@@ -555,6 +560,14 @@ class Migration:
                 # migration TODO or change the module risk level.
                 self.report_collector.current = None
                 logger.warning("Local Ollama review unavailable: %s", exc)
+            except Exception as exc:  # noqa: BLE001 - the optional layer never aborts a migration
+                module_report.intelligent_review = intelligent_review.Review(
+                    model=self._ollama_model,
+                    error=f"échec interne de l'assistance locale, aucune modification publiée : {type(exc).__name__}: {exc}",
+                )
+                self.report_collector.current = None
+                logger.warning("Local Ollama assistance failed: %s: %s", type(exc).__name__, exc)
+                logger.debug(traceback.format_exc())
         self.report_collector.current = None
 
     def _reconcile_text_rule_diagnostics(self):
@@ -564,27 +577,14 @@ class Migration:
         that originally triggered a rule. Rebuilding these entries here keeps
         the report aligned with the code the user will actually review.
         """
-        rules = {}
-        for script in self._migration_scripts:
-            script.parse_rules()
-            for extension in _ALLOWED_EXTENSIONS:
-                file_rules = script._file_rules(extension)
-                for level, patterns in (
-                    ("ERROR", file_rules["errors"]),
-                    ("WARNING", file_rules["warnings"]),
-                ):
-                    for pattern, message in patterns.items():
-                        normalized = " ".join(message.rstrip(". ").split())
-                        rules.setdefault(extension, []).append(
-                            (re.compile(pattern), normalized, level)
-                        )
+        from .analysis.module_diagnostics import text_rule_entries, text_rules
+
+        rules = text_rules(self._migration_scripts)
         known_messages = {
             message
             for extension_rules in rules.values()
             for _pattern, message, _level in extension_rules
         }
-        from .analysis.models import loaded_python_files
-
         for item in self._module_migrations:
             module_report = self.report_collector.reports[item._module_name]
             module_report.entries[:] = [
@@ -592,26 +592,9 @@ class Migration:
                 for entry in module_report.entries
                 if entry.message not in known_messages
             ]
-            loaded_python = set(loaded_python_files(item._module_path))
-            for extension, extension_rules in rules.items():
-                for path in tools.get_files(item._module_path, (extension,)):
-                    if extension == ".py" and path not in loaded_python:
-                        continue
-                    text = tools._read_content(path)
-                    for pattern, message, level in extension_rules:
-                        match = pattern.search(text)
-                        if not match:
-                            continue
-                        source = report.SOURCE_RE.search(message)
-                        entry = report.Entry(
-                            level,
-                            message,
-                            path.relative_to(item._module_path).as_posix(),
-                            text.count("\n", 0, match.start()) + 1,
-                            source.group(0) if source else "",
-                        )
-                        if entry not in module_report.entries:
-                            module_report.entries.append(entry)
+            for entry in text_rule_entries(item._module_path, rules):
+                if entry not in module_report.entries:
+                    module_report.entries.append(entry)
 
     def _format_changed_files(self):
         import shutil
@@ -665,11 +648,15 @@ class Migration:
     def _check_access_records_left(self):
         """ir.rule / ir.model.access left in XML once converted (by Odoo's
         19.4-00-ir-access.py or by the fallback of migrate_190_200)."""
-        from .upgrade_code.prepare import ACCESS_LEFT_MESSAGE, access_records_left
+        from .analysis.module_diagnostics import access_left_diagnostics
 
+        init_version = self._migration_steps[0]["init_version_name"]
+        target_version = self._migration_steps[-1]["target_version_name"]
         for module_migration in self._module_migrations:
-            for path, line in access_records_left(module_migration._module_path):
-                logger.warning("%s. File %s:%s" % (ACCESS_LEFT_MESSAGE, path, line))
+            for _level, message, path, line in access_left_diagnostics(
+                module_migration._module_path, init_version, target_version
+            ):
+                logger.warning("%s. File %s:%s" % (message, path, line))
 
     def _check_view_anchors(self):
         """Inherited views anchored on fields absent from the target views."""
@@ -677,17 +664,45 @@ class Migration:
 
         options = self._upgrade_code_options
         reference = list(options.addons_path)
-        logger.info("Checking the view anchors against the target Odoo views...")
-        index = views.ViewIndex.build(
-            reference + list(options.context_path) + [self._directory_path]
+        from .analysis.module_diagnostics import (
+            TargetIndexes,
+            compose_index,
+            import_diagnostics,
+            model_diagnostics,
+            resolve_index_dependencies,
+            view_diagnostics,
         )
-        self._cached_view_index = index
+
+        logger.info("Checking the view anchors against the target Odoo views...")
+        # The migrated modules are added on top of a base index of every other
+        # addon: the optional repair replays the checks on a copy composed the
+        # same way, with the copy replacing its module.
+        index_paths = reference + list(options.context_path) + [self._directory_path]
+        run_modules = {m._module_name: m._module_path for m in self._module_migrations}
+        module_rules = self._index_dependency_rules()
+        view_base = views.ViewIndex.build(index_paths, exclude=run_modules)
+        resolve_index_dependencies(view_base, module_rules)
+        index = compose_index(view_base, run_modules, module_rules)
         reference_modules = {m.name for m in views._module_dirs(reference)}
-        self._resolve_index_dependencies(index)
         menu_parent_hints = []
         for script in self._migration_scripts:
             script.parse_rules()
             menu_parent_hints.extend(script._MENU_PARENT_HINTS)
+
+        self._target_indexes = TargetIndexes(
+            float(self._migration_steps[-1]["target_version_name"]),
+            view_base=view_base,
+            run_modules=run_modules,
+            module_rules=module_rules,
+            view_index=index,
+            reference_modules=frozenset(reference_modules),
+            menu_parent_hints=menu_parent_hints,
+            removed_fields=[
+                rule
+                for script in self._migration_scripts
+                for rule in script._REMOVED_FIELDS
+            ],
+        )
         for module_migration in self._module_migrations:
             widget_dependencies = views.apply_known_widget_dependencies(
                 module_migration._module_path, index
@@ -698,63 +713,37 @@ class Migration:
                     dependency,
                     module_migration._module_path / "__manifest__.py",
                 )
-            unknown = index.unknown_dependencies(module_migration._module_name)
-            if unknown:
-                logger.warning(
-                    "[incomplete] Dependencies not found in the addons paths (%s): checks continue"
-                    " against available sources; risk unknown (give --context-path)."
-                    " File %s:1"
-                    % (", ".join(unknown), module_migration._module_path / "__manifest__.py")
-                )
-            for path, line, message in views.check_module(
-                module_migration._module_path, index, reference_modules,
-                menu_parent_hints,
+            for level, message, path, line in view_diagnostics(
+                module_migration._module_path, self._target_indexes,
+                module_migration._module_name,
             ):
-                (logger.warning if unknown or "[incomplete]" in message else logger.error)("[view] %s. File %s:%s" % (message, path, line))
-            for path, line, message in views.check_duplicate_fields(module_migration._module_path, index):
-                logger.warning("[view] %s. File %s:%s", message, path, line)
+                getattr(logger, level)("%s. File %s:%s", message, path, line)
 
         # models inherited / used as comodel that do not exist in the target
         from .analysis import models
 
         logger.info("Indexing target models and Python dependencies (cached source summaries)...")
-        model_index = models.ModelIndex.build(
-            reference + list(options.context_path) + [self._directory_path]
-        )
-        self._cached_model_index = model_index
-        self._resolve_index_dependencies(model_index)
+        model_base = models.ModelIndex.build(index_paths, exclude=run_modules)
+        resolve_index_dependencies(model_base, module_rules)
         for script in self._migration_scripts:
             for rule in script._RENAMED_METHODS:
                 if len(rule) >= 3:
-                    model_index.renamed_methods.setdefault(
+                    model_base.renamed_methods.setdefault(
                         (rule[0], rule[1]), (rule[2], rule[3] if len(rule) > 3 else "")
                     )
+        model_index = compose_index(model_base, run_modules, module_rules)
+        self._target_indexes.model_base = model_base
+        self._target_indexes.model_index = model_index
         from .analysis import python_checks
         for module_migration in self._module_migrations:
-            additions, manual_dependencies = (
-                python_checks.apply_unambiguous_dependencies(
-                    module_migration._module_path, model_index, with_manual=True
-                )
+            additions = python_checks.apply_unambiguous_dependencies(
+                module_migration._module_path, model_index
             )
             for dependency in additions:
                 logger.info(
                     "Added uniquely resolved Python dependency %s. File %s:1",
                     dependency,
                     module_migration._module_path / "__manifest__.py",
-                )
-            for path, line, dependency, symbol in manual_dependencies:
-                if not symbol.startswith("method "):
-                    # Model and field dependencies are emitted by check_module
-                    # below with their warning severity.
-                    continue
-                logger.warning(
-                    "[dependency] Enterprise dependency %s not added automatically; "
-                    "%s requires it according to the target index. Review the feature "
-                    "and add it explicitly if intended. File %s:%s",
-                    dependency,
-                    symbol,
-                    path,
-                    line,
                 )
             # The model index resolves relational aliases that the standalone
             # migration scripts cannot know (order.order_line -> line). Apply
@@ -816,55 +805,33 @@ class Migration:
                     changed_line,
                 )
             logger.info("Checking Python and field callbacks: %s", module_migration._module_name)
-            log_model = logger.warning if model_index.unknown_dependencies(module_migration._module_name) else logger.error
-            for path, line, level, message in python_checks.check_module(
-                module_migration._module_path, model_index,
-                float(self._migration_steps[-1]["target_version_name"]),
-                precision_names=index.precisions,
-                removed_fields=[
-                    rule
-                    for script in self._migration_scripts
-                    for rule in script._REMOVED_FIELDS
-                ],
+            for level, message, path, line in model_diagnostics(
+                module_migration._module_path, self._target_indexes,
+                module_migration._module_name,
             ):
                 getattr(logger, level)("%s. File %s:%s", message, path, line)
-            for path, line, message in models.check_module(
-                module_migration._module_path, model_index
-            ):
-                log_model("%s. File %s:%s" % (message, path, line))
-            # paths of @api.depends / related= through fields that do not exist
-            for path, line, message in models.check_field_paths(
-                module_migration._module_path, model_index
-            ):
-                log_model("%s. File %s:%s" % (message, path, line))
-            for path, line, message in models.check_abstract_access(
-                module_migration._module_path, model_index
-            ):
-                logger.warning("%s. File %s:%s", message, path, line)
-            for path, line, message in models.check_tracking_without_mail(
-                module_migration._module_path, model_index
-            ):
-                logger.warning("%s. File %s:%s", message, path, line)
 
         # names imported from the addons of the target Odoo
         from .analysis import imports
 
-        import_index = imports.ImportIndex(reference)
-        self._cached_import_index = import_index
+        self._target_indexes.import_index = imports.ImportIndex(reference)
         for module_migration in self._module_migrations:
-            for path, line, message in imports.check_module(
-                module_migration._module_path, import_index
+            for level, message, path, line in import_diagnostics(
+                module_migration._module_path, self._target_indexes
             ):
-                logger.error("%s. File %s:%s" % (message, path, line))
+                getattr(logger, level)("%s. File %s:%s", message, path, line)
 
     def _resolve_index_dependencies(self, index):
+        from .analysis.module_diagnostics import resolve_index_dependencies
+
+        resolve_index_dependencies(index, self._index_dependency_rules())
+
+    def _index_dependency_rules(self):
         rules = []
         for script in self._migration_scripts:
             script.parse_rules()
             rules.extend(r for r in script._DEPRECATED_MODULES if len(r) > 2 and r[1] in ("merged", "renamed"))
-        from .manifest import apply_module_rules
-        for name, dependencies in index.depends.items():
-            index.depends[name] = apply_module_rules(dependencies, rules)[0]
+        return rules
 
     def _run_upgrade_code(self):
         init_version = self._migration_steps[0]["init_version_name"]
@@ -898,3 +865,96 @@ class Migration:
                 for item in self._module_migrations:
                     logger.error("[incomplete] upgrade_code %s: %s. File %s:1",
                                  script["name"], failure, item._module_path / "__manifest__.py")
+
+
+def _target_symbol_lookup(indexes):
+    """Whether a symbol is known to the target indexes (model, field, method, XML id, module)."""
+    model_index, view_index = indexes.model_index, indexes.view_index
+    cache = {}
+
+    def lookup(symbol):
+        if model_index is not None:
+            if not cache:
+                cache["fields"] = set().union(*model_index.fields.values()) if model_index.fields else set()
+                cache["methods"] = set().union(*model_index.methods.values()) if model_index.methods else set()
+            if symbol in model_index.defined or symbol in cache["fields"] or symbol in cache["methods"]:
+                return True
+        return view_index is not None and (symbol in view_index.xmlids or symbol in view_index.depends)
+
+    return lookup
+
+
+def _review_from_session(intelligent_review, session):
+    """Human-readable review of a repair session: every attempt, not only successes."""
+    applied = len(session.applied_operations)
+    review = intelligent_review.Review(
+        model=session.model,
+        summary=(
+            f"Réparation bornée : {len(session.attempts)} tentative(s), {applied} opération(s) "
+            f"publiée(s), diagnostics rejouables {session.initial_todos} -> {session.final_todos}."
+        ),
+        error=session.error,
+        elapsed_seconds=session.total_time_seconds,
+        repair_session=session,
+        mode="réparation autonome",
+        coverage=session.coverage,
+        metrics=dict(session.metrics),
+    )
+    for record in session.attempts:
+        op = record.operation or {}
+        confidence = record.confidence
+        if record.status in {"applied", "advice"}:
+            status = record.status
+        elif record.status == "rejected":
+            status = f"rejected: {record.reason}"
+        else:
+            status = f"{record.status}: {record.reason}"
+        evidence = op.get("evidence", "")
+        review.recommendations.append(intelligent_review.Recommendation(
+            title=f"Tentative {record.attempt_number} : {op.get('type', 'aucune opération')}",
+            diagnosis=str(op.get("description", "")) or (record.reason if record.status == "advice" else ""),
+            action=f"{op.get('type')} sur {op.get('file')}" if op else "",
+            confidence="",
+            file=str(op.get("file", "")),
+            line=op.get("line") if isinstance(op.get("line"), int) else 0,
+            evidence=" ".join(map(str, evidence)) if isinstance(evidence, list) else str(evidence),
+            operation_type=str(op.get("type", "")),
+            status=status,
+            objective_score=confidence.score if confidence else None,
+            objective_confidence=confidence.level if confidence else "non évaluée",
+            validation_level=confidence.validation_level if confidence else "non validée",
+            diff=record.diff,
+            reason=record.reason,
+            factors=confidence.factors if confidence else [],
+            evidence_chunks=record.evidence,
+            resolved=record.resolved,
+            validations=record.validations,
+        ))
+    return review
+
+
+def _drop_resolved_entries(module_report, resolved):
+    """Remove from the report the TODOs a verified edit resolved (by key, once each)."""
+    from .intelligence.diagnostics import diagnostic_key
+
+    remaining = list(resolved)
+    kept = []
+    for entry in module_report.entries:
+        key = diagnostic_key(entry)
+        if key in remaining:
+            remaining.remove(key)
+            continue
+        kept.append(entry)
+    module_report.entries[:] = kept
+
+
+def _write_metrics(module_name, review):
+    """Optional JSON-lines metrics (ODOO_MIGRATOR_METRICS=<file>), outside the report."""
+    import json
+
+    target = os.environ.get("ODOO_MIGRATOR_METRICS")
+    if not target:
+        return
+    record = {"module": module_name, "mode": review.mode, "model": review.model, **review.metrics}
+    with open(target, "a", encoding="utf-8") as stream:
+        stream.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")

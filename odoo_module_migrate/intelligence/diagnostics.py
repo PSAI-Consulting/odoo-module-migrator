@@ -1,28 +1,44 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
-"""Deterministic full-module diagnostic runner and stable ID tracking.
+"""Deterministic replay of the module diagnostics on a temporary copy.
 
-Executes a complete verification suite across Python, XML, CSV, manifests,
-models, views, and text migration rules. Never relies on partial regex heuristics
-or simulated counters.
+The replay runs the very analyzers of the migration (shared with
+:mod:`odoo_module_migrate.analysis.module_diagnostics`) and formats their
+findings through a private :class:`~odoo_module_migrate.report.ReportCollector`,
+so a replayed diagnostic is worded exactly like the report entry it stands for.
+
+Two rules make the comparison trustworthy:
+
+* fail closed: an analyzer raising an exception raises
+  :class:`DiagnosticsUnavailable`; it is never turned into a diagnostic that
+  could "disappear" after an edit;
+* line independence: diagnostics are compared as a multiset of
+  ``(file, level, message)``. Inserting an import shifts every following line
+  without resolving or creating anything.
 """
 
 from __future__ import annotations
 
 import ast
+import collections
 import csv
 import io
 import logging
 import pathlib
-import re
 from dataclasses import dataclass
 from typing import Any
 
 from lxml import etree
 
 from .. import report, tools
+from ..analysis import module_diagnostics
 
 logger = logging.getLogger(__name__)
-_ALLOWED_EXTENSIONS = (".py", ".xml", ".csv", ".js")
+
+_MANIFEST_NAMES = ("__manifest__.py", "__openerp__.py")
+
+
+class DiagnosticsUnavailable(RuntimeError):
+    """An analyzer failed: the module state cannot be proven either way."""
 
 
 @dataclass(frozen=True)
@@ -35,34 +51,71 @@ class DiagnosticItem:
     rule_id: str = ""
 
     def stable_id(self) -> str:
-        """Stable, canonical identifier for regression and resolution checks."""
-        norm_file = self.file.replace("\\", "/").strip()
-        norm_msg = " ".join(self.message.strip().split())
-        return f"{norm_file}:{self.line}:{self.level}:{norm_msg}"
+        return stable_diagnostic_id(self)
+
+
+def diagnostic_key(item: Any) -> tuple[str, str, str]:
+    """Line-independent identity of a diagnostic: (file, level, message)."""
+    if isinstance(item, dict):
+        file, level, message = item.get("file", ""), item.get("level", "WARNING"), item.get("message", "")
+    else:
+        file = getattr(item, "file", "")
+        level = getattr(item, "level", "WARNING")
+        message = getattr(item, "message", str(item))
+    return (
+        str(file or "").replace("\\", "/").strip(),
+        str(level or "WARNING").strip().upper(),
+        " ".join(str(message or "").strip().split()),
+    )
 
 
 def stable_diagnostic_id(item: Any) -> str:
-    """Extract or compute a stable diagnostic identifier from any item."""
-    if isinstance(item, DiagnosticItem):
-        return item.stable_id()
-    if isinstance(item, report.Entry):
-        norm_file = item.file.replace("\\", "/").strip()
-        norm_msg = " ".join(item.message.strip().split())
-        return f"{norm_file}:{item.line}:{item.level}:{norm_msg}"
-    if isinstance(item, dict):
-        norm_file = str(item.get("file", "")).replace("\\", "/").strip()
-        line = int(item.get("line", 0) or 0)
-        level = str(item.get("level", "WARNING")).strip()
-        norm_msg = " ".join(str(item.get("message", "")).strip().split())
-        return f"{norm_file}:{line}:{level}:{norm_msg}"
-    return str(item)
+    """Printable form of :func:`diagnostic_key` (no line number)."""
+    return "{}:{}:{}".format(*diagnostic_key(item))
 
 
-_MANIFEST_NAMES = ("__manifest__.py", "__openerp__.py")
+@dataclass
+class DiagnosticDelta:
+    resolved: collections.Counter
+    added: collections.Counter
+
+    @property
+    def resolved_count(self) -> int:
+        return sum(self.resolved.values())
+
+    @property
+    def added_count(self) -> int:
+        return sum(self.added.values())
+
+
+def compare_diagnostics(before: list[Any], after: list[Any]) -> DiagnosticDelta:
+    """Multiset difference: a line move is neither resolved nor added."""
+    old = collections.Counter(diagnostic_key(d) for d in before)
+    new = collections.Counter(diagnostic_key(d) for d in after)
+    return DiagnosticDelta(resolved=old - new, added=new - old)
+
+
+def _entries_from_logged(module_path: pathlib.Path, name: str, findings) -> list[report.Entry]:
+    """Format (level, message, path, line) exactly like the migration report."""
+    collector = report.ReportCollector([(name, module_path)])
+    module_report = collector.reports[name]
+    collector.current = module_report
+    for level, message, path, line in findings:
+        record = logging.LogRecord(
+            "odoo_module_migrate", getattr(logging, level.upper()), __file__, 0,
+            "%s. File %s:%s", (message, path, line), None,
+        )
+        collector.emit(record)
+    return list(module_report.entries)
 
 
 class FullModuleDiagnosticsChecker:
-    """Runs a full, deterministic analysis suite on a target module directory."""
+    """Replays the deterministic diagnostics of one module on any copy of it.
+
+    ``indexes`` is the :class:`TargetIndexes` of the migration. When it carries
+    build paths, the view and model indexes are rebuilt for each copy so that
+    the copy's own fields, views and dependencies are the ones checked.
+    """
 
     def __init__(
         self,
@@ -71,190 +124,123 @@ class FullModuleDiagnosticsChecker:
         model_index: Any | None = None,
         view_index: Any | None = None,
         import_index: Any | None = None,
+        *,
+        indexes: module_diagnostics.TargetIndexes | None = None,
+        init_version: str | None = None,
+        module_name: str | None = None,
     ):
         self.target_version = target_version
+        self.init_version = init_version
+        self.module_name = module_name
         self.migration_scripts = migration_scripts or []
-        self.model_index = model_index
-        self.view_index = view_index
-        self.import_index = import_index
+        if indexes is None and (model_index is not None or view_index is not None or import_index is not None):
+            indexes = module_diagnostics.TargetIndexes(
+                float(target_version),
+                view_index=view_index,
+                model_index=model_index,
+                import_index=import_index,
+            )
+        self.indexes = indexes
+        self._rules = None
 
-    def check_module(self, module_path: pathlib.Path | str) -> list[DiagnosticItem]:
-        """Run full syntax, structure, rules, and semantic checks on the module."""
+    def coverage(self) -> list[tuple[str, bool, str]]:
+        """(analysis, replayed, reason) for the human report."""
+        indexes = self.indexes
+        has = {
+            "views": indexes is not None and indexes.view_index is not None,
+            "models": indexes is not None and indexes.model_index is not None,
+            "imports": indexes is not None and indexes.import_index is not None,
+        }
+        rebuilt = bool(indexes is not None and indexes.build_paths)
+        no_sources = "sources de la version cible non indexées (pas d'upgrade_code / --addons-path)"
+        rows = [
+            ("syntaxe Python / XML / CSV et manifeste", True, ""),
+            ("règles textuelles du migrateur", bool(self.migration_scripts),
+             "" if self.migration_scripts else "aucun script de migration fourni"),
+            ("vues, XPath, XML ids et menus", has["views"], "" if has["views"] else no_sources),
+            ("modèles, champs, méthodes, dépendances Python", has["models"], "" if has["models"] else no_sources),
+            ("imports depuis les addons cibles", has["imports"], "" if has["imports"] else no_sources),
+            ("index reconstruits sur la copie", rebuilt or not (has["views"] or has["models"]),
+             "" if rebuilt or not (has["views"] or has["models"]) else "index fournis tels quels (copie non réindexée)"),
+        ]
+        if self.init_version:
+            rows.append(("enregistrements ir.model.access / ir.rule restants", True, ""))
+        rows.append((
+            "diagnostics émis pendant les scripts de transformation", False,
+            "non rejouables sans relancer la migration : jamais comptés comme résolus",
+        ))
+        return rows
+
+    def _text_rules(self):
+        if self._rules is None:
+            self._rules = module_diagnostics.text_rules(self.migration_scripts)
+        return self._rules
+
+    def check_module(self, module_path: pathlib.Path | str) -> list[report.Entry]:
+        """All replayable diagnostics of the module; raises DiagnosticsUnavailable."""
         module_path = pathlib.Path(module_path).resolve()
-        diagnostics: list[DiagnosticItem] = []
+        name = self.module_name or module_path.name
+        if module_path.name != name:
+            raise DiagnosticsUnavailable(
+                f"la copie {module_path} ne porte pas le nom du module {name!r} : "
+                "les index ne la reconnaîtraient pas"
+            )
+        try:
+            entries = self._syntax_entries(module_path)
+            if self.migration_scripts:
+                entries += module_diagnostics.text_rule_entries(module_path, self._text_rules())
+            findings = []
+            if self.indexes is not None:
+                indexes = self.indexes.for_copy(module_path)
+                findings += module_diagnostics.view_diagnostics(module_path, indexes, name)
+                findings += module_diagnostics.model_diagnostics(module_path, indexes, name)
+                findings += module_diagnostics.import_diagnostics(module_path, indexes)
+            if self.init_version:
+                findings += module_diagnostics.access_left_diagnostics(
+                    module_path, self.init_version, self.target_version
+                )
+            entries += _entries_from_logged(module_path, name, findings)
+        except DiagnosticsUnavailable:
+            raise
+        except Exception as exc:  # fail closed, never a "resolved" diagnostic
+            logger.debug("Diagnostics replay failed on %s", module_path, exc_info=True)
+            raise DiagnosticsUnavailable(
+                f"analyse déterministe impossible ({type(exc).__name__}: {exc})"
+            ) from exc
+        return entries
 
-        # 1. Manifest verification
+    def _syntax_entries(self, module_path: pathlib.Path) -> list[report.Entry]:
+        entries = []
         manifest_path = next(
             (module_path / name for name in _MANIFEST_NAMES if (module_path / name).is_file()),
             None,
         )
         if not manifest_path:
-            diagnostics.append(DiagnosticItem(
-                level="ERROR",
-                message="No manifest file found (__manifest__.py)",
-                file="__manifest__.py",
-                line=1,
-            ))
+            entries.append(report.Entry("ERROR", "No manifest file found (__manifest__.py)", "__manifest__.py", 1))
         else:
             try:
-                m_content = manifest_path.read_text(encoding="utf-8")
-                m_dict = ast.literal_eval(m_content)
-                if not isinstance(m_dict, dict):
-                    diagnostics.append(DiagnosticItem(
-                        level="ERROR",
-                        message="Manifest must evaluate to a dictionary",
-                        file=manifest_path.name,
-                        line=1,
+                manifest = ast.literal_eval(manifest_path.read_text(encoding="utf-8").lstrip())
+                if not isinstance(manifest, dict):
+                    entries.append(report.Entry(
+                        "ERROR", "Manifest must evaluate to a dictionary", manifest_path.name, 1
                     ))
-            except Exception as exc:  # noqa: BLE001
-                diagnostics.append(DiagnosticItem(
-                    level="ERROR",
-                    message=f"Invalid manifest syntax: {exc}",
-                    file=manifest_path.name,
-                    line=1,
-                ))
-
-        # 2. Syntax verification on all files
+            except (SyntaxError, ValueError) as exc:
+                entries.append(report.Entry("ERROR", f"Invalid manifest syntax: {exc}", manifest_path.name, 1))
         for ext in (".py", ".xml", ".csv"):
-            for p in tools.get_files(module_path, (ext,)):
-                rel_p = p.relative_to(module_path).as_posix()
+            for path in tools.get_files(module_path, (ext,)):
+                rel = path.relative_to(module_path).as_posix()
+                content = tools._read_content(path)
                 try:
-                    content = tools._read_content(p)
                     if ext == ".py":
-                        ast.parse(content, filename=str(p))
+                        ast.parse(content, filename=str(path))
                     elif ext == ".xml":
                         etree.fromstring(content.encode("utf-8"), parser=etree.XMLParser(recover=False))
-                    elif ext == ".csv":
+                    else:
                         list(csv.reader(io.StringIO(content)))
                 except SyntaxError as exc:
-                    diagnostics.append(DiagnosticItem(
-                        level="ERROR",
-                        message=f"Python syntax error: {exc.msg}",
-                        file=rel_p,
-                        line=exc.lineno or 1,
-                    ))
+                    entries.append(report.Entry("ERROR", f"Python syntax error: {exc.msg}", rel, exc.lineno or 1))
                 except etree.XMLSyntaxError as exc:
-                    diagnostics.append(DiagnosticItem(
-                        level="ERROR",
-                        message=f"XML syntax error: {exc}",
-                        file=rel_p,
-                        line=getattr(exc, "lineno", 1) or 1,
-                    ))
+                    entries.append(report.Entry("ERROR", f"XML syntax error: {exc.msg}", rel, exc.lineno or 1))
                 except csv.Error as exc:
-                    diagnostics.append(DiagnosticItem(
-                        level="ERROR",
-                        message=f"CSV syntax error: {exc}",
-                        file=rel_p,
-                        line=1,
-                    ))
-
-        # 3. Text rules re-evaluation
-        rules: dict[str, list[tuple[re.Pattern, str, str]]] = {}
-        for script in self.migration_scripts:
-            if hasattr(script, "parse_rules"):
-                script.parse_rules()
-            for extension in _ALLOWED_EXTENSIONS:
-                if hasattr(script, "_file_rules"):
-                    file_rules = script._file_rules(extension)
-                    for level, patterns in (
-                        ("ERROR", file_rules.get("errors", {})),
-                        ("WARNING", file_rules.get("warnings", {})),
-                    ):
-                        for pattern, msg in patterns.items():
-                            norm = " ".join(msg.rstrip(". ").split())
-                            rules.setdefault(extension, []).append(
-                                (re.compile(pattern), norm, level)
-                            )
-
-        for ext, ext_rules in rules.items():
-            for p in tools.get_files(module_path, (ext,)):
-                rel_p = p.relative_to(module_path).as_posix()
-                try:
-                    text = tools._read_content(p)
-                except OSError:
-                    continue
-                for pattern, msg, level in ext_rules:
-                    match = pattern.search(text)
-                    if match:
-                        line_no = text.count("\n", 0, match.start()) + 1
-                        diagnostics.append(DiagnosticItem(
-                            level=level,
-                            message=msg,
-                            file=rel_p,
-                            line=line_no,
-                        ))
-
-        # 4. View and XPath checks if view_index available
-        if self.view_index:
-            try:
-                from ..analysis import views
-                for p, line, msg in views.check_module(module_path, self.view_index):
-                    rel_p = pathlib.Path(p).relative_to(module_path).as_posix() if pathlib.Path(p).is_absolute() else str(p)
-                    diagnostics.append(DiagnosticItem(
-                        level="ERROR" if "[incomplete]" not in msg else "WARNING",
-                        message=msg,
-                        file=rel_p,
-                        line=line,
-                    ))
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("View diagnostics check failure: %s", exc)
-                diagnostics.append(DiagnosticItem(
-                    level="ERROR",
-                    message=f"Échec de l'analyse interne des vues ({type(exc).__name__}: {exc})",
-                    file="__diagnostic_failure__",
-                    line=1,
-                ))
-
-        # 5. Model and Python callbacks if model_index available
-        if self.model_index:
-            try:
-                from ..analysis import models, python_checks
-                for p, line, level, msg in python_checks.check_module(
-                    module_path, self.model_index, float(self.target_version)
-                ):
-                    rel_p = pathlib.Path(p).relative_to(module_path).as_posix() if pathlib.Path(p).is_absolute() else str(p)
-                    diagnostics.append(DiagnosticItem(
-                        level=level,
-                        message=msg,
-                        file=rel_p,
-                        line=line,
-                    ))
-                for p, line, msg in models.check_module(module_path, self.model_index):
-                    rel_p = pathlib.Path(p).relative_to(module_path).as_posix() if pathlib.Path(p).is_absolute() else str(p)
-                    diagnostics.append(DiagnosticItem(
-                        level="ERROR",
-                        message=msg,
-                        file=rel_p,
-                        line=line,
-                    ))
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Model diagnostics check failure: %s", exc)
-                diagnostics.append(DiagnosticItem(
-                    level="ERROR",
-                    message=f"Échec de l'analyse interne des modèles ({type(exc).__name__}: {exc})",
-                    file="__diagnostic_failure__",
-                    line=1,
-                ))
-
-        # 6. Import checks if import_index available
-        if self.import_index:
-            try:
-                from ..analysis import imports
-                for p, line, msg in imports.check_module(module_path, self.import_index):
-                    rel_p = pathlib.Path(p).relative_to(module_path).as_posix() if pathlib.Path(p).is_absolute() else str(p)
-                    diagnostics.append(DiagnosticItem(
-                        level="ERROR",
-                        message=msg,
-                        file=rel_p,
-                        line=line,
-                    ))
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Import diagnostics check failure: %s", exc)
-                diagnostics.append(DiagnosticItem(
-                    level="ERROR",
-                    message=f"Échec de l'analyse interne des imports ({type(exc).__name__}: {exc})",
-                    file="__diagnostic_failure__",
-                    line=1,
-                ))
-
-        return diagnostics
+                    entries.append(report.Entry("ERROR", f"CSV syntax error: {exc}", rel, 1))
+        return entries

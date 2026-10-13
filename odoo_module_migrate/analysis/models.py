@@ -596,11 +596,12 @@ class ModelIndex:
             self._add_summary(path, module.name)
 
     @classmethod
-    def build(cls, paths):
+    def build(cls, paths, exclude=()):
         index = cls()
         from .views import _module_dirs
         for module in _module_dirs(paths):
-            index.add_module(module)
+            if module.name not in exclude:
+                index.add_module(module)
         return index
 
     def unknown_dependencies(self, module):

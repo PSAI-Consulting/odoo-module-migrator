@@ -45,6 +45,7 @@ class ModelProfile:
     size_bytes: int = 0
     is_coder: bool = False
     is_installed: bool = True
+    quantization: str = ""
 
     @property
     def size_gb(self) -> float:
@@ -52,11 +53,11 @@ class ModelProfile:
 
     @property
     def approx_params_b(self) -> float:
-        if not self.parameter_size:
-            return 7.0
-        cleaned = self.parameter_size.upper().replace("B", "").strip()
+        """Billions of parameters ("7.6B", "500M"); 7.0 when unknown."""
+        cleaned = self.parameter_size.upper().strip()
+        factor = 0.001 if cleaned.endswith("M") else 1.0
         try:
-            return float(cleaned)
+            return float(cleaned.rstrip("BM").strip()) * factor
         except ValueError:
             return 7.0
 
@@ -237,9 +238,21 @@ def parse_model_profiles(raw_models: list[dict[str, Any]]) -> list[ModelProfile]
                 size_bytes=size_bytes,
                 is_coder=is_coder,
                 is_installed=True,
+                quantization=details.get("quantization_level", ""),
             )
         )
     return profiles
+
+
+def context_cap(hardware: SystemHardware) -> int:
+    """Largest context the machine is assumed to afford with a quantized model."""
+    if hardware.has_dedicated_gpu and hardware.vram_gb >= 20:
+        return 32768
+    if hardware.total_ram_gb > 40 or (hardware.has_dedicated_gpu and hardware.vram_gb >= 10):
+        return 16384
+    if hardware.total_ram_gb > 20:
+        return 12288
+    return 8192
 
 
 def recommend_model(
@@ -249,23 +262,20 @@ def recommend_model(
     ram = hardware.total_ram_gb
     has_gpu = hardware.has_dedicated_gpu
 
-    # Context recommendation
-    if ram <= 16.5:
-        rec_ctx = 4096
-    elif ram <= 34.0:
-        rec_ctx = 4096 if not has_gpu else 8192
-    else:
-        rec_ctx = 8192
+    # Context recommendation: the migrator sizes num_ctx from each prompt and
+    # never exceeds this cap.
+    rec_ctx = context_cap(hardware)
 
     # Speed estimation
     if has_gpu and hardware.vram_gb >= 6:
         speed_est = f"GPU accéléré ({hardware.gpu_name}, {hardware.vram_gb} Go VRAM) : rapide (~15 à 45s par module)."
     elif hardware.cpu_count >= 8:
-        speed_est = f"CPU pur ({hardware.cpu_count} cœurs) : modéré (~3 à 5 min par module pour 7B / 4096 tokens ; éviter 8192)."
+        speed_est = f"CPU pur ({hardware.cpu_count} threads) : lent (plusieurs minutes par appel pour un 7B)."
     else:
-        speed_est = f"CPU limité ({hardware.cpu_count} cœurs) : lent (~5 à 8 min par module ; restreindre le contexte)."
+        speed_est = f"CPU limité ({hardware.cpu_count} threads) : très lent ; réduire --ollama-max-context."
 
-    # Model recommendation among installed
+    # Any installed model may be chosen explicitly; the automatic choice only
+    # prefers code models that fit in memory, larger being better.
     coder_models = [m for m in installed_models if m.is_coder]
     pool = coder_models if coder_models else installed_models
 
@@ -273,31 +283,14 @@ def recommend_model(
         default_name = "qwen2.5-coder:7b" if ram <= 24 else ("qwen2.5-coder:14b" if ram <= 48 else "qwen2.5-coder:32b")
         return default_name, rec_ctx, speed_est
 
-    # Score models based on fit
+    memory_budget = max(hardware.vram_gb if has_gpu else 0.0, ram * 0.55)
+
     def score_fit(m: ModelProfile) -> float:
-        params = m.approx_params_b
-        score = 10.0 if m.is_coder else 2.0
-        if "qwen2.5-coder" in m.name.lower():
-            score += 5.0
-
-        if ram <= 18:
-            # Ideal is 7B
-            diff = abs(params - 7.0)
-            score -= diff * 3.0
-            if params > 10.0:
-                score -= 20.0
-        elif ram <= 36:
-            # Ideal is 14B or 7B
-            diff = min(abs(params - 14.0), abs(params - 7.0))
-            score -= diff * 2.0
-            if params > 20.0:
-                score -= 15.0
-        else:
-            # Ideal is 32B or 14B
-            diff = min(abs(params - 32.0), abs(params - 14.0))
-            score -= diff * 1.5
-
-        return score
+        size_gb = m.size_gb or m.approx_params_b * 0.6
+        score = 10.0 if m.is_coder else 0.0
+        if size_gb > memory_budget:
+            return score - 100.0 - size_gb
+        return score + 5.0 * size_gb / memory_budget
 
     best = max(pool, key=score_fit)
     return best.name, rec_ctx, speed_est
@@ -319,7 +312,7 @@ def get_ollama_info_text(url: str = "http://127.0.0.1:11434") -> str:
         "",
         "Matériel détecté :",
         f"  RAM totale       : {hardware.total_ram_gb:.1f} Go (disponible: {hardware.avail_ram_gb:.1f} Go)",
-        f"  Processeur       : {hardware.cpu_count} cœurs ({hardware.cpu_arch})",
+        f"  Processeur       : {hardware.cpu_count} threads logiques ({hardware.cpu_arch})",
     ]
     if hardware.gpu_name:
         gpu_line = f"  GPU              : {hardware.gpu_name}"
@@ -341,7 +334,8 @@ def get_ollama_info_text(url: str = "http://127.0.0.1:11434") -> str:
         for m in models:
             coder_flag = " [Code]" if m.is_coder else ""
             lines.append(
-                f"  - {m.name:<25} ({m.parameter_size or 'taille n/d'}, {m.size_gb} Go disk){coder_flag}"
+                f"  - {m.name:<25} ({m.parameter_size or 'taille n/d'}, {m.quantization or 'quantif. n/d'}, "
+                f"{m.size_gb} Go, contexte {m.context_length}){coder_flag}"
             )
     else:
         lines.append("  (aucun modèle installé - exécutez `ollama pull qwen2.5-coder:7b`)")
@@ -350,13 +344,13 @@ def get_ollama_info_text(url: str = "http://127.0.0.1:11434") -> str:
         "",
         "Recommandations automatiques :",
         f"  Modèle conseillé  : {rec_model}",
-        f"  Contexte conseillé: {rec_ctx} tokens",
+        f"  Contexte maximal  : {rec_ctx} jetons (num_ctx calculé pour chaque invite, jamais au-delà)",
         f"  Vitesse estimée   : {speed_est}",
         "",
         "Politique matérielle indicative :",
-        "  - 16 Go RAM : 7B code (qwen2.5-coder:7b), contexte 4096",
-        "  - 32 Go RAM : 14B code, ou 30B/32B quantifié si marge mémoire, contexte 4096-8192",
-        "  - 64 Go RAM : 30B/32B code, contexte 8192",
+        "  - 16 Go RAM : modèle code 7B quantifié (Q4), contexte <= 8192",
+        "  - 32 Go RAM : 14B code, ou 30B/32B quantifié si marge mémoire, contexte <= 12288",
+        "  - 64 Go RAM ou GPU >= 20 Go : 30B/32B code, contexte <= 16384-32768",
         "  - Choix explicite toujours prioritaire avec `--ollama-model`.",
     ]
     return "\n".join(lines)
