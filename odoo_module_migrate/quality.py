@@ -529,7 +529,7 @@ def finish_module(
         if cosmetic:
             text = remove_internal_headers(text)
         try:
-            data = ast.literal_eval(text)
+            data = ast.literal_eval(text.lstrip(" \t"))
             from .manifest import inspect_keys
 
             unknown_keys, concatenated_keys = inspect_keys(text)
@@ -557,6 +557,14 @@ def finish_module(
             node = _find_key(text, "data")
             if isinstance(node, (ast.List, ast.Tuple)):
                 values = ast.literal_eval(node)
+                for value in values:
+                    if isinstance(value, str) and not (module / value).is_file():
+                        logger.error(
+                            "[quality] Manifest data file does not exist: %s. File %s:%s",
+                            value,
+                            manifest,
+                            node.lineno,
+                        )
                 if len(values) != len(set(values)):
                     logger.warning(
                         "[quality] Duplicate files in manifest data; review repeated loads before removing them. File %s:%s",
@@ -591,8 +599,11 @@ def finish_module(
                 )
             elif cosmetic and "license" not in data:
                 # Missing license already defaults to LGPL-3 in Odoo.
-                tree = ast.parse(text)
+                indent = len(text) - len(text.lstrip(" \t"))
+                tree = ast.parse(text[indent:])
                 mapping = tree.body[0].value
+                if mapping.lineno == 1:
+                    mapping.col_offset += indent
                 pos = _Positions(text)
                 start = pos(mapping.lineno, mapping.col_offset) + 1
                 text = text[:start] + "'license': 'LGPL-3', " + text[start:]

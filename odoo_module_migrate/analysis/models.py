@@ -205,12 +205,13 @@ BASE_ATTRIBUTES = {"env", "ids", "pool"}
 # normal addons-path indexing (bundled mode has no core checkout either).
 BASE_METHODS = {
     "browse", "check_access", "check_access_rights", "check_access_rule",
+    "_check_company",
     "copy", "copy_data", "create", "default_get", "ensure_one", "exists",
     "fields_get", "filtered", "filtered_domain", "flush_model",
     "flush_recordset", "get_metadata", "invalidate_model",
     "get_external_id", "_get_external_ids",
     "invalidate_recordset", "mapped", "modified", "name_create", "new", "read",
-    "read_group", "search", "_search", "search_count", "search_fetch",
+    "read_group", "_read_group", "search", "_search", "search_count", "search_fetch",
     "search_read",
     "sorted", "sudo", "unlink", "update", "with_company", "with_context",
     "with_env", "with_prefetch", "with_user", "write",

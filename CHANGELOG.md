@@ -40,6 +40,22 @@
   champs liés redéfinis comme calculés et guide de migration du moteur fiscal.
 - Typage des clés `config_parameter` depuis les champs de réglages, avec
   conversion booléenne sûre et détection des chaînes utilisées comme booléens.
+- Détection des champs devenus stockés lorsqu'un module remplace leur calcul,
+  déplacements `odoo.http`, suppression sûre de valeurs de champs retirés dans
+  les `create`/`write` Python et renommages imbriqués dans `related=`.
+- Migration `ir.attachment.datas` vers `raw`/`BinaryValue` jusque dans les
+  tests, inventaire ORM complété, widgets de vues 20 et champs redéclarés.
+- Test de conservation des commentaires de manifeste aligné sur le moteur :
+  un remplacement positionnel les préserve, une reconstruction ambiguë reste
+  refusée.
+- Génération de la liste OCA sécurisée : les manifestes sont lus comme des
+  littéraux et ne peuvent plus exécuter du code Python arbitraire.
+- Le runner `upgrade_code` conserve maintenant un module explicitement
+  sélectionné même si son nom possède un alias de fusion dans la cible ; les
+  alias continuent de s'appliquer aux seules dépendances.
+- Les manifestes indentés sont acceptés par les contrôles qualité et les
+  réécritures officielles ; chaque fichier `data` référençant un chemin absent
+  est maintenant signalé explicitement.
 - Correction des faux positifs XPath et retrait de la conversion globale
   `invisible` vers `column_invisible`.
 - Cache des analyses, parcours limité aux dépendances utiles et commandes Git

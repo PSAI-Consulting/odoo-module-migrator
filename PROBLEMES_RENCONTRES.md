@@ -1190,6 +1190,91 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - Bien signalé : vue `product.product_variant_easy_edit_view` supprimée. Faux positif : `product.template.new()` « n'existe pas » (méthode ORM).
 - **Correction proposée** : quand la clé correspond à un champ booléen `config_parameter` (du module ou de ses dépendances), convertir en `get_bool` / `set_bool` ; à défaut, signaler 🔴 tout `get_str` utilisé comme condition.
 
+## 106. 🔴 `product_variant_sale_price` (19 → 20) : champ standard devenu stocké, surcharge non signalée
+
+> **État du migrateur (12/10/2026)** : ✅ Corrigé — un nouveau type de règle
+> décrit les changements prouvés de métadonnées de champs. Une redéfinition
+> `compute=` d'un champ devenu stocké produit une erreur avec les contrôles de
+> dépendances, SQL et recomputation à effectuer.
+
+- `product.product.lst_price` est **stocké** en 20 (commit `92baf0a1df27`). Le module le redéfinit avec son propre `compute` qui dépend du contexte (`uom`) et un script d'installation SQL qui modifie la donnée source (`fix_price`) sans recalcul → valeur stockée fausse (test OCA en échec), et la mise à niveau remplit la colonne avec la formule standard.
+- Le migrateur signale seulement des `@api.depends` différents (🟠), pas le passage en stocké.
+- **Correction proposée** : quand un champ du modèle parent passe de calculé à stocké entre les versions et que le module redéfinit son `compute`, signaler 🔴 : vérifier `depends_context`, les écritures SQL sur ses dépendances et prévoir un script de migration.
+
+## 107. 🔴 `report_xlsx` (19 → 20) : imports `odoo.http` non corrigés, `report_file` laissé dans les tests
+
+> **État du migrateur (12/10/2026)** : ✅ Corrigé — les imports nommés depuis
+> `odoo.http` sont déplacés structurellement vers `odoo.http.stream` et
+> `odoo.http.dispatcher`. Les clés littérales d'un `create` / `write` sur un
+> modèle résolu sont supprimées lorsque la même suppression sûre est déjà
+> prouvée pour les données XML.
+
+- `from odoo.http import content_disposition, serialize_exception` → `ImportError` en 20 (module non chargé, registre en échec). Nouveaux chemins : `odoo.http.stream.content_disposition`, `odoo.http.dispatcher.serialize_exception`.
+- `report_file` (champ supprimé de `ir.actions.report`) retiré des données de démo mais pas du test Python (`create({... "report_file": ...})` → `Invalid field`).
+- **Correction proposée** : table de déplacement des noms de `odoo.http` 19 → 20 ; appliquer la suppression de champ aussi dans les `create` / `write` des tests.
+
+## 108. 🔴 `l10n_fr_intrastat_service` (19 → 20) : `datas` signalé sans correction, défauts récurrents
+
+> **État du migrateur (12/10/2026)** : ✅ Corrigé — `ir.attachment.datas` est
+> renommé en `raw` dans les accès, tests et chemins `related=` relationnels ;
+> les opérations base64 des tests passent aussi par la migration
+> `BinaryValue`. `_read_group` et `_check_company` sont connus comme méthodes
+> du cœur ORM même lorsque le cœur n'est pas présent dans le bundle d'addons.
+
+- `related="attachment_id.datas"` bien signalé (🔴, registre non chargé) mais pas corrigé (→ `raw`) ; test `base64.b64decode(attachment.datas)` non signalé (→ `attachment.raw.content`).
+- Encore : règle multi-société sur plusieurs lignes dans `ir.access.csv`, `"data"` mal formaté (espace final), `report_file` retiré du XML mais pas des tests.
+- Faux positifs : `_read_group()`, `res.company._check_company()` « n'existent pas » (méthodes de l'ORM).
+- **Correction proposée** : renommage `datas` → `raw` (+ `b64decode(x.datas)` → `x.raw.content`) ; ajouter les méthodes de `BaseModel` à l'index.
+
+## 109. 🟠 `partner_identification` (19 → 20) : widget renommé non converti, champs redéclarés non signalés
+
+> **État du migrateur (12/10/2026)** : ✅ Corrigé — `remaining_days` devient
+> `relative_date` dans les architectures de vues ; `one2many_list` produit une
+> erreur précise. Deux déclarations `fields.*` du même attribut dans une classe
+> produisent un avertissement avec la ligne de la déclaration masquée.
+
+- `widget="remaining_days"` (renommé `relative_date` en 20, commit `58870be79457`, sans alias) : ni renommé ni signalé. `widget="one2many_list"` (inexistant depuis la 17) non signalé.
+- Champs déclarés deux fois dans la même classe (`valid_until = fields.Date(...)` puis `valid_until = fields.Date(tracking=True)`) : la 2ᵉ efface libellé et aide — non signalé.
+- Encore : espace final dans `"data"`, `copy=True` ajouté en fin de ligne sans reformater.
+- **Correction proposée** : table des widgets renommés / supprimés (vérifier contre `registry.category("fields")` de la cible) ; signaler les attributs de classe redéclarés.
+
+## 110. 🔴 `easi_sale_auto_discount` (17 → 20) : `taxes_id` du produit renommé à tort, `tax_id` incomplet, groupe déplacé
+
+- `"taxes_id": None` dans les valeurs de création d'un **produit** (`product.template.taxes_id`, inchangé en 20) renommé en `"tax_ids"` → création du produit en erreur. Le renommage `taxes_id` → `tax_ids` ne concerne que `purchase.order.line`.
+- `tax_id` → `tax_ids` (ligne de vente) appliqué à moitié dans une même expression (`l.tax_ids == line.tax_id`).
+- `product.group_discount_per_so_line` (déplacé dans `sale`) seulement signalé « introuvable ».
+- `_prepare_discount_line_values()` (supprimé de `sale.order.discount`) bien signalé ; `check_access_rights` / `check_field_access_rights` signalés mais non convertis.
+- **Correction proposée** : renommer `taxes_id` selon le modèle (dict de valeurs passé à `product.*` → garder) ; traiter toutes les occurrences d'un champ renommé dans une expression ; table des groupes déplacés ; conversion automatique vers `has_access` / `has_field_access`.
+
+## 110. 🔴 Dépôt complet : `upgrade_code` perd un module sélectionné qui possède un alias
+
+> **État du migrateur (12/10/2026)** : ✅ Corrigé — les noms des modules
+> explicitement sélectionnés ne sont plus remplacés par les alias de fusion
+> pendant la construction de l'addons path ; les dépendances gardent cette
+> résolution d'alias.
+
+- Reproduit en migrant tout `Stof/main` : `account_payment_partner` est une cible réelle, mais son alias vers `account_payment_mode` le retirait de l'index du runner officiel.
+- Conséquence : `Module ...\\account_payment_partner is not in the addons path`, puis contrôle `upgrade_code` marqué incomplet sur tous les modules de la passe.
+- **Correction proposée** : distinguer les cibles écrites des noms de dépendances résolus, et couvrir le cas par un test du `FileManager` officiel.
+
+## 111. 🔴 `stof_edi_ux` : manifeste indenté et fichiers `data` absents
+
+> **État du migrateur (13/10/2026)** : ✅ Corrigé côté outil — les
+> analyseurs et le runner officiel acceptent l'indentation initiale sans perdre
+> les positions source. Les chemins `data` absents produisent désormais une
+> erreur explicite ; le contenu manquant reste à restaurer ou à retirer du
+> manifeste par le mainteneur du module.
+
+- Le dictionnaire de `__manifest__.py` commence avec quatre espaces : le migrateur principal le lisait, mais les contrôles qualité, Ruff et la réécriture `19.4-00-ir-access.py` échouaient sur `IndentationError`.
+- Après ce premier correctif, le corpus révèle plusieurs entrées `data` sans fichier correspondant (`security/ir.model.access.csv` et plusieurs vues), qui rendent le module non installable et font échouer le script officiel suivant.
+- **Correction proposée** : déduire l'indentation pour l'analyse tout en remappant les offsets vers le texte original ; contrôler l'existence de chaque chemin `data`.
+
+
+## 111. 🟡 `barcodes_generator_abstract` (19 → 20) : faux positif sur un champ lu par un mixin abstrait
+
+- `barcode.generate.mixin` (`models.AbstractModel`) lit `self.barcode` ; le champ est déclaré par les modèles qui héritent du mixin (`product.product`). Le contrôle des champs signale 3 erreurs 🔴 « Field barcode.generate.mixin.barcode does not exist ».
+- Le message indique pourtant le modèle concret qui définit le champ : ce n'est pas une erreur de migration.
+- **Correction proposée** : dans un `AbstractModel`, ne pas signaler un champ défini par tous les héritiers concrets indexés (au plus un 🟡 informatif).
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1245,6 +1330,13 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_purchase` | compute ajouté sur un champ `related` standard | 103 |
 | `easi_tax` | renommages `tax_id` / `taxes_id` incomplets (lambdas, vues), moteur de taxes | 104 |
 | `product_variant_default_code` | `get_str` sur option booléenne (toujours vraie), `set_param` des tests | 105 |
+| `product_variant_sale_price` | champ standard devenu stocké, surcharge du calcul non signalée | 106 |
+| `report_xlsx` | imports `odoo.http` (module non chargé), `report_file` dans les tests | 107 |
+| `l10n_fr_intrastat_service` | `datas` non corrigé, défauts récurrents, faux positifs ORM | 108 |
+| `partner_identification` | widget `remaining_days` non renommé, champs redéclarés | 109 |
+| `easi_sale_auto_discount` | `taxes_id` produit renommé à tort, `tax_id` incomplet, groupe déplacé | 110 |
+| dépôt complet | cible `upgrade_code` supprimée par son propre alias de fusion | 110 |
+| `stof_edi_ux` | manifeste indenté non analysé, chemins `data` absents non signalés | 111 |
 
 ---
 

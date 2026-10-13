@@ -1280,6 +1280,51 @@ def test_accessible_dependency_files_not_iterated_by_official_scripts(tmp_path):
     assert manager.get_file("base", "models.py") is manager._files["base"]
 
 
+def test_official_runner_keeps_selected_module_that_has_target_alias(tmp_path):
+    from types import SimpleNamespace
+    from odoo_module_migrate.upgrade_code import runner
+
+    class Accessor:
+        def __init__(self, path, root):
+            self.path = path
+            self.root = root
+
+    class Manager:
+        def __init__(self, paths, glob=None):
+            self._modules = {
+                module.name: module
+                for root in paths
+                for module in root.iterdir()
+                if module.is_dir() and (module / "__manifest__.py").is_file()
+            }
+            self._files = {}
+
+    reference = tmp_path / "odoo"
+    custom = tmp_path / "custom"
+    reference.mkdir()
+    custom.mkdir()
+    base = addon(reference, "base")
+    replacement = addon(reference, "account_payment_mode", ["base"])
+    target = addon(custom, "account_payment_partner", ["account_payment_mode"])
+    uc = SimpleNamespace(
+        FileManager=Manager,
+        FileAccessor=Accessor,
+        AVAILABLE_EXT={".py", ".xml"},
+    )
+
+    manager = runner.build_file_manager(
+        uc,
+        [reference],
+        [custom],
+        [target],
+        {"account_payment_partner": "account_payment_mode"},
+    )
+
+    assert manager._modules["account_payment_partner"] == target
+    assert manager._modules["account_payment_mode"] == replacement
+    assert manager._modules["base"] == base
+
+
 def test_sql_style_apostrophes_are_repaired_and_other_joins_reported(tmp_path, caplog):
     mod = addon(tmp_path, "custom", code="""from odoo import models
 
@@ -1397,21 +1442,26 @@ class Thing(models.Model):
         assert any(fragment in message for message in messages), fragment
 
 
-def test_odoo20_view_expression_and_widget_rewrites_are_scoped_to_views(tmp_path):
+def test_odoo20_view_expression_and_widget_rewrites_are_scoped_to_views(tmp_path, caplog):
     mod = addon(tmp_path, "custom", xml="""<record id="view" model="ir.ui.view">
 <field name="model">custom.thing</field><field name="arch" type="xml"><form>
 <field name="line_ids" context="{'default_parent_id': active_id}" widget="kanban"/>
 <field name="path" widget="DynamicModelFieldSelectorChar" style="width:200%%"/>
+<field name="deadline" widget="remaining_days"/>
+<field name="obsolete" widget="one2many_list"/>
 </form></field></record>
 <record id="action" model="ir.actions.act_window">
 <field name="context">{'default_parent_id': active_id}</field></record>""")
-    migrate_view_expressions(
-        module_path=mod, tools=tools, logger=logging.getLogger("test")
-    )
+    with caplog.at_level(logging.ERROR):
+        migrate_view_expressions(
+            module_path=mod, tools=tools, logger=logging.getLogger("test")
+        )
     text = (mod / "view.xml").read_text()
     assert "default_parent_id': id" in text
     assert 'mode="kanban"' in text and 'widget="kanban"' not in text
     assert 'widget="field_selector"' in text
+    assert 'widget="relative_date"' in text and 'widget="remaining_days"' not in text
+    assert any("one2many_list" in record.getMessage() for record in caplog.records)
     assert "width:200%" in text and "200%%" not in text
     assert "<field name=\"context\">{'default_parent_id': active_id}" in text
 
@@ -1493,10 +1543,21 @@ class File(models.Model):
     def call_payload(self):
         return self.payload(item=self)
 """)
+    (mod / "tests").mkdir()
+    test_path = mod / "tests" / "test_file.py"
+    test_path.write_text(
+        '''import base64
+class TestFile:
+    def test_payload(self):
+        attachment = self.env["custom.file"].browse(1)
+        return base64.b64decode(attachment.file)
+''',
+        encoding="utf-8",
+    )
     index = models.ModelIndex.build([tmp_path])
     changes = python_checks.apply_binaryvalue_migrations(mod, index)
     text = (mod / "models.py").read_text(encoding="utf-8")
-    assert len(changes) == 6
+    assert len(changes) == 7
     assert "io.BytesIO(self.file.content)" in text
     assert "self.file = BinaryBytes(raw)" in text
     assert 'self.create({"file": BinaryBytes(raw)})' in text
@@ -1505,6 +1566,7 @@ class File(models.Model):
     assert "self.file.decode(self.encoding)" in text
     assert "base64.b64encode(raw).decode()" in text
     assert text.count("from odoo.tools.binary import BinaryBytes") == 1
+    assert "return attachment.file.content" in test_path.read_text(encoding="utf-8")
     messages = [
         message
         for _path, _line, _level, message in python_checks.check_module(
@@ -1633,6 +1695,9 @@ def test_related_override_lambda_xpath_and_boolean_config_are_understood(tmp_pat
 class Config(models.TransientModel):
     _name = "res.config.settings"
     enabled = fields.Boolean(config_parameter="custom.enabled")
+class Attachment(models.Model):
+    _name = "ir.attachment"
+    raw = fields.Binary()
 """)
     addon(tmp_path, "sale", depends=("base",), code="""from odoo import fields, models
 class Order(models.Model):
@@ -1648,6 +1713,8 @@ class Line(models.Model):
 class Line(models.Model):
     _inherit = "sale.order.line"
     date_order = fields.Datetime(compute="_compute_date_order")
+    attachment_id = fields.Many2one("ir.attachment")
+    attachment_data = fields.Binary(related="attachment_id.datas")
     def run(self):
         return self.filtered(lambda line: line.tax_id)
     def virtual(self):
@@ -1665,11 +1732,17 @@ class Line(models.Model):
 </field></record>""")
     index = models.ModelIndex.build([tmp_path])
     changes = python_checks.apply_field_renames(
-        custom, index, {("sale.order.line", "tax_id"): "tax_ids"}
+        custom,
+        index,
+        {
+            ("sale.order.line", "tax_id"): "tax_ids",
+            ("ir.attachment", "datas"): "raw",
+        },
     )
-    assert len(changes) == 2
+    assert len(changes) == 3
     assert "lambda line: line.tax_ids" in (custom / "models.py").read_text()
     assert "field[@name='tax_ids']" in (custom / "view.xml").read_text()
+    assert 'related="attachment_id.raw"' in (custom / "models.py").read_text()
     python_checks.apply_runtime_api_migrations(custom, index, 20)
     migrated = (custom / "models.py").read_text()
     assert 'get_bool("custom.enabled")' in migrated
@@ -1686,6 +1759,43 @@ class Line(models.Model):
         "_prepare_base_line_for_taxes_computation" in message
         and "round_globally" in message
         for message in messages
+    )
+
+
+def test_duplicate_field_and_core_orm_methods_are_understood(tmp_path):
+    mod = addon(tmp_path, "custom", code='''from odoo import fields, models
+class Partner(models.Model):
+    _name = "res.partner"
+    valid_until = fields.Date(string="Valid until", help="First")
+    valid_until = fields.Date(tracking=True)
+    def run(self):
+        self._read_group([], [], [])
+        self._check_company()
+''')
+    index = models.ModelIndex.build([tmp_path])
+    issues = list(python_checks.check_module(mod, index, target_version=20))
+    messages = [message for _path, _line, _level, message in issues]
+    assert sum("declared more than once" in message for message in messages) == 1
+    assert not any("_read_group() does not exist" in message for message in messages)
+    assert not any("_check_company() does not exist" in message for message in messages)
+
+
+def test_stored_field_transition_reports_custom_compute(tmp_path, caplog):
+    mod = addon(tmp_path, "custom", code='''from odoo import fields, models
+class Product(models.Model):
+    _inherit = "product.product"
+    lst_price = fields.Float(compute="_compute_lst_price")
+''')
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import MigrationScript
+
+    script = MigrationScript()
+    script.parse_rules()
+    with caplog.at_level(logging.ERROR, logger="odoo_module_migrate.log"):
+        script.handle_field_properties(mod)
+    assert any(
+        "product.product.lst_price changed store=False -> store=True" in record.getMessage()
+        and "data migration or recomputation" in record.getMessage()
+        for record in caplog.records
     )
 
 
@@ -2060,6 +2170,28 @@ def test_manifest_drops_empty_data_and_dependency_dicts(tmp_path, caplog):
     quality.finish_module(mod, manifest_layout=True)
     data = ast.literal_eval((mod / "__manifest__.py").read_text(encoding="utf-8"))
     assert "external_dependencies" not in data
+
+
+def test_indented_manifest_is_inspected_and_missing_data_is_reported(tmp_path, caplog):
+    mod = addon(tmp_path, "custom")
+    manifest = mod / "__manifest__.py"
+    manifest.write_text(
+        "    {\n"
+        "        'name': 'Custom',\n"
+        "        'author': 'Team',\n"
+        "        'license': 'AGPL-3',\n"
+        "        'depends': ['base'],\n"
+        "        'data': ['views/missing.xml'],\n"
+        "    }\n",
+        encoding="utf-8",
+    )
+
+    with caplog.at_level(logging.ERROR, logger="odoo_module_migrate"):
+        quality.finish_module(mod, manifest_layout=True)
+
+    data = ast.literal_eval(manifest.read_text(encoding="utf-8"))
+    assert data["data"] == ["views/missing.xml"]
+    assert "Manifest data file does not exist: views/missing.xml" in caplog.text
 
 
 def test_tracking_without_mail_thread_is_reported(tmp_path):

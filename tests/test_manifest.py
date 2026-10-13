@@ -66,9 +66,16 @@ def test_leading_indentation_accepted():
     assert new == "  {'name': 'x', 'depends': ['html_editor']}\n"
 
 
-def test_comments_are_not_rewritten():
+def test_comments_are_preserved_for_position_only_rewrite():
+    text = "{'depends': [\n  'a',  # comment\n]}"
+    assert m.rewrite_depends(text, ["b"]) == (
+        "{'depends': [\n  'b',  # comment\n]}"
+    )
+
+
+def test_commented_list_is_not_rebuilt_when_size_changes():
     with pytest.raises(m.ManifestError):
-        m.rewrite_depends("{'depends': [\n  'a',  # comment\n]}", ["b"])
+        m.rewrite_depends("{'depends': [\n  'a',  # comment\n]}", ["b", "c"])
 
 
 def test_bump_version_formats():

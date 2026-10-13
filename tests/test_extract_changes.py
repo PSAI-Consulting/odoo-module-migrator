@@ -70,3 +70,42 @@ def test_metadata_extractors(tmp_path, monkeypatch):
     snapshots = yaml.safe_load(output.read_text())
     assert snapshots["from"]["uom.precision"]["name"] == "Product Unit of Measure"
     assert snapshots["to"]["uom.precision"]["name"] == "Product Unit"
+
+
+def test_field_property_extractor(tmp_path, monkeypatch):
+    import extract_fields as ef
+    import yaml
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(ec, "resolve_ref", lambda repo, version: version)
+    monkeypatch.setattr(ec, "git", lambda *args: "b" * 40)
+
+    def blobs(repo, ref, pattern):
+        store = "" if ref == "19.0" else ", store=True"
+        return {
+            "addons/product/models/product.py": (
+                "class Product(Model):\n"
+                "    _name = 'product.product'\n"
+                f"    lst_price = fields.Float(compute='_compute_price'{store})\n"
+                "    ordinary = fields.Char()\n"
+            )
+        }
+
+    monkeypatch.setattr(ef, "read_blobs", blobs)
+    output = tmp_path / "properties.yaml"
+    args = SimpleNamespace(
+        repo=["odoo"],
+        from_version="19.0",
+        to_version="20.0",
+        output=str(output),
+    )
+    ec.extract_field_properties(args)
+    rows = yaml.safe_load(output.read_text())
+    assert rows == [[
+        "product.product",
+        "lst_price",
+        "store",
+        "False",
+        "True",
+        "odoo " + "b" * 40 + " addons/product/models/product.py",
+    ]]

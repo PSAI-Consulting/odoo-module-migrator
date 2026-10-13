@@ -13,15 +13,15 @@ def test_offline_official_scripts(tmp_path, version):
     module.mkdir()
     manifest = module / "__manifest__.py"
     manifest.write_text(
-        """{
-    "name": "Café",
-    "depends": ["base"],
-    "data": [
-        "views/before.xml",
-        "security/ir.model.access.csv",
-        "views/after.xml",
-    ],
-}
+        """    {
+        "name": "Café",
+        "depends": ["base"],
+        "data": [
+            "views/before.xml",
+            "security/ir.model.access.csv",
+            "views/after.xml",
+        ],
+    }
 """,
         encoding="utf-8",
     )

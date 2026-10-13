@@ -487,6 +487,86 @@ def remove_record_fields(text, usages, keys):
     return text, done
 
 
+def remove_python_record_fields(text, usages, keys):
+    """Remove proven obsolete keys from literal ``create``/``write`` dicts.
+
+    ``python_usages`` has already resolved the receiver model, so a same-named
+    key passed to an unrelated model is never touched.  Only literal dict
+    entries are edited; expansions and computed keys remain diagnostics.
+    Returns ``(text, removed usages)``.
+    """
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return text, []
+    pos = _Positions(text)
+    candidates = {
+        (usage.model, usage.field, usage.line): usage
+        for usage in usages
+        if (usage.model, usage.field) in keys
+        and usage.context in {".create({...})", ".write({...})", ".update({...})"}
+    }
+    edits = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        entries = [
+            (key, value)
+            for key, value in zip(node.keys, node.values)
+            if key is not None
+        ]
+        for index, (key, value) in enumerate(entries):
+            if not (
+                isinstance(key, ast.Constant)
+                and isinstance(key.value, str)
+            ):
+                continue
+            matching = [
+                usage
+                for (model, field, line), usage in candidates.items()
+                if field == key.value and line == key.lineno
+            ]
+            if not matching:
+                continue
+            key_start = pos.offset(key.lineno, key.col_offset)
+            value_end = pos.offset(value.end_lineno, value.end_col_offset)
+            if len(entries) == 1:
+                start, end = key_start, value_end
+            elif index < len(entries) - 1:
+                next_key = entries[index + 1][0]
+                next_start = pos.offset(next_key.lineno, next_key.col_offset)
+                comma = text.find(",", value_end, next_start)
+                if comma < 0:
+                    continue
+                start, end = key_start, comma + 1
+            else:
+                previous_value = entries[index - 1][1]
+                previous_end = pos.offset(
+                    previous_value.end_lineno, previous_value.end_col_offset
+                )
+                comma = text.rfind(",", previous_end, key_start)
+                if comma < 0:
+                    continue
+                start, end = comma, value_end
+            # A key can have the same line/name in distinct model calls.  The
+            # usages are model-resolved, but source spans identify the one here.
+            usage = next(
+                (
+                    item
+                    for item in matching
+                    if key_start <= item.start <= pos.offset(key.end_lineno, key.end_col_offset)
+                ),
+                None,
+            )
+            if usage is not None:
+                edits.append((start, end, usage))
+    done = []
+    for start, end, usage in sorted(edits, key=lambda item: item[0], reverse=True):
+        text = text[:start] + text[end:]
+        done.append(usage)
+    return text, done
+
+
 def apply_renames(text, usages, renames):
     """Rename the usages found in `renames` {(model, old): new}."""
     edits = sorted(

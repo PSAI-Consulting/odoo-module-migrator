@@ -2,6 +2,7 @@
 
 """OCA modules list generator."""
 
+import ast
 import pathlib
 from datetime import datetime
 
@@ -24,7 +25,7 @@ def generate_oca_file_list(directory_path):
                 try:
                     with open(manifest_path, 'r', encoding='utf-8') as f:
                         content = f.read()
-                    manifest_data = eval(content)
+                    manifest_data = ast.literal_eval(content)
                     if isinstance(manifest_data, dict):
                         author = manifest_data.get('author', '')
                         if 'Odoo Community Association (OCA)' in author:
@@ -74,7 +75,7 @@ def generate_oca_file_list(directory_path):
     
     # Generate complete markdown file
     if oca_modules:
-        md_content = f"""# Modules OCA présents dans le projet
+        md_content = """# Modules OCA présents dans le projet
 
 Cette liste répertorie tous les modules de l'Odoo Community Association (OCA) trouvés dans le projet. 
 Ces modules sont maintenus par la communauté et doivent être mis à jour via leurs dépôts Git officiels.

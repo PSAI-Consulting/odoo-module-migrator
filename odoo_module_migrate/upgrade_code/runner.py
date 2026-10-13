@@ -21,12 +21,14 @@ Differences with ``odoo-bin upgrade_code``:
 """
 
 import argparse
+import ast
 import codecs
 import contextlib
 import io
 import json
 import logging
 import sys
+import textwrap
 import traceback
 from pathlib import Path
 
@@ -106,12 +108,31 @@ class _StubManifest:
 
 
 def _manifest_depends(path):
-    import ast
-
     try:
         return ast.literal_eval(_decode(path.read_bytes())[0]).get("depends", [])
     except Exception:  # noqa: BLE001
         return []
+
+
+def _parse_manifest_with_offset(content):
+    """Parse an indented manifest and map AST positions to its original text."""
+    normalized = textwrap.dedent(content)
+    tree = ast.parse(normalized)
+    original_lines = content.splitlines(keepends=True)
+    normalized_lines = normalized.splitlines(keepends=True)
+
+    def offset(line, column):
+        removed_indent = len(original_lines[line - 1]) - len(
+            normalized_lines[line - 1]
+        )
+        original_column = column + removed_indent
+        return sum(map(len, original_lines[: line - 1])) + len(
+            original_lines[line - 1]
+            .encode("utf-8")[:original_column]
+            .decode("utf-8")
+        )
+
+    return tree, offset
 
 
 def patch_file_manager(uc, missing):
@@ -192,11 +213,20 @@ def build_file_manager(uc, addons_path, context_path, targets, aliases=None):
     all_modules = {**reference, **visible}
     # Only installed dependencies can contribute security groups. Loading all
     # reference modules here needlessly parses every Odoo application's XML.
-    needed, todo = set(), [t.name for t in targets] + ["base"]
+    target_names = {target.name for target in targets}
+    needed, todo = set(), list(target_names) + ["base"]
     while todo:
         name = todo.pop()
         seen_aliases = set()
-        while name in file_manager._module_aliases and name not in seen_aliases:
+        # A selected source module remains a writable target even when that
+        # module is merged/renamed in the destination.  Aliases only stand in
+        # for dependencies; resolving a target itself would filter it out and
+        # make every upgrade_code run fail the validation below.
+        while (
+            name not in target_names
+            and name in file_manager._module_aliases
+            and name not in seen_aliases
+        ):
             seen_aliases.add(name)
             name = file_manager._module_aliases[name]
         if name in needed or name not in all_modules:
@@ -304,11 +334,9 @@ def patch_ir_access(scripts, targets):
         def add_to_manifest(self, module_name, file_name):
             # The upstream line-based regex misses valid one-line manifests.
             # Locate the data list with AST and insert without changing comments.
-            import ast
-
             file = self.file_manager.get_file(module_name, "__manifest__.py")
             content = file.content
-            tree = ast.parse(content)
+            tree, offset = _parse_manifest_with_offset(content)
             mapping = tree.body[0].value
             node = next(
                 v
@@ -320,13 +348,6 @@ def patch_ir_access(scripts, targets):
             manifest = self.get_manifest(module_name)
             if file_name in manifest["data"]:
                 return
-            lines = content.splitlines(keepends=True)
-
-            def offset(line, col):
-                return sum(map(len, lines[: line - 1])) + len(
-                    lines[line - 1].encode("utf-8")[:col].decode("utf-8")
-                )
-
             start = offset(node.lineno, node.col_offset) + 1
             # Prepending needs no knowledge of a last item's trailing comma.
             file.content = content[:start] + repr(file_name) + ", " + content[start:]
@@ -341,11 +362,9 @@ def patch_ir_access(scripts, targets):
             a temporarily invalid list. AST positions let us remove the exact
             element while retaining a valid comma from either neighbour.
             """
-            import ast
-
             file = self.file_manager.get_file(module_name, "__manifest__.py")
             content = file.content
-            tree = ast.parse(content)
+            tree, offset = _parse_manifest_with_offset(content)
             mapping = tree.body[0].value
             node = next(
                 value
@@ -359,13 +378,6 @@ def patch_ir_access(scripts, targets):
                 for i, element in enumerate(node.elts)
                 if isinstance(element, ast.Constant) and element.value == file_name
             )
-            lines = content.splitlines(keepends=True)
-
-            def offset(line, column):
-                return sum(map(len, lines[: line - 1])) + len(
-                    lines[line - 1].encode("utf-8")[:column].decode("utf-8")
-                )
-
             element = node.elts[index]
             if len(node.elts) == 1:
                 start = offset(node.lineno, node.col_offset) + 1

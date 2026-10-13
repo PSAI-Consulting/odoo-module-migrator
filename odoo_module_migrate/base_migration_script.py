@@ -1,3 +1,4 @@
+import ast
 import os
 import re
 import pathlib
@@ -34,6 +35,7 @@ class BaseMigrationScript:
     _REMOVED_MODELS: List[Tuple] = []
     _GLOBAL_FUNCTIONS: List[Any] = []  # [function_object]
     _FIELD_TYPES: List[Any] = []
+    _FIELD_PROPERTIES: List[Any] = []
     # [(removed parent xmlid, former child xmlid, child's target parent xmlid,
     #   evidence), ...]. Used to suggest placements without guessing a single
     # replacement when the children of a removed menu were split.
@@ -59,6 +61,7 @@ class BaseMigrationScript:
         self._REMOVED_MODELS = copy.deepcopy(getattr(self, '_REMOVED_MODELS', []))
         self._GLOBAL_FUNCTIONS = copy.deepcopy(getattr(self, '_GLOBAL_FUNCTIONS', []))
         self._FIELD_TYPES = copy.deepcopy(getattr(self, '_FIELD_TYPES', []))
+        self._FIELD_PROPERTIES = copy.deepcopy(getattr(self, '_FIELD_PROPERTIES', []))
         self._MENU_PARENT_HINTS = copy.deepcopy(getattr(self, '_MENU_PARENT_HINTS', []))
         self._module_path = ""
         self._rules_parsed = False
@@ -78,6 +81,7 @@ class BaseMigrationScript:
         TYPE_DICT_OF_DICT = "TYPE_DICT_OF_DICT"
         rules = {
             "_FIELD_TYPES": {"type": TYPE_ARRAY, "doc": []},
+            "_FIELD_PROPERTIES": {"type": TYPE_ARRAY, "doc": []},
             "_MENU_PARENT_HINTS": {"type": TYPE_ARRAY, "doc": []},
             # {filetype: {regex: replacement}}
             "_TEXT_REPLACES": {
@@ -246,6 +250,7 @@ class BaseMigrationScript:
         # only what is left is renamed / reported
         self.handle_fields(module_path)
         self.handle_field_types(module_path)
+        self.handle_field_properties(module_path)
 
     def handle_field_types(self, module_path):
         import ast
@@ -281,6 +286,48 @@ class BaseMigrationScript:
             for model, name, line in sorted(found):
                 old, new, source = rules[model, name]
                 logger.warning("Field %s.%s changed %s -> %s: review computations, related custom field types and stored data before aligning them (%s). File %s:%s", model, name, old, new, source, path, line)
+
+    def handle_field_properties(self, module_path):
+        """Report custom overrides affected by proven field metadata changes."""
+        if not self._FIELD_PROPERTIES:
+            return
+        rules = {
+            (model, field, prop): (old, new, source)
+            for model, field, prop, old, new, source in self._FIELD_PROPERTIES
+        }
+        for path in tools.get_files(module_path, (".py",)):
+            text = _read_content(path)
+            try:
+                tree = ast.parse(text)
+            except SyntaxError:
+                continue
+            for cls in ast.walk(tree):
+                if not isinstance(cls, ast.ClassDef):
+                    continue
+                for model in analysis_fields._class_models(cls):
+                    for stmt in cls.body:
+                        target = (
+                            stmt.targets[0]
+                            if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1
+                            else stmt.target if isinstance(stmt, ast.AnnAssign) else None
+                        )
+                        call = getattr(stmt, "value", None)
+                        if not (
+                            isinstance(target, ast.Name)
+                            and isinstance(call, ast.Call)
+                            and any(keyword.arg == "compute" for keyword in call.keywords)
+                        ):
+                            continue
+                        rule = rules.get((model, target.id, "store"))
+                        if not rule:
+                            continue
+                        old, new, source = rule
+                        logger.error(
+                            "Field %s.%s changed store=%s -> store=%s and is redefined with compute=; "
+                            "review depends/depends_context, SQL writes to its dependencies, and add a "
+                            "data migration or recomputation for the stored column (%s). File %s:%s",
+                            model, target.id, old, new, source, path, stmt.lineno,
+                        )
 
     def process_file(
         self, 
@@ -386,7 +433,7 @@ class BaseMigrationScript:
         for r in self._REMOVED_FIELDS:
             if (r[0], r[1]) not in renames:
                 removed.setdefault((r[0], r[1]), r[2] if len(r) > 2 else "")
-        if not renames and not removed:
+        if not renames and not removed and not self._DROPPED_RECORD_FIELDS:
             return
         # The models renamed by this step are renamed in the files before the
         # fields are handled, while the field rules may name the old model
@@ -439,6 +486,27 @@ class BaseMigrationScript:
                         path, count,
                     )
                 )
+            if path.suffix == ".py" and self._DROPPED_RECORD_FIELDS:
+                if count:
+                    text = new_text
+                    usages = [
+                        u for u in analysis_fields.python_usages(text)[0]
+                        if (u.model, u.field) not in defined
+                    ]
+                text_after, dropped = analysis_fields.remove_python_record_fields(
+                    text, usages, self._DROPPED_RECORD_FIELDS
+                )
+                if dropped:
+                    _write_content(path, text_after)
+                    for usage in dropped:
+                        logger.info(
+                            "Value of the removed field %s.%s dropped from Python %s (%s). File %s:%s" % (
+                                usage.model, usage.field, usage.context,
+                                self._DROPPED_RECORD_FIELDS[(usage.model, usage.field)],
+                                path, usage.line,
+                            )
+                        )
+                    usages = [u for u in usages if u not in dropped]
             if path.suffix == ".xml" and removed:
                 if count:  # positions changed with the renames
                     text = new_text

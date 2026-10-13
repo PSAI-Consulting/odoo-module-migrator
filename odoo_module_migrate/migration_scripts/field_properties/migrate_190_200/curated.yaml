@@ -1,0 +1,3 @@
+# Field metadata transitions that require review when custom modules redefine
+# the affected computed field.  Format: model, field, property, old, new, source.
+- ["product.product", "lst_price", "store", "False", "True", "odoo 92baf0a1df27: product.product.lst_price became stored in 20.0"]

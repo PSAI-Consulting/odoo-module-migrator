@@ -293,6 +293,7 @@ python tools/extract/extract_changes.py modules --from 19.0 --to 20.0 \
 | `model-modules` | module qui définit chaque modèle |
 | `tools-exports` | noms que `from odoo.tools import X` ne fournit plus |
 | `field-types` | changements de type des champs entre deux versions |
+| `field-properties` | changements de propriétés des champs calculés (`store`) |
 | `decimal-precisions` | inventaires des précisions décimales des deux versions |
 
 Détail des options : `python tools/extract/extract_changes.py <sous-commande> --help`.

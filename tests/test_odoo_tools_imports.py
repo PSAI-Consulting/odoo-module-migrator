@@ -50,6 +50,19 @@ def test_20_query_module():
     assert reports == []
 
 
+def test_20_http_names_moved_to_submodules():
+    new, reports = _rewrite(
+        "migrate_190_200",
+        "from odoo.http import content_disposition, request, serialize_exception\n",
+    )
+    assert new == (
+        "from odoo.http import request\n"
+        "from odoo.http.stream import content_disposition\n"
+        "from odoo.http.dispatcher import serialize_exception\n"
+    )
+    assert reports == []
+
+
 def test_20_sql_and_convert():
     new, reports = _rewrite("migrate_190_200", (
         "def f():\n"

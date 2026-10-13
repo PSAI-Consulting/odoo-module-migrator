@@ -610,6 +610,95 @@ def extract_field_types(args):
                  rows, lambda row: "- [" + ", ".join(_q(v) for v in row) + "]")
 
 
+def _field_store_properties(files):
+    """Return computed-field storage metadata keyed by ``(model, field)``."""
+    import extract_fields as ef
+
+    result = {}
+    for path, text in files.items():
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        for cls in ast.walk(tree):
+            if not isinstance(cls, ast.ClassDef):
+                continue
+            name, inherit, declared = None, [], []
+            for statement in cls.body:
+                target = (
+                    statement.targets[0]
+                    if isinstance(statement, ast.Assign)
+                    and len(statement.targets) == 1
+                    and isinstance(statement.targets[0], ast.Name)
+                    else statement.target
+                    if isinstance(statement, ast.AnnAssign)
+                    and isinstance(statement.target, ast.Name)
+                    else None
+                )
+                if target is None:
+                    continue
+                if target.id == "_name":
+                    name = (ef._str_values(statement.value) or [None])[0]
+                    continue
+                if target.id == "_inherit":
+                    inherit = ef._str_values(statement.value)
+                    continue
+                call = getattr(statement, "value", None)
+                if not (
+                    isinstance(call, ast.Call)
+                    and isinstance(call.func, ast.Attribute)
+                    and isinstance(call.func.value, ast.Name)
+                    and call.func.value.id == "fields"
+                ):
+                    continue
+                keywords = {keyword.arg: keyword.value for keyword in call.keywords}
+                if "compute" not in keywords:
+                    continue
+                store_node = keywords.get("store")
+                store = (
+                    store_node.value
+                    if isinstance(store_node, ast.Constant)
+                    and isinstance(store_node.value, bool)
+                    else False
+                )
+                declared.append((target.id, store))
+            for model in ([name] if name else inherit):
+                for field, store in declared:
+                    result[model, field] = (store, path)
+    return result
+
+
+def extract_field_properties(args):
+    """Extract computed fields whose ``store`` property changed."""
+    import extract_fields as ef
+
+    before, after = {}, {}
+    for spec in args.repo:
+        repo = pathlib.Path(spec)
+        old_ref = resolve_ref(repo, args.from_version)
+        new_ref = resolve_ref(repo, args.to_version)
+        old_files = ef.read_blobs(repo, old_ref, re.compile(r"\.py$"))
+        new_files = ef.read_blobs(repo, new_ref, re.compile(r"\.py$"))
+        revision = git(repo, "rev-parse", new_ref).strip()
+        before.update(_field_store_properties(old_files))
+        for key, (value, path) in _field_store_properties(new_files).items():
+            after[key] = (value, f"{repo.name} {revision} {path}")
+    rows = [
+        (model, field, "store", str(before[model, field][0]), str(value), source)
+        for (model, field), (value, source) in sorted(after.items())
+        if (model, field) in before and before[model, field][0] != value
+    ]
+    _write_rules(
+        pathlib.Path(args.output),
+        [
+            f"Computed-field property changes {args.from_version} -> {args.to_version};",
+            "review before applying.",
+        ],
+        rows,
+        lambda row: "- [" + ", ".join(_q(v) for v in row) + "]",
+    )
+
+
 def extract_decimal_precisions(args):
     """Names and XML ids, including renames and removals, without guessing."""
     import extract_fields as ef
@@ -644,7 +733,7 @@ def extract_decimal_precisions(args):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("field-types", "decimal-precisions"):
+    for name in ("field-types", "field-properties", "decimal-precisions"):
         cmd = sub.add_parser(name, help="compare field metadata / decimal precision records")
         cmd.add_argument("--from", dest="from_version", required=True)
         cmd.add_argument("--to", dest="to_version", required=True)
@@ -714,7 +803,9 @@ def main(argv=None):
         {
             "fields": extract_fields, "api": extract_api, "models": extract_models,
             "js": extract_js, "views": extract_views, "model-modules": extract_model_modules,
-            "field-types": extract_field_types, "decimal-precisions": extract_decimal_precisions,
+            "field-types": extract_field_types,
+            "field-properties": extract_field_properties,
+            "decimal-precisions": extract_decimal_precisions,
         }[args.command](args)
 
 

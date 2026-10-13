@@ -22,6 +22,11 @@ def _migrate_record(text):
             'widget="field_selector"',
             value,
         )
+        value = re.sub(
+            r"\bwidget\s*=\s*(['\"])remaining_days\1",
+            'widget="relative_date"',
+            value,
+        )
         if value.lstrip().startswith("<field"):
             value = re.sub(
                 r"\s+widget\s*=\s*(['\"])kanban\1", ' mode="kanban"', value
@@ -53,3 +58,11 @@ def migrate_view_expressions(**kwargs):
         if new != text:
             tools._write_content(path, new)
             logger.info("[20] Updated removed view expressions/widgets. File %s", path)
+        for match in re.finditer(r"\bwidget\s*=\s*(['\"])one2many_list\1", new):
+            line = new.count("\n", 0, match.start()) + 1
+            logger.error(
+                "[20] View widget 'one2many_list' is not registered in the target; "
+                "remove it or choose a target widget after checking the intended UX. File %s:%s",
+                path,
+                line,
+            )

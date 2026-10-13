@@ -4,6 +4,8 @@
 # public module re-exporting it); to: null = removed (hint: other definitions
 # of the same name, different code: to check by hand). import: the name was
 # a re-export of another library. proof: commit of the range that changed it.
+- {from: 'odoo.http', name: 'content_disposition', to: 'odoo.http.stream', proof: 'odoo ec12678f7043 ''[IMP] core, *: split odoo.http module'''}
+- {from: 'odoo.http', name: 'serialize_exception', to: 'odoo.http.dispatcher', proof: 'odoo ec12678f7043 ''[IMP] core, *: split odoo.http module'''}
 - {from: 'odoo.tools', name: 'Query', to: 'odoo.models', old: 'odoo.tools.query', proof: 'odoo ef789d3c5086 ''[MOV] core: move Query into odoo.orm'''}
 - {from: 'odoo.tools', name: 'convert_csv_import', to: 'odoo.tools.convert', old: 'odoo.tools.convert', proof: 'odoo ec785ba75827 ''[IMP] tools: hide import functions'''}
 - {from: 'odoo.tools', name: 'convert_sql_import', to: null, old: 'odoo.tools.convert', proof: 'odoo ec785ba75827 ''[IMP] tools: hide import functions'''}

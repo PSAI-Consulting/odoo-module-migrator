@@ -75,6 +75,7 @@ Le dossier `migrate_allways` s'applique à toutes les migrations.
 | `renamed_models` | `[ancien, nouveau, source]` | renomme le modèle |
 | `removed_models` | `[modèle, "message — source"]` | signale |
 | `field_types` | `[modèle, champ, ancien type, nouveau type, source]` | signale les usages et redéfinitions à revoir |
+| `field_properties` | `[modèle, champ, propriété, avant, après, source]` | signale une redéfinition touchée par un changement de métadonnée (`store`, etc.) |
 | `text_replaces` | `{extension: {regex: remplacement}}` | remplace (seulement si l'équivalence est prouvée) |
 | `text_errors` | `{extension: {regex: message}}` | signale une erreur 🔴 |
 | `text_warnings` | `{extension: {regex: message}}` | signale un point à vérifier 🟠 |

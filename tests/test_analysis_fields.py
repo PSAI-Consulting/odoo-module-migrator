@@ -1,4 +1,6 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+import ast
+
 from odoo_module_migrate.analysis import fields as fa
 from odoo_module_migrate.analysis.fields import apply_renames, python_usages, xml_usages
 
@@ -256,3 +258,33 @@ def test_dropped_record_fields(tmp_path):
     result = fa.with_delegation(rules)
     assert result[("product.product", "detailed_type")] == "x"
     assert ("product.template", "y") not in result
+
+
+def test_dropped_python_record_fields(tmp_path):
+    """A proven obsolete field is removed only from its resolved model call."""
+    from odoo_module_migrate.migration_scripts.migrate_190_200 import MigrationScript
+
+    module = tmp_path / "report"
+    module.mkdir()
+    path = module / "test_report.py"
+    path.write_text(
+        '''class TestReport:
+    def test_report(self):
+        report = self.env["ir.actions.report"].create({
+            "name": "X",
+            "report_file": "report.x",
+            "report_name": "report.x",
+        })
+        self.env["x.other"].create({"report_file": "keep"})
+''',
+        encoding="utf-8",
+    )
+    script = MigrationScript()
+    script.parse_rules()
+    script.handle_fields(module)
+    text = path.read_text(encoding="utf-8")
+    assert '"report_file": "report.x"' not in text
+    assert 'self.env["x.other"].create({"report_file": "keep"})' in text
+    ast.parse(text)
+    script.handle_fields(module)
+    assert path.read_text(encoding="utf-8") == text

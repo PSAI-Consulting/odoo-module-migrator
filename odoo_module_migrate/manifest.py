@@ -212,7 +212,14 @@ class ManifestError(ValueError):
 
 def inspect_keys(text):
     """Return ``(unknown keys, concatenated string key lines)``."""
-    tree = ast.parse(text)
+    indent = len(text) - len(text.lstrip(" \t"))
+    tree = ast.parse(text[indent:])
+    if indent:
+        for node in ast.walk(tree):
+            if getattr(node, "lineno", None) == 1:
+                node.col_offset += indent
+            if getattr(node, "end_lineno", None) == 1:
+                node.end_col_offset += indent
     mapping = tree.body[0].value
     if not isinstance(mapping, ast.Dict):
         raise ManifestError("Manifest must contain one literal dictionary")

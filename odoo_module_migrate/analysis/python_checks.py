@@ -693,6 +693,67 @@ def apply_field_renames(module, index, renames):
         visitor = analyze_uses(tree, index)
         positions = fields._Positions(text)
         edits = set()
+        # ``related="a.b.c"`` paths need relation-aware handling: the
+        # standalone field pass can only identify the first segment. Walk the
+        # target index one segment at a time and edit only uniquely resolved
+        # comodels.
+        for cls in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+            class_models = fields._class_models(cls)
+            if not class_models:
+                continue
+            for statement in cls.body:
+                call = getattr(statement, "value", None)
+                if not isinstance(call, ast.Call):
+                    continue
+                related = next(
+                    (
+                        keyword.value
+                        for keyword in call.keywords
+                        if keyword.arg == "related"
+                        and isinstance(keyword.value, ast.Constant)
+                        and isinstance(keyword.value.value, str)
+                    ),
+                    None,
+                )
+                if related is None:
+                    continue
+                value = related.value
+                source_start = positions.offset(related.lineno, related.col_offset)
+                source_end = positions.offset(related.end_lineno, related.end_col_offset)
+                raw = text[source_start:source_end]
+                value_start = raw.find(value)
+                if value_start < 0:
+                    continue
+                model = class_models[0]
+                cursor = 0
+                for part in value.split("."):
+                    part_start = value.find(part, cursor)
+                    replacement = renames.get((model, part))
+                    resolved_part = replacement or part
+                    if replacement and Path(module).name not in index.field_owners.get(
+                        (model, part), set()
+                    ):
+                        start = source_start + value_start + part_start
+                        edits.add(
+                            (
+                                start,
+                                start + len(part),
+                                replacement,
+                                model,
+                                part,
+                                related.lineno,
+                            )
+                        )
+                    comodels = set().union(
+                        *(
+                            index.comodels.get((ancestor, resolved_part), set())
+                            for ancestor in index.ancestors(model)
+                        )
+                    )
+                    if len(comodels) != 1:
+                        break
+                    model = next(iter(comodels))
+                    cursor = part_start + len(part) + 1
         for node, model, field in visitor.usages:
             replacement = renames.get((model, field))
             if not replacement or Path(module).name in index.field_owners.get(
@@ -792,7 +853,7 @@ def apply_field_renames(module, index, renames):
 def apply_binaryvalue_migrations(module, index):
     """Apply only model-proven Odoo 20 BinaryValue conversions."""
     changed = []
-    for path in models._python_files(Path(module)):
+    for path in models.analysis_python_files(Path(module)):
         text = path.read_text(encoding="utf-8", errors="replace")
         try:
             tree = ast.parse(text)
@@ -2088,6 +2149,39 @@ def _removed_sql_field_issues(tree, removed_fields):
                     )
 
 
+def _duplicate_class_field_issues(tree):
+    """Find field declarations shadowed later in the same class body."""
+    for cls in ast.walk(tree):
+        if not isinstance(cls, ast.ClassDef) or not fields._class_models(cls):
+            continue
+        first = {}
+        for statement in cls.body:
+            target = (
+                statement.targets[0]
+                if isinstance(statement, ast.Assign) and len(statement.targets) == 1
+                else statement.target if isinstance(statement, ast.AnnAssign) else None
+            )
+            call = getattr(statement, "value", None)
+            if not (
+                isinstance(target, ast.Name)
+                and isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Attribute)
+                and isinstance(call.func.value, ast.Name)
+                and call.func.value.id == "fields"
+            ):
+                continue
+            if target.id in first:
+                yield (
+                    statement.lineno,
+                    "warning",
+                    f"Field {target.id!r} is declared more than once in class {cls.name}; "
+                    f"this declaration silently replaces the one on line {first[target.id]} "
+                    "and can discard its label, help, compute, or other metadata",
+                )
+            else:
+                first[target.id] = statement.lineno
+
+
 def check_module(
     module, index, target_version=20, precision_names=None, removed_fields=()
 ):
@@ -2143,6 +2237,8 @@ def check_module(
             for line, level, message in _odoo20_python_issues(tree, index, visitor):
                 yield path, line, level, message
         for line, level, message in _removed_sql_field_issues(tree, removed_fields) or ():
+            yield path, line, level, message
+        for line, level, message in _duplicate_class_field_issues(tree):
             yield path, line, level, message
         for line, message in _dynamic_model_issues(tree):
             yield path, line, "warning", message
