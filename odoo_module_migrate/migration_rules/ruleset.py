@@ -154,6 +154,19 @@ def _resolve_fields(step_rules: list[Rule], resolutions: dict, findings: list) -
                       if r.kind == RuleKind.RENAMED_MODEL and resolutions[r.stable_id].effective}
     for r in step_rules:
         if r.kind == RuleKind.REMOVED_MODEL and resolutions[r.stable_id].effective and r.payload.model in renamed_models:
+            rename = renamed_models[r.payload.model]
+            # A reviewed structured successor can explicitly confirm that the
+            # generated removal is the same identity-preserving rename.  In
+            # that case the rename handles the model and the removal must not
+            # produce a second, contradictory diagnostic.
+            if r.structured and r.payload.change == ChangeKind.RENAMED \
+                    and r.payload.identity_preserved is True \
+                    and r.payload.target_model == rename.payload.new_model:
+                resolutions[r.stable_id] = Resolution(
+                    SHADOWED_BY_RENAME, rename.stable_id,
+                    "structured successor confirms the identity-preserving rename",
+                )
+                continue
             findings.append(Finding("warning", "removed_and_renamed_model", (
                 f"{r.payload.model} is removed ({r.origin.ref}) and renamed ({renamed_models[r.payload.model].origin.ref}):"
                 " the rename is applied first, the error only reports what is left"), r.origin.ref,
