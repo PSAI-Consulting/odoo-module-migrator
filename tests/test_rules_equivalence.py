@@ -62,9 +62,14 @@ def test_legacy_files_give_the_historical_data(path):
     assert loaded.document == raw
 
 
-def test_generated_files_are_never_structured():
+def test_every_rule_file_is_structured_and_extracted_rules_stay_generated():
+    """All the YAML rules are v2; an extracted rule is never more than
+    confidence: generated (only a curated review promotes it)."""
+    from odoo_module_migrate.migration_rules.models import Confidence
+
     rules = migration_rules.load_rules(python=False)
-    assert not [r.origin.ref for r in rules.rules if r.origin_layer == OriginLayer.GENERATED and r.structured]
+    assert not [r.origin.ref for r in rules.rules if not r.structured]
+    assert {r.confidence for r in rules.rules if r.origin_layer == OriginLayer.GENERATED} == {Confidence.GENERATED}
 
 
 def test_curated_keys_of_the_extractor_are_unchanged():

@@ -50,7 +50,7 @@ SCHEMA_VERSION = 2
 
 MODEL_RE = re.compile(r"^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*$")
 IDENT_RE = re.compile(r"^[A-Za-z_]\w*$")
-MODULE_RE = re.compile(r"^[a-z0-9_]+$")
+MODULE_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_-]*$")  # Odoo has account_e-invoice_generate, *_273S_*
 XMLID_RE = re.compile(r"^[a-z0-9_]+\.[A-Za-z0-9_.]+$")
 EXTENSION_RE = re.compile(r"^(\*|\.[a-z0-9]+)$")
 
