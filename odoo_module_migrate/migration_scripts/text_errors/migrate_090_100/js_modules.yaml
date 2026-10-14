@@ -3,75 +3,75 @@
 # JS modules removed (imports and manifest assets).
 .js:
   # odoo cf3e8324f1f4 '[MOV] base_import: module directory organization'
-  '[\"'']@base_import/js/import[\"'']': '[10] JS module @base_import/js/import was removed'
+  '[\"'']@base_import/js/import[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cf3e8324f1f4", title: "[MOV] base_import: module directory organization"}], message: "[10] JS module @base_import/js/import was removed"}
   # odoo d624fdd25050 '[MOV] google_calendar: moved models and data file in to models and data directory'
-  '[\"'']@google_calendar/js/calendar_sync[\"'']': '[10] JS module @google_calendar/js/calendar_sync was removed'
+  '[\"'']@google_calendar/js/calendar_sync[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "d624fdd25050", title: "[MOV] google_calendar: moved models and data file in to models and data directory"}], message: "[10] JS module @google_calendar/js/calendar_sync was removed"}
   # odoo 96b88b127585 '[IMP] hr_attendance: migration and revamp'
-  '[\"'']@hr_attendance/js/attendance[\"'']': '[10] JS module @hr_attendance/js/attendance was removed'
+  '[\"'']@hr_attendance/js/attendance[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "96b88b127585", title: "[IMP] hr_attendance: migration and revamp"}], message: "[10] JS module @hr_attendance/js/attendance was removed"}
   # odoo 3e252cf40df6 '[REM] im_odoo_support: Remove the module'
-  '[\"'']@im_odoo_support/js/im_odoo_support[\"'']': '[10] JS module @im_odoo_support/js/im_odoo_support was removed'
+  '[\"'']@im_odoo_support/js/im_odoo_support[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "3e252cf40df6", title: "[REM] im_odoo_support: Remove the module"}], message: "[10] JS module @im_odoo_support/js/im_odoo_support was removed"}
   # odoo e877d59d2176 '[REM] mail: remove old announcement bar'
-  '[\"'']@mail/js/announcement[\"'']': '[10] JS module @mail/js/announcement was removed'
+  '[\"'']@mail/js/announcement[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "e877d59d2176", title: "[REM] mail: remove old announcement bar"}], message: "[10] JS module @mail/js/announcement was removed"}
   # odoo 8eb2be4668b5 '[REM] mail_tip'
-  '[\"'']@mail_tip/js/mail_tip[\"'']': '[10] JS module @mail_tip/js/mail_tip was removed'
+  '[\"'']@mail_tip/js/mail_tip[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "8eb2be4668b5", title: "[REM] mail_tip"}], message: "[10] JS module @mail_tip/js/mail_tip was removed"}
   # odoo ff110b0ed8f9 '[IMP] purchase_requisition: blanket orders and usability cleaning'
-  '[\"'']@purchase_requisition/js/web_addons[\"'']': '[10] JS module @purchase_requisition/js/web_addons was removed'
+  '[\"'']@purchase_requisition/js/web_addons[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "ff110b0ed8f9", title: "[IMP] purchase_requisition: blanket orders and usability cleaning"}], message: "[10] JS module @purchase_requisition/js/web_addons was removed"}
   # odoo 00120a9271b8 '[REF] web: refactor and simplify web.core'
-  '[\"'']@web/js/framework/core[\"'']': '[10] JS module @web/js/framework/core was removed (moved to @web/js/services/core?)'
+  '[\"'']@web/js/framework/core[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "00120a9271b8", title: "[REF] web: refactor and simplify web.core"}], message: "[10] JS module @web/js/framework/core was removed (moved to @web/js/services/core?)"}
   # odoo b107b14e6be9 '[REF] report,web(_editor): services extracted in their own files'
-  '[\"'']@web/js/framework/session_instance[\"'']': '[10] JS module @web/js/framework/session_instance was removed'
+  '[\"'']@web/js/framework/session_instance[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "b107b14e6be9", title: "[REF] report,web(_editor): services extracted in their own files"}], message: "[10] JS module @web/js/framework/session_instance was removed"}
   # odoo 5a1db6cde22c '[DEL] web: remove old tour system'
-  '[\"'']@web/js/tour[\"'']': '[10] JS module @web/js/tour was removed'
+  '[\"'']@web/js/tour[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "5a1db6cde22c", title: "[DEL] web: remove old tour system"}], message: "[10] JS module @web/js/tour was removed"}
   # odoo b2220945896b '[REM] web_analytics'
-  '[\"'']@web_analytics/js/web_analytics[\"'']': '[10] JS module @web_analytics/js/web_analytics was removed'
+  '[\"'']@web_analytics/js/web_analytics[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "b2220945896b", title: "[REM] web_analytics"}], message: "[10] JS module @web_analytics/js/web_analytics was removed"}
   # odoo 6416c46d8504 '[REM] *: remove web_tip addon and its data in other addons'
-  '[\"'']@web_tip/js/tip[\"'']': '[10] JS module @web_tip/js/tip was removed (moved to @web_tour/js/tip?)'
+  '[\"'']@web_tip/js/tip[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "6416c46d8504", title: "[REM] *: remove web_tip addon and its data in other addons"}], message: "[10] JS module @web_tip/js/tip was removed (moved to @web_tour/js/tip?)"}
   # odoo 715a5ba09608 '[REM] web_view_editor: remove addon web_view_editor'
-  '[\"'']@web_view_editor/js/view_editor[\"'']': '[10] JS module @web_view_editor/js/view_editor was removed'
+  '[\"'']@web_view_editor/js/view_editor[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "715a5ba09608", title: "[REM] web_view_editor: remove addon web_view_editor"}], message: "[10] JS module @web_view_editor/js/view_editor was removed"}
   # odoo d41ed40c70fa '[IMP] web, website: adapt tour launching to new system'
-  '[\"'']@website/js/website\.tour[\"'']': '[10] JS module @website/js/website.tour was removed'
+  '[\"'']@website/js/website\.tour[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "d41ed40c70fa", title: "[IMP] web, website: adapt tour launching to new system"}], message: "[10] JS module @website/js/website.tour was removed"}
   # odoo 8cc850f3a54f '[IMP] website_blog: refactoring'
-  '[\"'']@website_blog/js/website_blog\.inline\.discussion[\"'']': '[10] JS module @website_blog/js/website_blog.inline.discussion was removed'
+  '[\"'']@website_blog/js/website_blog\.inline\.discussion[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "8cc850f3a54f", title: "[IMP] website_blog: refactoring"}], message: "[10] JS module @website_blog/js/website_blog.inline.discussion was removed"}
   # odoo a7dad4ec61d6 '[REF] website_google_map: rerganize module structure'
-  '[\"'']@website_google_map/js/google_map[\"'']': '[10] JS module @website_google_map/js/google_map was removed'
+  '[\"'']@website_google_map/js/google_map[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "a7dad4ec61d6", title: "[REF] website_google_map: rerganize module structure"}], message: "[10] JS module @website_google_map/js/google_map was removed"}
   # odoo a7dad4ec61d6 '[REF] website_google_map: rerganize module structure'
-  '[\"'']@website_google_map/js/markerclusterer[\"'']': '[10] JS module @website_google_map/js/markerclusterer was removed (moved to @website_google_map/lib/markerclusterer?)'
+  '[\"'']@website_google_map/js/markerclusterer[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "a7dad4ec61d6", title: "[REF] website_google_map: rerganize module structure"}], message: "[10] JS module @website_google_map/js/markerclusterer was removed (moved to @website_google_map/lib/markerclusterer?)"}
   # odoo a7dad4ec61d6 '[REF] website_google_map: rerganize module structure'
-  '[\"'']@website_google_map/js/markerclusterer_compiled[\"'']': '[10] JS module @website_google_map/js/markerclusterer_compiled was removed'
+  '[\"'']@website_google_map/js/markerclusterer_compiled[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "a7dad4ec61d6", title: "[REF] website_google_map: rerganize module structure"}], message: "[10] JS module @website_google_map/js/markerclusterer_compiled was removed"}
 .py:
   # odoo cf3e8324f1f4 '[MOV] base_import: module directory organization'
-  '[\"'']base_import/static/src/js/import\.js[\"'']': '[10] JS module @base_import/js/import was removed'
+  '[\"'']base_import/static/src/js/import\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cf3e8324f1f4", title: "[MOV] base_import: module directory organization"}], message: "[10] JS module @base_import/js/import was removed"}
   # odoo d624fdd25050 '[MOV] google_calendar: moved models and data file in to models and data directory'
-  '[\"'']google_calendar/static/src/js/calendar_sync\.js[\"'']': '[10] JS module @google_calendar/js/calendar_sync was removed'
+  '[\"'']google_calendar/static/src/js/calendar_sync\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "d624fdd25050", title: "[MOV] google_calendar: moved models and data file in to models and data directory"}], message: "[10] JS module @google_calendar/js/calendar_sync was removed"}
   # odoo 96b88b127585 '[IMP] hr_attendance: migration and revamp'
-  '[\"'']hr_attendance/static/src/js/attendance\.js[\"'']': '[10] JS module @hr_attendance/js/attendance was removed'
+  '[\"'']hr_attendance/static/src/js/attendance\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "96b88b127585", title: "[IMP] hr_attendance: migration and revamp"}], message: "[10] JS module @hr_attendance/js/attendance was removed"}
   # odoo 3e252cf40df6 '[REM] im_odoo_support: Remove the module'
-  '[\"'']im_odoo_support/static/src/js/im_odoo_support\.js[\"'']': '[10] JS module @im_odoo_support/js/im_odoo_support was removed'
+  '[\"'']im_odoo_support/static/src/js/im_odoo_support\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "3e252cf40df6", title: "[REM] im_odoo_support: Remove the module"}], message: "[10] JS module @im_odoo_support/js/im_odoo_support was removed"}
   # odoo e877d59d2176 '[REM] mail: remove old announcement bar'
-  '[\"'']mail/static/src/js/announcement\.js[\"'']': '[10] JS module @mail/js/announcement was removed'
+  '[\"'']mail/static/src/js/announcement\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "e877d59d2176", title: "[REM] mail: remove old announcement bar"}], message: "[10] JS module @mail/js/announcement was removed"}
   # odoo 8eb2be4668b5 '[REM] mail_tip'
-  '[\"'']mail_tip/static/src/js/mail_tip\.js[\"'']': '[10] JS module @mail_tip/js/mail_tip was removed'
+  '[\"'']mail_tip/static/src/js/mail_tip\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "8eb2be4668b5", title: "[REM] mail_tip"}], message: "[10] JS module @mail_tip/js/mail_tip was removed"}
   # odoo ff110b0ed8f9 '[IMP] purchase_requisition: blanket orders and usability cleaning'
-  '[\"'']purchase_requisition/static/src/js/web_addons\.js[\"'']': '[10] JS module @purchase_requisition/js/web_addons was removed'
+  '[\"'']purchase_requisition/static/src/js/web_addons\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "ff110b0ed8f9", title: "[IMP] purchase_requisition: blanket orders and usability cleaning"}], message: "[10] JS module @purchase_requisition/js/web_addons was removed"}
   # odoo 00120a9271b8 '[REF] web: refactor and simplify web.core'
-  '[\"'']web/static/src/js/framework/core\.js[\"'']': '[10] JS module @web/js/framework/core was removed (moved to @web/js/services/core?)'
+  '[\"'']web/static/src/js/framework/core\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "00120a9271b8", title: "[REF] web: refactor and simplify web.core"}], message: "[10] JS module @web/js/framework/core was removed (moved to @web/js/services/core?)"}
   # odoo b107b14e6be9 '[REF] report,web(_editor): services extracted in their own files'
-  '[\"'']web/static/src/js/framework/session_instance\.js[\"'']': '[10] JS module @web/js/framework/session_instance was removed'
+  '[\"'']web/static/src/js/framework/session_instance\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "b107b14e6be9", title: "[REF] report,web(_editor): services extracted in their own files"}], message: "[10] JS module @web/js/framework/session_instance was removed"}
   # odoo 5a1db6cde22c '[DEL] web: remove old tour system'
-  '[\"'']web/static/src/js/tour\.js[\"'']': '[10] JS module @web/js/tour was removed'
+  '[\"'']web/static/src/js/tour\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "5a1db6cde22c", title: "[DEL] web: remove old tour system"}], message: "[10] JS module @web/js/tour was removed"}
   # odoo b2220945896b '[REM] web_analytics'
-  '[\"'']web_analytics/static/src/js/web_analytics\.js[\"'']': '[10] JS module @web_analytics/js/web_analytics was removed'
+  '[\"'']web_analytics/static/src/js/web_analytics\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "b2220945896b", title: "[REM] web_analytics"}], message: "[10] JS module @web_analytics/js/web_analytics was removed"}
   # odoo 6416c46d8504 '[REM] *: remove web_tip addon and its data in other addons'
-  '[\"'']web_tip/static/src/js/tip\.js[\"'']': '[10] JS module @web_tip/js/tip was removed (moved to @web_tour/js/tip?)'
+  '[\"'']web_tip/static/src/js/tip\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "6416c46d8504", title: "[REM] *: remove web_tip addon and its data in other addons"}], message: "[10] JS module @web_tip/js/tip was removed (moved to @web_tour/js/tip?)"}
   # odoo 715a5ba09608 '[REM] web_view_editor: remove addon web_view_editor'
-  '[\"'']web_view_editor/static/src/js/view_editor\.js[\"'']': '[10] JS module @web_view_editor/js/view_editor was removed'
+  '[\"'']web_view_editor/static/src/js/view_editor\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "715a5ba09608", title: "[REM] web_view_editor: remove addon web_view_editor"}], message: "[10] JS module @web_view_editor/js/view_editor was removed"}
   # odoo d41ed40c70fa '[IMP] web, website: adapt tour launching to new system'
-  '[\"'']website/static/src/js/website\.tour\.js[\"'']': '[10] JS module @website/js/website.tour was removed'
+  '[\"'']website/static/src/js/website\.tour\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "d41ed40c70fa", title: "[IMP] web, website: adapt tour launching to new system"}], message: "[10] JS module @website/js/website.tour was removed"}
   # odoo 8cc850f3a54f '[IMP] website_blog: refactoring'
-  '[\"'']website_blog/static/src/js/website_blog\.inline\.discussion\.js[\"'']': '[10] JS module @website_blog/js/website_blog.inline.discussion was removed'
+  '[\"'']website_blog/static/src/js/website_blog\.inline\.discussion\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "8cc850f3a54f", title: "[IMP] website_blog: refactoring"}], message: "[10] JS module @website_blog/js/website_blog.inline.discussion was removed"}
   # odoo a7dad4ec61d6 '[REF] website_google_map: rerganize module structure'
-  '[\"'']website_google_map/static/src/js/google_map\.js[\"'']': '[10] JS module @website_google_map/js/google_map was removed'
+  '[\"'']website_google_map/static/src/js/google_map\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "a7dad4ec61d6", title: "[REF] website_google_map: rerganize module structure"}], message: "[10] JS module @website_google_map/js/google_map was removed"}
   # odoo a7dad4ec61d6 '[REF] website_google_map: rerganize module structure'
-  '[\"'']website_google_map/static/src/js/markerclusterer\.js[\"'']': '[10] JS module @website_google_map/js/markerclusterer was removed (moved to @website_google_map/lib/markerclusterer?)'
+  '[\"'']website_google_map/static/src/js/markerclusterer\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "a7dad4ec61d6", title: "[REF] website_google_map: rerganize module structure"}], message: "[10] JS module @website_google_map/js/markerclusterer was removed (moved to @website_google_map/lib/markerclusterer?)"}
   # odoo a7dad4ec61d6 '[REF] website_google_map: rerganize module structure'
-  '[\"'']website_google_map/static/src/js/markerclusterer_compiled\.js[\"'']': '[10] JS module @website_google_map/js/markerclusterer_compiled was removed'
+  '[\"'']website_google_map/static/src/js/markerclusterer_compiled\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "a7dad4ec61d6", title: "[REF] website_google_map: rerganize module structure"}], message: "[10] JS module @website_google_map/js/markerclusterer_compiled was removed"}

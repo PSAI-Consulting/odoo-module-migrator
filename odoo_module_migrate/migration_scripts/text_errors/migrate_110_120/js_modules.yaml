@@ -3,163 +3,163 @@
 # JS modules removed (imports and manifest assets).
 .js:
   # odoo bdfd1ebf0cd1 "[REF] account: create 'account.reconciliation.widget' model"
-  '[\"'']@account/js/tour_bank_statement_reconciliation[\"'']': '[12] JS module @account/js/tour_bank_statement_reconciliation was removed'
+  '[\"'']@account/js/tour_bank_statement_reconciliation[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "bdfd1ebf0cd1", title: "[REF] account: create 'account.reconciliation.widget' model"}], message: "[12] JS module @account/js/tour_bank_statement_reconciliation was removed"}
   # odoo 2e63ead842a0 '[MOV] account_asset: move to enterprise'
-  '[\"'']@account_asset/js/account_asset[\"'']': '[12] JS module @account_asset/js/account_asset was removed'
+  '[\"'']@account_asset/js/account_asset[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "2e63ead842a0", title: "[MOV] account_asset: move to enterprise"}], message: "[12] JS module @account_asset/js/account_asset was removed"}
   # odoo a701031c929f '[REM] account_invoicing: Merge module into account'
-  '[\"'']@account_invoicing/js/tour[\"'']': '[12] JS module @account_invoicing/js/tour was removed'
+  '[\"'']@account_invoicing/js/tour[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "a701031c929f", title: "[REM] account_invoicing: Merge module into account"}], message: "[12] JS module @account_invoicing/js/tour was removed"}
   # odoo c3be3965193e '[REF] base,web: move and rename settings tests file'
-  '[\"'']@base/tests/base_setting_test[\"'']': '[12] JS module @base/tests/base_setting_test was removed'
+  '[\"'']@base/tests/base_setting_test[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "c3be3965193e", title: "[REF] base,web: move and rename settings tests file"}], message: "[12] JS module @base/tests/base_setting_test was removed"}
   # odoo 1d92bb410db6 "[REF] board: don't patch FormView in place anymore"
-  '[\"'']@board/js/dashboard[\"'']': '[12] JS module @board/js/dashboard was removed'
+  '[\"'']@board/js/dashboard[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "1d92bb410db6", title: "[REF] board: don't patch FormView in place anymore"}], message: "[12] JS module @board/js/dashboard was removed"}
   # odoo 6448420c5dd1 '[IMP] bus: re-factoring of bus.bus (Longpolling and CrossTab)'
-  '[\"'']@bus/js/bus[\"'']': '[12] JS module @bus/js/bus was removed'
+  '[\"'']@bus/js/bus[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "6448420c5dd1", title: "[IMP] bus: re-factoring of bus.bus (Longpolling and CrossTab)"}], message: "[12] JS module @bus/js/bus was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']@crm/js/web_planner_crm[\"'']': '[12] JS module @crm/js/web_planner_crm was removed'
+  '[\"'']@crm/js/web_planner_crm[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @crm/js/web_planner_crm was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']@hr_expense/js/web_planner_hr_expense[\"'']': '[12] JS module @hr_expense/js/web_planner_hr_expense was removed'
+  '[\"'']@hr_expense/js/web_planner_hr_expense[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @hr_expense/js/web_planner_hr_expense was removed"}
   # odoo 5e8b66795146 '[FIX] hw_screen: Add delay to longpolling'
-  '[\"'']@hw_screen/js/worker[\"'']': '[12] JS module @hw_screen/js/worker was removed (moved to @hw_drivers/js/worker?)'
+  '[\"'']@hw_screen/js/worker[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "5e8b66795146", title: "[FIX] hw_screen: Add delay to longpolling"}], message: "[12] JS module @hw_screen/js/worker was removed (moved to @hw_drivers/js/worker?)"}
   # odoo 15f3bbe5942e '[MOV] web,im_livechat: Move clipboard widget to web'
-  '[\"'']@im_livechat/js/copy_clipboard[\"'']': '[12] JS module @im_livechat/js/copy_clipboard was removed'
+  '[\"'']@im_livechat/js/copy_clipboard[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "15f3bbe5942e", title: "[MOV] web,im_livechat: Move clipboard widget to web"}], message: "[12] JS module @im_livechat/js/copy_clipboard was removed"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']@mail/js/chat_manager[\"'']': '[12] JS module @mail/js/chat_manager was removed'
+  '[\"'']@mail/js/chat_manager[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/chat_manager was removed"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']@mail/js/chat_mixin[\"'']': '[12] JS module @mail/js/chat_mixin was removed'
+  '[\"'']@mail/js/chat_mixin[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/chat_mixin was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']@mail/js/chat_window[\"'']': '[12] JS module @mail/js/chat_window was removed'
+  '[\"'']@mail/js/chat_window[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/chat_window was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']@mail/js/chatter_composer[\"'']': '[12] JS module @mail/js/chatter_composer was removed (moved to @mail/js/composers/chatter_composer?)'
+  '[\"'']@mail/js/chatter_composer[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/chatter_composer was removed (moved to @mail/js/composers/chatter_composer?)"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']@mail/js/client_action[\"'']': '[12] JS module @mail/js/client_action was removed'
+  '[\"'']@mail/js/client_action[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/client_action was removed"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']@mail/js/client_action_mobile[\"'']': '[12] JS module @mail/js/client_action_mobile was removed'
+  '[\"'']@mail/js/client_action_mobile[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/client_action_mobile was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']@mail/js/composer[\"'']': '[12] JS module @mail/js/composer was removed'
+  '[\"'']@mail/js/composer[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/composer was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']@mail/js/extended_chat_window[\"'']': '[12] JS module @mail/js/extended_chat_window was removed'
+  '[\"'']@mail/js/extended_chat_window[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/extended_chat_window was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']@mail/js/systray[\"'']': '[12] JS module @mail/js/systray was removed'
+  '[\"'']@mail/js/systray[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/systray was removed"}
   # odoo 448cceffaa81 "[RENAME] im_livechat,mail: rename widget 'thread.js' file to 'thread_widget.js'"
-  '[\"'']@mail/js/thread[\"'']': '[12] JS module @mail/js/thread was removed (moved to @mail/js/models/threads/thread?)'
+  '[\"'']@mail/js/thread[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "448cceffaa81", title: "[RENAME] im_livechat,mail: rename widget 'thread.js' file to 'thread_widget.js'"}], message: "[12] JS module @mail/js/thread was removed (moved to @mail/js/models/threads/thread?)"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']@mail/js/window_manager[\"'']': '[12] JS module @mail/js/window_manager was removed'
+  '[\"'']@mail/js/window_manager[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/window_manager was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']@project/js/web_planner_project[\"'']': '[12] JS module @project/js/web_planner_project was removed'
+  '[\"'']@project/js/web_planner_project[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @project/js/web_planner_project was removed"}
   # odoo 4c31a758cf07 '[REF] various: move sale_payment and website_quote into sale and sale_management'
-  '[\"'']@sale_management/js/tour[\"'']': '[12] JS module @sale_management/js/tour was removed'
+  '[\"'']@sale_management/js/tour[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "4c31a758cf07", title: "[REF] various: move sale_payment and website_quote into sale and sale_management"}], message: "[12] JS module @sale_management/js/tour was removed"}
   # odoo 7bf5dd687be3 '[REF] web: split search_menus in separate files'
-  '[\"'']@web/js/chrome/search_filters[\"'']': '[12] JS module @web/js/chrome/search_filters was removed (moved to @web/js/views/search/search_filters?)'
+  '[\"'']@web/js/chrome/search_filters[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7bf5dd687be3", title: "[REF] web: split search_menus in separate files"}], message: "[12] JS module @web/js/chrome/search_filters was removed (moved to @web/js/views/search/search_filters?)"}
   # odoo 7bf5dd687be3 '[REF] web: split search_menus in separate files'
-  '[\"'']@web/js/chrome/search_inputs[\"'']': '[12] JS module @web/js/chrome/search_inputs was removed (moved to @web/js/views/search/search_inputs?)'
+  '[\"'']@web/js/chrome/search_inputs[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7bf5dd687be3", title: "[REF] web: split search_menus in separate files"}], message: "[12] JS module @web/js/chrome/search_inputs was removed (moved to @web/js/views/search/search_inputs?)"}
   # odoo 7bf5dd687be3 '[REF] web: split search_menus in separate files'
-  '[\"'']@web/js/chrome/search_menus[\"'']': '[12] JS module @web/js/chrome/search_menus was removed'
+  '[\"'']@web/js/chrome/search_menus[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7bf5dd687be3", title: "[REF] web: split search_menus in separate files"}], message: "[12] JS module @web/js/chrome/search_menus was removed"}
   # odoo 7bf5dd687be3 '[REF] web: split search_menus in separate files'
-  '[\"'']@web/js/chrome/search_view[\"'']': '[12] JS module @web/js/chrome/search_view was removed (moved to @web/js/views/search/search_view?)'
+  '[\"'']@web/js/chrome/search_view[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7bf5dd687be3", title: "[REF] web: split search_menus in separate files"}], message: "[12] JS module @web/js/chrome/search_view was removed (moved to @web/js/views/search/search_view?)"}
   # odoo 32b8cec53611 '[REF] web,*: ActionManager/ViewManager refactoring'
-  '[\"'']@web/js/chrome/view_manager[\"'']': '[12] JS module @web/js/chrome/view_manager was removed'
+  '[\"'']@web/js/chrome/view_manager[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "32b8cec53611", title: "[REF] web,*: ActionManager/ViewManager refactoring"}], message: "[12] JS module @web/js/chrome/view_manager was removed"}
   # odoo eed4d586a026 '[REF] *: rename web.pyeval into web.py_utils'
-  '[\"'']@web/js/core/pyeval[\"'']': '[12] JS module @web/js/core/pyeval was removed'
+  '[\"'']@web/js/core/pyeval[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "eed4d586a026", title: "[REF] *: rename web.pyeval into web.py_utils"}], message: "[12] JS module @web/js/core/pyeval was removed"}
   # odoo 80db9f232b88 '[MOV] web: move and rename qwebactionmanager.js'
-  '[\"'']@web/js/report/qwebactionmanager[\"'']': '[12] JS module @web/js/report/qwebactionmanager was removed'
+  '[\"'']@web/js/report/qwebactionmanager[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "80db9f232b88", title: "[MOV] web: move and rename qwebactionmanager.js"}], message: "[12] JS module @web/js/report/qwebactionmanager was removed"}
   # odoo 5b465611a009 '[REF] web: remove dead template/code/files'
-  '[\"'']@web/js/report/subst[\"'']': '[12] JS module @web/js/report/subst was removed'
+  '[\"'']@web/js/report/subst[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "5b465611a009", title: "[REF] web: remove dead template/code/files"}], message: "[12] JS module @web/js/report/subst was removed"}
   # odoo 6ea347a4907f '[REF] web: Kanban: move quick create widgets'
-  '[\"'']@web/js/views/kanban/kanban_quick_create[\"'']': '[12] JS module @web/js/views/kanban/kanban_quick_create was removed'
+  '[\"'']@web/js/views/kanban/kanban_quick_create[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "6ea347a4907f", title: "[REF] web: Kanban: move quick create widgets"}], message: "[12] JS module @web/js/views/kanban/kanban_quick_create was removed"}
   # odoo 984554f4cacf '[REF] web: move debug_managers in tools'
-  '[\"'']@web/js/widgets/debug_manager[\"'']': '[12] JS module @web/js/widgets/debug_manager was removed'
+  '[\"'']@web/js/widgets/debug_manager[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "984554f4cacf", title: "[REF] web: move debug_managers in tools"}], message: "[12] JS module @web/js/widgets/debug_manager was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']@web_planner/js/web_planner_backend[\"'']': '[12] JS module @web_planner/js/web_planner_backend was removed'
+  '[\"'']@web_planner/js/web_planner_backend[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @web_planner/js/web_planner_backend was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']@web_planner/js/web_planner_common[\"'']': '[12] JS module @web_planner/js/web_planner_common was removed'
+  '[\"'']@web_planner/js/web_planner_common[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @web_planner/js/web_planner_common was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']@website/js/menu/planner[\"'']': '[12] JS module @website/js/menu/planner was removed'
+  '[\"'']@website/js/menu/planner[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @website/js/menu/planner was removed"}
   # odoo 4c31a758cf07 '[REF] various: move sale_payment and website_quote into sale and sale_management'
-  '[\"'']@website_quote/js/website_quotation[\"'']': '[12] JS module @website_quote/js/website_quotation was removed'
+  '[\"'']@website_quote/js/website_quotation[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "4c31a758cf07", title: "[REF] various: move sale_payment and website_quote into sale and sale_management"}], message: "[12] JS module @website_quote/js/website_quotation was removed"}
   # odoo 326dabce09d6 '[IMP] product,(website_)sale: Product configurator naming/cleanup'
-  '[\"'']@website_sale_options/js/website_sale[\"'']': '[12] JS module @website_sale_options/js/website_sale was removed'
+  '[\"'']@website_sale_options/js/website_sale[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "326dabce09d6", title: "[IMP] product,(website_)sale: Product configurator naming/cleanup"}], message: "[12] JS module @website_sale_options/js/website_sale was removed"}
   # odoo 856c2e9008f1 '[IMP] product,(website_)sale: Move product options configurator into sale module'
-  '[\"'']@website_sale_options/js/website_sale\.test[\"'']': '[12] JS module @website_sale_options/js/website_sale.test was removed'
+  '[\"'']@website_sale_options/js/website_sale\.test[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "856c2e9008f1", title: "[IMP] product,(website_)sale: Move product options configurator into sale module"}], message: "[12] JS module @website_sale_options/js/website_sale.test was removed"}
   # odoo 51e51055bf42 '[IMP] (website_)sale: Allow configuring variants creation on demand'
-  '[\"'']@website_sale_stock/js/website_sale_stock[\"'']': '[12] JS module @website_sale_stock/js/website_sale_stock was removed'
+  '[\"'']@website_sale_stock/js/website_sale_stock[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "51e51055bf42", title: "[IMP] (website_)sale: Allow configuring variants creation on demand"}], message: "[12] JS module @website_sale_stock/js/website_sale_stock was removed"}
 .py:
   # odoo bdfd1ebf0cd1 "[REF] account: create 'account.reconciliation.widget' model"
-  '[\"'']account/static/src/js/tour_bank_statement_reconciliation\.js[\"'']': '[12] JS module @account/js/tour_bank_statement_reconciliation was removed'
+  '[\"'']account/static/src/js/tour_bank_statement_reconciliation\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "bdfd1ebf0cd1", title: "[REF] account: create 'account.reconciliation.widget' model"}], message: "[12] JS module @account/js/tour_bank_statement_reconciliation was removed"}
   # odoo 2e63ead842a0 '[MOV] account_asset: move to enterprise'
-  '[\"'']account_asset/static/src/js/account_asset\.js[\"'']': '[12] JS module @account_asset/js/account_asset was removed'
+  '[\"'']account_asset/static/src/js/account_asset\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "2e63ead842a0", title: "[MOV] account_asset: move to enterprise"}], message: "[12] JS module @account_asset/js/account_asset was removed"}
   # odoo a701031c929f '[REM] account_invoicing: Merge module into account'
-  '[\"'']account_invoicing/static/src/js/tour\.js[\"'']': '[12] JS module @account_invoicing/js/tour was removed'
+  '[\"'']account_invoicing/static/src/js/tour\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "a701031c929f", title: "[REM] account_invoicing: Merge module into account"}], message: "[12] JS module @account_invoicing/js/tour was removed"}
   # odoo c3be3965193e '[REF] base,web: move and rename settings tests file'
-  '[\"'']base/static/src/tests/base_setting_test\.js[\"'']': '[12] JS module @base/tests/base_setting_test was removed'
+  '[\"'']base/static/src/tests/base_setting_test\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "c3be3965193e", title: "[REF] base,web: move and rename settings tests file"}], message: "[12] JS module @base/tests/base_setting_test was removed"}
   # odoo 1d92bb410db6 "[REF] board: don't patch FormView in place anymore"
-  '[\"'']board/static/src/js/dashboard\.js[\"'']': '[12] JS module @board/js/dashboard was removed'
+  '[\"'']board/static/src/js/dashboard\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "1d92bb410db6", title: "[REF] board: don't patch FormView in place anymore"}], message: "[12] JS module @board/js/dashboard was removed"}
   # odoo 6448420c5dd1 '[IMP] bus: re-factoring of bus.bus (Longpolling and CrossTab)'
-  '[\"'']bus/static/src/js/bus\.js[\"'']': '[12] JS module @bus/js/bus was removed'
+  '[\"'']bus/static/src/js/bus\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "6448420c5dd1", title: "[IMP] bus: re-factoring of bus.bus (Longpolling and CrossTab)"}], message: "[12] JS module @bus/js/bus was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']crm/static/src/js/web_planner_crm\.js[\"'']': '[12] JS module @crm/js/web_planner_crm was removed'
+  '[\"'']crm/static/src/js/web_planner_crm\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @crm/js/web_planner_crm was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']hr_expense/static/src/js/web_planner_hr_expense\.js[\"'']': '[12] JS module @hr_expense/js/web_planner_hr_expense was removed'
+  '[\"'']hr_expense/static/src/js/web_planner_hr_expense\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @hr_expense/js/web_planner_hr_expense was removed"}
   # odoo 5e8b66795146 '[FIX] hw_screen: Add delay to longpolling'
-  '[\"'']hw_screen/static/src/js/worker\.js[\"'']': '[12] JS module @hw_screen/js/worker was removed (moved to @hw_drivers/js/worker?)'
+  '[\"'']hw_screen/static/src/js/worker\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "5e8b66795146", title: "[FIX] hw_screen: Add delay to longpolling"}], message: "[12] JS module @hw_screen/js/worker was removed (moved to @hw_drivers/js/worker?)"}
   # odoo 15f3bbe5942e '[MOV] web,im_livechat: Move clipboard widget to web'
-  '[\"'']im_livechat/static/src/js/copy_clipboard\.js[\"'']': '[12] JS module @im_livechat/js/copy_clipboard was removed'
+  '[\"'']im_livechat/static/src/js/copy_clipboard\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "15f3bbe5942e", title: "[MOV] web,im_livechat: Move clipboard widget to web"}], message: "[12] JS module @im_livechat/js/copy_clipboard was removed"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']mail/static/src/js/chat_manager\.js[\"'']': '[12] JS module @mail/js/chat_manager was removed'
+  '[\"'']mail/static/src/js/chat_manager\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/chat_manager was removed"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']mail/static/src/js/chat_mixin\.js[\"'']': '[12] JS module @mail/js/chat_mixin was removed'
+  '[\"'']mail/static/src/js/chat_mixin\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/chat_mixin was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']mail/static/src/js/chat_window\.js[\"'']': '[12] JS module @mail/js/chat_window was removed'
+  '[\"'']mail/static/src/js/chat_window\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/chat_window was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']mail/static/src/js/chatter_composer\.js[\"'']': '[12] JS module @mail/js/chatter_composer was removed (moved to @mail/js/composers/chatter_composer?)'
+  '[\"'']mail/static/src/js/chatter_composer\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/chatter_composer was removed (moved to @mail/js/composers/chatter_composer?)"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']mail/static/src/js/client_action\.js[\"'']': '[12] JS module @mail/js/client_action was removed'
+  '[\"'']mail/static/src/js/client_action\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/client_action was removed"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']mail/static/src/js/client_action_mobile\.js[\"'']': '[12] JS module @mail/js/client_action_mobile was removed'
+  '[\"'']mail/static/src/js/client_action_mobile\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/client_action_mobile was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']mail/static/src/js/composer\.js[\"'']': '[12] JS module @mail/js/composer was removed'
+  '[\"'']mail/static/src/js/composer\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/composer was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']mail/static/src/js/extended_chat_window\.js[\"'']': '[12] JS module @mail/js/extended_chat_window was removed'
+  '[\"'']mail/static/src/js/extended_chat_window\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/extended_chat_window was removed"}
   # odoo cd34f6de727d '[REF] mail: JS mail refactoring'
-  '[\"'']mail/static/src/js/systray\.js[\"'']': '[12] JS module @mail/js/systray was removed'
+  '[\"'']mail/static/src/js/systray\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "cd34f6de727d", title: "[REF] mail: JS mail refactoring"}], message: "[12] JS module @mail/js/systray was removed"}
   # odoo 448cceffaa81 "[RENAME] im_livechat,mail: rename widget 'thread.js' file to 'thread_widget.js'"
-  '[\"'']mail/static/src/js/thread\.js[\"'']': '[12] JS module @mail/js/thread was removed (moved to @mail/js/models/threads/thread?)'
+  '[\"'']mail/static/src/js/thread\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "448cceffaa81", title: "[RENAME] im_livechat,mail: rename widget 'thread.js' file to 'thread_widget.js'"}], message: "[12] JS module @mail/js/thread was removed (moved to @mail/js/models/threads/thread?)"}
   # odoo 02ec09cb1c3e '[REF][IMP] *: mail js refactoring'
-  '[\"'']mail/static/src/js/window_manager\.js[\"'']': '[12] JS module @mail/js/window_manager was removed'
+  '[\"'']mail/static/src/js/window_manager\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "02ec09cb1c3e", title: "[REF][IMP] *: mail js refactoring"}], message: "[12] JS module @mail/js/window_manager was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']project/static/src/js/web_planner_project\.js[\"'']': '[12] JS module @project/js/web_planner_project was removed'
+  '[\"'']project/static/src/js/web_planner_project\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @project/js/web_planner_project was removed"}
   # odoo 4c31a758cf07 '[REF] various: move sale_payment and website_quote into sale and sale_management'
-  '[\"'']sale_management/static/src/js/tour\.js[\"'']': '[12] JS module @sale_management/js/tour was removed'
+  '[\"'']sale_management/static/src/js/tour\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "4c31a758cf07", title: "[REF] various: move sale_payment and website_quote into sale and sale_management"}], message: "[12] JS module @sale_management/js/tour was removed"}
   # odoo 7bf5dd687be3 '[REF] web: split search_menus in separate files'
-  '[\"'']web/static/src/js/chrome/search_filters\.js[\"'']': '[12] JS module @web/js/chrome/search_filters was removed (moved to @web/js/views/search/search_filters?)'
+  '[\"'']web/static/src/js/chrome/search_filters\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7bf5dd687be3", title: "[REF] web: split search_menus in separate files"}], message: "[12] JS module @web/js/chrome/search_filters was removed (moved to @web/js/views/search/search_filters?)"}
   # odoo 7bf5dd687be3 '[REF] web: split search_menus in separate files'
-  '[\"'']web/static/src/js/chrome/search_inputs\.js[\"'']': '[12] JS module @web/js/chrome/search_inputs was removed (moved to @web/js/views/search/search_inputs?)'
+  '[\"'']web/static/src/js/chrome/search_inputs\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7bf5dd687be3", title: "[REF] web: split search_menus in separate files"}], message: "[12] JS module @web/js/chrome/search_inputs was removed (moved to @web/js/views/search/search_inputs?)"}
   # odoo 7bf5dd687be3 '[REF] web: split search_menus in separate files'
-  '[\"'']web/static/src/js/chrome/search_menus\.js[\"'']': '[12] JS module @web/js/chrome/search_menus was removed'
+  '[\"'']web/static/src/js/chrome/search_menus\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7bf5dd687be3", title: "[REF] web: split search_menus in separate files"}], message: "[12] JS module @web/js/chrome/search_menus was removed"}
   # odoo 7bf5dd687be3 '[REF] web: split search_menus in separate files'
-  '[\"'']web/static/src/js/chrome/search_view\.js[\"'']': '[12] JS module @web/js/chrome/search_view was removed (moved to @web/js/views/search/search_view?)'
+  '[\"'']web/static/src/js/chrome/search_view\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7bf5dd687be3", title: "[REF] web: split search_menus in separate files"}], message: "[12] JS module @web/js/chrome/search_view was removed (moved to @web/js/views/search/search_view?)"}
   # odoo 32b8cec53611 '[REF] web,*: ActionManager/ViewManager refactoring'
-  '[\"'']web/static/src/js/chrome/view_manager\.js[\"'']': '[12] JS module @web/js/chrome/view_manager was removed'
+  '[\"'']web/static/src/js/chrome/view_manager\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "32b8cec53611", title: "[REF] web,*: ActionManager/ViewManager refactoring"}], message: "[12] JS module @web/js/chrome/view_manager was removed"}
   # odoo eed4d586a026 '[REF] *: rename web.pyeval into web.py_utils'
-  '[\"'']web/static/src/js/core/pyeval\.js[\"'']': '[12] JS module @web/js/core/pyeval was removed'
+  '[\"'']web/static/src/js/core/pyeval\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "eed4d586a026", title: "[REF] *: rename web.pyeval into web.py_utils"}], message: "[12] JS module @web/js/core/pyeval was removed"}
   # odoo 80db9f232b88 '[MOV] web: move and rename qwebactionmanager.js'
-  '[\"'']web/static/src/js/report/qwebactionmanager\.js[\"'']': '[12] JS module @web/js/report/qwebactionmanager was removed'
+  '[\"'']web/static/src/js/report/qwebactionmanager\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "80db9f232b88", title: "[MOV] web: move and rename qwebactionmanager.js"}], message: "[12] JS module @web/js/report/qwebactionmanager was removed"}
   # odoo 5b465611a009 '[REF] web: remove dead template/code/files'
-  '[\"'']web/static/src/js/report/subst\.js[\"'']': '[12] JS module @web/js/report/subst was removed'
+  '[\"'']web/static/src/js/report/subst\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "5b465611a009", title: "[REF] web: remove dead template/code/files"}], message: "[12] JS module @web/js/report/subst was removed"}
   # odoo 6ea347a4907f '[REF] web: Kanban: move quick create widgets'
-  '[\"'']web/static/src/js/views/kanban/kanban_quick_create\.js[\"'']': '[12] JS module @web/js/views/kanban/kanban_quick_create was removed'
+  '[\"'']web/static/src/js/views/kanban/kanban_quick_create\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "6ea347a4907f", title: "[REF] web: Kanban: move quick create widgets"}], message: "[12] JS module @web/js/views/kanban/kanban_quick_create was removed"}
   # odoo 984554f4cacf '[REF] web: move debug_managers in tools'
-  '[\"'']web/static/src/js/widgets/debug_manager\.js[\"'']': '[12] JS module @web/js/widgets/debug_manager was removed'
+  '[\"'']web/static/src/js/widgets/debug_manager\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "984554f4cacf", title: "[REF] web: move debug_managers in tools"}], message: "[12] JS module @web/js/widgets/debug_manager was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']web_planner/static/src/js/web_planner_backend\.js[\"'']': '[12] JS module @web_planner/js/web_planner_backend was removed'
+  '[\"'']web_planner/static/src/js/web_planner_backend\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @web_planner/js/web_planner_backend was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']web_planner/static/src/js/web_planner_common\.js[\"'']': '[12] JS module @web_planner/js/web_planner_common was removed'
+  '[\"'']web_planner/static/src/js/web_planner_common\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @web_planner/js/web_planner_common was removed"}
   # odoo 7ed9a7fabeb6 '[REM] web_planner: Remove the module'
-  '[\"'']website/static/src/js/menu/planner\.js[\"'']': '[12] JS module @website/js/menu/planner was removed'
+  '[\"'']website/static/src/js/menu/planner\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "7ed9a7fabeb6", title: "[REM] web_planner: Remove the module"}], message: "[12] JS module @website/js/menu/planner was removed"}
   # odoo 4c31a758cf07 '[REF] various: move sale_payment and website_quote into sale and sale_management'
-  '[\"'']website_quote/static/src/js/website_quotation\.js[\"'']': '[12] JS module @website_quote/js/website_quotation was removed'
+  '[\"'']website_quote/static/src/js/website_quotation\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "4c31a758cf07", title: "[REF] various: move sale_payment and website_quote into sale and sale_management"}], message: "[12] JS module @website_quote/js/website_quotation was removed"}
   # odoo 326dabce09d6 '[IMP] product,(website_)sale: Product configurator naming/cleanup'
-  '[\"'']website_sale_options/static/src/js/website_sale\.js[\"'']': '[12] JS module @website_sale_options/js/website_sale was removed'
+  '[\"'']website_sale_options/static/src/js/website_sale\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "326dabce09d6", title: "[IMP] product,(website_)sale: Product configurator naming/cleanup"}], message: "[12] JS module @website_sale_options/js/website_sale was removed"}
   # odoo 856c2e9008f1 '[IMP] product,(website_)sale: Move product options configurator into sale module'
-  '[\"'']website_sale_options/static/src/js/website_sale\.test\.js[\"'']': '[12] JS module @website_sale_options/js/website_sale.test was removed'
+  '[\"'']website_sale_options/static/src/js/website_sale\.test\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "856c2e9008f1", title: "[IMP] product,(website_)sale: Move product options configurator into sale module"}], message: "[12] JS module @website_sale_options/js/website_sale.test was removed"}
   # odoo 51e51055bf42 '[IMP] (website_)sale: Allow configuring variants creation on demand'
-  '[\"'']website_sale_stock/static/src/js/website_sale_stock\.js[\"'']': '[12] JS module @website_sale_stock/js/website_sale_stock was removed'
+  '[\"'']website_sale_stock/static/src/js/website_sale_stock\.js[\"'']': {schema_version: 2, kind: text_error, confidence: generated, evidence: [{repository: "odoo", commit: "51e51055bf42", title: "[IMP] (website_)sale: Allow configuring variants creation on demand"}], message: "[12] JS module @website_sale_stock/js/website_sale_stock was removed"}

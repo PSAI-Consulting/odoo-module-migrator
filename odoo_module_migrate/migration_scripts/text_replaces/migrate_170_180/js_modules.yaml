@@ -3,87 +3,87 @@
 # JS modules moved inside their module: same file name and same exports in the new place.
 .js:
   # odoo 90a7d9110b68 '[IMP] mail: move discuss component to the correct bundle'
-  '([\"''])@mail/core/common/discuss\1': '\g<1>@mail/core/public_web/discuss\g<1>'
+  '([\"''])@mail/core/common/discuss\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/core/public_web/discuss\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "90a7d9110b68", title: "[IMP] mail: move discuss component to the correct bundle"}]}
   # odoo 9ef4a4740362 '[IMP] mail: move discuss app model to the correct bundle'
-  '([\"''])@mail/core/common/discuss_app_category_model\1': '\g<1>@mail/core/public_web/discuss_app_category_model\g<1>'
+  '([\"''])@mail/core/common/discuss_app_category_model\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/core/public_web/discuss_app_category_model\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "9ef4a4740362", title: "[IMP] mail: move discuss app model to the correct bundle"}]}
   # odoo 9ef4a4740362 '[IMP] mail: move discuss app model to the correct bundle'
-  '([\"''])@mail/core/common/discuss_app_model\1': '\g<1>@mail/core/public_web/discuss_app_model\g<1>'
+  '([\"''])@mail/core/common/discuss_app_model\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/core/public_web/discuss_app_model\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "9ef4a4740362", title: "[IMP] mail: move discuss app model to the correct bundle"}]}
   # odoo e0af40e6844a '[IMP] mail: display discuss side bar in public page'
-  '([\"''])@mail/core/web/discuss_client_action\1': '\g<1>@mail/core/public_web/discuss_client_action\g<1>'
+  '([\"''])@mail/core/web/discuss_client_action\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/core/public_web/discuss_client_action\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "e0af40e6844a", title: "[IMP] mail: display discuss side bar in public page"}]}
   # odoo e0af40e6844a '[IMP] mail: display discuss side bar in public page'
-  '([\"''])@mail/core/web/discuss_sidebar\1': '\g<1>@mail/core/public_web/discuss_sidebar\g<1>'
+  '([\"''])@mail/core/web/discuss_sidebar\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/core/public_web/discuss_sidebar\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "e0af40e6844a", title: "[IMP] mail: display discuss side bar in public page"}]}
   # odoo da7215dcd375 '[IMP] mail: chat window in mobile public page'
-  '([\"''])@mail/core/web/messaging_menu\1': '\g<1>@mail/core/public_web/messaging_menu\g<1>'
+  '([\"''])@mail/core/web/messaging_menu\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/core/public_web/messaging_menu\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "da7215dcd375", title: "[IMP] mail: chat window in mobile public page"}]}
   # odoo da7215dcd375 '[IMP] mail: chat window in mobile public page'
-  '([\"''])@mail/core/web/notification_item\1': '\g<1>@mail/core/public_web/notification_item\g<1>'
+  '([\"''])@mail/core/web/notification_item\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/core/public_web/notification_item\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "da7215dcd375", title: "[IMP] mail: chat window in mobile public page"}]}
   # odoo 3eafa4475942 '[IMP] mail: adding call indicator for public'
-  '([\"''])@mail/discuss/call/web/discuss_sidebar_call_indicator\1': '\g<1>@mail/discuss/call/public_web/discuss_sidebar_call_indicator\g<1>'
+  '([\"''])@mail/discuss/call/web/discuss_sidebar_call_indicator\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/discuss/call/public_web/discuss_sidebar_call_indicator\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "3eafa4475942", title: "[IMP] mail: adding call indicator for public"}]}
   # odoo fb060cedf147 '[MOV] mail: move the files related to chatter'
-  '([\"''])@mail/views/web/form/mail_composer_form\1': '\g<1>@mail/chatter/web/mail_composer_form\g<1>'
+  '([\"''])@mail/views/web/form/mail_composer_form\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@mail/chatter/web/mail_composer_form\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "fb060cedf147", title: "[MOV] mail: move the files related to chatter"}]}
   # odoo c29df456b254 '[REF] point_of_sale: remove `BackButton`'
-  '([\"''])@point_of_sale/app/navbar/back_button/back_button\1': '\g<1>@point_of_sale/app/screens/product_screen/action_pad/back_button/back_button\g<1>'
+  '([\"''])@point_of_sale/app/navbar/back_button/back_button\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@point_of_sale/app/screens/product_screen/action_pad/back_button/back_button\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "c29df456b254", title: "[REF] point_of_sale: remove `BackButton`"}]}
   # odoo c22c3c860d80 '[REF] pos_online_payment: structure files'
-  '([\"''])@pos_online_payment/app/utils/online_payment_popup/online_payment_popup\1': '\g<1>@pos_online_payment/app/online_payment_popup/online_payment_popup\g<1>'
+  '([\"''])@pos_online_payment/app/utils/online_payment_popup/online_payment_popup\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@pos_online_payment/app/online_payment_popup/online_payment_popup\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "c22c3c860d80", title: "[REF] pos_online_payment: structure files"}]}
   # odoo 1781709b4a07 '[MOV] web: move profiling from core to webclient'
-  '([\"''])@web/core/debug/profiling/profiling_item\1': '\g<1>@web/webclient/debug/profiling/profiling_item\g<1>'
+  '([\"''])@web/core/debug/profiling/profiling_item\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/webclient/debug/profiling/profiling_item\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "1781709b4a07", title: "[MOV] web: move profiling from core to webclient"}]}
   # odoo 1781709b4a07 '[MOV] web: move profiling from core to webclient'
-  '([\"''])@web/core/debug/profiling/profiling_qweb\1': '\g<1>@web/webclient/debug/profiling/profiling_qweb\g<1>'
+  '([\"''])@web/core/debug/profiling/profiling_qweb\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/webclient/debug/profiling/profiling_qweb\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "1781709b4a07", title: "[MOV] web: move profiling from core to webclient"}]}
   # odoo 1781709b4a07 '[MOV] web: move profiling from core to webclient'
-  '([\"''])@web/core/debug/profiling/profiling_systray_item\1': '\g<1>@web/webclient/debug/profiling/profiling_systray_item\g<1>'
+  '([\"''])@web/core/debug/profiling/profiling_systray_item\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/webclient/debug/profiling/profiling_systray_item\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "1781709b4a07", title: "[MOV] web: move profiling from core to webclient"}]}
   # odoo 20298f37cf05 '[IMP] web, *: generate PWA manifest on demand'
-  '([\"''])@web/core/install_prompt/install_prompt\1': '\g<1>@web/core/pwa/install_prompt\g<1>'
+  '([\"''])@web/core/install_prompt/install_prompt\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/core/pwa/install_prompt\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "20298f37cf05", title: "[IMP] web, *: generate PWA manifest on demand"}]}
   # odoo 6b3a37a64d78 '[MOV] web: move copy_button to core'
-  '([\"''])@web/views/fields/copy_clipboard/copy_button\1': '\g<1>@web/core/copy_button/copy_button\g<1>'
+  '([\"''])@web/views/fields/copy_clipboard/copy_button\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/core/copy_button/copy_button\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "6b3a37a64d78", title: "[MOV] web: move copy_button to core"}]}
   # odoo c51cfcf5468a '[REF] web,*: fix action/view hook wrong dependencies'
-  '([\"''])@web/webclient/actions/action_hook\1': '\g<1>@web/search/action_hook\g<1>'
+  '([\"''])@web/webclient/actions/action_hook\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/search/action_hook\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "c51cfcf5468a", title: "[REF] web,*: fix action/view hook wrong dependencies"}]}
   # odoo 7ba46d2cea7f '[REF] web,*: move barcode logic from webclient to core'
-  '([\"''])@web/webclient/barcode/ZXingBarcodeDetector\1': '\g<1>@web/core/barcode/ZXingBarcodeDetector\g<1>'
+  '([\"''])@web/webclient/barcode/ZXingBarcodeDetector\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/core/barcode/ZXingBarcodeDetector\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "7ba46d2cea7f", title: "[REF] web,*: move barcode logic from webclient to core"}]}
   # odoo 7ba46d2cea7f '[REF] web,*: move barcode logic from webclient to core'
-  '([\"''])@web/webclient/barcode/crop_overlay\1': '\g<1>@web/core/barcode/crop_overlay\g<1>'
+  '([\"''])@web/webclient/barcode/crop_overlay\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/core/barcode/crop_overlay\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "7ba46d2cea7f", title: "[REF] web,*: move barcode logic from webclient to core"}]}
   # odoo 1781709b4a07 '[MOV] web: move profiling from core to webclient'
-  '([\"''])@web/webclient/debug_items\1': '\g<1>@web/webclient/debug/debug_items\g<1>'
+  '([\"''])@web/webclient/debug_items\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web/webclient/debug/debug_items\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "1781709b4a07", title: "[MOV] web: move profiling from core to webclient"}]}
   # odoo 53107de29045 '[IMP] web_unsplash: implement Unsplash in html_editor'
-  '([\"''])@web_unsplash/services/unsplash_service\1': '\g<1>@web_unsplash/unsplash_service\g<1>'
+  '([\"''])@web_unsplash/services/unsplash_service\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>@web_unsplash/unsplash_service\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "53107de29045", title: "[IMP] web_unsplash: implement Unsplash in html_editor"}]}
 .py:
   # odoo 90a7d9110b68 '[IMP] mail: move discuss component to the correct bundle'
-  '([\"''])mail/static/src/core/common/discuss\.js\1': '\g<1>mail/static/src/core/public_web/discuss.js\g<1>'
+  '([\"''])mail/static/src/core/common/discuss\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/core/public_web/discuss.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "90a7d9110b68", title: "[IMP] mail: move discuss component to the correct bundle"}]}
   # odoo 9ef4a4740362 '[IMP] mail: move discuss app model to the correct bundle'
-  '([\"''])mail/static/src/core/common/discuss_app_category_model\.js\1': '\g<1>mail/static/src/core/public_web/discuss_app_category_model.js\g<1>'
+  '([\"''])mail/static/src/core/common/discuss_app_category_model\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/core/public_web/discuss_app_category_model.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "9ef4a4740362", title: "[IMP] mail: move discuss app model to the correct bundle"}]}
   # odoo 9ef4a4740362 '[IMP] mail: move discuss app model to the correct bundle'
-  '([\"''])mail/static/src/core/common/discuss_app_model\.js\1': '\g<1>mail/static/src/core/public_web/discuss_app_model.js\g<1>'
+  '([\"''])mail/static/src/core/common/discuss_app_model\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/core/public_web/discuss_app_model.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "9ef4a4740362", title: "[IMP] mail: move discuss app model to the correct bundle"}]}
   # odoo e0af40e6844a '[IMP] mail: display discuss side bar in public page'
-  '([\"''])mail/static/src/core/web/discuss_client_action\.js\1': '\g<1>mail/static/src/core/public_web/discuss_client_action.js\g<1>'
+  '([\"''])mail/static/src/core/web/discuss_client_action\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/core/public_web/discuss_client_action.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "e0af40e6844a", title: "[IMP] mail: display discuss side bar in public page"}]}
   # odoo e0af40e6844a '[IMP] mail: display discuss side bar in public page'
-  '([\"''])mail/static/src/core/web/discuss_sidebar\.js\1': '\g<1>mail/static/src/core/public_web/discuss_sidebar.js\g<1>'
+  '([\"''])mail/static/src/core/web/discuss_sidebar\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/core/public_web/discuss_sidebar.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "e0af40e6844a", title: "[IMP] mail: display discuss side bar in public page"}]}
   # odoo da7215dcd375 '[IMP] mail: chat window in mobile public page'
-  '([\"''])mail/static/src/core/web/messaging_menu\.js\1': '\g<1>mail/static/src/core/public_web/messaging_menu.js\g<1>'
+  '([\"''])mail/static/src/core/web/messaging_menu\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/core/public_web/messaging_menu.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "da7215dcd375", title: "[IMP] mail: chat window in mobile public page"}]}
   # odoo da7215dcd375 '[IMP] mail: chat window in mobile public page'
-  '([\"''])mail/static/src/core/web/notification_item\.js\1': '\g<1>mail/static/src/core/public_web/notification_item.js\g<1>'
+  '([\"''])mail/static/src/core/web/notification_item\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/core/public_web/notification_item.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "da7215dcd375", title: "[IMP] mail: chat window in mobile public page"}]}
   # odoo 3eafa4475942 '[IMP] mail: adding call indicator for public'
-  '([\"''])mail/static/src/discuss/call/web/discuss_sidebar_call_indicator\.js\1': '\g<1>mail/static/src/discuss/call/public_web/discuss_sidebar_call_indicator.js\g<1>'
+  '([\"''])mail/static/src/discuss/call/web/discuss_sidebar_call_indicator\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/discuss/call/public_web/discuss_sidebar_call_indicator.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "3eafa4475942", title: "[IMP] mail: adding call indicator for public"}]}
   # odoo fb060cedf147 '[MOV] mail: move the files related to chatter'
-  '([\"''])mail/static/src/views/web/form/mail_composer_form\.js\1': '\g<1>mail/static/src/chatter/web/mail_composer_form.js\g<1>'
+  '([\"''])mail/static/src/views/web/form/mail_composer_form\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>mail/static/src/chatter/web/mail_composer_form.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "fb060cedf147", title: "[MOV] mail: move the files related to chatter"}]}
   # odoo c29df456b254 '[REF] point_of_sale: remove `BackButton`'
-  '([\"''])point_of_sale/static/src/app/navbar/back_button/back_button\.js\1': '\g<1>point_of_sale/static/src/app/screens/product_screen/action_pad/back_button/back_button.js\g<1>'
+  '([\"''])point_of_sale/static/src/app/navbar/back_button/back_button\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>point_of_sale/static/src/app/screens/product_screen/action_pad/back_button/back_button.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "c29df456b254", title: "[REF] point_of_sale: remove `BackButton`"}]}
   # odoo c22c3c860d80 '[REF] pos_online_payment: structure files'
-  '([\"''])pos_online_payment/static/src/app/utils/online_payment_popup/online_payment_popup\.js\1': '\g<1>pos_online_payment/static/src/app/online_payment_popup/online_payment_popup.js\g<1>'
+  '([\"''])pos_online_payment/static/src/app/utils/online_payment_popup/online_payment_popup\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>pos_online_payment/static/src/app/online_payment_popup/online_payment_popup.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "c22c3c860d80", title: "[REF] pos_online_payment: structure files"}]}
   # odoo 1781709b4a07 '[MOV] web: move profiling from core to webclient'
-  '([\"''])web/static/src/core/debug/profiling/profiling_item\.js\1': '\g<1>web/static/src/webclient/debug/profiling/profiling_item.js\g<1>'
+  '([\"''])web/static/src/core/debug/profiling/profiling_item\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/webclient/debug/profiling/profiling_item.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "1781709b4a07", title: "[MOV] web: move profiling from core to webclient"}]}
   # odoo 1781709b4a07 '[MOV] web: move profiling from core to webclient'
-  '([\"''])web/static/src/core/debug/profiling/profiling_qweb\.js\1': '\g<1>web/static/src/webclient/debug/profiling/profiling_qweb.js\g<1>'
+  '([\"''])web/static/src/core/debug/profiling/profiling_qweb\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/webclient/debug/profiling/profiling_qweb.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "1781709b4a07", title: "[MOV] web: move profiling from core to webclient"}]}
   # odoo 1781709b4a07 '[MOV] web: move profiling from core to webclient'
-  '([\"''])web/static/src/core/debug/profiling/profiling_systray_item\.js\1': '\g<1>web/static/src/webclient/debug/profiling/profiling_systray_item.js\g<1>'
+  '([\"''])web/static/src/core/debug/profiling/profiling_systray_item\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/webclient/debug/profiling/profiling_systray_item.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "1781709b4a07", title: "[MOV] web: move profiling from core to webclient"}]}
   # odoo 20298f37cf05 '[IMP] web, *: generate PWA manifest on demand'
-  '([\"''])web/static/src/core/install_prompt/install_prompt\.js\1': '\g<1>web/static/src/core/pwa/install_prompt.js\g<1>'
+  '([\"''])web/static/src/core/install_prompt/install_prompt\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/core/pwa/install_prompt.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "20298f37cf05", title: "[IMP] web, *: generate PWA manifest on demand"}]}
   # odoo 6b3a37a64d78 '[MOV] web: move copy_button to core'
-  '([\"''])web/static/src/views/fields/copy_clipboard/copy_button\.js\1': '\g<1>web/static/src/core/copy_button/copy_button.js\g<1>'
+  '([\"''])web/static/src/views/fields/copy_clipboard/copy_button\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/core/copy_button/copy_button.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "6b3a37a64d78", title: "[MOV] web: move copy_button to core"}]}
   # odoo c51cfcf5468a '[REF] web,*: fix action/view hook wrong dependencies'
-  '([\"''])web/static/src/webclient/actions/action_hook\.js\1': '\g<1>web/static/src/search/action_hook.js\g<1>'
+  '([\"''])web/static/src/webclient/actions/action_hook\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/search/action_hook.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "c51cfcf5468a", title: "[REF] web,*: fix action/view hook wrong dependencies"}]}
   # odoo 7ba46d2cea7f '[REF] web,*: move barcode logic from webclient to core'
-  '([\"''])web/static/src/webclient/barcode/ZXingBarcodeDetector\.js\1': '\g<1>web/static/src/core/barcode/ZXingBarcodeDetector.js\g<1>'
+  '([\"''])web/static/src/webclient/barcode/ZXingBarcodeDetector\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/core/barcode/ZXingBarcodeDetector.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "7ba46d2cea7f", title: "[REF] web,*: move barcode logic from webclient to core"}]}
   # odoo 7ba46d2cea7f '[REF] web,*: move barcode logic from webclient to core'
-  '([\"''])web/static/src/webclient/barcode/crop_overlay\.js\1': '\g<1>web/static/src/core/barcode/crop_overlay.js\g<1>'
+  '([\"''])web/static/src/webclient/barcode/crop_overlay\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/core/barcode/crop_overlay.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "7ba46d2cea7f", title: "[REF] web,*: move barcode logic from webclient to core"}]}
   # odoo 1781709b4a07 '[MOV] web: move profiling from core to webclient'
-  '([\"''])web/static/src/webclient/debug_items\.js\1': '\g<1>web/static/src/webclient/debug/debug_items.js\g<1>'
+  '([\"''])web/static/src/webclient/debug_items\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web/static/src/webclient/debug/debug_items.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "1781709b4a07", title: "[MOV] web: move profiling from core to webclient"}]}
   # odoo 53107de29045 '[IMP] web_unsplash: implement Unsplash in html_editor'
-  '([\"''])web_unsplash/static/src/services/unsplash_service\.js\1': '\g<1>web_unsplash/static/src/unsplash_service.js\g<1>'
+  '([\"''])web_unsplash/static/src/services/unsplash_service\.js\1': {schema_version: 2, kind: text_replace, replacement: "\\g<1>web_unsplash/static/src/unsplash_service.js\\g<1>", confidence: generated, evidence: [{repository: "odoo", commit: "53107de29045", title: "[IMP] web_unsplash: implement Unsplash in html_editor"}]}
