@@ -72,7 +72,7 @@ CASES = [
         "name": "renommage de champ standard / ancre XPath déplacée",
         "diag": ("ERROR", "[view] field[@name='tax_id'] not found in the combined view sale.view_order_form",
                  "views/sale_order.xml", 5),
-        "proof": lambda: _rule_line("renamed_fields/migrate_180_190/generated.yaml", '"tax_id", "tax_ids"'),
+        "proof": lambda: _rule_line("renamed_fields/migrate_180_190/generated.yaml", "'sale.order.line', 'tax_id', 'tax_ids'"),
         "target_symbol": "tax_ids",
     },
     {
