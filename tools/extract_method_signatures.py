@@ -107,7 +107,7 @@ def main() -> int:
                 "before": before[key],
                 "after": after[key],
             })
-    target = Path("lotb-method-signatures-lot-c.yaml")
+    target = Path("docs/lot_c/method-signatures.yaml")
     target.write_text(yaml.safe_dump(output, allow_unicode=True, sort_keys=False, width=140), encoding="utf-8")
     print(f"changed_signatures={len(output)} output={target}")
     return 0

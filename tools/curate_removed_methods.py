@@ -108,7 +108,7 @@ def main() -> int:
                 + yaml.safe_dump({".py": entries}, allow_unicode=True, sort_keys=False, width=120),
                 encoding="utf-8",
             )
-    (root / "lotb-methods-lot-c.yaml").write_text(
+    (root / "docs/lot_c/methods-without-rule.yaml").write_text(
         yaml.safe_dump(lot_c, allow_unicode=True, sort_keys=False, width=140), encoding="utf-8"
     )
     print(f"promoted={promoted} lot_c={len(lot_c)}")

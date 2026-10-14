@@ -204,7 +204,7 @@ def main() -> int:
                     header + yaml.safe_dump(rules, allow_unicode=True, sort_keys=False, width=120),
                     encoding="utf-8",
                 )
-    report = args.root / "lotb-field-metadata-rejected.yaml"
+    report = args.root / "docs/lot_c/field-metadata-rejected.yaml"
     report.write_text(yaml.safe_dump(rejected, allow_unicode=True, sort_keys=False, width=140), encoding="utf-8")
     print(f"promoted={promoted} rejected={len(rejected)} report={report}")
     return 0
