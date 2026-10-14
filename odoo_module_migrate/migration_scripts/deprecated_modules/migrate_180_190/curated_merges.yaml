@@ -1,0 +1,33 @@
+- schema_version: 2
+  kind: deprecated_module
+  module: l10n_in_documents
+  change: merged
+  target: l10n_in_reports
+  confidence: verified
+  evidence:
+    - repository: enterprise
+      commit: a433371c22d
+      title: "[REF] l10n_in_reports*: merge modules"
+      file: "l10n_in_documents/__manifest__.py"
+      lines: "18.0:1; 19.0 l10n_in_reports/__manifest__.py:1"
+      note: "Indian document features are consolidated into l10n_in_reports"
+  message: "enterprise a433371c22d: l10n_in_documents was merged into l10n_in_reports"
+- schema_version: 2
+  kind: deprecated_module
+  module: l10n_in_withholding_payment
+  change: merged
+  target: l10n_in_reports
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 11c186efacf9
+      title: "[ADD] l10n_in_withholding: merge l10n_in_withholding_payment l10n_in_withholding"
+      file: "addons/l10n_in_withholding_payment/__manifest__.py"
+      lines: "18.0:1; 11c186efacf9 addons/l10n_in_withholding/__manifest__.py:1"
+    - repository: odoo
+      commit: 0b49f819b4af
+      title: "[REF] l10n_in_reports*: merge modules"
+      file: "addons/l10n_in_withholding/__manifest__.py"
+      lines: "0b49f819b4af^:1; 19.0 l10n_in_reports/__manifest__.py:1"
+      note: "two-step merge: payment -> withholding -> reports"
+  message: "odoo 11c186efacf9, 0b49f819b4af: l10n_in_withholding_payment was merged into l10n_in_reports"
