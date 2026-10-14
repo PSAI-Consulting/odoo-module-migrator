@@ -1,0 +1,28 @@
+# Rules formerly written in migrate_090_allways.py (moved as data, same order: loaded first).
+".py":
+  "from openerp":
+    schema_version: 2
+    kind: text_replace
+    replacement: "from odoo"
+  "import openerp":
+    schema_version: 2
+    kind: text_replace
+    replacement: "import odoo"
+".xml":
+  "( |\\t)*<openerp>(\\n| |\\t)*<data>":
+    schema_version: 2
+    kind: text_replace
+    replacement: "<odoo>"
+  "( |\\t)*<\\/data>(\\n| |\\t)*<\\/openerp>":
+    schema_version: 2
+    kind: text_replace
+    replacement: "</odoo>"
+  # <openerp> without a <data> child (or with attributes on <data>)
+  "<openerp>":
+    schema_version: 2
+    kind: text_replace
+    replacement: "<odoo>"
+  "<\\/openerp>":
+    schema_version: 2
+    kind: text_replace
+    replacement: "</odoo>"

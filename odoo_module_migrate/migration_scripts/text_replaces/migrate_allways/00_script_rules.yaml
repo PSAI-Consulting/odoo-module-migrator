@@ -1,0 +1,6 @@
+# Rules formerly written in migrate_allways.py (moved as data, same order: loaded first).
+".xml":
+  "<data +noupdate=\\\"0\\\" *>":
+    schema_version: 2
+    kind: text_replace
+    replacement: "<data>"

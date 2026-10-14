@@ -1,0 +1,17 @@
+# Rules formerly written in migrate_110_120.py (moved as data, same order: loaded first).
+".xml":
+  "<label\\b(?![^>]*\\bfor\\s*=)[^>]*>":
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[V12] A <label> in a view has no for=\"...\" attribute"
+  "<filter\\b(?![^>]*\\bname\\s*=)[^>]*>":
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[V12] A <filter> in a search view has no name=\"...\" attribute"
+  "(?s)<tree\\b[^>]*>(?:(?!</tree>).)*?<button\\b(?![^>]*\\bstring\\s*=)[^>]*>":
+    schema_version: 2
+    kind: text_warning
+    confidence: heuristic
+    message: "[V12] A <button> in a tree view has no string=\"...\" attribute for accessibility"

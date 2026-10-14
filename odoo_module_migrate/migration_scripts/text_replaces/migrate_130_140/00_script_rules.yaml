@@ -1,0 +1,10 @@
+# Rules formerly written in migrate_130_140.py (moved as data, same order: loaded first).
+".js":
+  "tour\\.STEPS\\.SHOW_APPS_MENU_ITEM":
+    schema_version: 2
+    kind: text_replace
+    replacement: "tour.stepUtils.showAppsMenuItem()"
+  "tour\\.STEPS\\.TOGGLE_HOME_MENU":
+    schema_version: 2
+    kind: text_replace
+    replacement: "tour.stepUtils.toggleHomeMenu()"

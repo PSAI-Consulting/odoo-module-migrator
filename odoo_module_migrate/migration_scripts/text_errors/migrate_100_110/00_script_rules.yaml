@@ -1,0 +1,43 @@
+# Rules formerly written in migrate_100_110.py (moved as data, same order: loaded first).
+"*":
+  "('|\")workflow('|\")":
+    schema_version: 2
+    kind: text_error
+    message: "[V11] Reference to 'workflow'. This model has been removed."
+  "('|\")workflow.activity('|\")":
+    schema_version: 2
+    kind: text_error
+    message: "[V11] Reference to 'workflow.activity'. This model has been removed."
+  "('|\")workflow.instance('|\")":
+    schema_version: 2
+    kind: text_error
+    message: "[V11] Reference to'workflow.instance'. This model has been removed."
+  "('|\")workflow.transition('|\")":
+    schema_version: 2
+    kind: text_error
+    message: "[V11] Reference to 'workflow.transition'. This model has been removed."
+  "('|\")workflow.triggers('|\")":
+    schema_version: 2
+    kind: text_error
+    message: "[V11] Reference to 'workflow.triggers'. This model has been removed."
+  "('|\")workflow.workitem('|\")":
+    schema_version: 2
+    kind: text_error
+    message: "[V11] Reference to 'workflow.workitem'. This model has been removed."
+  "report.external_layout_header":
+    schema_version: 2
+    kind: text_error
+    message: "report.external_layout_header is obsolete."
+  "report.external_layout_footer":
+    schema_version: 2
+    kind: text_error
+    message: "report.external_layout_footer is obsolete."
+".xml":
+  "<tree[\\s][^>]*colors=":
+    schema_version: 2
+    kind: text_error
+    message: "colors attribute is deprecated in tree view. Use decoration- instead."
+  "<tree[\\s][^>]*fonts=":
+    schema_version: 2
+    kind: text_error
+    message: "fonts attribute is deprecated in tree view. Use decoration- instead."

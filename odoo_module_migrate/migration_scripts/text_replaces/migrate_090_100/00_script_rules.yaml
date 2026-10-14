@@ -1,0 +1,18 @@
+# Rules formerly written in migrate_090_100.py (moved as data, same order: loaded first).
+"*":
+  "base.group_configuration":
+    schema_version: 2
+    kind: text_replace
+    replacement: "base.group_system"
+  "base.group_sale_salesman":
+    schema_version: 2
+    kind: text_replace
+    replacement: "sales_team.group_sale_salesman"
+  "base.group_sale_salesman_all_leads":
+    schema_version: 2
+    kind: text_replace
+    replacement: "sales_team.group_sale_salesman_all_leads"
+  "base.group_sale_manager":
+    schema_version: 2
+    kind: text_replace
+    replacement: "sales_team.group_sale_manager"

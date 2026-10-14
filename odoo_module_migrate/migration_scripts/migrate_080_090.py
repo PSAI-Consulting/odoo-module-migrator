@@ -4,13 +4,8 @@
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
-_TEXT_REPLACES = {
-    ".py": {"select=True": "index=True"},
-}
-
 # Modules: deprecated_modules/migrate_080_090/*.yaml
 
 
 class MigrationScript(BaseMigrationScript):
-
-    _TEXT_REPLACES = _TEXT_REPLACES
+    pass

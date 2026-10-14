@@ -1,0 +1,25 @@
+# Rules formerly written in migrate_120_130.py (moved as data, same order: loaded first).
+"*":
+  "web_settings_dashboard":
+    schema_version: 2
+    kind: text_error
+    message: "[V13] Reference to 'web_settings_dashboard'. This module has been removed."
+".py":
+  # odoo 13.0 odoo/api.py : one, multi, cr, model_cr, model_cr_context supprimés ;
+  # returns existe toujours (jusqu'en 17.0) : pas d'erreur
+  "@api\\.one\\b":
+    schema_version: 2
+    kind: text_error
+    message: "[13] '@api.one' was removed: the method now receives a recordset, loop on self (for rec in self) and remove the decorator"
+  ".*@api.cr.*\\n":
+    schema_version: 2
+    kind: text_error
+    message: "[13] Use of deprecated decorator '@api.cr'"
+  "@api.model_cr\\b":
+    schema_version: 2
+    kind: text_error
+    message: "[13] Use of deprecated decorator '@api.model_cr'"
+  "@api.model_cr_context\\b":
+    schema_version: 2
+    kind: text_error
+    message: "[13] Use of deprecated decorator '@api.model_cr_context'"

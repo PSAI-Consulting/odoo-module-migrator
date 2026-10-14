@@ -4,12 +4,6 @@
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
-_TEXT_REPLACES = {
-    ".xml": {
-        r"<data +noupdate=\"0\" *>": "<data>",
-    }
-}
-
 
 def set_module_installable(**kwargs):
     """'installable': False -> True with --set-installable (OCA workflow:
@@ -37,7 +31,6 @@ def set_module_installable(**kwargs):
 
 
 class MigrationScript(BaseMigrationScript):
-    _TEXT_REPLACES = _TEXT_REPLACES
     _GLOBAL_FUNCTIONS = [
         set_module_installable,
     ]

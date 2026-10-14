@@ -166,3 +166,49 @@ def test_resolved_field_rename_pass_honours_curated_blockers():
     assert ("sale.order", "requested_date") not in renames
     assert ("hr.holidays", "number_of_days_temp") not in renames
     assert renames[("maintenance.equipment", "warranty")] == "warranty_date"
+
+
+def test_verbose_pattern_moved_to_yaml_behaves_the_same():
+    """migrate_120_130 had a re.compile(..., re.VERBOSE) key; as YAML data it
+    is the same pattern with the inline (?x) flag: same matches, same result."""
+    import re
+
+    historical = re.compile(
+        r"""
+            # find a button...
+            <button
+                \s[^>]*
+                # ... that is a oe_stat_button
+                class=['"].*\b
+                    oe_stat_button
+                \b.*['"]
+                [^>]*>\s*
+                    # ... that contains a field
+                    <field\s+
+                        (
+                            [^>]*
+                            (
+                                # ...  named "active"
+                                name=['"]active['"]|
+                                # ... with a boolean_button widget
+                                widget=['"]boolean_button['"]
+                            )
+                            [^>]*
+                        ){2}
+                    [^>]*>\s*
+            </button>
+            """,
+        re.VERBOSE,
+    )
+    rules = loader.load_file(
+        SCRIPTS / "text_replaces/migrate_120_130/00_script_rules.yaml", "text_replaces"
+    ).document[".xml"]
+    moved = next(k for k in rules if k.startswith("(?x)"))
+    assert re.compile(moved).flags & re.VERBOSE
+    sample = (
+        '<form><button name="toggle_active" type="object" class="oe_stat_button" icon="fa-archive">\n'
+        '  <field name="active" widget="boolean_button" options=\'{"terminology": "archive"}\'/>\n'
+        "</button><button class=\"oe_stat_button\"><field name=\"x\"/></button></form>"
+    )
+    assert historical.search(sample)
+    assert re.sub(moved, rules[moved], sample) == historical.sub(rules[moved], sample)

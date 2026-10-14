@@ -4,9 +4,6 @@
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
-_TEXT_REPLACES = {".py": {r"# (-\*- )?coding: utf-8( -\*-)?\n": ""}}
-
 
 class MigrationScript(BaseMigrationScript):
-
-    _TEXT_REPLACES = _TEXT_REPLACES
+    pass

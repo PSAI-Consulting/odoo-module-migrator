@@ -1,0 +1,10 @@
+# Rules formerly written in migrate_110_120.py (moved as data, same order: loaded first).
+".py":
+  "from odoo.addons.base.res":
+    schema_version: 2
+    kind: text_replace
+    replacement: "from odoo.addons.base.models"
+  "from odoo.addons.base.ir":
+    schema_version: 2
+    kind: text_replace
+    replacement: "from odoo.addons.base.models"

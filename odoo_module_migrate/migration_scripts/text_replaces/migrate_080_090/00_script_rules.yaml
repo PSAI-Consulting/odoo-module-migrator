@@ -1,0 +1,6 @@
+# Rules formerly written in migrate_080_090.py (moved as data, same order: loaded first).
+".py":
+  "select=True":
+    schema_version: 2
+    kind: text_replace
+    replacement: "index=True"

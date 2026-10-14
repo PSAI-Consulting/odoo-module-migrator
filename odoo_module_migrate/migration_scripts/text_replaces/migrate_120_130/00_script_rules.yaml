@@ -1,0 +1,47 @@
+# Rules formerly written in migrate_120_130.py (moved as data, same order: loaded first).
+".py":
+  "\\.sudo\\((?P<user>[^/)]+?)\\)":
+    schema_version: 2
+    kind: text_replace
+    replacement: ".with_user(\\g<user>)"
+  "\\.suspend_security":
+    schema_version: 2
+    kind: text_replace
+    replacement: ".sudo"
+  "\\\"base_suspend_security\\\",\\n":
+    schema_version: 2
+    kind: text_replace
+    replacement: ""
+  "\\._find_partner_from_emails\\(":
+    schema_version: 2
+    kind: text_replace
+    replacement: "._mail_find_partner_from_emails("
+  "\\._search_on_partner\\(":
+    schema_version: 2
+    kind: text_replace
+    replacement: "._mail_search_on_partner("
+  "\\._search_on_user\\(":
+    schema_version: 2
+    kind: text_replace
+    replacement: "._mail_search_on_user("
+  "\\btrack_visibility=\"[^\"]*\"":
+    schema_version: 2
+    kind: text_replace
+    replacement: "tracking=True"
+  "\\btrack_visibility='[^']*'":
+    schema_version: 2
+    kind: text_replace
+    replacement: "tracking=True"
+".xml":
+  "( |\\t)*<field name=('|\\\")view_type('|\\\")>.*</field>\\n":
+    schema_version: 2
+    kind: text_replace
+    replacement: ""
+  "src_model":
+    schema_version: 2
+    kind: text_replace
+    replacement: "binding_model"
+  "(?x)\n            # find a button...\n            <button\n                \\s[^>]*\n                # ... that is a oe_stat_button\n                class=['\"].*\\b\n                    oe_stat_button\n                \\b.*['\"]\n                [^>]*>\\s*\n                    # ... that contains a field\n                    <field\\s+\n                        (\n                            [^>]*\n                            (\n                                # ...  named \"active\"\n                                name=['\"]active['\"]|\n                                # ... with a boolean_button widget\n                                widget=['\"]boolean_button['\"]\n                            )\n                            [^>]*\n                        ){2}\n                    [^>]*>\\s*\n            </button>\n            ":
+    schema_version: 2
+    kind: text_replace
+    replacement: "\n            <field name=\"active\" invisible=\"1\" />\n            <widget\n                name=\"web_ribbon\"\n                title=\"Archived\"\n                bg_color=\"bg-danger\"\n                attrs=\"{'invisible': [('active', '=', True)]}\"\n            />\n            "

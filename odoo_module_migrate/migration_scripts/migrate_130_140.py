@@ -5,9 +5,10 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 import re
 from pathlib import Path
-import lxml.etree as et
-from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
+import lxml.etree as et
+
+from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
 # Source: odoo 14.0 removed the <report> and <act_window> XML shortcuts
 # (odoo/tools/convert.py has no _tag_report / _tag_act_window anymore). The
@@ -204,15 +205,6 @@ def reformat_deprecated_tags(
             logger.info("[14] <report> / <act_window> converted to <record> in %s" % file_path)
 
 
-_TEXT_REPLACES = {
-    ".js": {
-        r"tour\.STEPS\.SHOW_APPS_MENU_ITEM": "tour.stepUtils.showAppsMenuItem()",
-        r"tour\.STEPS\.TOGGLE_HOME_MENU": "tour.stepUtils.toggleHomeMenu()",
-    },
-}
-
-
 class MigrationScript(BaseMigrationScript):
 
     _GLOBAL_FUNCTIONS = [reformat_deprecated_tags]
-    _TEXT_REPLACES = _TEXT_REPLACES

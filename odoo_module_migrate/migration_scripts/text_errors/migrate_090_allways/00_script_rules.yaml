@@ -1,0 +1,6 @@
+# Rules formerly written in migrate_090_allways.py (moved as data, same order: loaded first).
+".xml":
+  "<xpath\\s+expr=\"[^\"]*\\[@string=":
+    schema_version: 2
+    kind: text_error
+    message: "Error: The '@string=' xpath expression is deprecated."

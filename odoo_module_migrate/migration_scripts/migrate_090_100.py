@@ -4,17 +4,8 @@
 
 from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
-_TEXT_REPLACES = {
-    "*": {
-        "base.group_configuration": "base.group_system",
-        "base.group_sale_salesman": "sales_team.group_sale_salesman",
-        "base.group_sale_salesman_all_leads": "sales_team.group_sale_salesman_all_leads",
-        "base.group_sale_manager": "sales_team.group_sale_manager",
-    },
-}
-
 # Modules: deprecated_modules/migrate_090_100/*.yaml
 
 
 class MigrationScript(BaseMigrationScript):
-    _TEXT_REPLACES = _TEXT_REPLACES
+    pass

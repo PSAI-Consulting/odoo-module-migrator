@@ -1,0 +1,27 @@
+# Rules formerly written in migrate_100_110.py (moved as data, same order: loaded first).
+"*":
+  "ir.actions.report.xml":
+    schema_version: 2
+    kind: text_replace
+    replacement: "ir.actions.report"
+  "report.external_layout":
+    schema_version: 2
+    kind: text_replace
+    replacement: "web.external_layout"
+  "report.html_container":
+    schema_version: 2
+    kind: text_replace
+    replacement: "web.html_container"
+  "report.layout":
+    schema_version: 2
+    kind: text_replace
+    replacement: "web.report_layout"
+  "report.minimal_layout":
+    schema_version: 2
+    kind: text_replace
+    replacement: "web.minimal_layout"
+".xml":
+  "kanban_state_selection":
+    schema_version: 2
+    kind: text_replace
+    replacement: "state_selection"

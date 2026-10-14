@@ -52,6 +52,10 @@
    "count": 211,
    "sha256": "e6b3f60e45d9386c353a5983745f2fdefd04425c18ef5af4469504cbe92b7736"
   },
+  "tools_import_error_patterns:migrate_090_allways": {
+   "count": 0,
+   "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
   "tools_import_error_patterns:migrate_100_110": {
    "count": 319,
    "sha256": "d75581a26c7a61805e90bfb950c426686a4076d6e182e41c00533b50733f4b8b"
@@ -61,8 +65,8 @@
    "sha256": "cb1dd105f808b3d4133ca4d6d422a834a9c0fd03ece5842ed3546a95a3bfd379"
   },
   "tools_import_error_patterns:migrate_120_130": {
-   "count": 401,
-   "sha256": "cc70204369857d1a4ba0092eb38d848889fabfda59dbc3aea938bc9b16915c19"
+   "count": 405,
+   "sha256": "7146fd9f6d438d2ded8c3d808cb81407fff0c4146f89e1b47756e1846845f577"
   },
   "tools_import_error_patterns:migrate_130_140": {
    "count": 393,
@@ -1116,7 +1120,7 @@
   },
   "_TEXT_REPLACES": {
    "count": 2,
-   "sha256": "149852bb15cf334f9f3c316cf75944a6a68a5eea8c49501aa8f1012499fa59bc"
+   "sha256": "1c9365ae89f0b6a4bb6c45697593b8396d0a122a269327fc32892fc7500edb8c"
   },
   "_TEXT_WARNINGS": {
    "count": 1,
@@ -1164,7 +1168,7 @@
   },
   "file_rules.xml:replaces": {
    "count": 165,
-   "sha256": "a9944028ca89b95246bd8b16aa674b45a026dcf07f12db30e85a9165631ff64e"
+   "sha256": "36de75d62b772586812a415e7c58dee17338369ea2c0ebf0b0f8b8edae92119b"
   },
   "file_rules.xml:warnings": {
    "count": 26,

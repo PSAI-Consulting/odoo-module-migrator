@@ -1,0 +1,6 @@
+# Rules formerly written in migrate_100_allways.py (moved as data, same order: loaded first).
+".py":
+  "# (-\\*- )?coding: utf-8( -\\*-)?\\n":
+    schema_version: 2
+    kind: text_replace
+    replacement: ""
