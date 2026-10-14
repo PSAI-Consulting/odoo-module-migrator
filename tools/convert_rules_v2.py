@@ -243,6 +243,10 @@ def convert_file(path: pathlib.Path, category: str, repos: Repos, dry_run: bool,
             block += v2_block(rule, indent, repos, key_text)
         lines[line_no - 1:last] = block
         converted += 1
+    if converted and generated:
+        # the header of an extracted file describes its format
+        lines = ["# Format: schema_version 2, one rule per line (docs/migration_rules.md)"
+                 if re.match(r"# Format: \[", line) else line for line in lines]
     if converted and not dry_run:
         path.write_bytes(newline.join(lines).encode("utf-8"))
     return converted
