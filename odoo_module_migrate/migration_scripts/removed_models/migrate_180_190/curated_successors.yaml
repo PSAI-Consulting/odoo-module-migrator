@@ -1,0 +1,71 @@
+- schema_version: 2
+  kind: removed_model
+  model: hr.candidate.skill
+  change: renamed
+  target_model: hr.applicant.skill
+  target_module: hr_recruitment_skills
+  identity_preserved: true
+  field_mapping:
+    candidate_id: applicant_id
+    create_date: valid_from
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 66856ad6a4da
+      title: "[IMP] hr_recruitment: Bye Candidate, Hi Talent Pool"
+      file: "addons/hr_recruitment_skills/models/hr_candidate_skill.py"
+      lines: "18.0:8; 19.0 addons/hr_recruitment_skills/models/hr_applicant_skill.py:8"
+    - repository: openupgrade
+      file: "openupgrade_scripts/scripts/hr_recruitment_skills/19.0.1.0/pre-migration.py"
+      lines: "6-23"
+      note: "model/table rename and candidate_id -> applicant_id mapping"
+  validation:
+    target_model_required: true
+    target_fields_required: [applicant_id, valid_from]
+  message: "Renamed to hr.applicant.skill (candidate_id -> applicant_id) - odoo 66856ad6a4da; OpenUpgrade 19.0"
+- schema_version: 2
+  kind: removed_model
+  model: procurement.group
+  change: renamed
+  target_model: stock.reference
+  target_module: stock
+  identity_preserved: true
+  field_mapping:
+    stock_move_ids: move_ids
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 2713876dbc70
+      title: "[REF] stock, *: add reference"
+      file: "addons/stock/models/stock_rule.py"
+      lines: "18.0:448; 19.0 addons/stock/models/stock_reference.py:5"
+    - repository: openupgrade
+      file: "openupgrade_scripts/scripts/stock/19.0.1.1/pre-migration.py"
+      lines: "6-18"
+      note: "model/table rename and stock_move_ids -> move_ids mapping"
+  validation:
+    target_model_required: true
+    target_fields_required: [move_ids]
+  message: "Renamed to stock.reference (stock_move_ids -> move_ids) - odoo 2713876dbc70; OpenUpgrade 19.0"
+- schema_version: 2
+  kind: removed_model
+  model: stock.package_level
+  change: renamed
+  target_model: stock.package.history
+  target_module: stock
+  identity_preserved: true
+  field_mapping: {}
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 6adaab6abb54
+      title: "[IMP] stock, *: remove stock.package_level"
+      file: "addons/stock/models/stock_package_level.py"
+      lines: "18.0:11; 19.0 addons/stock/models/stock_package_history.py:7"
+    - repository: openupgrade
+      file: "openupgrade_scripts/scripts/stock/19.0.1.1/pre-migration.py"
+      lines: "6-18"
+      note: "model and table are renamed"
+  validation:
+    target_model_required: true
+  message: "Renamed to stock.package.history - odoo 6adaab6abb54; OpenUpgrade 19.0"
