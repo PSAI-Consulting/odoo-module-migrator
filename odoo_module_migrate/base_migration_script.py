@@ -362,6 +362,9 @@ class BaseMigrationScript:
 
         Fields are not here: see handle_fields(), which knows the models.
         """
+        # the rules are YAML data: load them first (once) even when called
+        # directly, without run()
+        self.parse_rules()
         cache = self.__dict__.setdefault("_rules_cache", {})
         if extension not in cache:
             renamed_models = self.handle_renamed_models(self._RENAMED_MODELS)
