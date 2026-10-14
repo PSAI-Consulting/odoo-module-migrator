@@ -1270,11 +1270,88 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 - **Correction proposée** : déduire l'indentation pour l'analyse tout en remappant les offsets vers le texte original ; contrôler l'existence de chaque chemin `data`.
 
 
-## 111. 🟡 `barcodes_generator_abstract` (19 → 20) : faux positif sur un champ lu par un mixin abstrait
+## 112. 🟡 `barcodes_generator_abstract` (19 → 20) : faux positif sur un champ lu par un mixin abstrait
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — le contrôle des champs ne signale plus un champ lu par un mixin abstrait du module lui-même quand aucun héritier concret indexé ne l'omet (contrat du mixin).
 
 - `barcode.generate.mixin` (`models.AbstractModel`) lit `self.barcode` ; le champ est déclaré par les modèles qui héritent du mixin (`product.product`). Le contrôle des champs signale 3 erreurs 🔴 « Field barcode.generate.mixin.barcode does not exist ».
 - Le message indique pourtant le modèle concret qui définit le champ : ce n'est pas une erreur de migration.
 - **Correction proposée** : dans un `AbstractModel`, ne pas signaler un champ défini par tous les héritiers concrets indexés (au plus un 🟡 informatif).
+
+## 113. 🔴 `stock_available` (19 → 20) : renommage `product_uom` → `uom_id` qui corrompt le code, précision non convertie
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — une clé de dictionnaire est renommée comme un jeton entier entre ses guillemets, une garde empêche deux modifications qui se chevauchent ; la précision `Product Unit of Measure` → `Product Unit` est aussi convertie en 19 → 20 (modules restés à l'ancien nom).
+
+- Dans les tests (valeurs de `stock.move`), `"product_uom": productA.uom_id.id` est devenu `"uom_id"ductA.uom_id.id` : le remplacement a mangé `": pro` (chevauchement de deux motifs ou mauvais calcul de la longueur remplacée). Le fichier ne se charge plus (`SyntaxError`). Une seule des 4 occurrences est correcte.
+- `digits="Product Unit of Measure"` : la précision s'appelle `Product Unit` en 20 (`uom/data/uom_data.xml`, même identifiant `uom.decimal_product_uom`). C'est bien signalé (🔴 « Unknown target decimal precision »), mais pas converti alors que le remplacement est certain.
+- **Correction proposée** : appliquer les renommages de clés de dictionnaire sur des jetons entiers (`"product_uom"` entre guillemets), avec un test de non-régression sur `"product_uom": productA.uom_id.id` ; table des précisions renommées (`Product Unit of Measure` → `Product Unit`).
+
+## 114. 🟡 `sale_force_invoiced` (19 → 20) : « @api.depends différent » signalé sur des surcharges de calcul
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — une surcharge de calcul qui appelle `super()` n'est plus signalée : Odoo fusionne les `@api.depends` de la MRO. Seules les surcharges sans `super()` restent signalées.
+
+- Trois 🟠 « overrides a target compute method with different @api.depends (missing …) » sur des surcharges qui appellent `super()` et ajoutent une dépendance (`@api.depends("force_invoiced")`).
+- Odoo **fusionne** les `@api.depends` de toutes les méthodes de la MRO : les dépendances du standard restent actives. Le message laisse croire qu'elles sont perdues.
+- **Correction proposée** : ne signaler que les surcharges qui n'appellent pas `super()` (là les dépendances du standard peuvent manquer au calcul) ; sinon au plus un 🟡 informatif.
+
+## 115. 🔴 `partner_address_street3` (19 → 20) : surcharge appelée avec un argument supprimé, non signalée (« risque : aucun »)
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — les méthodes réelles des modèles de `base` (`res.partner._display_address`) sont comparées à la cible : 🔴 « super() passes removed keyword(s) without_company ». Seules les méthodes génériques de `BaseModel` restent exclues.
+
+- `def _display_address(self, without_company=False)` appelle `super()._display_address(without_company=without_company)`. En 20 la méthode devient `_display_address(self, without_name=False, separator='
+')` (commit `16d8afe9849e`) : `TypeError` à chaque affichage d'adresse. Le rapport annonce « risque : aucun, 0 TODO ».
+- **Correction proposée** : comparer la signature des méthodes surchargées (paramètres nommés passés à `super()`) avec celle de la cible ; signaler en 🔴 un paramètre qui n'existe plus.
+
+## 116. 🔴 `partner_contact_access_link` (19 → 20) : champ supprimé `company_type` non signalé dans un dictionnaire de création
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — les modèles rangés dans `self.X` / `cls.X` (`self.partner_model = self.env[...]`, `cls.env[...].create(...)`) sont suivis et les fichiers `tests/` sont contrôlés (champs seulement) : 🔴 « Field res.partner.company_type does not exist ». Conversion vers `is_company` laissée manuelle (valeur souvent variable, champ calculé stocké).
+
+- Test OCA : `res.partner.create({"name": ..., "company_type": "company"})`. `company_type` n'existe plus (commit `f2965048f60f`, 19) : « Invalid field 'company_type' in 'res.partner' ». Rapport « risque : aucun, 0 TODO ».
+- Le même champ est utilisé par `edi_bi_generic_import` (`new_object.update({'company_type': 'company'})`) et `bi_generic_import` (`search_partner.company_type = type`).
+- **Correction proposée** : contrôler les clés des dictionnaires passés à `create` / `write` / `update` et les affectations d'attributs sur un modèle connu contre les champs de la cible ; table de remplacement `company_type` → `is_company` (`'company'` → `True`, `'person'` → `False`).
+
+## 117. 🔴 `bi_sql_editor` (19 → 20) : champ métier `group_operator` renommé, sécurité à moitié convertie
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — `group_operator=` n'est renommé qu'en argument d'appel (`fields.X(..., group_operator=...)`) ; le champ métier, ses usages et les comparaisons restent intacts. Les lignes CSV vides sont retirées avant le script officiel : l'ancien `ir.model.access.csv` disparaît et le manifeste est réécrit proprement. Créations d'`ir.rule` / `ir.model.access` par le code : signalées 🔴.
+
+- **Renommage à tort** : `bi.sql.view.field` a un champ métier **nommé** `group_operator` (`fields.Selection`). La règle `group_operator=` → `aggregator=` (attribut de champ) l'a renommé en `aggregator`, avec ses usages Python. La vue utilise toujours `group_operator`, et la colonne de la prod garde ce nom : installation cassée et valeurs perdues.
+- **Sécurité** : `"data"` devient `['security/ir.access.csv', ` (guillemets simples, espace final, tout sur la ligne de `"data"`) **et garde** `"security/ir.model.access.csv"`. Ce dernier fichier est réduit à l'en-tête plus une ligne `,,,,,,,`.
+- Bien signalés en 🔴 mais non convertis : création d'`ir.rule` / `ir.model.access` par le code (`env["ir.rule"].create(...)`, champ `Many2one("ir.rule")`). La conversion est simple : règle globale → `ir.access` sans groupe (`domain`, `operation="crud"`) ; accès → `ir.access` avec groupe (`operation` d'après les `perm_*`).
+- `ir.model.fields._add_manual_fields` signalé « no parent method » (🟠), sans proposer `_instanciate_attrs`. La surcharge est en fait **morte depuis la 19**.
+- **Correction proposée** : ne renommer `group_operator` que comme argument d'appel `fields.*(group_operator=...)` et dans `read_group` ; retirer l'ancien CSV et réécrire proprement la liste `data` ; proposer le squelette `ir.access` pour les `create()` d'`ir.rule` / `ir.model.access`.
+
+## 118. 🟡 `auditlog` (19 → 20) : deux faux positifs, `_table_query` non converti
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — un nom dans une liste de données (`FIELDS_BLACKLIST`) n'est plus signalé, les crochets de `BaseModel` (`_register_hook`, `_unregister_hook`, `_auto_init`, `init`) sont connus, et la propriété `_table_query` devient `_table_sql` avec la même requête qu'en 19.
+
+- 🔴 « `__last_update` was removed » sur une **liste de noms de champs à ignorer** (`FIELDS_BLACKLIST`, chaînes de caractères) : aucun accès à un champ, simple valeur sans effet.
+- 🟠 « `_register_hook()` calls super(), but no parent method » : `BaseModel._register_hook` existe bien en 20 (`odoo/orm/models.py`).
+- `_table_query` (propriété renvoyant une f-string) est signalé mais pas converti. La conversion est mécanique : `@property def _table_sql(self): return SQL("(...)", ...)`, comme les rapports standard de la 20.
+- **Correction proposée** : ne pas signaler les noms de champs supprimés dans des littéraux de liste ou de tuple ; inclure les méthodes de `BaseModel` dans la recherche des méthodes parentes ; proposer la conversion `_table_query` → `_table_sql`.
+
+## 119. 🔴 `stof_custom_intrastat` (17 → 20) : API de requête Intrastat et `company_registry` supprimés non signalés
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — `self.env.company` / `env.user` sont résolus : 🔴 « Field res.company.company_registry does not exist » (règle existante : `additional_identifiers`). Les surcharges `_build_query*` restent signalées 🟠 (« no parent method »).
+
+- Le module surcharge `_build_query()` et `_build_query_group()` de `account.intrastat.report.handler`. Ces deux méthodes n'existent plus en 20 : les exports utilisent `_get_intrastat_report_query()` et le point d'extension `_get_exporting_query_data()`. Le migrateur ne signale aucune des deux surcharges mortes.
+- Le module lit `res.company.company_registry`, champ supprimé en 20. Les numéros légaux sont maintenant dans `res.partner.additional_identifiers` et se lisent par `_get_preferred_legal_entity_identifier_vals()`. Le même champ reste utilisé dans `edi_bi_generic_import`, `stof_generic_export` et `psai_report`.
+- **Correction proposée** : comparer les méthodes surchargées aux modèles cibles, signaler les anciennes méthodes Intrastat et détecter les lectures / écritures de `company_registry` avec la piste `additional_identifiers`.
+
+## 120. 🔴 `delivery_price_rule_untaxed` (15 → 20) : clé `product_uom` d'une ligne de vente renommée comme un mouvement de stock
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — les dictionnaires des commandes x2many (`(0, 0, {...})`, `Command.create`) prennent le comodel du champ (`sale.order.line`) ; une clé résolue n'est jamais devinée comme celle d'un autre modèle : `"product_uom"` → `"product_uom_id"`.
+
+- Dans le dictionnaire passé à `sale.order.create()`, la ligne imbriquée contient `"product_uom": self.product_uom_unit.id`. Le migrateur annonce « resolved field `stock.move.product_uom` » et remplace la clé par `"uom_id"`.
+- Le comodel de `sale.order.order_line` est `sale.order.line` : la cible correcte en 20 est `product_uom_id`. Le test ne peut pas créer la ligne avec `uom_id`.
+- **Correction proposée** : propager le modèle des champs x2many lors de l'analyse des commandes imbriquées et choisir le renommage selon ce comodel (`sale.order.line.product_uom_id`, `purchase.order.line.uom_id`, `stock.move.uom_id`).
+
+## 121. 🔴 `delivery_price_rule_untaxed` (15 → 20) : paramètre ajouté par la cible non synchronisé dans les surcharges
+
+> **État du migrateur (14/10/2026)** : ✅ Corrigé — un paramètre ajouté par la cible après tous ceux de la surcharge, avec une valeur par défaut littérale, est ajouté à la signature et transmis à `super()` ; les appelants actuels ne changent pas.
+
+- `delivery.carrier._get_price_from_picking` et `_get_price_dict` prennent `wv=0.0` en 20. Le migrateur signalait 🔴 « missing target parameter(s) wv » sans corriger, et la réparation Ollama ne peut appliquer que des renommages prouvés : 4 appels (11 min) sans résultat.
+- **Correction proposée** : synchroniser automatiquement les paramètres ajoutés en fin de signature avec une valeur par défaut (`def ...(self, total, weight, volume, quantity, wv=0.0)`, `super()....(total=total, ..., wv=wv)`).
+
 ---
 
 # Ce que l'outil n'a pas vu, module par module
@@ -1337,6 +1414,9 @@ Version du 07/10 (embarquée, sans `--odoo-root`). Rapport de `stof_product_comp
 | `easi_sale_auto_discount` | `taxes_id` produit renommé à tort, `tax_id` incomplet, groupe déplacé | 110 |
 | dépôt complet | cible `upgrade_code` supprimée par son propre alias de fusion | 110 |
 | `stof_edi_ux` | manifeste indenté non analysé, chemins `data` absents non signalés | 111 |
+| `stof_custom_intrastat` | API de requête Intrastat supprimée et champ `company_registry` retiré non signalés | 119 |
+| `delivery_price_rule_untaxed` | `product_uom` d'une ligne de vente renommé en `uom_id` au lieu de `product_uom_id` | 120 |
+| `delivery_price_rule_untaxed` | paramètre `wv` ajouté en 20 non synchronisé dans deux surcharges | 121 |
 
 ---
 
