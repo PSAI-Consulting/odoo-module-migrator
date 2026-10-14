@@ -1,0 +1,41 @@
+- schema_version: 2
+  kind: deprecated_module
+  module: account_payment_term
+  change: merged
+  target: account
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: aa0cc7692b6b
+      title: "[MOV] account, account_payment_term: merge module"
+      file: "addons/account_payment_term/__manifest__.py"
+      lines: "17.0:1; 18.0 addons/account/__manifest__.py:1"
+      note: "models, views and tests are moved into account"
+  message: "odoo aa0cc7692b6b: account_payment_term was merged into account"
+- schema_version: 2
+  kind: deprecated_module
+  module: l10n_de_audit_trail
+  change: merged
+  target: l10n_de
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: dd5d5d510131
+      title: "[IMP] account,*: merge audit trail"
+      file: "addons/l10n_de_audit_trail/__manifest__.py"
+      lines: "17.0:1; 18.0 addons/l10n_de/__manifest__.py:1"
+      note: "the localization manifest is removed while l10n_de survives the audit-trail merge"
+  message: "odoo dd5d5d510131: l10n_de_audit_trail was merged into l10n_de"
+- schema_version: 2
+  kind: deprecated_module
+  module: l10n_dk_audit_trail
+  change: merged
+  target: l10n_dk
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 2a1fd42be416
+      title: "[MOV] l10n_dk,l10n_dk_audit_trail: Merge modules"
+      file: "addons/l10n_dk_audit_trail/__manifest__.py"
+      lines: "17.0:1; 18.0 addons/l10n_dk/__manifest__.py:1"
+  message: "odoo 2a1fd42be416: l10n_dk_audit_trail was merged into l10n_dk"

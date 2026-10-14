@@ -200,6 +200,28 @@ def test_renamed_model_extends_field_renames(scripts):
     assert rules.resolutions[removed.stable_id].status == SHADOWED_BY_RENAME
 
 
+def test_structured_identity_preserving_model_successor_shadows_removal(scripts):
+    _write(scripts, "renamed_models/migrate_190_200/generated.yaml", '- ["old.m", "new.m", "s"]\n')
+    _write(
+        scripts,
+        "removed_models/migrate_190_200/curated.yaml",
+        """- schema_version: 2
+  kind: removed_model
+  model: old.m
+  change: renamed
+  target_model: new.m
+  identity_preserved: true
+  confidence: unknown
+  automation: recommendation_only
+  message: reviewed successor
+""",
+    )
+    rules = _rules(scripts)
+    removed = next(r for r in rules.rules if r.kind == RuleKind.REMOVED_MODEL)
+    assert rules.resolutions[removed.stable_id].status == SHADOWED_BY_RENAME
+    assert not [f for f in rules.findings if f.code == "removed_and_renamed_model"]
+
+
 def test_contradictions_are_errors_not_silent_choices(scripts):
     _write(scripts, "renamed_fields/migrate_190_200/curated.yaml", '- ["a.b", "f", "g", "s"]\n')
     _write(scripts, "renamed_fields/migrate_190_200/extra.yaml", '- ["a.b", "f", "h", "s"]\n')

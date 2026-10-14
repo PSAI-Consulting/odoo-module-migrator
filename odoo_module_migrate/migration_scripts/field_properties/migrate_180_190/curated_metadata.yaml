@@ -1,0 +1,196 @@
+# Verified from both branch tips and the changing commit; generated candidates remain non-applicable.
+- schema_version: 2
+  kind: field_property
+  model: account.move
+  field: is_storno
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: b93089d26043
+    title: '[IMP] account,point_of_sale,sale: adjust storno flows'
+    file: addons/account/models/account_move.py
+    lines: 18.0:180; 19.0:161
+    note: '18.0: is_storno = fields.Boolean( compute=''_compute_is_storno'', store=True, readonly=False, copy=False, ) | 19.0:
+      is_storno = fields.Boolean(compute=''_compute_is_storno'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo b93089d26043: account.move.is_storno store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: hr.department
+  field: complete_name
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: a05c4d70b8ed
+    title: '[IMP] hr: parent department name translation'
+    file: addons/hr/models/hr_department.py
+    lines: 18.0:19; 19.0:20
+    note: '18.0: complete_name = fields.Char(''Complete Name'', compute=''_compute_complete_name'', recursive=True, store=True)
+      | 19.0: complete_name = fields.Char(''Complete Name'', compute=''_compute_complete_name'', recursive=True, search=''_search_complete_name'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo a05c4d70b8ed: hr.department.complete_name store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: hr.job
+  field: expected_employees
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 95748c16cb1e
+    title: '[IMP] hr_recruitment: update targets on stage change'
+    file: addons/hr/models/hr_job.py
+    lines: 18.0:17; 19.0:17
+    note: '18.0: expected_employees = fields.Integer(compute=''_compute_employees'', string=''Total Forecasted Employees'',
+      store=True, help=''Expected number of employees for this job position after new recruitment.'') | 19.0: expected_employees
+      = fields.Integer(compute=''_compute_employees'', string=''Total Forecasted Employees'', help=''Expected number of employees
+      for this job position after new recruitment.'', groups="hr.group_hr_user")'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo 95748c16cb1e: hr.job.expected_employees store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: hr.job
+  field: no_of_employee
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 95748c16cb1e
+    title: '[IMP] hr_recruitment: update targets on stage change'
+    file: addons/hr/models/hr_job.py
+    lines: 18.0:19; 19.0:19
+    note: '18.0: no_of_employee = fields.Integer(compute=''_compute_employees'', string="Current Number of Employees", store=True,
+      help=''Number of employees currently occupying this job position.'') | 19.0: no_of_employee = fields.Integer(compute=''_compute_employees'',
+      string="Current Number of Employees", help=''Number of employees currently occupying this job position.'', groups="hr.group_hr_user")'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo 95748c16cb1e: hr.job.no_of_employee store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: hr.payslip.run
+  field: payslip_count
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 19af7f1675a5
+    title: '[IMP] Batch workflow refactor'
+    file: hr_payroll/models/hr_payslip_run.py
+    lines: 18.0:27; 19.0:54
+    note: '18.0: payslip_count = fields.Integer(compute=''_compute_payslip_count'') | 19.0: payslip_count = fields.Integer(compute=''_compute_payslip_count'',
+      store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'enterprise 19af7f1675a5: hr.payslip.run.payslip_count store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: planning.slot.template
+  field: name
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: c8e0da9e1f43
+    title: '[IMP] planning: multi create in calendar view of planning'
+    file: planning/models/planning_template.py
+    lines: 18.0:15; 19.0:18
+    note: '18.0: name = fields.Char(''Hours'', compute="_compute_name") | 19.0: name = fields.Char(''Hours'', compute="_compute_name",
+      store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'enterprise c8e0da9e1f43: planning.slot.template.name store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: pos.config
+  field: currency_id
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3395c205f060
+    title: '[FIX] point_of_sale: fix dashboard'
+    file: addons/point_of_sale/models/pos_config.py
+    lines: 18.0:109; 19.0:96
+    note: '18.0: currency_id = fields.Many2one(''res.currency'', compute=''_compute_currency'', compute_sudo=True, string="Currency")
+      | 19.0: currency_id = fields.Many2one(''res.currency'', compute=''_compute_currency'', store=True, compute_sudo=True,
+      string="Currency")'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 3395c205f060: pos.config.currency_id store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: purchase.order
+  field: reminder_date_before_receipt
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 4cd4da13a1a2
+    title: '[IMP] purchase: last UI update'
+    file: addons/purchase/models/purchase_order.py
+    lines: 18.0:163; 19.0:174
+    note: '18.0: reminder_date_before_receipt = fields.Integer(''Days Before Receipt'', compute=''_compute_receipt_reminder_email'')
+      | 19.0: reminder_date_before_receipt = fields.Integer(''Days Before Receipt'', compute=''_compute_receipt_reminder_email'',
+      store=True, readonly=False)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 4cd4da13a1a2: purchase.order.reminder_date_before_receipt store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: resource.calendar.attendance
+  field: duration_hours
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 77f860f5d375
+    title: '[IMP] resource: Resource attendance rework'
+    file: addons/resource/models/resource_calendar_attendance.py
+    lines: 18.0:32; 19.0:31
+    note: '18.0: duration_hours = fields.Float(compute=''_compute_duration_hours'', string=''Duration (hours)'') | 19.0: duration_hours
+      = fields.Float(compute=''_compute_duration_hours'', inverse=''_inverse_duration_hours'', string=''Duration (hours)'',
+      store=True, readonly=False)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 77f860f5d375: resource.calendar.attendance.duration_hours store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: sign.request
+  field: completion_date
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 95eafd958985
+    title: '[IMP] sign: style refinements'
+    file: sign/models/sign_request.py
+    lines: 18.0:102; 19.0:66
+    note: '18.0: completion_date = fields.Date(string="Completion Date", compute="_compute_progress", compute_sudo=True) |
+      19.0: completion_date = fields.Date(string="Completion Date", compute="_compute_completion_date", compute_sudo=True,
+      store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'enterprise 95eafd958985: sign.request.completion_date store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: stock.warehouse.orderpoint
+  field: qty_to_order_computed
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 6f2d1b26b341
+    title: '[FIX] stock: store qty_to_order_computed'
+    file: addons/stock/models/stock_orderpoint.py
+    lines: 18.0:86; 19.0:88
+    note: '18.0: qty_to_order_computed = fields.Float(''To Order Computed'', compute=''_compute_qty_to_order_computed'', digits=''Product
+      Unit of Measure'') | 19.0: qty_to_order_computed = fields.Float(''To Order Computed'', store=True, compute=''_compute_qty_to_order_computed'',
+      digits=''Product Unit'')'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 6f2d1b26b341: stock.warehouse.orderpoint.qty_to_order_computed store changed from False to True'

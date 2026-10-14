@@ -1,0 +1,44 @@
+- schema_version: 2
+  kind: removed_model
+  model: mail.notification.web.push
+  change: renamed
+  target_model: mail.push
+  target_module: mail
+  identity_preserved: true
+  field_mapping: {}
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 0ab2f7d5cdf0
+      title: "[MOV] mail: reorganize mail \"webpush\" code"
+      file: "addons/mail/models/web_push.py"
+      lines: "17.0:14; 18.0 addons/mail/models/mail_push.py:15"
+    - repository: openupgrade
+      file: "openupgrade_scripts/scripts/mail/18.0.1.18/pre-migration.py"
+      lines: "6-14"
+      note: "model and table are renamed"
+  validation:
+    target_model_required: true
+  message: "Renamed to mail.push - odoo 0ab2f7d5cdf0; OpenUpgrade 18.0 mail pre-migration"
+- schema_version: 2
+  kind: removed_model
+  model: mail.partner.device
+  change: renamed
+  target_model: mail.push.device
+  target_module: mail
+  identity_preserved: true
+  field_mapping: {}
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 0ab2f7d5cdf0
+      title: "[MOV] mail: reorganize mail \"webpush\" code"
+      file: "addons/mail/models/partner_devices.py"
+      lines: "17.0:17; 18.0 addons/mail/models/mail_push_device.py:14"
+    - repository: openupgrade
+      file: "openupgrade_scripts/scripts/mail/18.0.1.18/pre-migration.py"
+      lines: "6-14"
+      note: "model and table are renamed"
+  validation:
+    target_model_required: true
+  message: "Renamed to mail.push.device - odoo 0ab2f7d5cdf0; OpenUpgrade 18.0 mail pre-migration"

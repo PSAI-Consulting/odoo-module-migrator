@@ -5,6 +5,7 @@
 - ["account.account", "create_asset", "enterprise 66db1d5654f '[IMP] account_{asset,asset_fleet,loans},*: vendor bill asset improvements'"]
 - ["account.account", "form_view_ref", "enterprise 66db1d5654f '[IMP] account_{asset,asset_fleet,loans},*: vendor bill asset improvements'"]
 - ["account.account", "l10n_in_tds_tcs_section_id", "odoo 1f9317227fcb '[IMP] l10n_in: adopt generic withholding framework'"]
+- ["account.accrued.orders.wizard", "account_types", "addons/account/wizard/accrued_orders.py"]
 - ["account.analytic.line", "display_timer", "enterprise ba5e71e153c '[IMP] *_timesheet_*: remove timer header and replace it with kpis'"]
 - ["account.asset", "account_depreciation_expense_id", "enterprise 3f59a1c4c1c '[IMP] account_asset{_fleet},*: add asset variants with different ledgers'"]
 - ["account.asset", "account_depreciation_id", "enterprise 3f59a1c4c1c '[IMP] account_asset{_fleet},*: add asset variants with different ledgers'"]

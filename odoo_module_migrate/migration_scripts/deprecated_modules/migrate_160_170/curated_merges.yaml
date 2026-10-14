@@ -1,0 +1,29 @@
+# Removed modules whose code is visibly moved into a surviving module by the cited commit.
+- schema_version: 2
+  kind: deprecated_module
+  module: account_sequence
+  change: merged
+  target: account
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: e7df30a56580
+      title: "[IMP] account{,_sequence}: merge"
+      file: "addons/account_sequence/__manifest__.py"
+      lines: "16.0:1; 17.0 addons/account/__manifest__.py:1"
+      note: "account_sequence models moved into addons/account/models"
+  message: "odoo e7df30a56580: account_sequence was merged into account"
+- schema_version: 2
+  kind: deprecated_module
+  module: l10n_latam_account_sequence
+  change: merged
+  target: l10n_latam_invoice_document
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: e7df30a56580
+      title: "[IMP] account{,_sequence}: merge"
+      file: "addons/l10n_latam_account_sequence/__manifest__.py"
+      lines: "16.0:1; 17.0 addons/l10n_latam_invoice_document/models/account_move.py:1"
+      note: "the localization extension is moved into l10n_latam_invoice_document"
+  message: "odoo e7df30a56580: l10n_latam_account_sequence was merged into l10n_latam_invoice_document"

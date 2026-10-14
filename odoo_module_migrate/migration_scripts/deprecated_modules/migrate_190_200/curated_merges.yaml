@@ -1,0 +1,14 @@
+- schema_version: 2
+  kind: deprecated_module
+  module: l10n_dk_oioubl
+  change: merged
+  target: l10n_dk
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 6123b713e64a
+      title: "[IMP] l10n_dk: Merge Nemhandel and remove OIOUBL201"
+      file: "addons/l10n_dk_oioubl/__manifest__.py"
+      lines: "19.0:1; 20.0 addons/l10n_dk/__manifest__.py:1"
+      note: "OIOUBL 2.1 code and tests are moved into l10n_dk; OIOUBL 2.01 is removed"
+  message: "odoo 6123b713e64a: l10n_dk_oioubl was merged into l10n_dk"

@@ -33,6 +33,9 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "tests" / "fixtures" / "rules_baseline.json"
+# Resolve the package from the same worktree even when this file is executed
+# directly with a Python installed editable from another checkout.
+sys.path.insert(0, str(ROOT))
 
 ATTRIBUTES = (
     "_DEPRECATED_MODULES", "_REMOVED_FIELDS", "_REMOVED_MODELS", "_RENAMED_FIELDS",
@@ -57,7 +60,6 @@ def canonical(value):
 
 def scripts():
     """{script module name: [script instances]} for every migration script."""
-    sys.path.insert(0, str(ROOT))
     from odoo_module_migrate.base_migration_script import BaseMigrationScript
 
     package = importlib.import_module("odoo_module_migrate.migration_scripts")

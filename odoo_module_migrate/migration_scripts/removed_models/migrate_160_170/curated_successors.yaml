@@ -1,0 +1,22 @@
+- schema_version: 2
+  kind: removed_model
+  model: mailing.contact.subscription
+  change: renamed
+  target_model: mailing.subscription
+  target_module: mass_mailing
+  identity_preserved: true
+  field_mapping: {}
+  confidence: verified
+  evidence:
+    - repository: odoo
+      commit: 5b760634ca50
+      title: "[REM] mass_mailing: remove duplicated code"
+      file: "addons/mass_mailing/models/mailing_contact_subscription.py"
+      lines: "16.0:11; 17.0 addons/mass_mailing/models/mailing_subscription.py:11"
+    - repository: openupgrade
+      file: "openupgrade_scripts/scripts/mass_mailing/17.0.2.7/pre-migration.py"
+      lines: "28-35"
+      note: "model and table are renamed, preserving record identity"
+  validation:
+    target_model_required: true
+  message: "Renamed to mailing.subscription - odoo 5b760634ca50; OpenUpgrade 17.0 mass_mailing pre-migration"
