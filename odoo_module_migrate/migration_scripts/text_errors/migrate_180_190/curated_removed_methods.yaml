@@ -1,0 +1,190 @@
+# Removed override methods verified against their deletion commit.
+.py:
+  \bdef\s+_add_field\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:667; 19.0:removed
+    message: '[19] BaseModel._add_field was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_add_inherited_fields\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:3559; 19.0:removed
+    message: '[19] BaseModel._add_inherited_fields was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_build_model\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:716; 19.0:removed
+    message: '[19] BaseModel._build_model was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_build_model_attributes\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:817; 19.0:removed
+    message: '[19] BaseModel._build_model_attributes was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_build_model_check_base\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:794; 19.0:removed
+    message: '[19] BaseModel._build_model_check_base was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_build_model_check_parent\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:810; 19.0:removed
+    message: '[19] BaseModel._build_model_check_parent was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_condition_to_sql\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 7f38c4abf5c8
+      title: '[IMP] orm: always call field.search when present'
+      file: odoo/addons/base/models/res_bank.py
+      lines: 18.0:123; 19.0:removed
+    message: '[19] BaseModel._condition_to_sql was removed - odoo 7f38c4abf5c8 ''[IMP] orm: always call field.search when
+      present'''
+  \bdef\s+_in_cache_without\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:7116; 19.0:removed
+    message: '[19] BaseModel._in_cache_without was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_inherits_check\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:3590; 19.0:removed
+    message: '[19] BaseModel._inherits_check was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_init_constraints_onchanges\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:861; 19.0:removed
+    message: '[19] BaseModel._init_constraints_onchanges was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_mapped_func\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:6485; 19.0:removed
+    message: '[19] BaseModel._mapped_func was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_pop_field\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:695; 19.0:removed
+    message: '[19] BaseModel._pop_field was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_prepare_setup\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:3616; 19.0:removed
+    message: '[19] BaseModel._prepare_setup was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_read_group_get_annotated_groupby\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:2799; 19.0:removed
+    message: '[19] BaseModel._read_group_get_annotated_groupby was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_setup_base\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:3630; 19.0:removed
+    message: '[19] BaseModel._setup_base was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_setup_complete\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:3755; 19.0:removed
+    message: '[19] BaseModel._setup_complete was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''
+  \bdef\s+_setup_fields\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0a5b1f96b812
+      title: '[REF] core: odoo.orm package'
+      file: odoo/models.py
+      lines: 18.0:3729; 19.0:removed
+    message: '[19] BaseModel._setup_fields was removed - odoo 0a5b1f96b812 ''[REF] core: odoo.orm package'''

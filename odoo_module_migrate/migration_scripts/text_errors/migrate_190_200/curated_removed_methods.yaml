@@ -1,0 +1,130 @@
+# Removed override methods verified against their deletion commit.
+.py:
+  \bdef\s+_check_m2m_recursion\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 37ba3b162e7d
+      title: '[REM] orm: remove cycle and toggle_active methods'
+      file: odoo/orm/models.py
+      lines: 19.0:5705; 20.0:removed
+    message: '[20] BaseModel._check_m2m_recursion was removed - odoo 37ba3b162e7d ''[REM] orm: remove cycle and toggle_active
+      methods'''
+  \bdef\s+_check_recursion\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 37ba3b162e7d
+      title: '[REM] orm: remove cycle and toggle_active methods'
+      file: odoo/orm/models.py
+      lines: 19.0:5701; 20.0:removed
+    message: '[20] BaseModel._check_recursion was removed - odoo 37ba3b162e7d ''[REM] orm: remove cycle and toggle_active
+      methods'''
+  \bdef\s+_filter_access_rules\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0915e817f416
+      title: '[REM] orm: old check access methods'
+      file: odoo/orm/models.py
+      lines: 19.0:4192; 20.0:removed
+    message: '[20] BaseModel._filter_access_rules was removed - odoo 0915e817f416 ''[REM] orm: old check access methods'''
+  \bdef\s+_filter_access_rules_python\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0915e817f416
+      title: '[REM] orm: old check access methods'
+      file: odoo/orm/models.py
+      lines: 19.0:4197; 20.0:removed
+    message: '[20] BaseModel._filter_access_rules_python was removed - odoo 0915e817f416 ''[REM] orm: old check access methods'''
+  \bdef\s+_read_group_fill_results\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 127653b6796b
+      title: '[REM] core: remove old read_group API'
+      file: odoo/orm/models.py
+      lines: 19.0:2322; 20.0:removed
+    message: '[20] BaseModel._read_group_fill_results was removed - odoo 127653b6796b ''[REM] core: remove old read_group
+      API'''
+  \bdef\s+_read_group_fill_temporal\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 127653b6796b
+      title: '[REM] core: remove old read_group API'
+      file: odoo/orm/models.py
+      lines: 19.0:2394; 20.0:removed
+    message: '[20] BaseModel._read_group_fill_temporal was removed - odoo 127653b6796b ''[REM] core: remove old read_group
+      API'''
+  \bdef\s+_read_group_format_result\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 127653b6796b
+      title: '[REM] core: remove old read_group API'
+      file: odoo/orm/models.py
+      lines: 19.0:2562; 20.0:removed
+    message: '[20] BaseModel._read_group_format_result was removed - odoo 127653b6796b ''[REM] core: remove old read_group
+      API'''
+  \bdef\s+_read_group_format_result_properties\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 127653b6796b
+      title: '[REM] core: remove old read_group API'
+      file: odoo/orm/models.py
+      lines: 19.0:2644; 20.0:removed
+    message: '[20] BaseModel._read_group_format_result_properties was removed - odoo 127653b6796b ''[REM] core: remove old
+      read_group API'''
+  \bdef\s+_read_group_groupby_properties\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: d5dfe353e4da
+      title: '[IMP] orm: move group by properties to its to_sql'
+      file: odoo/orm/models.py
+      lines: 19.0:2941; 20.0:removed
+    message: '[20] BaseModel._read_group_groupby_properties was removed - odoo d5dfe353e4da ''[IMP] orm: move group by properties
+      to its to_sql'''
+  \bdef\s+_traverse_related_sql\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 6c976177cc3e
+      title: '[REF] orm: move traverse_related_sql'
+      file: odoo/orm/models.py
+      lines: 19.0:2895; 20.0:removed
+    message: '[20] BaseModel._traverse_related_sql was removed - odoo 6c976177cc3e ''[REF] orm: move traverse_related_sql'''
+  \bdef\s+check_access_rule\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 0915e817f416
+      title: '[REM] orm: old check access methods'
+      file: odoo/orm/models.py
+      lines: 19.0:4182; 20.0:removed
+    message: '[20] BaseModel.check_access_rule was removed - odoo 0915e817f416 ''[REM] orm: old check access methods'''

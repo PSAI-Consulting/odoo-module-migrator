@@ -1,0 +1,115 @@
+# Removed override methods verified against their deletion commit.
+.py:
+  \bdef\s+_add_fake_fields\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 2a3466e8f86b
+      title: '[IMP] core,base_import: allow importing properties fields'
+      file: odoo/models.py
+      lines: 17.0:1321; 18.0:removed
+    message: '[18] BaseModel._add_fake_fields was removed - odoo 2a3466e8f86b ''[IMP] core,base_import: allow importing properties
+      fields'''
+  \bdef\s+_field_properties_to_sql\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: b177b058be15
+      title: '[IMP] core: make related non-stored fields groupable/aggregetable/sortable'
+      file: odoo/models.py
+      lines: 17.0:2909; 18.0:removed
+    message: '[18] BaseModel._field_properties_to_sql was removed - odoo b177b058be15 ''[IMP] core: make related non-stored
+      fields groupable/aggregetable/sortable'''
+  \bdef\s+_generate_order_by\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 18760a15a359
+      title: '[REM] core: remove deprecated methods'
+      file: odoo/models.py
+      lines: 17.0:5325; 18.0:removed
+    message: '[18] BaseModel._generate_order_by was removed - odoo 18760a15a359 ''[REM] core: remove deprecated methods'''
+  \bdef\s+_inherits_join_calc\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 18760a15a359
+      title: '[REM] core: remove deprecated methods'
+      file: odoo/models.py
+      lines: 17.0:2824; 18.0:removed
+    message: '[18] BaseModel._inherits_join_calc was removed - odoo 18760a15a359 ''[REM] core: remove deprecated methods'''
+  \bdef\s+_populate\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 052f4aad1e08
+      title: '[REM] *: remove old `populate` feature'
+      file: odoo/addons/base/populate/res_company.py
+      lines: 17.0:39; 18.0:removed
+    message: '[18] BaseModel._populate was removed - odoo 052f4aad1e08 ''[REM] *: remove old `populate` feature'''
+  \bdef\s+_populate_dependencies\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 052f4aad1e08
+      title: '[REM] *: remove old `populate` feature'
+      file: odoo/models.py
+      lines: 17.0:7085; 18.0:removed
+    message: '[18] BaseModel._populate_dependencies was removed - odoo 052f4aad1e08 ''[REM] *: remove old `populate` feature'''
+  \bdef\s+_populate_factories\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 052f4aad1e08
+      title: '[REM] *: remove old `populate` feature'
+      file: odoo/addons/base/populate/ir_filters.py
+      lines: 17.0:16; 18.0:removed
+    message: '[18] BaseModel._populate_factories was removed - odoo 052f4aad1e08 ''[REM] *: remove old `populate` feature'''
+  \bdef\s+_populate_sizes\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 052f4aad1e08
+      title: '[REM] *: remove old `populate` feature'
+      file: odoo/models.py
+      lines: 17.0:7068; 18.0:removed
+    message: '[18] BaseModel._populate_sizes was removed - odoo 052f4aad1e08 ''[REM] *: remove old `populate` feature'''
+  \bdef\s+_read_group_check_field_access_rights\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: be4b01309211
+      title: '[REF] core,project: remove _read_group_check_field_access_rights()'
+      file: odoo/addons/base/models/res_users.py
+      lines: 17.0:664; 18.0:removed
+    message: '[18] BaseModel._read_group_check_field_access_rights was removed - odoo be4b01309211 ''[REF] core,project: remove
+      _read_group_check_field_access_rights()'''
+  \bdef\s+user_has_groups\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: cb31d4352c74
+      title: '[REF] base: replace user_has_groups() and user.has_group()'
+      file: odoo/models.py
+      lines: 17.0:1559; 18.0:removed
+    message: '[18] BaseModel.user_has_groups was removed - odoo cb31d4352c74 ''[REF] base: replace user_has_groups() and user.has_group()'''

@@ -1,0 +1,64 @@
+- step: migrate_160_170
+  method: _patch_method
+  status: already covered by a text rule
+- step: migrate_160_170
+  method: _read
+  status: already covered by a text rule
+- step: migrate_160_170
+  method: _revert_method
+  status: already covered by a text rule
+- step: migrate_160_170
+  method: flush
+  status: already covered by a text rule
+- step: migrate_160_170
+  method: invalidate_cache
+  status: already covered by a text rule
+- step: migrate_160_170
+  method: recompute
+  status: already covered by a text rule
+- step: migrate_160_170
+  method: refresh
+  status: already covered by a text rule
+- step: migrate_170_180
+  method: _name_search
+  status: already covered by a text rule
+- step: migrate_170_180
+  method: _read_group_get_annoted_groupby
+  file: odoo/models.py
+  status: no exact deletion commit
+- step: migrate_170_180
+  method: copy_multi
+  status: already covered by a text rule
+- step: migrate_170_180
+  method: name_get
+  status: already covered by a text rule
+- step: migrate_180_190
+  method: _apply_ir_rules
+  status: already covered by a text rule
+- step: migrate_180_190
+  method: _flush_search
+  status: already covered by a text rule
+- step: migrate_180_190
+  method: _transient_max_count
+  status: already covered by a text rule
+- step: migrate_180_190
+  method: _transient_max_hours
+  status: already covered by a text rule
+- step: migrate_180_190
+  method: _where_calc
+  status: already covered by a text rule
+- step: migrate_180_190
+  method: clear_caches
+  status: already covered by a text rule
+- step: migrate_190_200
+  method: check_access_rights
+  status: already covered by a text rule
+- step: migrate_190_200
+  method: check_field_access_rights
+  status: already covered by a text rule
+- step: migrate_190_200
+  method: copy_translations
+  status: already covered by a text rule
+- step: migrate_190_200
+  method: toggle_active
+  status: already covered by a text rule

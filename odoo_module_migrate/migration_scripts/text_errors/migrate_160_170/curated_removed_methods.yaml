@@ -1,0 +1,141 @@
+# Removed override methods verified against their deletion commit.
+.py:
+  \bdef\s+_compute_concurrency_field\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 25c6c15a06e8
+      title: '[IMP] base,*: remove __last_update from all models'
+      file: odoo/models.py
+      lines: 16.0:585; 17.0:removed
+    message: '[17] BaseModel._compute_concurrency_field was removed - odoo 25c6c15a06e8 ''[IMP] base,*: remove __last_update
+      from all models'''
+  \bdef\s+_generate_m2o_order_by\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: c041919f1b9f
+      title: '[IMP] core: introduce _order_to_sql() to replace _generate_order_by()'
+      file: odoo/models.py
+      lines: 16.0:4547; 17.0:removed
+    message: '[17] BaseModel._generate_m2o_order_by was removed - odoo c041919f1b9f ''[IMP] core: introduce _order_to_sql()
+      to replace _generate_order_by()'''
+  \bdef\s+_generate_order_by_inner\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: c041919f1b9f
+      title: '[IMP] core: introduce _order_to_sql() to replace _generate_order_by()'
+      file: odoo/models.py
+      lines: 16.0:4586; 17.0:removed
+    message: '[17] BaseModel._generate_order_by_inner was removed - odoo c041919f1b9f ''[IMP] core: introduce _order_to_sql()
+      to replace _generate_order_by()'''
+  \bdef\s+_inherits_join_add\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 160acc0200c1
+      title: '[FIX] core: fix inconsistencies between `_apply_ir_rule` and `check_access_rule`'
+      file: odoo/models.py
+      lines: 16.0:2434; 17.0:removed
+    message: '[17] BaseModel._inherits_join_add was removed - odoo 160acc0200c1 ''[FIX] core: fix inconsistencies between
+      `_apply_ir_rule` and `check_access_rule`'''
+  \bdef\s+_onchange_eval\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 132e9f72ed44
+      title: '[REF] *: rename onchange2 to onchange'
+      file: odoo/models.py
+      lines: 16.0:6367; 17.0:removed
+    message: '[17] BaseModel._onchange_eval was removed - odoo 132e9f72ed44 ''[REF] *: rename onchange2 to onchange'''
+  \bdef\s+_read_group_prepare\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 81a892ac8c4d
+      title: '[REF] core: read_group() now uses _read_group()'
+      file: odoo/models.py
+      lines: 16.0:1981; 17.0:removed
+    message: '[17] BaseModel._read_group_prepare was removed - odoo 81a892ac8c4d ''[REF] core: read_group() now uses _read_group()'''
+  \bdef\s+_read_group_prepare_data\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 81a892ac8c4d
+      title: '[REF] core: read_group() now uses _read_group()'
+      file: odoo/models.py
+      lines: 16.0:2104; 17.0:removed
+    message: '[17] BaseModel._read_group_prepare_data was removed - odoo 81a892ac8c4d ''[REF] core: read_group() now uses
+      _read_group()'''
+  \bdef\s+_read_group_process_groupby\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 81a892ac8c4d
+      title: '[REF] core: read_group() now uses _read_group()'
+      file: odoo/models.py
+      lines: 16.0:2047; 17.0:removed
+    message: '[17] BaseModel._read_group_process_groupby was removed - odoo 81a892ac8c4d ''[REF] core: read_group() now uses
+      _read_group()'''
+  \bdef\s+_read_group_raw\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 81a892ac8c4d
+      title: '[REF] core: read_group() now uses _read_group()'
+      file: odoo/models.py
+      lines: 16.0:2284; 17.0:removed
+    message: '[17] BaseModel._read_group_raw was removed - odoo 81a892ac8c4d ''[REF] core: read_group() now uses _read_group()'''
+  \bdef\s+_read_group_resolve_many2x_fields\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: 81a892ac8c4d
+      title: '[REF] core: read_group() now uses _read_group()'
+      file: odoo/models.py
+      lines: 16.0:2425; 17.0:removed
+    message: '[17] BaseModel._read_group_resolve_many2x_fields was removed - odoo 81a892ac8c4d ''[REF] core: read_group()
+      now uses _read_group()'''
+  \bdef\s+fields_get_keys\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: ba565758c6e9
+      title: '[REM] core: remove deprecated methods of models.py'
+      file: odoo/models.py
+      lines: 16.0:1459; 17.0:removed
+    message: '[17] BaseModel.fields_get_keys was removed - odoo ba565758c6e9 ''[REM] core: remove deprecated methods of models.py'''
+  \bdef\s+get_xml_id\s*\(:
+    schema_version: 2
+    kind: text_error
+    confidence: verified
+    evidence:
+      repository: odoo
+      commit: ba565758c6e9
+      title: '[REM] core: remove deprecated methods of models.py'
+      file: odoo/models.py
+      lines: 16.0:5037; 17.0:removed
+    message: '[17] BaseModel.get_xml_id was removed - odoo ba565758c6e9 ''[REM] core: remove deprecated methods of models.py'''
