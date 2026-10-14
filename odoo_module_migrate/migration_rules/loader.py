@@ -175,14 +175,19 @@ def _make_rule(category, step, layer, rel, node, entry, lines, seen_ids, extensi
         for name, expected in (("from_version", step.from_version), ("to_version", step.to_version)):
             if name in entry and str(entry[name]) != str(expected):
                 raise RuleError(f"{name} {entry[name]!r} does not match the folder {step.name} ({expected})", where)
-        if layer != OriginLayer.CURATED:
-            raise RuleError(f"schema_version 2 entries belong to hand-written files, not to {layer} files", where)
+        if layer not in (OriginLayer.CURATED, OriginLayer.GENERATED):
+            raise RuleError(f"schema_version 2 entries do not belong to {layer} files", where)
         payload = legacy.v2_payload(kind, entry, where, extension, pattern)
+        structured_evidence = legacy.v2_evidence(entry, where)
         # the historical message stays a legacy (never official) evidence
-        evidence = legacy.v2_evidence(entry, where) + legacy.legacy_evidence(payload)
+        evidence = structured_evidence + legacy.legacy_evidence(payload)
         pre, post = legacy.v2_conditions(entry, payload, where)
-        confidence = Confidence.parse(entry.get("confidence", "unknown"), where)
-        if confidence == Confidence.VERIFIED and not evidence:
+        default = "generated" if layer == OriginLayer.GENERATED else "unknown"
+        confidence = Confidence.parse(entry.get("confidence", default), where)
+        if layer == OriginLayer.GENERATED and confidence != Confidence.GENERATED:
+            # only a review (a curated rule) may promote an extracted rule
+            raise RuleError(f"a generated rule has confidence: generated, not {confidence}", where)
+        if confidence == Confidence.VERIFIED and not structured_evidence:
             raise RuleError("a verified rule needs a structured evidence", where)
         automation = Automation.parse(entry["automation"], where) if "automation" in entry else \
             legacy.legacy_automation(kind, payload, layer)

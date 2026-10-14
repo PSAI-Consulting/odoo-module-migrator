@@ -15,6 +15,13 @@ import extract_assets as ea  # noqa: E402
 import extract_changes as ec  # noqa: E402
 import extract_fields as ef  # noqa: E402
 
+def _rules(path):
+    """Historical data of an extracted rule file (written in v2, projected)."""
+    from odoo_module_migrate.migration_rules import loader
+
+    return loader.load_file(path, path.parent.parent.name, path.parent.parent.parent).document
+
+
 
 def _git(repo, *args):
     subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
@@ -121,7 +128,7 @@ def test_model_changes(repo):
 def test_extract_models_files(repo, tmp_path):
     out = tmp_path / "scripts"
     ec.main(["models", "--from", "19.0", "--to", "20.0", "--repo", str(repo), "--output-dir", str(out)])
-    removed = yaml.safe_load((out / "removed_models/migrate_190_200/generated_models.yaml").read_text())
+    removed = _rules(out / "removed_models/migrate_190_200/generated_models.yaml")
     assert [r[0] for r in removed] == ["res.bank", "x.old"]
     # rename candidates are commented out: never applied without review
     candidates = (out / "renamed_models/migrate_190_200/candidates.yaml").read_text()
@@ -140,8 +147,8 @@ def test_js_changes(repo):
 def test_extract_js_rules_apply_once(repo, tmp_path):
     out = tmp_path / "scripts"
     ec.main(["js", "--from", "19.0", "--to", "20.0", "--repo", str(repo), "--output-dir", str(out)])
-    replaces = yaml.safe_load((out / "text_replaces/migrate_190_200/js_modules.yaml").read_text())
-    errors = yaml.safe_load((out / "text_errors/migrate_190_200/js_modules.yaml").read_text())
+    replaces = _rules(out / "text_replaces/migrate_190_200/js_modules.yaml")
+    errors = _rules(out / "text_errors/migrate_190_200/js_modules.yaml")
     js = ("import { parseDate } from '@web/core/utils/dates';\n"
           'import { Gone } from "@web/core/gone";\n'
           'import { x } from "@web/core/utils/dates_extra";\n')
@@ -169,7 +176,7 @@ def test_view_changes(repo, tmp_path):
     assert [r[0] for r in removed] == ["base.tmpl_old", "base.view_form"]
     out = tmp_path / "scripts"
     ec.main(["views", "--from", "19.0", "--to", "20.0", "--repo", str(repo), "--output-dir", str(out)])
-    errors = yaml.safe_load((out / "text_errors/migrate_190_200/views.yaml").read_text())
+    errors = _rules(out / "text_errors/migrate_190_200/views.yaml")
     xml = '<field name="inherit_id" ref="base.view_form"/>'
     assert any(re.search(p, xml) for p in errors[".xml"])
     assert not any(re.search(p, '<field name="inherit_id" ref="base.view_kept"/>') for p in errors[".xml"])
@@ -322,7 +329,7 @@ def test_openupgrade_rename_of_a_field_still_defined(repo, tmp_path):
     out = tmp_path / "scripts"
     ec.main(["fields", "--from", "19.0", "--to", "20.0", "--repo", str(repo), "--models", "res.",
              "--openupgrade", str(ou), "--output-dir", str(out)])
-    generated = yaml.safe_load((out / "renamed_fields/migrate_190_200/generated.yaml").read_text())
+    generated = _rules(out / "renamed_fields/migrate_190_200/generated.yaml")
     assert [r[:3] for r in generated] == [["res.bank.institution", "old_other", "other"]]
     candidates = (out / "renamed_fields/migrate_190_200/candidates.yaml").read_text()
     assert '# - ["res.bank.institution", "bic", "swift"' in candidates

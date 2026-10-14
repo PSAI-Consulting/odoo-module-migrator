@@ -78,6 +78,15 @@ class RuleSet:
         return [f for f in self.findings if f.level == "error"]
 
 
+def _same_removal(first: Rule, rule: Rule) -> bool:
+    """Same removal of the same model / field, only the message differs."""
+    if rule.kind == RuleKind.REMOVED_MODEL:
+        return (first.payload.change, first.payload.target_model) == (rule.payload.change, rule.payload.target_model)
+    if rule.kind == RuleKind.REMOVED_FIELD:
+        return (first.payload.change, first.payload.replacement) == (rule.payload.change, rule.payload.replacement)
+    return False
+
+
 def _resolve_list(rules: list[Rule], resolutions: dict, findings: list) -> None:
     winners: dict[tuple, Rule] = {}
     for rule in rules:
@@ -91,6 +100,11 @@ def _resolve_list(rules: list[Rule], resolutions: dict, findings: list) -> None:
             reason = "identical rule" if rule.origin_layer == first.origin_layer else \
                 f"same rule in {first.origin_layer}"
             resolutions[rule.stable_id] = Resolution(DUPLICATE, first.stable_id, reason)
+            continue
+        if rule.origin_layer == first.origin_layer and _same_removal(first, rule):
+            # two extractors (OpenUpgrade, sources) report the same removal
+            # with their own source: the first message is kept, nothing differs
+            resolutions[rule.stable_id] = Resolution(DUPLICATE, first.stable_id, "same removal, other source")
             continue
         if first.kind == RuleKind.DEPRECATED_MODULE and first.payload.change == ChangeKind.REMOVED:
             # apply_module_rules keeps a "removed" dependency: the later rule

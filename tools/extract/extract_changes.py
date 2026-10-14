@@ -237,6 +237,7 @@ def extract_modules(args):
         out = pathlib.Path(args.output)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(text, encoding="utf-8")
+        WRITTEN.append(out)
         print(f"{len(rules)} rules written to {out}", file=sys.stderr)
     else:
         sys.stdout.write(text)
@@ -249,12 +250,34 @@ DEFAULT_MODEL_PREFIXES = (
 )
 
 
+# rule files written by the command: converted to schema_version 2 at the end
+WRITTEN = []
+
+
 def _write_rules(path, header, rows, fmt):
     path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [f"# {line}" for line in header] + [fmt(row) for row in rows]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    WRITTEN.append(path)
     print(f"{len(rows)} rules written to {path}", file=sys.stderr)
+
+
+def _convert_written(args):
+    """Rewrite the extracted rules in the v2 format (one line per rule,
+    confidence: generated); sources checked in the bare repositories next to
+    the first --repo (D:/Odoo/.repos)."""
+    if not WRITTEN:
+        return
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+    import convert_rules_v2
+
+    repos = getattr(args, "repo", None) or []
+    repos = repos if isinstance(repos, list) else [repos]
+    base = pathlib.Path(repos[0].partition("@")[0]).parent if repos else None
+    count = convert_rules_v2.convert_generated_files(WRITTEN, base)
+    WRITTEN.clear()
+    print(f"{count} rules converted to schema_version 2", file=sys.stderr)
 
 
 def _q(value):
@@ -439,6 +462,7 @@ def _write_text_rules(path, header, sections):
             lines.append(f"  # {comment}")
             lines.append(f"  {_yaml_sq(regex)}: {_yaml_sq(value)}")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    WRITTEN.append(path)
     print(f"{count} rules written to {path}", file=sys.stderr)
 
 
@@ -799,6 +823,7 @@ def main(argv=None):
         if args.output and not args.curated:
             args.curated = str(pathlib.Path(args.output).with_name("curated.yaml"))
         extract_modules(args)
+        _convert_written(args)
     else:
         sys.path.insert(0, str(pathlib.Path(__file__).parent))
         if getattr(args, "history_ref", None):
@@ -812,6 +837,7 @@ def main(argv=None):
             "field-properties": extract_field_properties,
             "decimal-precisions": extract_decimal_precisions,
         }[args.command](args)
+        _convert_written(args)
 
 
 if __name__ == "__main__":
