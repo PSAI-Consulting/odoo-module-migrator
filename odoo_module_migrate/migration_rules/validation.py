@@ -146,6 +146,11 @@ def validate(root=None, odoo_sources=(), with_python: bool = True) -> Report:
     index = SourceIndex.build(odoo_sources) if odoo_sources else None
     for rule in ruleset.rules:
         findings += _identifier_findings(rule)
+        if rule.origin_layer in (OriginLayer.CURATED, OriginLayer.GENERATED) and not rule.structured:
+            # every rule file is v2: the RAG indexes v2 rules only, a legacy
+            # entry would silently be left out
+            findings.append(Finding("error", "legacy_format", "write this rule in schema_version 2",
+                                    rule.origin.ref, (rule.stable_id,)))
         if rule.origin_layer == OriginLayer.CURATED and not _justified(rule):
             findings.append(Finding("warning", "unjustified_curated",
                                     "hand-written rule without source, message or comment", rule.origin.ref,

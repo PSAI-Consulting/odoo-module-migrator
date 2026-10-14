@@ -74,7 +74,6 @@ _WORD_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*")
 _QUOTED_RE = re.compile(r"""['"]([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)['"]""")
 _STEP_RE = re.compile(r"migrate_(\d+)_(\d+)")
 _UPGRADE_SCRIPT_RE = re.compile(r"^(\d+)\.(\d+)-\d+-")
-_YAML_ENTRY_RE = re.compile(r"""^(?:- |\s+['"])""")
 
 
 def _tokens(text: str) -> list[str]:
@@ -155,35 +154,6 @@ class RAGChunk:
 
 # ---------------------------------------------------------------- rule corpus
 
-def _yaml_rule_chunks(path: pathlib.Path, rel_path: str, rule_type: str) -> list[dict[str, Any]]:
-    """One chunk per YAML rule entry, with the comments that source it."""
-    try:
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    except OSError:
-        return []
-    chunks = []
-    comments: list[str] = []
-    section = ""
-    for number, line in enumerate(lines, 1):
-        stripped = line.strip()
-        if not stripped:
-            comments = []
-            continue
-        if stripped.startswith("#"):
-            comments.append(stripped)
-            continue
-        if not line.startswith((" ", "-")) and stripped.endswith(":"):
-            section = stripped  # ".py:", ".xml:" of the text rule files
-            comments = []
-            continue
-        if not _YAML_ENTRY_RE.match(line):
-            continue
-        body = "\n".join([*(comments[-3:]), (f"{section} " if section else "") + stripped])
-        chunks.append({"type": rule_type, "rel_path": rel_path, "line": number, "body": body})
-        comments = []
-    return chunks
-
-
 def _python_chunks(path: pathlib.Path, rel_path: str, chunk_type: str) -> list[dict[str, Any]]:
     """One chunk per top-level function / class (or 40-line windows)."""
     try:
@@ -240,7 +210,9 @@ def _normalised_rule_chunks(root: pathlib.Path, label: str) -> list[dict[str, An
     lines_of: dict[str, list[str]] = {}
     chunks = []
     for rule in ruleset.rules:
-        if rule.origin.layer not in (OriginLayer.CURATED, OriginLayer.GENERATED) or not ruleset.effective(rule):
+        # structured (schema_version 2) rules only: a legacy entry is never indexed
+        if rule.origin.layer not in (OriginLayer.CURATED, OriginLayer.GENERATED) or not ruleset.effective(rule) \
+                or not rule.structured:
             continue
         category = rule.origin.file.split("/", 1)[0]
         if rule.origin.file not in lines_of:
@@ -272,9 +244,6 @@ def _normalised_rule_chunks(root: pathlib.Path, label: str) -> list[dict[str, An
 @functools.lru_cache(maxsize=4)
 def _load_corpus(signature: str, roots: tuple[tuple[str, str], ...]) -> tuple[dict[str, Any], ...]:
     """Parsed rule chunks; the signature argument only keys the cache."""
-    from ..migration_rules.legacy import CATEGORIES
-    from ..migration_rules.loader import file_layer
-    from ..migration_rules.models import OriginLayer
 
     chunks: list[dict[str, Any]] = []
     for label, root in roots:
@@ -291,14 +260,9 @@ def _load_corpus(signature: str, roots: tuple[tuple[str, str], ...]) -> tuple[di
                 if path.suffix == ".py":
                     chunks += _python_chunks(path, rel_path, "upgrade_code")
             elif path.suffix in {".yaml", ".yml"}:
-                top = path.relative_to(base).parts[0]
-                if top in CATEGORIES or top == "data" or path.stem == "candidates":
-                    continue  # rules: normalised above; data maps and candidates: never evidence
-                # data of a Python transformation (odoo_tools_imports.yaml)
-                lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-                layer = file_layer(path, lines)
-                rule_type = "rule_generated" if layer == OriginLayer.GENERATED else "rule_curated"
-                chunks += _yaml_rule_chunks(path, rel_path, rule_type)
+                # the rules are normalised above (v2 only); other YAML (data maps
+                # such as model_modules_140.yaml, candidates) is never evidence
+                continue
             elif path.suffix == ".py":
                 chunks += _python_chunks(path, rel_path, "rule_script")
     for item in chunks:
