@@ -73,20 +73,20 @@
    "sha256": "52469304d483c9b5218402ddbd2c4b009d3cb3f7c4d4934986d048f65ba6c05e"
   },
   "tools_import_error_patterns:migrate_160_170": {
-   "count": 1278,
-   "sha256": "c58b81af244dc61cd1100c1049349cd2c0b209b7a21ad2a57d20da7cf353bb37"
+   "count": 1290,
+   "sha256": "c9ed75883fac5e78c5d842821b08ff100760cf9beb90ab6f7a91b11787c56861"
   },
   "tools_import_error_patterns:migrate_170_180": {
-   "count": 430,
-   "sha256": "94159fcead5b1daa8d0ec0301c9bd801bb6c88010b3f1382917985ae35d7b885"
+   "count": 442,
+   "sha256": "43c017d5436458b1797cc4f20a8168a5dbaae4536d23b3f02542d90cb19015c4"
   },
   "tools_import_error_patterns:migrate_180_190": {
-   "count": 1149,
-   "sha256": "b468217fdfef5cbf95d33967c2b82e40c8a0cf6d6c58ebfa0388c6a4145a1b93"
+   "count": 1166,
+   "sha256": "7fc1fc1425480f24cf522141a31db9c5b90de9e27abf488358cfff40418cf847"
   },
   "tools_import_error_patterns:migrate_190_200": {
-   "count": 1243,
-   "sha256": "586c3071917f9a69e740bd9041893eb396fdd76d3fb86c685889b47b62f6be4a"
+   "count": 1253,
+   "sha256": "71b4befce10abbcbfaefdd64568abf3c56b18285eca84a748d815cbd38ff1c24"
   },
   "upgrade_code_aliases:10->11": {
    "count": 79,
