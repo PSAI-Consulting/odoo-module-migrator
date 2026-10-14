@@ -10,7 +10,7 @@ in the format of ``odoo_module_migrate/migration_scripts/<type>/migrate_XXX_YYY`
         --repo D:/Odoo/.repos/odoo.git@addons \\
         --repo D:/Odoo/.repos/enterprise.git \\
         --repo D:/Odoo/.repos/design-themes.git \\
-        --openupgrade D:/Odoo/local-addons/OdooOCA/OpenUpgrade
+        --openupgrade D:/Odoo/.repos/oca/OpenUpgrade.git
 
 Every generated rule carries its source (commit or apriori.py) as a comment.
 """
@@ -276,13 +276,15 @@ def extract_fields(args):
 
     if args.openupgrade:
         ou = pathlib.Path(args.openupgrade)
-        try:
-            ref = resolve_ref(ou, args.to_version)
-            renamed_fields, renamed_models, removed_fields, removed_models = (
-                ef.openupgrade_changes(ou, ref, models_filter)
-            )
-        except SystemExit:
-            pass
+        # No silent fallback: an unreadable OpenUpgrade (folder of worktrees
+        # instead of a repository, missing branch) used to drop every
+        # OpenUpgrade rename from generated.yaml without a word.
+        ref = resolve_ref(ou, args.to_version)
+        renamed_fields, renamed_models, removed_fields, removed_models = (
+            ef.openupgrade_changes(ou, ref, models_filter)
+        )
+        if not (renamed_fields or removed_fields or renamed_models or removed_models):
+            raise SystemExit(f"OpenUpgrade {args.openupgrade} ({ref}): no analysis / pre-migration data found")
         if (removed_fields or renamed_fields) and args.repo:
             # "DEL" in an analysis means "this module does not define the field
             # anymore": keep it only if no module of the target defines it
@@ -394,8 +396,10 @@ def extract_models(args):
         f"Repositories: {', '.join(r.name for r in repos)}",
         "Do not edit: write corrections in curated.yaml (same folder, loaded first).",
     ]
+    # generated_models.yaml: the "fields" command writes the removed models of
+    # OpenUpgrade to generated.yaml of the same folder; both are kept
     _write_rules(
-        out / "removed_models" / step / "generated.yaml",
+        out / "removed_models" / step / "generated_models.yaml",
         header + ["Format: [model, source]"],
         removed,
         lambda r: f"- [{_q(r[0])}, {_q(r[1])}]",

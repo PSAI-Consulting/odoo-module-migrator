@@ -326,7 +326,7 @@ sous-commande par type de règle. Elle lit des dépôts git **bare** d'Odoo
 # Modules supprimés / renommés / fusionnés
 python tools/extract/extract_changes.py modules --from 19.0 --to 20.0 \
     --repo D:/Odoo/.repos/odoo.git@addons --repo D:/Odoo/.repos/enterprise.git \
-    --openupgrade D:/Odoo/local-addons/OdooOCA/OpenUpgrade \
+    --openupgrade D:/Odoo/.repos/oca/OpenUpgrade.git \
     --output odoo_module_migrate/migration_scripts/deprecated_modules/migrate_190_200/modules.yaml
 ```
 

@@ -448,7 +448,9 @@ def model_changes(repos, ref_from_of, ref_to_of, models_filter=lambda m: True):
     """(removed, candidates) models between two branches of all the
     repositories together (a model moved to another module still exists).
 
-    removed:    [(model, source)]
+    removed:    [(model, source)], every model absent from the target, the
+                rename candidates included: until a rename is proven, a model
+                that no longer exists must stay reported
     candidates: [(old_model, new_model, source)]: the commit that deletes the
                 model creates exactly one model having half of its fields at
                 least (rename to check by hand)."""
@@ -497,6 +499,7 @@ def model_changes(repos, ref_from_of, ref_to_of, models_filter=lambda m: True):
                     added.append(new)
         if len(added) == 1:
             candidates.append((model, added[0], source))
+            removed.append((model, f"{source} (rename candidate to check: {added[0]})"))
         else:
             removed.append((model, source))
     return removed, candidates
@@ -506,8 +509,10 @@ def merge_changes(openupgrade, sources):
     """Merge (renamed, removed) of OpenUpgrade with (renamed, removed,
     candidates) of the sources, OpenUpgrade first, without duplicates.
 
-    A field renamed by one source is neither removed nor a candidate; a
-    candidate is not removed (it stays reported as candidate)."""
+    A field renamed by one source is neither removed nor a candidate. A
+    candidate is still removed: candidates are inactive until reviewed, and a
+    field that no longer exists in the target must stay reported (with the
+    candidate in its message)."""
     ou_renamed, ou_removed = openupgrade
     src_renamed, src_removed, src_candidates = sources
     renamed = dedupe(list(ou_renamed) + list(src_renamed), lambda r: (r[0], r[1]))
@@ -515,9 +520,9 @@ def merge_changes(openupgrade, sources):
     candidates = dedupe(
         [c for c in src_candidates if (c[0], c[1]) not in renamed_keys], lambda r: (r[0], r[1])
     )
-    skip = renamed_keys | {(c[0], c[1]) for c in candidates}
     removed = dedupe(
-        [r for r in list(ou_removed) + list(src_removed) if (r[0], r[1]) not in skip],
+        [r for r in list(ou_removed) + list(src_removed) if (r[0], r[1]) not in renamed_keys]
+        + [(c[0], c[1], f"{c[3]} (rename candidate to check: {c[2]})") for c in candidates],
         lambda r: (r[0], r[1]),
     )
     return renamed, removed, candidates

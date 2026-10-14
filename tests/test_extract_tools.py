@@ -112,15 +112,17 @@ def test_model_changes(repo):
     removed, candidates = ef.model_changes([repo], _refs("19.0"), _refs("20.0"))
     assert candidates == [("res.bank", "res.bank.institution", "odoo " + candidates[0][2].split()[1]
                            + " '[IMP] base: bank institutions'")]
-    assert [r[0] for r in removed] == ["x.old"]
-    assert "bank institutions" in removed[0][1]
+    # the candidate stays removed until a rename is proven
+    assert [r[0] for r in removed] == ["res.bank", "x.old"]
+    assert "rename candidate to check: res.bank.institution" in removed[0][1]
+    assert "bank institutions" in removed[1][1]
 
 
 def test_extract_models_files(repo, tmp_path):
     out = tmp_path / "scripts"
     ec.main(["models", "--from", "19.0", "--to", "20.0", "--repo", str(repo), "--output-dir", str(out)])
-    removed = yaml.safe_load((out / "removed_models/migrate_190_200/generated.yaml").read_text())
-    assert [r[0] for r in removed] == ["x.old"]
+    removed = yaml.safe_load((out / "removed_models/migrate_190_200/generated_models.yaml").read_text())
+    assert [r[0] for r in removed] == ["res.bank", "x.old"]
     # rename candidates are commented out: never applied without review
     candidates = (out / "renamed_models/migrate_190_200/candidates.yaml").read_text()
     assert yaml.safe_load(candidates) is None
@@ -190,7 +192,8 @@ def test_merge_changes():
     )
     assert renamed == [("m", "a", "b", "ou"), ("m", "d", "e", "src")]
     assert candidates == [("m", "c", "c2", "src")]
-    assert removed == [("m", "x", "ou"), ("m", "y", "src")]
+    # OpenUpgrade first; a candidate (inactive) keeps its removal reported
+    assert removed == [("m", "x", "ou"), ("m", "c", "ou"), ("m", "y", "src")]
 
 
 NEW_SYNTAX = '''from odoo import fields, models
