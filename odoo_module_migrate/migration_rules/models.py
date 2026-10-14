@@ -49,6 +49,7 @@ class RuleKind(_Enum):
     TEXT_ERROR = "text_error"
     TEXT_WARNING = "text_warning"
     PYTHON_TRANSFORM = "python_transform"
+    MOVED_IMPORT = "moved_import"
 
 
 class OriginLayer(_Enum):
@@ -384,6 +385,30 @@ class TextRule:
 
 
 @dataclass(frozen=True)
+class MovedImport:
+    """``from <from_module> import <name>`` does not work anymore.
+
+    to_module: where to import it from (None: removed); reexport: the import
+    statement of the library it was re-exported from; is_module: the name is
+    a module; old_module: where it was defined; hint: other definitions of
+    the same name (different code)."""
+
+    from_module: str
+    name: str
+    to_module: str | None = None
+    old_module: str | None = None
+    reexport: str | None = None
+    reexport_source: str | None = None
+    is_module: bool = False
+    deprecated: bool = False
+    hint: str | None = None
+    message: str | None = None  # the "proof" of the extracted rule
+
+    def key(self):
+        return (self.from_module, self.name)
+
+
+@dataclass(frozen=True)
 class PythonTransform:
     module: str  # dotted module of the function
     function: str
@@ -396,7 +421,7 @@ class PythonTransform:
 
 Payload = (
     DeprecatedModule | RemovedModel | RenamedModel | RemovedField | RenamedField | RenamedMethod |
-    FieldType | FieldProperty | MenuParentHint | TextRule | PythonTransform
+    FieldType | FieldProperty | MenuParentHint | TextRule | PythonTransform | MovedImport
 )
 
 

@@ -48,6 +48,18 @@
    "count": 10,
    "sha256": "2f17cd172153116302ac8d4f5118629faca41419e705bc38e384172de1ea1ae0"
   },
+  "moved_imports:migrate_170_180": {
+   "count": 313,
+   "sha256": "f3ec660a92275ef6f613aab230de6922b3a76d6aefee9cbc7e0d7b297ab701a3"
+  },
+  "moved_imports:migrate_180_190": {
+   "count": 32,
+   "sha256": "d895f239b0b46ecb99a2f8a05e35f7fdbe2fb40daf020f4b589a6b051f0594fe"
+  },
+  "moved_imports:migrate_190_200": {
+   "count": 78,
+   "sha256": "f3172eeaddee280d10a12b5d75891bf0b6bab16e3b98b9f4c7fec7a9556f75d9"
+  },
   "tools_import_error_patterns:migrate_090_100": {
    "count": 211,
    "sha256": "e6b3f60e45d9386c353a5983745f2fdefd04425c18ef5af4469504cbe92b7736"

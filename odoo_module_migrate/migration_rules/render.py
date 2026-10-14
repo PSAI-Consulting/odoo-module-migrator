@@ -88,6 +88,13 @@ def summary_line(rule: Rule) -> str:
         text = f"field {p.model}.{p.field} {p.property} {p.old_value} -> {p.new_value}"
     elif kind == RuleKind.MENU_PARENT_HINT:
         text = f"menu {p.surviving_child}: parent {p.removed_parent} removed, candidate {p.candidate_parent}"
+    elif kind == RuleKind.MOVED_IMPORT:
+        if p.reexport:
+            text = f"import {p.from_module}.{p.name} -> {p.reexport}"
+        elif p.to_module:
+            text = f"import {p.from_module}.{p.name} moved -> from {p.to_module} import {p.name}"
+        else:
+            text = f"import {p.from_module}.{p.name} removed" + (f" (other definitions: {p.hint})" if p.hint else "")
     elif isinstance(p, TextRule):
         text = f"{p.extension} {p.pattern}: {p.value}"
     else:

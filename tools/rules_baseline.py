@@ -109,6 +109,8 @@ def readers():
             result[f"upgrade_code_aliases:{start}->{end}"] = canonical(aliases)
     for end in range(9, 21):
         result[f"merged_modules_until:{end}"] = canonical(migration_rules.merged_module_rules(end * 10))
+    for step in ("migrate_170_180", "migrate_180_190", "migrate_190_200"):
+        result[f"moved_imports:{step}"] = canonical(odoo_tools_imports.load_rules(step))
     steps = ROOT / "odoo_module_migrate" / "migration_scripts" / "text_errors"
     for step in sorted(p.name for p in steps.iterdir() if p.is_dir()):
         result[f"tools_import_error_patterns:{step}"] = canonical(

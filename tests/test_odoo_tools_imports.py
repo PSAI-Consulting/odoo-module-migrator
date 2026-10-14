@@ -12,7 +12,7 @@ SCRIPTS = Path(__file__).resolve().parent.parent / "odoo_module_migrate" / "migr
 
 
 def _rules(step):
-    return oti.load_rules(SCRIPTS / "python_scripts" / step / "odoo_tools_imports.yaml")
+    return oti.load_rules(step)
 
 
 def _patterns(step):

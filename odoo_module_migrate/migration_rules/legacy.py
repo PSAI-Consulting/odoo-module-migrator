@@ -33,6 +33,7 @@ from .models import (
     FieldType,
     LegacyEvidence,
     MenuParentHint,
+    MovedImport,
     OriginLayer,
     Payload,
     RemovedField,
@@ -77,6 +78,8 @@ CATEGORIES = {
         Category("field_types", "_FIELD_TYPES", "list", RuleKind.FIELD_TYPE, (5, 5)),
         Category("field_properties", "_FIELD_PROPERTIES", "list", RuleKind.FIELD_PROPERTY, (6, 6)),
         Category("menu_parent_hints", "_MENU_PARENT_HINTS", "list", RuleKind.MENU_PARENT_HINT, (4, 4)),
+        # read by odoo_tools_imports.py (no script attribute), one mapping per rule
+        Category("moved_imports", "", "list", RuleKind.MOVED_IMPORT),
         Category("text_replaces", "_TEXT_REPLACES", "text", RuleKind.TEXT_REPLACE),
         Category("text_errors", "_TEXT_ERRORS", "text", RuleKind.TEXT_ERROR),
         Category("text_warnings", "_TEXT_WARNINGS", "text", RuleKind.TEXT_WARNING),
@@ -86,7 +89,7 @@ CATEGORIES = {
 LOAD_ORDER = (
     "field_types", "field_properties", "menu_parent_hints", "text_replaces", "text_errors",
     "text_warnings", "deprecated_modules", "removed_fields", "renamed_fields", "renamed_models",
-    "renamed_methods", "removed_models",
+    "renamed_methods", "removed_models", "moved_imports",
 )
 KIND_CATEGORY = {c.kind: c for c in CATEGORIES.values()}
 
@@ -110,6 +113,8 @@ def legacy_payload(category: Category, entry: Any, where: str, extension: str = 
         if not (isinstance(entry, str) or (entry is None and category.kind == RuleKind.TEXT_REPLACE)):
             raise RuleError(f"invalid value {entry!r} (a string is expected)", where)
         return TextRule(extension, pattern, entry)
+    if category.kind == RuleKind.MOVED_IMPORT:
+        return legacy_moved_import(entry, where)
     if not isinstance(entry, list):
         raise RuleError(f"a list or a schema_version 2 mapping is expected, not {type(entry).__name__}", where)
     low, high = category.arity
@@ -174,6 +179,9 @@ def legacy_automation(kind: RuleKind, payload: Payload, layer: OriginLayer) -> A
         if IDENT_RE.fullmatch(payload.new_field or ""):
             return Automation.DETERMINISTIC
         return Automation.RECOMMENDATION_ONLY  # "renamed to X: update it by hand"
+    if kind == RuleKind.MOVED_IMPORT:
+        # rewritten when the new module (or library) is known, else reported
+        return Automation.DETERMINISTIC if (payload.to_module or payload.reexport) else Automation.MANUAL
     if kind in (RuleKind.RENAMED_MODEL, RuleKind.TEXT_REPLACE, RuleKind.PYTHON_TRANSFORM):
         return Automation.DETERMINISTIC
     if kind == RuleKind.REMOVED_FIELD:
@@ -212,6 +220,8 @@ V2_FIELDS: dict[RuleKind, tuple[set[str], set[str]]] = {
     RuleKind.FIELD_TYPE: ({"model", "field", "old_type", "new_type", "message"}, set()),
     RuleKind.FIELD_PROPERTY: ({"model", "field", "property", "old_value", "new_value", "message"}, set()),
     RuleKind.MENU_PARENT_HINT: ({"removed_parent", "surviving_child", "candidate_parent", "message"}, set()),
+    RuleKind.MOVED_IMPORT: ({"from_module", "name"}, {"to_module", "old_module", "reexport", "reexport_source",
+                                                      "is_module", "deprecated", "hint", "message"}),
     RuleKind.TEXT_REPLACE: ({"replacement"}, set()),
     RuleKind.TEXT_ERROR: ({"message"}, set()),
     RuleKind.TEXT_WARNING: ({"message"}, set()),
@@ -276,6 +286,20 @@ def v2_payload(kind: RuleKind, entry: dict, where: str, extension: str = "", pat
         return FieldType(s("model"), s("field"), s("old_type"), s("new_type"), s("message"))
     if kind == RuleKind.FIELD_PROPERTY:
         return FieldProperty(s("model"), s("field"), s("property"), s("old_value"), s("new_value"), s("message"))
+    if kind == RuleKind.MOVED_IMPORT:
+        flags = {}
+        for name in ("is_module", "deprecated"):
+            value = entry.get(name, False)
+            if not isinstance(value, bool):
+                raise RuleError(f"{name} must be true or false", where)
+            flags[name] = value
+        if entry.get("to_module") and entry.get("reexport"):
+            raise RuleError("to_module and reexport exclude each other", where)
+        return MovedImport(
+            s("from_module"), s("name"), s("to_module", required=False), s("old_module", required=False),
+            s("reexport", required=False), s("reexport_source", required=False), flags["is_module"],
+            flags["deprecated"], s("hint", required=False), s("message", required=False),
+        )
     if kind == RuleKind.MENU_PARENT_HINT:
         return MenuParentHint(s("removed_parent"), s("surviving_child"), s("candidate_parent"), s("message"))
     raise RuleError(f"unsupported rule kind {kind}", where)  # pragma: no cover
@@ -357,6 +381,7 @@ PROJECTIONS: dict[RuleKind, Callable[[Any], Any]] = {
     RuleKind.FIELD_TYPE: lambda p: [p.model, p.field, p.old_type, p.new_type, p.message],
     RuleKind.FIELD_PROPERTY: lambda p: [p.model, p.field, p.property, p.old_value, p.new_value, p.message],
     RuleKind.MENU_PARENT_HINT: lambda p: [p.removed_parent, p.surviving_child, p.candidate_parent, p.message],
+    RuleKind.MOVED_IMPORT: lambda p: project_moved_import(p),
     RuleKind.TEXT_REPLACE: lambda p: p.value,
     RuleKind.TEXT_ERROR: lambda p: p.value,
     RuleKind.TEXT_WARNING: lambda p: p.value,
@@ -366,3 +391,41 @@ PROJECTIONS: dict[RuleKind, Callable[[Any], Any]] = {
 def project(kind: RuleKind, payload: Payload) -> Any:
     """Historical value of a (v2) rule."""
     return PROJECTIONS[kind](payload)
+
+
+# ------------------------------------------------------------------ moved imports
+# Historical entry (tools/extract/extract_tools_exports.py): a mapping whose keys
+# are present only when set: {from, name, to | import + source, old, module,
+# deprecated, hint, proof}; "to" is always there except for a re-export.
+
+_MOVED_IMPORT_KEYS = {"from", "name", "to", "old", "import", "source", "module", "deprecated", "hint", "proof"}
+
+
+def legacy_moved_import(entry: Any, where: str) -> MovedImport:
+    if not isinstance(entry, dict):
+        raise RuleError(f"a mapping is expected, not {type(entry).__name__}", where)
+    unknown = set(entry) - _MOVED_IMPORT_KEYS
+    if unknown or not entry.get("from") or not entry.get("name"):
+        raise RuleError(f"invalid moved import {entry!r}", where)
+    return MovedImport(
+        str(entry["from"]), str(entry["name"]), _text(entry.get("to")), _text(entry.get("old")),
+        _text(entry.get("import")), _text(entry.get("source")), bool(entry.get("module")),
+        bool(entry.get("deprecated")), _text(entry.get("hint")), _text(entry.get("proof")),
+    )
+
+
+def project_moved_import(p: MovedImport) -> dict:
+    """The historical mapping, keys in the order of the extractor."""
+    result: dict = {"from": p.from_module, "name": p.name}
+    if p.reexport is not None:
+        result["import"] = p.reexport
+        if p.reexport_source is not None:
+            result["source"] = p.reexport_source
+    else:
+        result["to"] = p.to_module
+    for key, value in (("old", p.old_module), ("module", p.is_module or None),
+                       ("deprecated", p.deprecated or None), ("hint", p.hint)):
+        if value is not None:
+            result[key] = value
+    result["proof"] = p.message
+    return result
