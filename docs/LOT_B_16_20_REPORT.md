@@ -124,16 +124,18 @@ néanmoins terminés avec code retour 0.
 
 ## Validation
 
-- Audit final : 0 erreur. Les avertissements restants sont principalement des
-  `missing_target` dus au contrôle limité aux deux chemins demandés, plus 54
+- Audit final : 0 erreur et 591 avertissements. Les avertissements restants sont
+  529 `missing_target` dus au contrôle limité aux deux chemins demandés, plus 54
   conflits historiques antérieurs à 16.0, un step orphelin historique et trois
   règles curated anciennes non justifiées. Aucun conflit 16→20 n'est laissé par
   les successeurs ajoutés.
 - La baseline change uniquement pour les quatre étapes touchées. Les compteurs
   `tools_import_error_patterns` passent de 1278 à 1290, 430 à 442, 1149 à 1166
   et 1243 à 1253, conformément aux méthodes supprimées ajoutées.
-- Les résultats définitifs de pytest et Ruff sont consignés après le dernier
-  rafraîchissement de la fixture.
+- Pytest : 920 tests passés, 1 ignoré, 6 `SyntaxWarning` historiques.
+- Ruff sur tous les chemins demandés signale 197 défauts historiques, exactement
+  comme le worktree témoin à `09b6c04`. Ruff ciblé sur chaque fichier Python
+  ajouté ou modifié : zéro défaut.
 
 ## Garanties
 
@@ -141,4 +143,3 @@ Les fichiers generated ont été produits par les extracteurs, jamais édités �
 main. Les candidates sont entièrement commentées. Aucun push n'a été effectué.
 `D:\Odoo\local-addons\Stof\stof`, le worktree principal et
 `PROBLEMES_RENCONTRES.md` n'ont pas été modifiés ni inclus dans un commit.
-
