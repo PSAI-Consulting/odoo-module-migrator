@@ -17,7 +17,12 @@ def _target_method_signature(index, ancestors, method, closure, module_name):
     signatures = {}
     for ancestor in ancestors:
         for owner in index.method_owners.get((ancestor, method), set()):
-            if owner in {module_name, "base"} or owner not in closure:
+            if owner == module_name or owner not in closure:
+                continue
+            # the generic BaseModel methods (create, write...) have no single
+            # contract; a real method of a base model (res.partner
+            # _display_address) is compared like any other
+            if owner == "base" and method in models.BASE_METHODS:
                 continue
             for signature in index.method_signatures.get((ancestor, method, owner), ()):
                 # A forwarding *args/**kwargs override gives no useful contract;
@@ -26,6 +31,21 @@ def _target_method_signature(index, ancestors, method, closure, module_name):
                     continue
                 signatures[models.signature_key(signature)] = signature
     return next(iter(signatures.values())) if len(signatures) == 1 else None
+
+
+def _mixin_contract(index, module_name, model, field):
+    """A field read in an abstract model but defined by its concrete
+    inheritors: the mixin's contract (barcode.generate.mixin reads
+    self.barcode, product.product defines it). True when the mixin belongs to
+    the migrated module and none of its indexed concrete inheritors lacks the
+    field."""
+    if model not in index.models.get(module_name, set()):
+        return False
+    inheritors = [
+        candidate for candidate in index.defined - index.abstract
+        if candidate != model and model in index.ancestors(candidate)
+    ]
+    return all(field in index.fields.get(candidate, set()) for candidate in inheritors)
 
 
 def _same_super_calls(function):
@@ -243,8 +263,24 @@ def apply_override_signature_migrations(module, index):
                     continue
                 local_names = [item["name"] for item in local["parameters"]]
                 target_names = [item["name"] for item in target["parameters"]]
-                if not set(target_names) <= set(local_names):
+                # parameters added by the target: accepted only after every
+                # parameter the override already has, with a literal default
+                # (delivery.carrier._get_price_from_picking(..., wv=0.0) in
+                # 20.0): current callers are unchanged, the value is forwarded
+                added = [name for name in target_names if name not in local_names]
+                shared = [name for name in target_names if name in local_names]
+                if added and (
+                    target_names[: len(shared)] != shared
+                    or any(
+                        item["name"] in added and item.get("default") is None
+                        for item in target["parameters"]
+                    )
+                ):
                     continue
+                if any(name in {arg.arg for arg in ast.walk(function) if isinstance(arg, ast.arg)}
+                       or any(isinstance(node, ast.Name) and node.id == name for node in ast.walk(function))
+                       for name in added):
+                    continue  # the name is already used in the method
                 call = calls[0]
                 forwards_positionally = (
                     not call.keywords
@@ -421,8 +457,11 @@ def apply_base_common_compatibility(module):
 class Uses(ast.NodeVisitor):
     """Track recordset aliases and relational paths within a method."""
 
-    def __init__(self, index, parameter_types=None, method_parameters=None):
+    def __init__(self, index, parameter_types=None, method_parameters=None, instance_models=None):
         self.index = index
+        # {attribute: model} of self.<attribute> / cls.<attribute> holding a
+        # recordset (tests: self.partner_model = self.env["res.partner"])
+        self.instance_models = instance_models or {}
         self.aliases = {}
         self.usages = []
         self.model_uses = []
@@ -454,6 +493,13 @@ class Uses(ast.NodeVisitor):
             )
             if len(candidates) == 1:
                 return next(iter(candidates))
+            if (
+                not candidates
+                and isinstance(node.value, ast.Name)
+                and node.value.id in {"self", "cls"}
+                and node.attr in self.instance_models
+            ):
+                return self.instance_models[node.attr]
         if (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Attribute)
@@ -636,13 +682,49 @@ class Uses(ast.NodeVisitor):
                     arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg]
                 )
                 for values in dictionaries:
-                    if isinstance(values, ast.Dict):
-                        for key in values.keys:
-                            if isinstance(key, ast.Constant) and isinstance(
-                                key.value, str
-                            ):
-                                self.usages.append((key, model, key.value))
+                    self._values_usages(values, model)
         self.generic_visit(node)
+
+    def _values_usages(self, values, model, depth=0):
+        """Keys of a create / write values dictionary, and of the dictionaries
+        of its x2many commands with the comodel of their field:
+        ``{"order_line": [(0, 0, {...})]}`` / ``Command.create({...})``."""
+        if not isinstance(values, ast.Dict) or depth > 3:
+            return
+        for key, value in zip(values.keys, values.values):
+            if not (isinstance(key, ast.Constant) and isinstance(key.value, str)):
+                continue
+            self.usages.append((key, model, key.value))
+            if not isinstance(value, (ast.List, ast.Tuple)):
+                continue
+            comodels = set().union(
+                *(
+                    self.index.comodels.get((ancestor, key.value), set())
+                    for ancestor in self.index.ancestors(model)
+                )
+            )
+            if len(comodels) != 1:
+                continue
+            comodel = next(iter(comodels))
+            for command in value.elts:
+                nested = None
+                if (
+                    isinstance(command, (ast.Tuple, ast.List))
+                    and len(command.elts) == 3
+                    and isinstance(command.elts[0], ast.Constant)
+                    and command.elts[0].value in (0, 1)
+                ):
+                    nested = command.elts[2]
+                elif (
+                    isinstance(command, ast.Call)
+                    and isinstance(command.func, ast.Attribute)
+                    and command.func.attr in {"create", "update"}
+                    and isinstance(command.func.value, ast.Name)
+                    and command.func.value.id == "Command"
+                    and command.args
+                ):
+                    nested = command.args[-1]
+                self._values_usages(nested, comodel, depth + 1)
 
 
 def analyze_uses(tree, index):
@@ -661,19 +743,51 @@ def analyze_uses(tree, index):
             method_parameters[(class_models[0], statement.name)] = tuple(
                 argument.arg for argument in arguments
             )
+    instance_models = _instance_models(tree)
     parameter_types = {}
     visitor = None
     for _iteration in range(max(2, len(method_parameters) + 1)):
         before = {key: frozenset(value) for key, value in parameter_types.items()}
-        visitor = Uses(index, parameter_types, method_parameters)
+        visitor = Uses(index, parameter_types, method_parameters, instance_models)
         visitor.visit(tree)
         parameter_types = visitor.parameter_types
         after = {key: frozenset(value) for key, value in parameter_types.items()}
         if after == before and _iteration:
             break
-    final = Uses(index, parameter_types, method_parameters)
+    final = Uses(index, parameter_types, method_parameters, instance_models)
     final.visit(tree)
     return final
+
+
+def _instance_models(tree):
+    """{attribute: model} for ``self.X = self.env["m"]`` / ``cls.X = cls.env["m"]``
+    (setUp / setUpClass of tests); an attribute given two models is dropped."""
+    record_methods = {"create", "search", "browse", "new", "sudo", "with_context", "with_company", "with_user"}
+
+    def model_of(value):
+        model = fields._env_model(value)
+        if model is None and isinstance(value, ast.Call) and isinstance(value.func, ast.Attribute) \
+                and value.func.attr in record_methods:
+            model = model_of(value.func.value)
+        return model
+
+    found = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        model = model_of(node.value)
+        for target in node.targets:
+            if (
+                isinstance(target, ast.Attribute)
+                and isinstance(target.value, ast.Name)
+                and target.value.id in {"self", "cls"}
+            ):
+                found.setdefault(target.attr, set()).add(model)
+    return {
+        attribute: next(iter(models_))
+        for attribute, models_ in found.items()
+        if len(models_) == 1 and None not in models_
+    }
 
 
 def apply_field_renames(module, index, renames):
@@ -761,7 +875,27 @@ def apply_field_renames(module, index, renames):
             ):
                 continue
             end = positions.offset(node.end_lineno, node.end_col_offset)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                # a dictionary key: the whole quoted token, quotes kept
+                start = positions.offset(node.lineno, node.col_offset)
+                source = text[start:end]
+                if len(source) < 2 or source[0] not in {'"', "'"} or source[-1] != source[0] \
+                        or source[1:-1] != field:
+                    continue
+                edits.add((start, end, source[0] + replacement + source[-1], model, field, node.lineno))
+                continue
             edits.add((end - len(field), end, replacement, model, field, node.lineno))
+        # every dictionary key whose model is resolved (renamed or not at
+        # this step) is out of reach of the guess below: a sale.order.line
+        # key must not be renamed as a purchase.order.line one
+        resolved_spans = [(start, end) for start, end, *_rest in edits] + [
+            (
+                positions.offset(node.lineno, node.col_offset),
+                positions.offset(node.end_lineno, node.end_col_offset),
+            )
+            for node, _model, _field in visitor.usages
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        ]
         # Tests often prepare a values dictionary in a helper before passing
         # it to create(). Infer the model only when the other keys strongly
         # and uniquely match one renamed-field candidate.
@@ -792,11 +926,15 @@ def apply_field_renames(module, index, renames):
                     continue
                 best = max(score for score, _model, _new in candidates)
                 winners = [item for item in candidates if item[0] == best]
-                if len(winners) != 1:
+                # several models, one same new name (sale / purchase order
+                # line product_uom -> product_uom_id): not an ambiguity
+                if len({new for _score, _model, new in winners}) != 1:
                     continue
                 _score, model, replacement = winners[0]
                 start = positions.offset(key.lineno, key.col_offset)
                 end = positions.offset(key.end_lineno, key.end_col_offset)
+                if any(start < other_end and other_start < end for other_start, other_end in resolved_spans):
+                    continue  # already renamed with its resolved model
                 source = text[start:end]
                 if (
                     len(source) < 2
@@ -814,6 +952,17 @@ def apply_field_renames(module, index, renames):
                         key.lineno,
                     )
                 )
+        if not edits:
+            continue
+        ordered = sorted(edits)
+        overlapping = {
+            index
+            for index in range(1, len(ordered))
+            for previous in (index - 1,)
+            if ordered[index][0] < ordered[previous][1]
+        }
+        overlapping |= {index - 1 for index in overlapping}
+        edits = {edit for index, edit in enumerate(ordered) if index not in overlapping}
         if not edits:
             continue
         for start, end, replacement, _model, _field, _line in sorted(
@@ -2235,8 +2384,24 @@ def check_module(
                         f"{model}.{target.id} is related in the target model but is redefined with compute=; Odoo will combine both definitions and warn that the field is both computed and related. Keep the inherited related field and override only safe metadata such as string= when possible",
                     )
         if target_version >= 17:
+            # a list / tuple of names assigned at module or class level is data
+            # (auditlog FIELDS_BLACKLIST), not a read of the field
+            data_lists = {
+                id(element)
+                for statement in ast.walk(tree)
+                if isinstance(statement, (ast.Module, ast.ClassDef))
+                for assign in statement.body
+                if isinstance(assign, ast.Assign)
+                and isinstance(assign.value, (ast.List, ast.Tuple, ast.Set))
+                and all(
+                    isinstance(element, ast.Constant) and isinstance(element.value, str)
+                    for element in assign.value.elts
+                )
+                for element in assign.value.elts
+            }
             for node in ast.walk(tree):
-                if isinstance(node, ast.Constant) and node.value == "__last_update":
+                if isinstance(node, ast.Constant) and node.value == "__last_update" \
+                        and id(node) not in data_lists:
                     yield (
                         path,
                         node.lineno,
@@ -2326,6 +2491,8 @@ def check_module(
                 and not field.isupper()
                 and not any(field in index.methods.get(m, set()) for m in ancestors)
             ):
+                if model in index.abstract and _mixin_contract(index, module.name, model, field):
+                    continue
                 if model in index.abstract:
                     concrete = []
                     for candidate in sorted(index.defined - index.abstract):
@@ -2498,7 +2665,10 @@ def check_module(
                             and owner in closure
                         )
                     )
-                    if stmt.name.startswith("_compute_") and inherited_dependencies:
+                    # Odoo merges the @api.depends of every method of the MRO:
+                    # an override calling super() keeps the target dependencies
+                    if stmt.name.startswith("_compute_") and inherited_dependencies \
+                            and not _same_super_calls(stmt):
                         missing_dependencies = inherited_dependencies - local_dependencies
                         extra_dependencies = local_dependencies - inherited_dependencies
                         if missing_dependencies or extra_dependencies:
@@ -2666,6 +2836,41 @@ def check_module(
                             f"Possible accidental override of {model}.{stmt.name} from {', '.join(sorted(owners))}: no super() call or reference to {field}; review manually",
                         )
     yield from _check_action_methods(module, index, closure, complete)
+    yield from _test_field_issues(module, index, complete)
+
+
+def _test_field_issues(module, index, complete):
+    """Fields used by the tests that the target does not define anymore
+    (create({"company_type": ...}) on res.partner): the tests migrate with the
+    addon. Only this check: tests may use modules outside of the depends."""
+    if not complete:
+        return
+    loaded = set(models.loaded_python_files(module))
+    for path in models.analysis_python_files(module):
+        if path in loaded:
+            continue
+        try:
+            tree = ast.parse(path.read_bytes())
+        except (SyntaxError, ValueError):
+            continue
+        seen = set()
+        for node, model, field in analyze_uses(tree, index).usages:
+            ancestors = index.ancestors(model)
+            if (
+                (node.lineno, model, field) in seen
+                or not ancestors <= index.defined
+                or any(index.field_owners.get((m, field)) for m in ancestors)
+                or field in index.fields.get(model, set())
+                or field in models.MAGIC_FIELDS
+                or field.startswith("_")
+                or field in models.BASE_ATTRIBUTES
+                or field.isupper()
+                or any(field in index.methods.get(m, set()) for m in ancestors)
+                or model in index.abstract
+            ):
+                continue
+            seen.add((node.lineno, model, field))
+            yield path, node.lineno, "error", f"Field {model}.{field} does not exist in the indexed target"
 
 
 def _model_from_xmlid(reference, index):

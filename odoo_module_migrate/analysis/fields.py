@@ -136,7 +136,20 @@ def _env_model(node):
         and isinstance(node.slice.value, str)
     ):
         return node.slice.value
+    # self.env.company / env.company(ies) / self.env.user: always these models
+    if (
+        isinstance(node, ast.Attribute)
+        and node.attr in _ENV_RECORDS
+        and (
+            (isinstance(node.value, ast.Attribute) and node.value.attr == "env")
+            or (isinstance(node.value, ast.Name) and node.value.id == "env")
+        )
+    ):
+        return _ENV_RECORDS[node.attr]
     return None
+
+
+_ENV_RECORDS = {"company": "res.company", "companies": "res.company", "user": "res.users"}
 
 
 class _PyVisitor(ast.NodeVisitor):

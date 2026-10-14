@@ -215,6 +215,8 @@ BASE_METHODS = {
     "search_read",
     "sorted", "sudo", "unlink", "update", "with_company", "with_context",
     "with_env", "with_prefetch", "with_user", "write",
+    # BaseModel hooks (odoo/orm/models.py)
+    "_register_hook", "_unregister_hook", "_auto_init", "init",
 }
 # fields added at run time: custom fields, reified groups of res.users (<= 18.0)
 DYNAMIC_FIELD_RE = re.compile(r"^(x_|in_group_|sel_groups_)")

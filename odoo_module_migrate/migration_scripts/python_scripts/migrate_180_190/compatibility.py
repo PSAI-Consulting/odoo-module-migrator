@@ -14,22 +14,7 @@ def migrate_compatibility(**kwargs):
         text = tools._read_content(path)
         new = text
         if path.suffix == ".xml":
-            # Match only the digits attribute, not labels or translated text.
-            new = re.sub(
-                r"""<!--[\s\S]*?-->|(\bdigits\s*=\s*(["']))Product Unit of Measure(\2)""",
-                lambda m: (
-                    m[0] if m[0].startswith("<!--") else m[1] + "Product Unit" + m[3]
-                ),
-                text,
-            )
-            new = re.sub(
-                r"(<record\b[^>]*\bmodel\s*=\s*([\"'])decimal\.precision\2[^>]*>"
-                r"(?:(?!</record>)[\s\S])*?"
-                r"<field\b[^>]*\bname\s*=\s*([\"'])name\3[^>]*>\s*)"
-                r"Product Unit of Measure(\s*</field>)",
-                r"\1Product Unit\4",
-                new,
-            )
+            new = _rename_precision_xml(text)
         else:
             try:
                 tree = ast.parse(text)
@@ -45,36 +30,7 @@ def migrate_compatibility(**kwargs):
                 } and usage.context.endswith("." + usage.field):
                     edits[usage.start, usage.end] = "env." + usage.field[1:]
             for node in ast.walk(tree):
-                if (
-                    isinstance(node, ast.keyword)
-                    and node.arg == "digits"
-                    and isinstance(node.value, ast.Constant)
-                    and node.value.value == "Product Unit of Measure"
-                ):
-                    value = node.value
-                    start, end = (
-                        pos.offset(value.lineno, value.col_offset),
-                        pos.offset(value.end_lineno, value.end_col_offset),
-                    )
-                    edits[start, end] = text[start:end].replace(
-                        "Product Unit of Measure", "Product Unit"
-                    )
-                if (
-                    isinstance(node, ast.Call)
-                    and isinstance(node.func, ast.Attribute)
-                    and node.func.attr in {"precision_get", "get_precision"}
-                    and node.args
-                    and isinstance(node.args[0], ast.Constant)
-                    and node.args[0].value == "Product Unit of Measure"
-                ):
-                    value = node.args[0]
-                    start, end = (
-                        pos.offset(value.lineno, value.col_offset),
-                        pos.offset(value.end_lineno, value.end_col_offset),
-                    )
-                    edits[start, end] = text[start:end].replace(
-                        "Product Unit of Measure", "Product Unit"
-                    )
+                edits.update(_precision_python_edits(node, text, pos))
                 if (
                     isinstance(node, ast.Call)
                     and isinstance(node.func, ast.Attribute)
@@ -100,3 +56,53 @@ def migrate_compatibility(**kwargs):
                 "[19] Migrated env shortcuts / UoM decimal precision (odoo 8fd73ea390ba; odoo/orm/models.py). File %s",
                 path,
             )
+
+
+def _rename_precision_xml(text):
+    """XML: the decimal precision 'Product Unit of Measure' is 'Product Unit'
+    from 19.0 (odoo 8fd73ea390ba, uom/data/uom_data.xml, same xmlid)."""
+    # Match only the digits attribute, not labels or translated text.
+    new = re.sub(
+        r"""<!--[\s\S]*?-->|(\bdigits\s*=\s*(["']))Product Unit of Measure(\2)""",
+        lambda m: (
+            m[0] if m[0].startswith("<!--") else m[1] + "Product Unit" + m[3]
+        ),
+        text,
+    )
+    return re.sub(
+        r"(<record\b[^>]*\bmodel\s*=\s*([\"'])decimal\.precision\2[^>]*>"
+        r"(?:(?!</record>)[\s\S])*?"
+        r"<field\b[^>]*\bname\s*=\s*([\"'])name\3[^>]*>\s*)"
+        r"Product Unit of Measure(\s*</field>)",
+        r"\1Product Unit\4",
+        new,
+    )
+
+
+def _precision_python_edits(node, text, pos):
+    """{(start, end): replacement} renaming the precision in digits= and
+    precision_get() / get_precision() arguments."""
+    value = None
+    if (
+        isinstance(node, ast.keyword)
+        and node.arg == "digits"
+        and isinstance(node.value, ast.Constant)
+        and node.value.value == "Product Unit of Measure"
+    ):
+        value = node.value
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr in {"precision_get", "get_precision"}
+        and node.args
+        and isinstance(node.args[0], ast.Constant)
+        and node.args[0].value == "Product Unit of Measure"
+    ):
+        value = node.args[0]
+    if value is None:
+        return {}
+    start, end = (
+        pos.offset(value.lineno, value.col_offset),
+        pos.offset(value.end_lineno, value.end_col_offset),
+    )
+    return {(start, end): text[start:end].replace("Product Unit of Measure", "Product Unit")}

@@ -29,10 +29,13 @@
     replacement: ".check_access("
   # odoo 080bbf6153a '[IMP] orm: remove stuff deprecated since Odoo 19' ; en 19.0 (odoo/orm/fields.py) :
   #     attrs['aggregator'] = attrs.pop('group_operator')   (même règle qu'en 17→18)
-  '\bgroup_operator(\s*=)':
+  # Argument d'appel seulement (fields.X(..., group_operator=...)) : un champ métier
+  # nommé group_operator (bi_sql_editor), ses usages et les comparaisons (==) ne sont
+  # pas touchés.
+  '([(,]\s*)group_operator(\s*=)(?!=)':
     schema_version: 2
     kind: text_replace
-    replacement: "aggregator\\1"
+    replacement: "\\1aggregator\\2"
     confidence: verified
     evidence:
       - repository: "odoo"

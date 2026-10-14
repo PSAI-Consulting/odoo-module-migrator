@@ -115,7 +115,11 @@ def _sanitize_acl_files(acl_files, module_path, module_name, manifest_path, logg
         text = path.read_text(encoding="utf-8-sig")
         reader = csv.DictReader(io.StringIO(text))
         fieldnames = reader.fieldnames or []
-        rows = list(reader)
+        all_rows = list(reader)
+        # a blank row (",,,,,,,") converts to nothing, but left in the file it
+        # makes Odoo's 19.4-00-ir-access.py skip the file as "modified" and
+        # keep it, with its manifest entry, next to ir.access.csv
+        rows = [row for row in all_rows if any((value or "").strip() for value in row.values())]
         local = []
         for line, row in enumerate(rows, 2):
             xmlid = (row.get("id") or "").strip()
@@ -133,7 +137,7 @@ def _sanitize_acl_files(acl_files, module_path, module_name, manifest_path, logg
                 continue
             local.append(row)
         if local:
-            if len(local) != len(rows):
+            if len(local) != len(all_rows):
                 buffer = io.StringIO()
                 writer = csv.DictWriter(buffer, fieldnames=fieldnames, lineterminator="\n")
                 writer.writeheader()

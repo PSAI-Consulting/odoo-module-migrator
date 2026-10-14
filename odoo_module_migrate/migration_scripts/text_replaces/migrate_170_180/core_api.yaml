@@ -3,10 +3,13 @@
 .py:
   # odoo 18.0 odoo/fields.py : "Since Odoo 18, 'group_operator' is deprecated, use
   # 'aggregator' instead" ; Odoo fait lui-même attrs['aggregator'] = attrs.pop('group_operator')
-  '\bgroup_operator(\s*=)':
+  # Argument d'appel seulement (fields.X(..., group_operator=...)) : un champ métier
+  # nommé group_operator (bi_sql_editor), ses usages et les comparaisons (==) ne sont
+  # pas touchés.
+  '([(,]\s*)group_operator(\s*=)(?!=)':
     schema_version: 2
     kind: text_replace
-    replacement: "aggregator\\1"
+    replacement: "\\1aggregator\\2"
   # BaseModel.user_has_groups (17.0 odoo/models.py) supprimé en 18.0 ; res.users.has_groups
   # (18.0 odoo/addons/base/models/res_users.py) applique le même algorithme sur self.env.user
   # (groupes « ! » exclus d'abord, un groupe positif suffit, base.group_no_one en debug seulement).
