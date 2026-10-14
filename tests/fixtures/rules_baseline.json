@@ -1792,7 +1792,7 @@
   },
   "_TEXT_REPLACES": {
    "count": 3,
-   "sha256": "95421d2d2f2d172546730fc3cbe673e1437a11dd79d0e729e892b269bb6ff53e"
+   "sha256": "cdcc140c8ce3a000b5297ab6d51bc869f8de30b83f3f35c2969125e9663f133f"
   },
   "_TEXT_WARNINGS": {
    "count": 3,
@@ -1828,7 +1828,7 @@
   },
   "file_rules.py:replaces": {
    "count": 47,
-   "sha256": "eebd9f376881ab009df8952c43bd2fdefd81d9d9a3213ef3a7d1d965c3dca6e9"
+   "sha256": "9001176e0ec45db7d6a04029d972698102bc00c22c2ed3c208f1f07340f0f110"
   },
   "file_rules.py:warnings": {
    "count": 11,
@@ -1979,8 +1979,8 @@
    "sha256": "d3cee03b834c47a5113d6cf406fd5a17da2e78b84bff73fdacc79d2409173cda"
   },
   "_GLOBAL_FUNCTIONS": {
-   "count": 8,
-   "sha256": "3da6ba29d0bc3a6f2c48febd750af29782625c668443fbfe7bc1ef1ed208849a"
+   "count": 10,
+   "sha256": "4eeb291ccdf00f168dcb2f81429f7de285e2c964e74843c0c8d324aaf284d862"
   },
   "_MENU_PARENT_HINTS": {
    "count": 0,
@@ -2012,7 +2012,7 @@
   },
   "_TEXT_REPLACES": {
    "count": 3,
-   "sha256": "072a096560dd317e4531a3b9cd2496be532f1ce3e18d35236076255ed6d29b49"
+   "sha256": "67b99753d2cc3300f1c4d524eda52da0bdba4b01cfd23c17b059166d36f88591"
   },
   "_TEXT_WARNINGS": {
    "count": 2,
@@ -2048,7 +2048,7 @@
   },
   "file_rules.py:replaces": {
    "count": 71,
-   "sha256": "7bfde36f715cbe649f312552ef805d90686ef8bab59ec5f253f7872d4edbbe67"
+   "sha256": "4e5b7eaa0630417ba7db3378818492c306d1383f6b0006199e03e37252bdd23b"
   },
   "file_rules.py:warnings": {
    "count": 10,
