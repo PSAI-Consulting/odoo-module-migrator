@@ -1,0 +1,71 @@
+# Verified from both branch tips and the changing commit; generated candidates remain non-applicable.
+- schema_version: 2
+  kind: field_property
+  model: account.account
+  field: group_id
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 854c3b27aa54
+    title: '[IMP] account: Share accounts between companies.'
+    file: addons/account/models/account_account.py
+    lines: 17.0:112; 18.0:122
+    note: '17.0: group_id = fields.Many2one(''account.group'', compute=''_compute_account_group'', store=True, readonly=True,
+      help="Account prefixes can determine account groups.") | 18.0: group_id = fields.Many2one(''account.group'', compute=''_compute_account_group'',
+      help="Account prefixes can determine account groups.")'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo 854c3b27aa54: account.account.group_id store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: account.account
+  field: root_id
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 854c3b27aa54
+    title: '[IMP] account: Share accounts between companies.'
+    file: addons/account/models/account_account.py
+    lines: 17.0:114; 18.0:124
+    note: '17.0: root_id = fields.Many2one(''account.root'', compute=''_compute_account_root'', store=True, precompute=True)
+      | 18.0: root_id = fields.Many2one(''account.root'', compute=''_compute_account_root'', search=''_search_account_root'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo 854c3b27aa54: account.account.root_id store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: sale.order
+  field: amount_to_invoice
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 4bcfd5c4d212
+    title: '[IMP] account,sale: move amount_to_invoice computation to SO line'
+    file: addons/sale/models/sale_order.py
+    lines: 17.0:215; 18.0:240
+    note: '17.0: amount_to_invoice = fields.Monetary(string="Amount to invoice", store=True, compute=''_compute_amount_to_invoice'')
+      | 18.0: amount_to_invoice = fields.Monetary(string="Un-invoiced Balance", compute=''_compute_amount_to_invoice'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo 4bcfd5c4d212: sale.order.amount_to_invoice store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: stock.warehouse.orderpoint
+  field: qty_to_order
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 156bed3f430d
+    title: '[PERF] stock: only compute orderpoint qty_to_order on demand'
+    file: addons/stock/models/stock_orderpoint.py
+    lines: 17.0:82; 18.0:85
+    note: '17.0: qty_to_order = fields.Float(''To Order'', compute=''_compute_qty_to_order'', store=True, readonly=False,
+      digits=''Product Unit of Measure'') | 18.0: qty_to_order = fields.Float(''To Order'', compute=''_compute_qty_to_order'',
+      inverse=''_inverse_qty_to_order'', search=''_search_qty_to_order'', digits=''Product Unit of Measure'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo 156bed3f430d: stock.warehouse.orderpoint.qty_to_order store changed from True to False'

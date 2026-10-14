@@ -1,4 +1,4 @@
-# Source: Odoo 19.0 and 20.0 addons/sale/models/sale_order_line.py.
+# Source: Odoo 6ac707ad6d7e, verified against both branch tips.
 - schema_version: 2
   kind: field_type
   model: sale.order.line
@@ -8,6 +8,9 @@
   confidence: verified
   evidence:
     - repository: odoo
-      file: "addons/sale/models/sale_order_line.py"
+      commit: 6ac707ad6d7e
+      title: "[IMP] sale,stock,*: Convert day-based fields to integers"
+      file: "addons/sale_stock/models/sale_order_line.py"
+      lines: "19.0:28; 20.0:24"
       note: "19.0: fields.Float, 20.0: fields.Integer"
-  message: "Odoo 19.0 -> 20.0 addons/sale/models/sale_order_line.py"
+  message: "odoo 6ac707ad6d7e: sale.order.line.customer_lead changed from Float to Integer"

@@ -1,0 +1,35 @@
+# Verified from both branch tips and the changing commit; generated candidates remain non-applicable.
+- schema_version: 2
+  kind: field_property
+  model: mail.compose.message
+  field: subject
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 5cfe750a83fc
+    title: '[REF] mail: move composer ''body'' and ''subject'' field from onchange to computed'
+    file: addons/mail/wizard/mail_compose_message.py
+    lines: 16.0:98; 17.0:78
+    note: '16.0: subject = fields.Char(''Subject'', compute=False) | 17.0: subject = fields.Char( ''Subject'', compute=''_compute_subject'',
+      readonly=False, store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 5cfe750a83fc: mail.compose.message.subject store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: sale.order
+  field: has_returnable_lines
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 6c797705c2d1
+    title: '[REF] (website_)sale_(stock_)renting: single rental period'
+    file: sale_renting/models/sale_order.py
+    lines: 16.0:23; 17.0:63
+    note: '16.0: has_returnable_lines = fields.Boolean(compute="_compute_rental_status", store=True) | 17.0: has_returnable_lines
+      = fields.Boolean(compute=''_compute_has_action_lines'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'enterprise 6c797705c2d1: sale.order.has_returnable_lines store changed from True to False'

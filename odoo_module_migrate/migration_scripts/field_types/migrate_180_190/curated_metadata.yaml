@@ -1,0 +1,536 @@
+# Verified from both branch tips and the changing commit; generated candidates remain non-applicable.
+- schema_version: 2
+  kind: field_type
+  model: account.bank.statement.line.transient
+  field: transaction_details
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 0420f9472c41
+    title: '[IMP] account_online_synchronization: Changed transaction_details type'
+    file: account_online_synchronization/wizard/account_bank_statement_line.py
+    lines: 18.0:20; 19.0:17
+    note: '18.0: transaction_details = fields.Html(readonly=True) | 19.0: transaction_details = fields.Json(readonly=True)'
+  old_type: Html
+  new_type: Json
+  message: 'enterprise 0420f9472c41: account.bank.statement.line.transient.transaction_details changed from Html to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.fiscal.position
+  field: tax_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9a97157920c8
+    title: '[IMP] account, *: fiscalpo-calypse'
+    file: addons/account/models/partner.py
+    lines: 18.0:47; 19.0:43
+    note: '18.0: tax_ids = fields.One2many(''account.fiscal.position.tax'', ''position_id'', string=''Tax Mapping'', copy=True)
+      | 19.0: tax_ids = fields.Many2many( comodel_name=''account.tax'', relation=''account_fiscal_position_account_tax_rel'',
+      column1=''account_fiscal_position_id'', column2=''account_tax_id'', string=''Taxes'', )'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo 9a97157920c8: account.fiscal.position.tax_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: event.event
+  field: general_question_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: c54e859885d6
+    title: '[IMP] event,*: make event questions m2m'
+    file: addons/event/models/event_event.py
+    lines: 18.0:257; 19.0:204
+    note: '18.0: general_question_ids = fields.One2many(''event.question'', ''event_id'', ''General Questions'', domain=[(''once_per_order'',
+      ''='', True)]) | 19.0: general_question_ids = fields.Many2many(''event.question'', ''event_event_event_question_rel'',
+      string=''General Questions'', domain=[(''once_per_order'', ''='', True)])'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo c54e859885d6: event.event.general_question_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: event.event
+  field: question_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: c54e859885d6
+    title: '[IMP] event,*: make event questions m2m'
+    file: addons/event/models/event_event.py
+    lines: 18.0:83; 19.0:202
+    note: '18.0: question_ids = fields.One2many( ''event.question'', ''event_type_id'', default=_default_question_ids, string=''Questions'',
+      copy=True) | 19.0: question_ids = fields.Many2many(''event.question'', ''event_event_event_question_rel'', string=''Questions'',
+      compute=''_compute_question_ids'', readonly=False, store=True, precompute=True)'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo c54e859885d6: event.event.question_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: event.event
+  field: specific_question_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: c54e859885d6
+    title: '[IMP] event,*: make event questions m2m'
+    file: addons/event/models/event_event.py
+    lines: 18.0:259; 19.0:206
+    note: '18.0: specific_question_ids = fields.One2many(''event.question'', ''event_id'', ''Specific Questions'', domain=[(''once_per_order'',
+      ''='', False)]) | 19.0: specific_question_ids = fields.Many2many(''event.question'', ''event_event_event_question_rel'',
+      string=''Specific Questions'', domain=[(''once_per_order'', ''='', False)])'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo c54e859885d6: event.event.specific_question_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: fleet.vehicle
+  field: horsepower
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: d73b99c3f6ff
+    title: '[IMP] fleet: vehicle model configuration revamp'
+    file: addons/fleet/models/fleet_vehicle.py
+    lines: 18.0:93; 19.0:104
+    note: '18.0: horsepower = fields.Integer(compute=''_compute_model_fields'', store=True, readonly=False) | 19.0: horsepower
+      = fields.Float(compute=''_compute_horsepower'', store=True, readonly=False)'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo d73b99c3f6ff: fleet.vehicle.horsepower changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: fleet.vehicle
+  field: model_year
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: d73b99c3f6ff
+    title: '[IMP] fleet: vehicle model configuration revamp'
+    file: addons/fleet/models/fleet_vehicle.py
+    lines: 18.0:76; 19.0:85
+    note: '18.0: model_year = fields.Char(''Model Year'', help=''Year of the model'', compute=''_compute_model_fields'', store=True,
+      readonly=False) | 19.0: model_year = fields.Selection(selection=''_get_year_selection'', string=''Model Year'', help=''Year
+      of the model'', compute=''_compute_model_year'', store=True, readonly=False)'
+  old_type: Char
+  new_type: Selection
+  message: 'odoo d73b99c3f6ff: fleet.vehicle.model_year changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: fleet.vehicle
+  field: power
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: d73b99c3f6ff
+    title: '[IMP] fleet: vehicle model configuration revamp'
+    file: addons/fleet/models/fleet_vehicle.py
+    lines: 18.0:95; 19.0:106
+    note: '18.0: power = fields.Integer(''Power'', help=''Power in kW of the vehicle'', compute=''_compute_model_fields'',
+      store=True, readonly=False) | 19.0: power = fields.Float(''Power'', help=''Power in kW of the vehicle'', compute=''_compute_power'',
+      store=True, readonly=False)'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo d73b99c3f6ff: fleet.vehicle.power changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: fleet.vehicle.model
+  field: horsepower
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: d73b99c3f6ff
+    title: '[IMP] fleet: vehicle model configuration revamp'
+    file: addons/fleet/models/fleet_vehicle_model.py
+    lines: 18.0:44; 19.0:56
+    note: '18.0: horsepower = fields.Integer(tracking=True) | 19.0: horsepower = fields.Float(tracking=True)'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo d73b99c3f6ff: fleet.vehicle.model.horsepower changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: fleet.vehicle.model
+  field: model_year
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: d73b99c3f6ff
+    title: '[IMP] fleet: vehicle model configuration revamp'
+    file: addons/fleet/models/fleet_vehicle_model.py
+    lines: 18.0:35; 19.0:41
+    note: '18.0: model_year = fields.Integer(tracking=True) | 19.0: model_year = fields.Selection(selection=''_get_year_selection'',
+      tracking=True)'
+  old_type: Integer
+  new_type: Selection
+  message: 'odoo d73b99c3f6ff: fleet.vehicle.model.model_year changed from Integer to Selection'
+- schema_version: 2
+  kind: field_type
+  model: fleet.vehicle.model
+  field: power
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: d73b99c3f6ff
+    title: '[IMP] fleet: vehicle model configuration revamp'
+    file: addons/fleet/models/fleet_vehicle_model.py
+    lines: 18.0:43; 19.0:55
+    note: '18.0: power = fields.Integer(''Power'', tracking=True) | 19.0: power = fields.Float(''Power'', tracking=True)'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo d73b99c3f6ff: fleet.vehicle.model.power changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave
+  field: leave_type_increases_duration
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 944c11e61abe
+    title: '[IMP] * : Improve leave and allocation view'
+    file: addons/hr_holidays/models/hr_leave.py
+    lines: 18.0:220; 19.0:231
+    note: '18.0: leave_type_increases_duration = fields.Boolean(compute=''_compute_leave_type_increases_duration'') | 19.0:
+      leave_type_increases_duration = fields.Char(compute=''_compute_leave_type_increases_duration'')'
+  old_type: Boolean
+  new_type: Char
+  message: 'odoo 944c11e61abe: hr.leave.leave_type_increases_duration changed from Boolean to Char'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave.accrual.level
+  field: first_day
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 85ec84f3b69e
+    title: '[REF] hr_holidays: accrual plan and level'
+    file: addons/hr_holidays/models/hr_leave_accrual_plan_level.py
+    lines: 18.0:65; 19.0:63
+    note: '18.0: first_day = fields.Integer(default=1) | 19.0: first_day = fields.Selection(_get_selection_days, default=''1'',
+      export_string_translation=False)'
+  old_type: Integer
+  new_type: Selection
+  message: 'odoo 85ec84f3b69e: hr.leave.accrual.level.first_day changed from Integer to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave.accrual.level
+  field: first_month_day
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 85ec84f3b69e
+    title: '[REF] hr_holidays: accrual plan and level'
+    file: addons/hr_holidays/models/hr_leave_accrual_plan_level.py
+    lines: 18.0:71; 19.0:65
+    note: '18.0: first_month_day = fields.Integer(default=1) | 19.0: first_month_day = fields.Selection( _get_selection_days,
+      compute=''_compute_first_month_day'', store=True, readonly=False, default=''1'', export_string_translation=False)'
+  old_type: Integer
+  new_type: Selection
+  message: 'odoo 85ec84f3b69e: hr.leave.accrual.level.first_month_day changed from Integer to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave.accrual.level
+  field: second_day
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 85ec84f3b69e
+    title: '[REF] hr_holidays: accrual plan and level'
+    file: addons/hr_holidays/models/hr_leave_accrual_plan_level.py
+    lines: 18.0:68; 19.0:64
+    note: '18.0: second_day = fields.Integer(default=15) | 19.0: second_day = fields.Selection(_get_selection_days, default=''15'',
+      export_string_translation=False)'
+  old_type: Integer
+  new_type: Selection
+  message: 'odoo 85ec84f3b69e: hr.leave.accrual.level.second_day changed from Integer to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave.accrual.level
+  field: second_month_day
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 85ec84f3b69e
+    title: '[REF] hr_holidays: accrual plan and level'
+    file: addons/hr_holidays/models/hr_leave_accrual_plan_level.py
+    lines: 18.0:82; 19.0:76
+    note: '18.0: second_month_day = fields.Integer(default=1) | 19.0: second_month_day = fields.Selection( _get_selection_days,
+      compute=''_compute_second_month_day'', store=True, readonly=False, default=''1'', export_string_translation=False)'
+  old_type: Integer
+  new_type: Selection
+  message: 'odoo 85ec84f3b69e: hr.leave.accrual.level.second_month_day changed from Integer to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave.accrual.level
+  field: yearly_day
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 85ec84f3b69e
+    title: '[REF] hr_holidays: accrual plan and level'
+    file: addons/hr_holidays/models/hr_leave_accrual_plan_level.py
+    lines: 18.0:107; 19.0:101
+    note: '18.0: yearly_day = fields.Integer(default=1) | 19.0: yearly_day = fields.Selection( _get_selection_days, compute=''_compute_yearly_day'',
+      store=True, readonly=False, default=''1'', export_string_translation=False)'
+  old_type: Integer
+  new_type: Selection
+  message: 'odoo 85ec84f3b69e: hr.leave.accrual.level.yearly_day changed from Integer to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave.accrual.plan
+  field: carryover_day
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 85ec84f3b69e
+    title: '[REF] hr_holidays: accrual plan and level'
+    file: addons/hr_holidays/models/hr_leave_accrual_plan.py
+    lines: 18.0:48; 19.0:46
+    note: '18.0: carryover_day = fields.Integer(default=1) | 19.0: carryover_day = fields.Selection( _get_selection_days,
+      compute=''_compute_carryover_day'', export_string_translation=False, store=True, readonly=False, default=''1'')'
+  old_type: Integer
+  new_type: Selection
+  message: 'odoo 85ec84f3b69e: hr.leave.accrual.plan.carryover_day changed from Integer to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave.type
+  field: employee_requests
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 799ebc59aa63
+    title: '[IMP] * : Improve Time off type (UX and back)'
+    file: addons/hr_holidays/models/hr_leave_type.py
+    lines: 18.0:80; 19.0:93
+    note: '18.0: employee_requests = fields.Selection([ (''yes'', ''Extra Days Requests Allowed''), (''no'', ''Not Allowed'')],
+      default="no", required=True, string="Employee Requests", help="""Extra Days Requests Allowed: User can request an allocation
+      for himself.\n Not Allowed: User cannot request an allocation.""") | 19.0: employee_requests = fields.Boolean(default=False,
+      required=True, string="Allow Employee Requests", help="""Extra Days Requests Allowed: User can request an allocation
+      for himself.\n Not Allowed: User cannot request an allocation.""")'
+  old_type: Selection
+  new_type: Boolean
+  message: 'odoo 799ebc59aa63: hr.leave.type.employee_requests changed from Selection to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave.type
+  field: requires_allocation
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 799ebc59aa63
+    title: '[IMP] * : Improve Time off type (UX and back)'
+    file: addons/hr_holidays/models/hr_leave_type.py
+    lines: 18.0:75; 19.0:92
+    note: '18.0: requires_allocation = fields.Selection([ (''yes'', ''Yes''), (''no'', ''No Limit'')], default="yes", required=True,
+      string=''Requires allocation'', help="""Yes: Time off requests need to have a valid allocation.\n No Limit: Time Off
+      requests can be taken without any prior allocation.""") | 19.0: requires_allocation = fields.Boolean(default=True, required=True,
+      string=''Requires allocation'')'
+  old_type: Selection
+  new_type: Boolean
+  message: 'odoo 799ebc59aa63: hr.leave.type.requires_allocation changed from Selection to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: hr.payslip.input
+  field: l10n_au_payroll_code
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: a4f3261b541d
+    title: '[IMP] l10n_au_hr_payroll: Allowances support special computation'
+    file: l10n_au_hr_payroll/models/hr_payslip_input.py
+    lines: 18.0:12; 19.0:11
+    note: '18.0: l10n_au_payroll_code = fields.Char(related=''input_type_id.l10n_au_payroll_code'') | 19.0: l10n_au_payroll_code
+      = fields.Selection(related=''input_type_id.l10n_au_payroll_code'')'
+  old_type: Char
+  new_type: Selection
+  message: 'enterprise a4f3261b541d: hr.payslip.input.l10n_au_payroll_code changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: im_livechat.report.channel
+  field: day_number
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: e33751f64dce
+    title: '[IMP] im_livechat: use day name in report instead of day number'
+    file: addons/im_livechat/report/im_livechat_report_channel.py
+    lines: 18.0:22; 19.0:23
+    note: '18.0: day_number = fields.Char(''Day Number'', readonly=True, help="1 is Monday, 7 is Sunday") | 19.0: day_number
+      = fields.Selection( selection=[ ("0", "Sunday"), ("1", "Monday"), ("2", "Tuesday"), ("3", "Wednesday"), ("4", "Thursday"),
+      ("5", "Friday"), ("6", "Saturday"), ], string="Day of the Week", readonly=True, )'
+  old_type: Char
+  new_type: Selection
+  message: 'odoo e33751f64dce: im_livechat.report.channel.day_number changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: ir.actions.server
+  field: child_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 45a5562fc41b
+    title: '[IMP] base,*: use x2many kanban for server actions'
+    file: odoo/addons/base/models/ir_actions.py
+    lines: 18.0:573; 19.0:649
+    note: '18.0: child_ids = fields.Many2many(''ir.actions.server'', ''rel_server_actions'', ''server_id'', ''action_id'',
+      string=''Child Actions'', help=''Child server actions that will be executed. Note that the last return returned action
+      value will be used as global return value.'') | 19.0: child_ids = fields.One2many(''ir.actions.server'', ''parent_id'',
+      copy=True, domain=lambda self: str(self._get_children_domain()), string=''Child Actions'', help=''Child server actions
+      that will be executed. Note that the last return returned action value will be used as global return value.'')'
+  old_type: Many2many
+  new_type: One2many
+  message: 'odoo 45a5562fc41b: ir.actions.server.child_ids changed from Many2many to One2many'
+- schema_version: 2
+  kind: field_type
+  model: ir.model.fields
+  field: translate
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 1a2d187267e0
+    title: '[IMP] base: store explicit field.translate to database'
+    file: odoo/addons/base/models/ir_model.py
+    lines: 18.0:579; 19.0:549
+    note: '18.0: translate = fields.Boolean(string=''Translatable'', help="Whether values for this field can be translated
+      (enables the translation mechanism for that field)") | 19.0: translate = fields.Selection([ (''standard'', ''Translate
+      as a whole''), (''html_translate'', ''Translate HTML terms''), (''xml_translate'', ''Translate XML terms''), ], string=''Translatable'',
+      help="Whether values for this field can be translated (enables the translation mechanism for that field)")'
+  old_type: Boolean
+  new_type: Selection
+  message: 'odoo 1a2d187267e0: ir.model.fields.translate changed from Boolean to Selection'
+- schema_version: 2
+  kind: field_type
+  model: mrp.workorder
+  field: last_working_user_id
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: fed6f1f9ad38
+    title: '[IMP] mrp: last_working_user_id O2M > M2O'
+    file: addons/mrp/models/mrp_workorder.py
+    lines: 18.0:130; 19.0:123
+    note: '18.0: last_working_user_id = fields.One2many(''res.users'', string=''Last user that worked on this work order.'',
+      compute=''_compute_working_users'') | 19.0: last_working_user_id = fields.Many2one(''res.users'', string=''Last user
+      that worked on this work order.'', compute=''_compute_working_users'')'
+  old_type: One2many
+  new_type: Many2one
+  message: 'odoo fed6f1f9ad38: mrp.workorder.last_working_user_id changed from One2many to Many2one'
+- schema_version: 2
+  kind: field_type
+  model: project.project
+  field: total_timesheet_time
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: ce785838791c
+    title: '[IMP] hr_timesheet: ensure accurate worked hours calculation in timesheet'
+    file: addons/hr_timesheet/models/project_project.py
+    lines: 18.0:28; 19.0:27
+    note: '18.0: total_timesheet_time = fields.Integer( compute=''_compute_total_timesheet_time'', groups=''hr_timesheet.group_hr_timesheet_user'',
+      string="Total number of time (in the proper UoM) recorded in the project, rounded to the unit.", compute_sudo=True,
+      export_string_translation=False) | 19.0: total_timesheet_time = fields.Float( compute=''_compute_total_timesheet_time'',
+      groups=''hr_timesheet.group_hr_timesheet_user'', string="Total amount of time (in the proper unit) recorded in the project,
+      rounded to the unit.", export_string_translation=False)'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo ce785838791c: project.project.total_timesheet_time changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: res.company
+  field: l10n_in_pan_type
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: f6d6659f8bf9
+    title: '[IMP] l10n_in: introduce PAN Entity Model to Manage GST Contacts with Same PAN'
+    file: addons/l10n_in/models/company.py
+    lines: 18.0:36; 19.0:35
+    note: '18.0: l10n_in_pan_type = fields.Char(string="PAN Type", compute="_compute_l10n_in_pan_type") | 19.0: l10n_in_pan_type
+      = fields.Selection(related="l10n_in_pan_entity_id.type", string="PAN Type")'
+  old_type: Char
+  new_type: Selection
+  message: 'odoo f6d6659f8bf9: res.company.l10n_in_pan_type changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: res.lang
+  field: date_format
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 062b14097033
+    title: '[IMP] *: remake datetime'
+    file: odoo/addons/base/models/res_lang.py
+    lines: 18.0:66; 19.0:78
+    note: '18.0: date_format = fields.Char(string=''Date Format'', required=True, default=DEFAULT_DATE_FORMAT) | 19.0: date_format
+      = fields.Selection(selection=_get_date_format_selection, string=''Date Format'', required=True, default=''%m/%d/%Y'')'
+  old_type: Char
+  new_type: Selection
+  message: 'odoo 062b14097033: res.lang.date_format changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: res.lang
+  field: grouping
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 062b14097033
+    title: '[IMP] *: remake datetime'
+    file: odoo/addons/base/models/res_lang.py
+    lines: 18.0:76; 19.0:90
+    note: '18.0: grouping = fields.Char(string=''Separator Format'', required=True, default=''[]'', help="The Separator Format
+      should be like [,n] where 0 < n :starting from Unit digit. " "-1 will end the separation. e.g. [3,2,-1] will represent
+      106500 to be 1,06,500; " "[1,2,-1] will represent it to be 106,50,0;[3] will represent it as 106,500. " "Provided '',''
+      as the thousand separator in each case.") | 19.0: grouping = fields.Selection([ (''[3,0]'', ''International Grouping''),
+      (''[3,2,0]'', ''Indian Grouping''), ], string=''Separator Format'', required=True, default=''[3,0]'', help="The International
+      Grouping will represent 123456789 to be 123,456,789.00; " "The Indian Grouping will represent 123456789 to be 12,34,56,789.00")'
+  old_type: Char
+  new_type: Selection
+  message: 'odoo 062b14097033: res.lang.grouping changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: res.lang
+  field: time_format
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 062b14097033
+    title: '[IMP] *: remake datetime'
+    file: odoo/addons/base/models/res_lang.py
+    lines: 18.0:67; 19.0:79
+    note: '18.0: time_format = fields.Char(string=''Time Format'', required=True, default=DEFAULT_TIME_FORMAT) | 19.0: time_format
+      = fields.Selection([ (''%H:%M:%S'', "13:00:00"), (''%I:%M:%S %p'', " 1:00:00 PM"), ], string=''Time Format'', required=True,
+      default=''%H:%M:%S'')'
+  old_type: Char
+  new_type: Selection
+  message: 'odoo 062b14097033: res.lang.time_format changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: sign.send.request
+  field: reference_doc
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: e90e19145e12
+    title: '[IMP] sign: set model''s partner_id as default signer'
+    file: sign/wizard/sign_send_request.py
+    lines: 18.0:75; 19.0:23
+    note: '18.0: reference_doc = fields.Char(string="Linked to", readonly=True) | 19.0: reference_doc = fields.Reference(string="Linked
+      to", selection=''_selection_target_model'', readonly=True)'
+  old_type: Char
+  new_type: Reference
+  message: 'enterprise e90e19145e12: sign.send.request.reference_doc changed from Char to Reference'
+- schema_version: 2
+  kind: field_type
+  model: stock.rule
+  field: picking_type_code_domain
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 24efab4aa2c1
+    title: '[IMP] stock*: allow selection of dropship operation type in rules'
+    file: addons/stock/models/stock_rule.py
+    lines: 18.0:84; 19.0:91
+    note: '18.0: picking_type_code_domain = fields.Char(compute=''_compute_picking_type_code_domain'') | 19.0: picking_type_code_domain
+      = fields.Json(compute=''_compute_picking_type_code_domain'')'
+  old_type: Char
+  new_type: Json
+  message: 'odoo 24efab4aa2c1: stock.rule.picking_type_code_domain changed from Char to Json'

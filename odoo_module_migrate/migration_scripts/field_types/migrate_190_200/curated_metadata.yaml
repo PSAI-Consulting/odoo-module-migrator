@@ -1,0 +1,1348 @@
+# Verified from both branch tips and the changing commit; generated candidates remain non-applicable.
+- schema_version: 2
+  kind: field_type
+  model: account.fiscal.position
+  field: account_map
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/partner.py
+    lines: 19.0:42; 20.0:49
+    note: '19.0: account_map = fields.Binary(compute=''_compute_account_map'') | 20.0: account_map = fields.Json(compute=''_compute_account_map'')'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.fiscal.position.account_map changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.fiscal.position
+  field: tax_map
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/partner.py
+    lines: 19.0:50; 20.0:57
+    note: '19.0: tax_map = fields.Binary(compute=''_compute_tax_map'') | 20.0: tax_map = fields.Json(compute=''_compute_tax_map'')'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.fiscal.position.tax_map changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.invoice.report
+  field: inventory_value
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9dd280eedc59
+    title: '[IMP] account: simplify invoice analysis currency query'
+    file: addons/account/report/account_invoice_report.py
+    lines: 19.0:57; 20.0:74
+    note: '19.0: inventory_value = fields.Float(string=''Inventory Value'', readonly=True) | 20.0: inventory_value = fields.Monetary(
+      string=''Inventory Value'', readonly=True, currency_field=''company_currency_id'', aggregator=''sum_currency'', )'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9dd280eedc59: account.invoice.report.inventory_value changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: account.invoice.report
+  field: price_average
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9dd280eedc59
+    title: '[IMP] account: simplify invoice analysis currency query'
+    file: addons/account/report/account_invoice_report.py
+    lines: 19.0:55; 20.0:62
+    note: '19.0: price_average = fields.Float(string=''Average Price'', readonly=True, aggregator="avg") | 20.0: price_average
+      = fields.Monetary( string=''Average Price'', readonly=True, currency_field=''company_currency_id'', aggregator="avg_currency",
+      )'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9dd280eedc59: account.invoice.report.price_average changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: account.invoice.report
+  field: price_margin
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9dd280eedc59
+    title: '[IMP] account: simplify invoice analysis currency query'
+    file: addons/account/report/account_invoice_report.py
+    lines: 19.0:56; 20.0:68
+    note: '19.0: price_margin = fields.Float(string=''Margin'', readonly=True) | 20.0: price_margin = fields.Monetary( string=''Margin'',
+      readonly=True, currency_field=''company_currency_id'', aggregator=''sum_currency'', )'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9dd280eedc59: account.invoice.report.price_margin changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: account.invoice.report
+  field: price_subtotal
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9dd280eedc59
+    title: '[IMP] account: simplify invoice analysis currency query'
+    file: addons/account/report/account_invoice_report.py
+    lines: 19.0:52; 20.0:49
+    note: '19.0: price_subtotal = fields.Float(string=''Untaxed Amount'', readonly=True) | 20.0: price_subtotal = fields.Monetary(
+      string=''Untaxed Amount'', readonly=True, currency_field=''company_currency_id'', aggregator=''sum_currency'', )'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9dd280eedc59: account.invoice.report.price_subtotal changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: account.invoice.report
+  field: price_subtotal_currency
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 08841bd4b5b9
+    title: '[IMP] *: improve the UI related to the quotations and invoices buttons'
+    file: addons/account/report/account_invoice_report.py
+    lines: 19.0:51; 20.0:48
+    note: '19.0: price_subtotal_currency = fields.Float(string=''Untaxed Amount in Currency'', readonly=True) | 20.0: price_subtotal_currency
+      = fields.Monetary(string=''Untaxed Amount in Currency'', readonly=True, currency_field=''currency_id'')'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 08841bd4b5b9: account.invoice.report.price_subtotal_currency changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: account.invoice.report
+  field: price_total
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9dd280eedc59
+    title: '[IMP] account: simplify invoice analysis currency query'
+    file: addons/account/report/account_invoice_report.py
+    lines: 19.0:53; 20.0:55
+    note: '19.0: price_total = fields.Float(string=''Total'', readonly=True) | 20.0: price_total = fields.Monetary( string=''Total'',
+      readonly=True, currency_field=''company_currency_id'', aggregator=''sum_currency'', )'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9dd280eedc59: account.invoice.report.price_total changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: account.invoice.report
+  field: price_total_currency
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 08841bd4b5b9
+    title: '[IMP] *: improve the UI related to the quotations and invoices buttons'
+    file: addons/account/report/account_invoice_report.py
+    lines: 19.0:54; 20.0:61
+    note: '19.0: price_total_currency = fields.Float(string=''Total in Currency'', readonly=True) | 20.0: price_total_currency
+      = fields.Monetary(string=''Total in Currency'', readonly=True, currency_field=''currency_id'')'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 08841bd4b5b9: account.invoice.report.price_total_currency changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: account.move
+  field: invoice_outstanding_credits_debits_widget
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move.py
+    lines: 19.0:498; 20.0:511
+    note: '19.0: invoice_outstanding_credits_debits_widget = fields.Binary( groups="account.group_account_invoice,account.group_account_readonly",
+      compute=''_compute_payments_widget_to_reconcile_info'', exportable=False, ) | 20.0: invoice_outstanding_credits_debits_widget
+      = fields.Json( groups="account.group_account_invoice,account.group_account_readonly", compute=''_compute_payments_widget_to_reconcile_info'',
+      exportable=False, )'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.invoice_outstanding_credits_debits_widget changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move
+  field: invoice_payments_widget
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move.py
+    lines: 19.0:507; 20.0:520
+    note: '19.0: invoice_payments_widget = fields.Binary( groups="account.group_account_invoice,account.group_account_readonly",
+      compute=''_compute_payments_widget_reconciled_info'', exportable=False, ) | 20.0: invoice_payments_widget = fields.Json(
+      groups="account.group_account_invoice,account.group_account_readonly", compute=''_compute_payments_widget_reconciled_info'',
+      exportable=False, )'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.invoice_payments_widget changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move
+  field: needed_terms
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move.py
+    lines: 19.0:413; 20.0:422
+    note: '19.0: needed_terms = fields.Binary(compute=''_compute_needed_terms'', exportable=False) | 20.0: needed_terms =
+      fields.Json(compute=''_compute_needed_terms'', exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.needed_terms changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move
+  field: payment_term_details
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move.py
+    lines: 19.0:768; 20.0:803
+    note: '19.0: payment_term_details = fields.Binary(compute="_compute_payment_term_details", exportable=False) | 20.0: payment_term_details
+      = fields.Json(compute="_compute_payment_term_details", exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.payment_term_details changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move
+  field: tax_totals
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move.py
+    lines: 19.0:599; 20.0:612
+    note: '19.0: tax_totals = fields.Binary( string="Invoice Totals", compute=''_compute_tax_totals'', inverse=''_inverse_tax_totals'',
+      help=''Edit Tax amounts if you encounter rounding issues.'', exportable=False, ) | 20.0: tax_totals = fields.Json( string="Invoice
+      Totals", compute=''_compute_tax_totals'', inverse=''_inverse_tax_totals'', help=''Edit Tax amounts if you encounter
+      rounding issues.'', exportable=False, )'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.tax_totals changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move.line
+  field: discount_allocation_key
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move_line.py
+    lines: 19.0:429; 20.0:493
+    note: '19.0: discount_allocation_key = fields.Binary(compute=''_compute_discount_allocation_key'', exportable=False) |
+      20.0: discount_allocation_key = fields.Json(compute=''_compute_discount_allocation_key'', exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.line.discount_allocation_key changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move.line
+  field: discount_allocation_needed
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move_line.py
+    lines: 19.0:430; 20.0:494
+    note: '19.0: discount_allocation_needed = fields.Binary(compute=''_compute_discount_allocation_needed'', exportable=False)
+      | 20.0: discount_allocation_needed = fields.Json(compute=''_compute_discount_allocation_needed'', exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.line.discount_allocation_needed changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move.line
+  field: epd_key
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move_line.py
+    lines: 19.0:426; 20.0:490
+    note: '19.0: epd_key = fields.Binary(compute=''_compute_epd_key'', exportable=False) | 20.0: epd_key = fields.Json(compute=''_compute_epd_key'',
+      exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.line.epd_key changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move.line
+  field: epd_needed
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move_line.py
+    lines: 19.0:427; 20.0:491
+    note: '19.0: epd_needed = fields.Binary(compute=''_compute_epd_needed'', exportable=False) | 20.0: epd_needed = fields.Json(compute=''_compute_epd_needed'',
+      exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.line.epd_needed changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.move.line
+  field: name
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 737860187c9a
+    title: '[IMP] sale, account, purchase: remove `section_and_note` widget'
+    file: addons/account/models/account_move_line.py
+    lines: 19.0:110; 20.0:120
+    note: '19.0: name = fields.Char( string=''Label'', compute=''_compute_name'', store=True, readonly=False, precompute=True,
+      tracking=True, ) | 20.0: name = fields.Text( string=''Description'', compute=''_compute_name'', store=True, readonly=False,
+      precompute=True, tracking=True, )'
+  old_type: Char
+  new_type: Text
+  message: 'odoo 737860187c9a: account.move.line.name changed from Char to Text'
+- schema_version: 2
+  kind: field_type
+  model: account.move.line
+  field: term_key
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/account/models/account_move_line.py
+    lines: 19.0:425; 20.0:489
+    note: '19.0: term_key = fields.Binary(compute=''_compute_term_key'', exportable=False) | 20.0: term_key = fields.Json(compute=''_compute_term_key'',
+      exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: account.move.line.term_key changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.report.expression
+  field: formula
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: e035a2db9f71
+    title: '[IMP] account: allow multi-line formulas'
+    file: addons/account/models/account_report.py
+    lines: 19.0:599; 20.0:686
+    note: '19.0: formula = fields.Char(string="Formula", required=True) | 20.0: formula = fields.Text(string="Formula", required=True)'
+  old_type: Char
+  new_type: Text
+  message: 'odoo e035a2db9f71: account.report.expression.formula changed from Char to Text'
+- schema_version: 2
+  kind: field_type
+  model: account.report.expression
+  field: subformula
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: e035a2db9f71
+    title: '[IMP] account: allow multi-line formulas'
+    file: addons/account/models/account_report.py
+    lines: 19.0:600; 20.0:693
+    note: '19.0: subformula = fields.Char(string="Subformula") | 20.0: subformula = fields.Text(string="Subformula")'
+  old_type: Char
+  new_type: Text
+  message: 'odoo e035a2db9f71: account.report.expression.subformula changed from Char to Text'
+- schema_version: 2
+  kind: field_type
+  model: account.return.check
+  field: message
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 77bc4090bf05
+    title: '[FIX] account_reports: Clean up return check messages'
+    file: account_reports/models/account_return.py
+    lines: 19.0:2849; 20.0:3328
+    note: '19.0: message = fields.Text(string="Description", translate=True) | 20.0: message = fields.Html(string="Description",
+      translate=True)'
+  old_type: Text
+  new_type: Html
+  message: 'enterprise 77bc4090bf05: account.return.check.message changed from Text to Html'
+- schema_version: 2
+  kind: field_type
+  model: ai.embedding
+  field: embedding_model
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 5cc937531b85
+    title: '[IMP] ai, ai_*: AI features provided as In-App Purchase service'
+    file: ai/models/ai_embedding.py
+    lines: 19.0:36; 20.0:36
+    note: '19.0: embedding_model = fields.Selection(selection=EMBEDDING_MODELS_SELECTION, string="Embedding Model", required=True)
+      | 20.0: embedding_model = fields.Char(string="Embedding Model")'
+  old_type: Selection
+  new_type: Char
+  message: 'enterprise 5cc937531b85: ai.embedding.embedding_model changed from Selection to Char'
+- schema_version: 2
+  kind: field_type
+  model: applicant.get.refuse.reason
+  field: duplicate_applicant_ids_domain
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/hr_recruitment/wizard/applicant_refuse_reason.py
+    lines: 19.0:34; 20.0:34
+    note: '19.0: duplicate_applicant_ids_domain = fields.Binary(compute="_compute_duplicate_applicant_ids_domain") | 20.0:
+      duplicate_applicant_ids_domain = fields.Json(compute="_compute_duplicate_applicant_ids_domain")'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: applicant.get.refuse.reason.duplicate_applicant_ids_domain changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: approval.category
+  field: manager_approval
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: daa27c0cdbac
+    title: '[IMP] approvals: Approval Enhancement'
+    file: approvals/models/approval_category.py
+    lines: 19.0:53; 20.0:50
+    note: '19.0: manager_approval = fields.Selection([(''approver'', ''Is Approver''), (''required'', ''Is Required Approver'')],
+      string="Employee''s Manager", help="""How the employee''s manager interacts with this type of approval.  Empty: do nothing
+      Is Approver: the employee''s manager will be in the approver list Is Required Approver: the employee''s manager will
+      be required to approve the request. """) | 20.0: manager_approval = fields.Boolean( string="Employee''s Manager", help="""How
+      the employee''s manager interacts with this type of approval.  if checked the employee''s manager is a required approver
+      of the request, along with the selected users """)'
+  old_type: Selection
+  new_type: Boolean
+  message: 'enterprise daa27c0cdbac: approval.category.manager_approval changed from Selection to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: asset.modify
+  field: method_number
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 6b6ab448dfd1
+    title: '[IMP] account_asset: support rate-based depreciation and float durations'
+    file: account_asset/wizard/asset_modify.py
+    lines: 19.0:18; 20.0:21
+    note: '19.0: method_number = fields.Integer(string=''Duration'', required=True) | 20.0: method_number = fields.Float(string=''Duration'',
+      required=True)'
+  old_type: Integer
+  new_type: Float
+  message: 'enterprise 6b6ab448dfd1: asset.modify.method_number changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: data_merge.record
+  field: res_id
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: b61b007f0232
+    title: '[IMP] data_cleaning: use Many2oneReference for res_id'
+    file: data_cleaning/models/data_merge_record.py
+    lines: 19.0:39; 20.0:37
+    note: '19.0: res_id = fields.Integer(string=''Record ID'', readonly=False, aggregator=None, index=True) | 20.0: res_id
+      = fields.Many2oneReference(string=''Record ID'', readonly=False, index=True, model_field=''res_model_name'')'
+  old_type: Integer
+  new_type: Many2oneReference
+  message: 'enterprise b61b007f0232: data_merge.record.res_id changed from Integer to Many2oneReference'
+- schema_version: 2
+  kind: field_type
+  model: documents.sharing
+  field: has_warning_link_with_more_rights
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 5939b8c66e74
+    title: '[FIX] documents_spreadsheet: don''t show more than one error'
+    file: documents/wizard/documents_sharing.py
+    lines: 19.0:32; 20.0:39
+    note: '19.0: has_warning_link_with_more_rights = fields.Char(compute="_compute_has_warning_link_with_more_rights") | 20.0:
+      has_warning_link_with_more_rights = fields.Boolean(compute="_compute_has_warning_link_with_more_rights")'
+  old_type: Char
+  new_type: Boolean
+  message: 'enterprise 5939b8c66e74: documents.sharing.has_warning_link_with_more_rights changed from Char to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: documents.sharing
+  field: has_warning_partners_without_access
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 5939b8c66e74
+    title: '[FIX] documents_spreadsheet: don''t show more than one error'
+    file: documents/wizard/documents_sharing.py
+    lines: 19.0:33; 20.0:40
+    note: '19.0: has_warning_partners_without_access = fields.Char(compute="_compute_has_warning_partners_without_access")
+      | 20.0: has_warning_partners_without_access = fields.Boolean(compute="_compute_has_warning_partners_without_access")'
+  old_type: Char
+  new_type: Boolean
+  message: 'enterprise 5939b8c66e74: documents.sharing.has_warning_partners_without_access changed from Char to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: frontdesk.frontdesk
+  field: ask_company
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: e4c53231d396
+    title: '[IMP] frontdesk: redesign user flow, simplify configuration, and clean UI'
+    file: frontdesk/models/frontdesk_frontdesk.py
+    lines: 19.0:47; 20.0:36
+    note: '19.0: ask_company = fields.Selection(string=''Organization'', selection=ASK_FIELDS_SELECTION, default=''optional'',
+      required=True) | 20.0: ask_company = fields.Boolean(string=''Organization'', default=False)'
+  old_type: Selection
+  new_type: Boolean
+  message: 'enterprise e4c53231d396: frontdesk.frontdesk.ask_company changed from Selection to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: frontdesk.frontdesk
+  field: ask_email
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: e4c53231d396
+    title: '[IMP] frontdesk: redesign user flow, simplify configuration, and clean UI'
+    file: frontdesk/models/frontdesk_frontdesk.py
+    lines: 19.0:48; 20.0:37
+    note: '19.0: ask_email = fields.Selection(string=''Email'', selection=ASK_FIELDS_SELECTION, default=''none'', required=True)
+      | 20.0: ask_email = fields.Boolean(string=''Email'', default=False)'
+  old_type: Selection
+  new_type: Boolean
+  message: 'enterprise e4c53231d396: frontdesk.frontdesk.ask_email changed from Selection to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: frontdesk.frontdesk
+  field: ask_phone
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: e4c53231d396
+    title: '[IMP] frontdesk: redesign user flow, simplify configuration, and clean UI'
+    file: frontdesk/models/frontdesk_frontdesk.py
+    lines: 19.0:46; 20.0:35
+    note: '19.0: ask_phone = fields.Selection(string=''Phone'', selection=ASK_FIELDS_SELECTION, default=''required'', required=True)
+      | 20.0: ask_phone = fields.Boolean(string=''Phone'', default=True)'
+  old_type: Selection
+  new_type: Boolean
+  message: 'enterprise e4c53231d396: frontdesk.frontdesk.ask_phone changed from Selection to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: hr.applicant
+  field: salary_expected
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: cdb34988e2af
+    title: '[IMP] hr_recruitment: add job tags and improve salary fields'
+    file: addons/hr_recruitment/models/hr_applicant.py
+    lines: 19.0:97; 20.0:110
+    note: '19.0: salary_expected = fields.Float("Expected", aggregator="avg", help="Salary Expected by Applicant", tracking=True,
+      groups="hr_recruitment.group_hr_recruitment_user") | 20.0: salary_expected = fields.Monetary("Expected", aggregator="avg",
+      currency_field=''currency_id'', help="Salary Expected by Applicant", groups="hr_recruitment.group_hr_recruitment_user")'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo cdb34988e2af: hr.applicant.salary_expected changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: hr.applicant
+  field: salary_proposed
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: cdb34988e2af
+    title: '[IMP] hr_recruitment: add job tags and improve salary fields'
+    file: addons/hr_recruitment/models/hr_applicant.py
+    lines: 19.0:96; 20.0:107
+    note: '19.0: salary_proposed = fields.Float("Proposed", aggregator="avg", help="Salary Proposed by the Organisation",
+      tracking=True, groups="hr_recruitment.group_hr_recruitment_user") | 20.0: salary_proposed = fields.Monetary("Proposed",
+      aggregator="avg", currency_field=''currency_id'', help="Salary Proposed by the Organisation", groups="hr_recruitment.group_hr_recruitment_user")'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo cdb34988e2af: hr.applicant.salary_proposed changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: hr.contract.salary.benefit.value
+  field: value
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 107aeead58a8
+    title: '[IMP] * : Transportation allowance'
+    file: hr_contract_salary/models/hr_contract_salary_benefit.py
+    lines: 19.0:254; 20.0:150
+    note: '19.0: value = fields.Float() | 20.0: value = fields.Char()'
+  old_type: Float
+  new_type: Char
+  message: 'enterprise 107aeead58a8: hr.contract.salary.benefit.value.value changed from Float to Char'
+- schema_version: 2
+  kind: field_type
+  model: hr.employee
+  field: hourly_wage
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: acc0cb59e81c
+    title: '[IMP] hr_payroll: Make hourly wage with 4 decimals'
+    file: hr_payroll/models/hr_employee.py
+    lines: 19.0:36; 20.0:43
+    note: '19.0: hourly_wage = fields.Monetary(readonly=False, related="version_id.hourly_wage", inherited=True, groups="hr_payroll.group_hr_payroll_user")
+      | 20.0: hourly_wage = fields.Float(readonly=False, related="version_id.hourly_wage", inherited=True, groups="hr_payroll.group_hr_payroll_user")'
+  old_type: Monetary
+  new_type: Float
+  message: 'enterprise acc0cb59e81c: hr.employee.hourly_wage changed from Monetary to Float'
+- schema_version: 2
+  kind: field_type
+  model: hr.employee
+  field: rd_percentage
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 16c7ee8b50c6
+    title: '[IMP] Generalise percentage fields to use widget'
+    file: l10n_be_hr_payroll/models/hr_employee.py
+    lines: 19.0:100; 20.0:130
+    note: '19.0: rd_percentage = fields.Integer(readonly=False, related="version_id.rd_percentage", inherited=True, groups="hr_payroll.group_hr_payroll_user")
+      | 20.0: rd_percentage = fields.Float(readonly=False, related="version_id.rd_percentage", inherited=True, groups="hr_payroll.group_hr_payroll_user")'
+  old_type: Integer
+  new_type: Float
+  message: 'enterprise 16c7ee8b50c6: hr.employee.rd_percentage changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: hr.employee
+  field: salary_attachment_ids
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: f0862ca61331
+    title: '[IMP] hr_payroll: Salary adjustment generate multi wizard'
+    file: hr_payroll/models/hr_employee.py
+    lines: 19.0:17; 20.0:25
+    note: '19.0: salary_attachment_ids = fields.Many2many( ''hr.salary.attachment'', string=''Salary Adjustments'', groups="hr_payroll.group_hr_payroll_user")
+      | 20.0: salary_attachment_ids = fields.One2many( ''hr.salary.attachment'', ''employee_id'', string=''Payslip Adjustments'',
+      groups="hr_payroll.group_hr_payroll_user")'
+  old_type: Many2many
+  new_type: One2many
+  message: 'enterprise f0862ca61331: hr.employee.salary_attachment_ids changed from Many2many to One2many'
+- schema_version: 2
+  kind: field_type
+  model: hr.payroll.headcount.line
+  field: employee_type
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 620d857d9602
+    title: '[IMP] hr_payroll: Remove employee_type and make structure_id mandatory on payslip runs'
+    file: hr_payroll/models/hr_payroll_headcount.py
+    lines: 19.0:125; 20.0:128
+    note: '19.0: employee_type = fields.Selection(related=''version_id.employee_type'', string=''Employee Type'') | 20.0:
+      employee_type = fields.Many2one(related=''version_id.employee_type_id'', string=''Employee Type'')'
+  old_type: Selection
+  new_type: Many2one
+  message: 'enterprise 620d857d9602: hr.payroll.headcount.line.employee_type changed from Selection to Many2one'
+- schema_version: 2
+  kind: field_type
+  model: hr.payroll.structure
+  field: rule_ids
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: c2f18f3de7eb
+    title: '[IMP] hr_payroll: multi-structure salary rules'
+    file: hr_payroll/models/hr_payroll_structure.py
+    lines: 19.0:53; 20.0:56
+    note: '19.0: rule_ids = fields.One2many( ''hr.salary.rule'', ''struct_id'', copy=True, string=''Salary Rules'', default=_get_default_rule_ids)
+      | 20.0: rule_ids = fields.Many2many( ''hr.salary.rule'', relation=''hr_payroll_structure_hr_salary_rule_rel'', string=''Salary
+      Rules'', default=_get_default_rule_ids)'
+  old_type: One2many
+  new_type: Many2many
+  message: 'enterprise c2f18f3de7eb: hr.payroll.structure.rule_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: hr.payslip
+  field: note
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: cb4f84895703
+    title: '[IMP] hr_payroll: improve ux'
+    file: hr_payroll/models/hr_payslip.py
+    lines: 19.0:113; 20.0:132
+    note: '19.0: note = fields.Text(string=''Internal Note'') | 20.0: note = fields.Html(string=''Note'')'
+  old_type: Text
+  new_type: Html
+  message: 'enterprise cb4f84895703: hr.payslip.note changed from Text to Html'
+- schema_version: 2
+  kind: field_type
+  model: hr.payslip.line
+  field: appears_on_payslip
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 8518fea573f3
+    title: '[IMP] hr_payroll: salary rules ux and appear on payslip option'
+    file: hr_payroll/models/hr_payslip_line.py
+    lines: 19.0:32; 20.0:44
+    note: '19.0: appears_on_payslip = fields.Boolean(related=''salary_rule_id.appears_on_payslip'', readonly=True) | 20.0:
+      appears_on_payslip = fields.Selection(related=''salary_rule_id.appears_on_payslip'', readonly=True)'
+  old_type: Boolean
+  new_type: Selection
+  message: 'enterprise 8518fea573f3: hr.payslip.line.appears_on_payslip changed from Boolean to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.salary.rule
+  field: appears_on_payslip
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 8518fea573f3
+    title: '[IMP] hr_payroll: salary rules ux and appear on payslip option'
+    file: hr_payroll/models/hr_salary_rule.py
+    lines: 19.0:35; 20.0:70
+    note: '19.0: appears_on_payslip = fields.Boolean(string=''Appears on Payslip'', default=True, help="Used to display the
+      salary rule on payslip.") | 20.0: appears_on_payslip = fields.Selection([ (''always'', ''Always''), (''never'', ''Never''),
+      (''non_zero'', ''If Result is not zero'') ], string=''Visibility'', default=''always'', help="Used to display the salary
+      rule on payslip.")'
+  old_type: Boolean
+  new_type: Selection
+  message: 'enterprise 8518fea573f3: hr.salary.rule.appears_on_payslip changed from Boolean to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.version
+  field: hourly_wage
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: acc0cb59e81c
+    title: '[IMP] hr_payroll: Make hourly wage with 4 decimals'
+    file: l10n_au_hr_payroll/models/hr_version.py
+    lines: 19.0:288; 20.0:302
+    note: '19.0: hourly_wage = fields.Monetary(compute="_compute_hourly_wage", readonly=False, store=True, tracking=True)
+      | 20.0: hourly_wage = fields.Float("Casual", compute="_compute_hourly_wage", readonly=False, store=True, tracking=1)'
+  old_type: Monetary
+  new_type: Float
+  message: 'enterprise acc0cb59e81c: hr.version.hourly_wage changed from Monetary to Float'
+- schema_version: 2
+  kind: field_type
+  model: hr.version
+  field: rd_percentage
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 16c7ee8b50c6
+    title: '[IMP] Generalise percentage fields to use widget'
+    file: l10n_be_hr_payroll/models/hr_version.py
+    lines: 19.0:124; 20.0:699
+    note: '19.0: rd_percentage = fields.Integer("Time in R&D", groups="hr_payroll.group_hr_payroll_user", tracking=True) |
+      20.0: rd_percentage = fields.Float("Time in R&D", groups="hr_payroll.group_hr_payroll_user", tracking=1, digits="Payroll
+      Rate")'
+  old_type: Integer
+  new_type: Float
+  message: 'enterprise 16c7ee8b50c6: hr.version.rd_percentage changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: im_livechat.channel.member.history
+  field: rating
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0c0c1c4842fc
+    title: '[REF] im_livechat: remove rating mixins from discuss'
+    file: addons/im_livechat/models/im_livechat_channel_member_history.py
+    lines: 19.0:59; 20.0:55
+    note: '19.0: rating = fields.Float(related="rating_id.rating") | 20.0: rating = fields.Selection( [ ("1", "Unhappy"),
+      ("3", "Neutral"), ("5", "Happy"), ], compute="_compute_rating", store=True, falsy_value_label="Not Rated Yet", )'
+  old_type: Float
+  new_type: Selection
+  message: 'odoo 0c0c1c4842fc: im_livechat.channel.member.history.rating changed from Float to Selection'
+- schema_version: 2
+  kind: field_type
+  model: im_livechat.report.channel
+  field: rating
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0c0c1c4842fc
+    title: '[REF] im_livechat: remove rating mixins from discuss'
+    file: addons/im_livechat/report/im_livechat_report_channel.py
+    lines: 19.0:42; 20.0:43
+    note: '19.0: rating = fields.Integer(''Rating'', aggregator="avg", readonly=True) | 20.0: rating = fields.Selection( selection=[
+      ("1", "Unhappy"), ("3", "Neutral"), ("5", "Happy"), ], string="Satisfaction Rate", readonly=True, falsy_value_label="Not
+      Rated Yet", )'
+  old_type: Integer
+  new_type: Selection
+  message: 'odoo 0c0c1c4842fc: im_livechat.report.channel.rating changed from Integer to Selection'
+- schema_version: 2
+  kind: field_type
+  model: ir.actions.act_window
+  field: views
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: odoo/addons/base/models/ir_actions.py
+    lines: 19.0:324; 20.0:307
+    note: '19.0: views = fields.Binary(compute=''_compute_views'', help="This function field computes the ordered list of
+      views that should be enabled " \ "when displaying the result of an action, federating view mode, views and " \ "reference
+      view. The result is returned as an ordered list of pairs (view_id,view_mode).") | 20.0: views = fields.Json(compute=''_compute_views'',
+      help="This function field computes the ordered list of views that should be enabled " "when displaying the result of
+      an action, federating view mode, views and " "reference view. The result is returned as an ordered list of pairs (view_id,view_mode)."
+      )'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: ir.actions.act_window.views changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: ir.actions.client
+  field: params
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: odoo/addons/base/models/ir_actions.py
+    lines: 19.0:1443; 20.0:1480
+    note: '19.0: params = fields.Binary(compute=''_compute_params'', inverse=''_inverse_params'', string=''Supplementary arguments'',
+      help="Arguments sent to the client along with " "the view tag") | 20.0: params = fields.Json( compute=''_compute_params'',
+      inverse=''_inverse_params'', string=''Supplementary arguments'', help="Arguments sent to the client along with the view
+      tag")'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: ir.actions.client.params changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: ir.actions.client
+  field: params_store
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: odoo/addons/base/models/ir_actions.py
+    lines: 19.0:1446; 20.0:1483
+    note: '19.0: params_store = fields.Binary(string=''Params storage'', readonly=True, attachment=False) | 20.0: params_store
+      = fields.Text(string=''Params storage'', readonly=True)'
+  old_type: Binary
+  new_type: Text
+  message: 'odoo 3078021ca336: ir.actions.client.params_store changed from Binary to Text'
+- schema_version: 2
+  kind: field_type
+  model: ir.model.fields
+  field: index
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 37f0c7f4118c
+    title: '[IMP] base: allow selecting custom field index types'
+    file: odoo/addons/base/models/ir_model.py
+    lines: 19.0:548; 20.0:613
+    note: '19.0: index = fields.Boolean(string=''Indexed'') | 20.0: index = fields.Selection( FIELD_INDEX_TYPES, string=''Index'',
+      help="The kind of database index requested for this field. " "B-tree indexes support equality and range searches; excluding
+      nulls makes the index smaller " "when most values are empty; trigram indexes speed up text pattern searches. " "Leaving
+      this empty does not remove an index that already exists.", )'
+  old_type: Boolean
+  new_type: Selection
+  message: 'odoo 37f0c7f4118c: ir.model.fields.index changed from Boolean to Selection'
+- schema_version: 2
+  kind: field_type
+  model: knowledge.article
+  field: template_body
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 1ac92e7de506
+    title: '[IMP] knowledge: switch `template_body` to `fields.Html`'
+    file: knowledge/models/knowledge_article.py
+    lines: 19.0:168; 20.0:175
+    note: '19.0: template_body = fields.Text(string="Template Body", translate=html_translate) | 20.0: template_body = fields.Html(string="Template
+      Body", translate=True)'
+  old_type: Text
+  new_type: Html
+  message: 'enterprise 1ac92e7de506: knowledge.article.template_body changed from Text to Html'
+- schema_version: 2
+  kind: field_type
+  model: mail.guest
+  field: im_status
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 22aa02fc01aa
+    title: '[REF] hr, mail, resource_mail: convert `im_status` to Selection field'
+    file: addons/mail/models/discuss/mail_guest.py
+    lines: 19.0:37; 20.0:39
+    note: '19.0: im_status = fields.Char("IM Status", compute="_compute_im_status", compute_sudo=True) | 20.0: im_status =
+      fields.Selection( [ ("online", "Online"), ("away", "Away"), ("offline", "Offline"), ], "IM Status", compute="_compute_im_status",
+      compute_sudo=True, )'
+  old_type: Char
+  new_type: Selection
+  message: 'odoo 22aa02fc01aa: mail.guest.im_status changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: mailing.mailing
+  field: sale_invoiced_amount
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 98260bb154fb
+    title: '[IMP] {mass_mailing_}sale: add currency symbols in invoices stat buttons'
+    file: addons/mass_mailing_sale/models/mailing_mailing.py
+    lines: 19.0:13; 20.0:14
+    note: '19.0: sale_invoiced_amount = fields.Integer(''Invoiced Amount'', compute=''_compute_sale_invoiced_amount'') | 20.0:
+      sale_invoiced_amount = fields.Monetary(''Invoiced Amount'', compute=''_compute_sale_invoiced_amount'', currency_field=''currency_id'')'
+  old_type: Integer
+  new_type: Monetary
+  message: 'odoo 98260bb154fb: mailing.mailing.sale_invoiced_amount changed from Integer to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: planning.attendance.analysis.report
+  field: cost_difference
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 960ab89d9af5
+    title: '[FIX] planning_attendance : Remove monetary widget since no currency'
+    file: planning_attendance/report/planning_attendance_analysis_report.py
+    lines: 19.0:24; 20.0:25
+    note: '19.0: cost_difference = fields.Float("Cost Difference", readonly=True) | 20.0: cost_difference = fields.Monetary("Cost
+      Difference", readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise 960ab89d9af5: planning.attendance.analysis.report.cost_difference changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: planning.attendance.analysis.report
+  field: effective_costs
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 960ab89d9af5
+    title: '[FIX] planning_attendance : Remove monetary widget since no currency'
+    file: planning_attendance/report/planning_attendance_analysis_report.py
+    lines: 19.0:22; 20.0:23
+    note: '19.0: effective_costs = fields.Float("Attendance Cost", readonly=True) | 20.0: effective_costs = fields.Monetary("Attendance
+      Cost", readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise 960ab89d9af5: planning.attendance.analysis.report.effective_costs changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: planning.attendance.analysis.report
+  field: planned_costs
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 960ab89d9af5
+    title: '[FIX] planning_attendance : Remove monetary widget since no currency'
+    file: planning_attendance/report/planning_attendance_analysis_report.py
+    lines: 19.0:23; 20.0:24
+    note: '19.0: planned_costs = fields.Float("Planned Cost", readonly=True) | 20.0: planned_costs = fields.Monetary("Planned
+      Cost", readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise 960ab89d9af5: planning.attendance.analysis.report.planned_costs changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: pos.prep.display
+  field: stage_ids
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 8491f7a74363
+    title: '[REF] point_of_sale: unify order change logic'
+    file: pos_enterprise/models/pos_prep_display.py
+    lines: 19.0:16; 20.0:16
+    note: '19.0: stage_ids = fields.One2many(''pos.prep.stage'', ''prep_display_id'', string="Stages", default=[ {''name'':
+      ''To prepare'', ''color'': ''#6C757D'', ''alert_timer'': 10}, {''name'': ''Ready'', ''color'': ''#4D89D1'', ''alert_timer'':
+      5}, {''name'': ''Completed'', ''color'': ''#4ea82a'', ''alert_timer'': 0} ]) | 20.0: stage_ids = fields.Many2many(''pos.prep.stage'',
+      string="Preparation stages")'
+  old_type: One2many
+  new_type: Many2many
+  message: 'enterprise 8491f7a74363: pos.prep.display.stage_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: pos.urbanpiper.test.order.wizard
+  field: discount_amount
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 8e25dcefb93d
+    title: '[IMP] pos_urban_piper: support product level discount in test order wizard'
+    file: pos_urban_piper/wizard/pos_urban_piper_test_order.py
+    lines: 19.0:24; 20.0:24
+    note: '19.0: discount_amount = fields.Integer( string="Fixed Discount Amount", default=0, help=''Fixed discount value
+      for test order.'' ) | 20.0: discount_amount = fields.Float( string="Order Level Discount", default=0.0, help="Fixed
+      discount applied on the entire order." )'
+  old_type: Integer
+  new_type: Float
+  message: 'enterprise 8e25dcefb93d: pos.urbanpiper.test.order.wizard.discount_amount changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: project.timesheet.forecast.report.analysis
+  field: effective_costs
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: f791aa9cdcdd
+    title: '[FIX] project_timesheet_forecast: timesheets and planning analysis currency_id'
+    file: project_timesheet_forecast/report/project_timesheet_forecast_report_analysis.py
+    lines: 19.0:25; 20.0:26
+    note: '19.0: effective_costs = fields.Float(''Effective Costs'', readonly=True) | 20.0: effective_costs = fields.Monetary(''Actual
+      Costs'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise f791aa9cdcdd: project.timesheet.forecast.report.analysis.effective_costs changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: project.timesheet.forecast.report.analysis
+  field: planned_costs
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: f791aa9cdcdd
+    title: '[FIX] project_timesheet_forecast: timesheets and planning analysis currency_id'
+    file: project_timesheet_forecast/report/project_timesheet_forecast_report_analysis.py
+    lines: 19.0:26; 20.0:27
+    note: '19.0: planned_costs = fields.Float(''Planned Costs'', readonly=True) | 20.0: planned_costs = fields.Monetary(''Planned
+      Costs'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise f791aa9cdcdd: project.timesheet.forecast.report.analysis.planned_costs changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: purchase.order
+  field: tax_totals
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/purchase/models/purchase_order.py
+    lines: 19.0:138; 20.0:142
+    note: '19.0: tax_totals = fields.Binary(compute=''_compute_tax_totals'', exportable=False) | 20.0: tax_totals = fields.Json(compute=''_compute_tax_totals'',
+      exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: purchase.order.tax_totals changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: rating.rating
+  field: parent_res_id
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 2f0c6386d178
+    title: '[IMP] rating: use many2one_reference in Parent Document'
+    file: addons/rating/models/rating.py
+    lines: 19.0:37; 20.0:36
+    note: '19.0: parent_res_id = fields.Integer(''Parent Document'', index=True) | 20.0: parent_res_id = fields.Many2oneReference(''Parent
+      Document'', model_field=''parent_res_model'', index=True)'
+  old_type: Integer
+  new_type: Many2oneReference
+  message: 'odoo 2f0c6386d178: rating.rating.parent_res_id changed from Integer to Many2oneReference'
+- schema_version: 2
+  kind: field_type
+  model: report.pos.order
+  field: average_price
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0c6bc90f5577
+    title: '[IMP] point_of_sale: display currency symbols in order analysis'
+    file: addons/point_of_sale/report/pos_order_report.py
+    lines: 19.0:27; 20.0:27
+    note: '19.0: average_price = fields.Float(string=''Average Price'', readonly=True, aggregator="avg") | 20.0: average_price
+      = fields.Monetary(string=''Average Price'', readonly=True, aggregator="avg")'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 0c6bc90f5577: report.pos.order.average_price changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: report.pos.order
+  field: margin
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0c6bc90f5577
+    title: '[IMP] point_of_sale: display currency symbols in order analysis'
+    file: addons/point_of_sale/report/pos_order_report.py
+    lines: 19.0:39; 20.0:39
+    note: '19.0: margin = fields.Float(string=''Margin'', readonly=True) | 20.0: margin = fields.Monetary(string=''Margin'',
+      readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 0c6bc90f5577: report.pos.order.margin changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: report.pos.order
+  field: price_sub_total
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0c6bc90f5577
+    title: '[IMP] point_of_sale: display currency symbols in order analysis'
+    file: addons/point_of_sale/report/pos_order_report.py
+    lines: 19.0:24; 20.0:24
+    note: '19.0: price_sub_total = fields.Float(string=''Subtotal w/o discount'', readonly=True) | 20.0: price_sub_total =
+      fields.Monetary(string=''Subtotal w/o discount'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 0c6bc90f5577: report.pos.order.price_sub_total changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: report.pos.order
+  field: price_subtotal_excl
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0c6bc90f5577
+    title: '[IMP] point_of_sale: display currency symbols in order analysis'
+    file: addons/point_of_sale/report/pos_order_report.py
+    lines: 19.0:25; 20.0:25
+    note: '19.0: price_subtotal_excl = fields.Float(string=''Subtotal w/o Tax'', readonly=True) | 20.0: price_subtotal_excl
+      = fields.Monetary(string=''Subtotal w/o Tax'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 0c6bc90f5577: report.pos.order.price_subtotal_excl changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: report.pos.order
+  field: price_total
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0c6bc90f5577
+    title: '[IMP] point_of_sale: display currency symbols in order analysis'
+    file: addons/point_of_sale/report/pos_order_report.py
+    lines: 19.0:23; 20.0:23
+    note: '19.0: price_total = fields.Float(string=''Total Price'', readonly=True) | 20.0: price_total = fields.Monetary(string=''Total
+      Price'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 0c6bc90f5577: report.pos.order.price_total changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: report.pos.order
+  field: total_discount
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0c6bc90f5577
+    title: '[IMP] point_of_sale: display currency symbols in order analysis'
+    file: addons/point_of_sale/report/pos_order_report.py
+    lines: 19.0:26; 20.0:26
+    note: '19.0: total_discount = fields.Float(string=''Total Discount'', readonly=True) | 20.0: total_discount = fields.Monetary(string=''Total
+      Discount'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 0c6bc90f5577: report.pos.order.total_discount changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: res.company
+  field: horizon_days
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 6ac707ad6d7e
+    title: '[IMP] sale,stock,*: Convert day-based fields to integers'
+    file: addons/stock/models/res_company.py
+    lines: 19.0:44; 20.0:48
+    note: '19.0: horizon_days = fields.Float(string="Replenishment Horizon", required=True, default=365, help="""Configure
+      your horizon to trigger reordering rules earlier to get a head start on replenishment and avoid delays, or trigger it
+      just-in-time (''0 days'') to avoid overstocking.""") | 20.0: horizon_days = fields.Integer(string="Replenishment Horizon",
+      required=True, default=365, help="""Configure your horizon to trigger reordering rules earlier to get a head start on
+      replenishment and avoid delays, or trigger it just-in-time (''0 days'') to avoid overstocking.""")'
+  old_type: Float
+  new_type: Integer
+  message: 'odoo 6ac707ad6d7e: res.company.horizon_days changed from Float to Integer'
+- schema_version: 2
+  kind: field_type
+  model: res.config.settings
+  field: account_default_credit_limit
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: d1ee2390af6f
+    title: '[REF] account,l10n_in: manage credit_limit default via company_default_for'
+    file: addons/account/models/res_config_settings.py
+    lines: 19.0:143; 20.0:153
+    note: '19.0: account_default_credit_limit = fields.Monetary( string="Default Credit Limit", readonly=False, help=''This
+      is the default credit limit that will be used on partners that do not have a specific limit on them.'', compute="_compute_account_default_credit_limit",
+      inverse="_inverse_account_default_credit_limit") | 20.0: account_default_credit_limit = fields.Float( string="Default
+      Credit Limit", readonly=False, help=''This is the default credit limit that will be used on partners that do not have
+      a specific limit on them.'', related=''company_id.account_credit_limit'', )'
+  old_type: Monetary
+  new_type: Float
+  message: 'odoo d1ee2390af6f: res.config.settings.account_default_credit_limit changed from Monetary to Float'
+- schema_version: 2
+  kind: field_type
+  model: res.config.settings
+  field: days_to_purchase
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 6ac707ad6d7e
+    title: '[IMP] sale,stock,*: Convert day-based fields to integers'
+    file: addons/purchase_stock/models/res_config_settings.py
+    lines: 19.0:11; 20.0:11
+    note: '19.0: days_to_purchase = fields.Float( related=''company_id.days_to_purchase'', readonly=False) | 20.0: days_to_purchase
+      = fields.Integer( related=''company_id.days_to_purchase'', readonly=False)'
+  old_type: Float
+  new_type: Integer
+  message: 'odoo 6ac707ad6d7e: res.config.settings.days_to_purchase changed from Float to Integer'
+- schema_version: 2
+  kind: field_type
+  model: res.config.settings
+  field: horizon_days
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 6ac707ad6d7e
+    title: '[IMP] sale,stock,*: Convert day-based fields to integers'
+    file: addons/stock/models/res_config_settings.py
+    lines: 19.0:59; 20.0:49
+    note: '19.0: horizon_days = fields.Float(related=''company_id.horizon_days'', readonly=False) | 20.0: horizon_days = fields.Integer(related=''company_id.horizon_days'',
+      readonly=False)'
+  old_type: Float
+  new_type: Integer
+  message: 'odoo 6ac707ad6d7e: res.config.settings.horizon_days changed from Float to Integer'
+- schema_version: 2
+  kind: field_type
+  model: res.device.log
+  field: user_id
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3079020fcfe4
+    title: '[IMP] base: associate `res.device` with sessions'
+    file: odoo/addons/base/models/res_device.py
+    lines: 19.0:28; 20.0:33
+    note: '19.0: user_id = fields.Many2one("res.users", index=''btree'') | 20.0: user_id = fields.Integer(string=''User'',
+      required=True, index=''btree'')'
+  old_type: Many2one
+  new_type: Integer
+  message: 'odoo 3079020fcfe4: res.device.log.user_id changed from Many2one to Integer'
+- schema_version: 2
+  kind: field_type
+  model: res.users
+  field: im_status
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 22aa02fc01aa
+    title: '[REF] hr, mail, resource_mail: convert `im_status` to Selection field'
+    file: addons/mail/models/res_users.py
+    lines: 19.0:44; 20.0:54
+    note: '19.0: im_status = fields.Char("IM Status", compute="_compute_im_status", compute_sudo=True) | 20.0: im_status =
+      fields.Selection( [ ("online", "Online"), ("away", "Away"), ("busy", "Do Not Disturb"), ("offline", "Offline"), ], "IM
+      Status", compute="_compute_im_status", compute_sudo=True, )'
+  old_type: Char
+  new_type: Selection
+  message: 'odoo 22aa02fc01aa: res.users.im_status changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: sale.order
+  field: tax_totals
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3078021ca336
+    title: '[IMP] orm, *: fields.Binary value is bytes'
+    file: addons/sale/models/sale_order.py
+    lines: 19.0:317; 20.0:482
+    note: '19.0: tax_totals = fields.Binary(compute=''_compute_tax_totals'', exportable=False) | 20.0: tax_totals = fields.Json(compute="_compute_tax_totals",
+      exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo 3078021ca336: sale.order.tax_totals changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: sale.report
+  field: price_unit
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 5f7b0b5a1345
+    title: '[IMP] sale_project, sale_margin, sale_timesheet: clean margins views'
+    file: addons/sale/report/sale_report.py
+    lines: 19.0:84; 20.0:115
+    note: '19.0: price_unit = fields.Float(string="Unit Price", aggregator=''avg'', readonly=True) | 20.0: price_unit = fields.Monetary(string="Unit
+      Price", aggregator="avg", readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 5f7b0b5a1345: sale.report.price_unit changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sign.request
+  field: request_item_infos
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 6ff43a83509d
+    title: '[IMP] *: stop misusing fields.Binary'
+    file: sign/models/sign_request.py
+    lines: 19.0:64; 20.0:74
+    note: '19.0: request_item_infos = fields.Binary(compute="_compute_request_item_infos") | 20.0: request_item_infos = fields.Json(compute="_compute_request_item_infos")'
+  old_type: Binary
+  new_type: Json
+  message: 'enterprise 6ff43a83509d: sign.request.request_item_infos changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: social.post
+  field: sale_invoiced_amount
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: bdf40c952794
+    title: '[IMP] social_sale: add currency symbols in invoices stat buttons'
+    file: social_sale/models/social_post.py
+    lines: 19.0:12; 20.0:13
+    note: '19.0: sale_invoiced_amount = fields.Integer(''Invoiced Amount'', groups=''sales_team.group_sale_salesman'', compute=''_compute_sale_invoiced_amount'',
+      compute_sudo=True) | 20.0: sale_invoiced_amount = fields.Monetary(''Invoiced Amount'', groups=''sales_team.group_sale_salesman'',
+      compute=''_compute_sale_invoiced_amount'', compute_sudo=True, currency_field=''currency_id'')'
+  old_type: Integer
+  new_type: Monetary
+  message: 'enterprise bdf40c952794: social.post.sale_invoiced_amount changed from Integer to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: utm.campaign
+  field: invoiced_amount
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 2fd2df6b997f
+    title: '[FIX] *: compute invoiced amounts using exchange rates'
+    file: addons/sale/models/utm_campaign.py
+    lines: 19.0:13; 20.0:16
+    note: '19.0: invoiced_amount = fields.Integer(string="Revenues generated by the campaign", compute="_compute_sale_invoiced_amount",
+      compute_sudo=True, groups=''sales_team.group_sale_salesman'') | 20.0: invoiced_amount = fields.Monetary( string="Revenues
+      generated by the campaign", compute="_compute_sale_invoiced_amount", compute_sudo=True, groups="sales_team.group_sale_salesman",
+      currency_field=''currency_id'', )'
+  old_type: Integer
+  new_type: Monetary
+  message: 'odoo 2fd2df6b997f: utm.campaign.invoiced_amount changed from Integer to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: voip.call
+  field: duration
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 906b0702daed
+    title: '[IMP] voip: store duration in seconds'
+    file: voip/models/voip_call.py
+    lines: 19.0:39; 20.0:119
+    note: '19.0: duration = fields.Float(compute="_compute_duration", readonly=True) | 20.0: duration = fields.Integer("Duration
+      (s)", readonly=True, help="Duration of the call in seconds")'
+  old_type: Float
+  new_type: Integer
+  message: 'enterprise 906b0702daed: voip.call.duration changed from Float to Integer'

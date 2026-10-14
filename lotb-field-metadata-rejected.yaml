@@ -1,0 +1,864 @@
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - account.analytic.account
+  - production_ids
+  - One2many
+  - Many2many
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/mrp_account/models/analytic_account.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - account.move
+  - expense_sheet_id
+  - One2many
+  - Many2one
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/hr_expense/models/account_move.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - account.tax
+  - identification_letter
+  - Char
+  - Selection
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb pos_blackbox_be/models/account_tax.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - delivery.carrier
+  - fedex_locations_radius_unit
+  - Selection
+  - Many2one
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb website_sale_fedex/models/delivery_fedex.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - delivery.carrier.easypost
+  - carrier_type
+  - Selection
+  - Char
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb delivery_easypost/wizard/carrier_type.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - documents.document
+  - res_id
+  - Integer
+  - Many2oneReference
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb documents/models/documents_document.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - gamification.karma.tracking
+  - tracking_date
+  - Date
+  - Datetime
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/gamification/models/gamification_karma_tracking.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - hr.contract
+  - l10n_hk_internet
+  - Boolean
+  - Monetary
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb l10n_hk_hr_payroll/models/hr_contract.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - l10n.be.eco.vouchers.wizard
+  - reference_year
+  - Integer
+  - Selection
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb l10n_be_hr_payroll/wizard/l10n_be_eco_vouchers_wizard.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - pos.order
+  - blackbox_tax_category_a
+  - Float
+  - Monetary
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb pos_blackbox_be/models/pos_order.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - pos.order
+  - blackbox_tax_category_b
+  - Float
+  - Monetary
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb pos_blackbox_be/models/pos_order.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - pos.order
+  - blackbox_tax_category_c
+  - Float
+  - Monetary
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb pos_blackbox_be/models/pos_order.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - pos.order
+  - blackbox_tax_category_d
+  - Float
+  - Monetary
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb pos_blackbox_be/models/pos_order.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - product.template
+  - compare_list_price
+  - Float
+  - Monetary
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/website_sale/models/product_template.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - project.task
+  - date_deadline
+  - Date
+  - Datetime
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/project/models/project_task.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - purchase.order.line
+  - move_dest_ids
+  - One2many
+  - Many2many
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/purchase_stock/models/purchase_order_line.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - res.config.settings
+  - pos_floor_ids
+  - One2many
+  - Many2many
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/pos_restaurant/models/res_config_settings.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - sale.order
+  - internal_note
+  - Text
+  - Html
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb sale_subscription/models/sale_order.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - stock.picking
+  - sendcloud_parcel_ref
+  - Char
+  - Json
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb delivery_sendcloud/models/stock_picking.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_type
+  candidate:
+  - survey.user_input
+  - applicant_id
+  - One2many
+  - Many2one
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/hr_recruitment_survey/models/survey_user_input.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_160_170
+  kind: field_property
+  candidate:
+  - account.accrued.orders.wizard
+  - journal_id
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/account/wizard/accrued_orders.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_property
+  candidate:
+  - bank.rec.widget
+  - state
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb account_accountant/models/bank_rec_widget.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_property
+  candidate:
+  - hr.employee
+  - next_appraisal_date
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb hr_appraisal/models/hr_employee.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_property
+  candidate:
+  - mail.compose.message
+  - body
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/mail/wizard/mail_compose_message.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_160_170
+  kind: field_property
+  candidate:
+  - sale.order
+  - amount_delivery
+  - store
+  - 'True'
+  - 'False'
+  source: odoo.git cc149fd4388d124d53403610e823b5180d3d0a79 addons/website_sale/models/sale_order.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_160_170
+  kind: field_property
+  candidate:
+  - sale.order
+  - has_pickable_lines
+  - store
+  - 'True'
+  - 'False'
+  source: enterprise.git 1ed1645188dd98a182e6a1f652fb611d7f4c31cb sale_renting/models/sale_order.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_170_180
+  kind: field_type
+  candidate:
+  - hr.contract
+  - l10n_ch_lesson_wage
+  - Monetary
+  - Float
+  source: enterprise.git b91ed9f2907755b6b174d367969747bdb2e61c2b l10n_ch_hr_payroll/models/hr_contract.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_170_180
+  kind: field_type
+  candidate:
+  - hr.payslip.input.type
+  - l10n_au_default_amount
+  - Float
+  - Monetary
+  source: enterprise.git b91ed9f2907755b6b174d367969747bdb2e61c2b l10n_au_hr_payroll/models/hr_payslip_input_type.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_170_180
+  kind: field_type
+  candidate:
+  - mail.message
+  - account_audit_log_preview
+  - Html
+  - Text
+  source: odoo.git fabad15533e380028214047a0cc7656a343f769a addons/account/models/mail_message.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_170_180
+  kind: field_property
+  candidate:
+  - account.account
+  - include_initial_balance
+  - store
+  - 'True'
+  - 'False'
+  source: odoo.git fabad15533e380028214047a0cc7656a343f769a addons/account/models/account_account.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_170_180
+  kind: field_property
+  candidate:
+  - account.account
+  - internal_group
+  - store
+  - 'True'
+  - 'False'
+  source: odoo.git fabad15533e380028214047a0cc7656a343f769a addons/account/models/account_account.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_170_180
+  kind: field_property
+  candidate:
+  - account.asset
+  - vehicle_id
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git b91ed9f2907755b6b174d367969747bdb2e61c2b account_asset_fleet/models/account_asset.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_170_180
+  kind: field_property
+  candidate:
+  - hr.leave.allocation
+  - name
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git fabad15533e380028214047a0cc7656a343f769a addons/hr_holidays/models/hr_leave_allocation.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_170_180
+  kind: field_property
+  candidate:
+  - hr.leave.allocation
+  - number_of_hours_display
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git fabad15533e380028214047a0cc7656a343f769a addons/hr_holidays/models/hr_leave_allocation.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_170_180
+  kind: field_property
+  candidate:
+  - sale.order.line
+  - qty_invoiced_posted
+  - store
+  - 'True'
+  - 'False'
+  source: odoo.git fabad15533e380028214047a0cc7656a343f769a addons/sale/models/sale_order_line.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - appointment.type
+  - question_ids
+  - One2many
+  - Many2many
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a appointment/models/appointment_type.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - chatbot.script.step
+  - message
+  - Text
+  - Html
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/im_livechat/models/chatbot_script_step.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - event.type
+  - question_ids
+  - One2many
+  - Many2many
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/event/models/event_type.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - hr.departure.reason
+  - l10n_hk_ir56f_code
+  - Char
+  - Selection
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a l10n_hk_hr_payroll/models/hr_departure_reason.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - hr.payslip.input.type
+  - l10n_au_payroll_code
+  - Char
+  - Selection
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a l10n_au_hr_payroll/models/hr_payslip_input_type.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - lunch.cashmove.report
+  - id
+  - Integer
+  - Id
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/lunch/report/lunch_cashmove_report.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - mrp.report
+  - id
+  - Integer
+  - Id
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a mrp_account_enterprise/reports/mrp_report.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - res.users.log
+  - create_uid
+  - Integer
+  - Many2one
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 odoo/addons/base/models/res_users.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_180_190
+  kind: field_type
+  candidate:
+  - stock.picking
+  - production_ids
+  - Many2many
+  - One2many
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/mrp/models/stock_picking.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - account.bank.statement
+  - currency_id
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/account/models/account_bank_statement.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - account.move
+  - l10n_co_edi_operation_type
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a l10n_co_edi/models/account_invoice.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - account.move
+  - l10n_ma_reports_payment_method
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a l10n_ma_reports/models/account_move.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - account.move
+  - l10n_mx_edi_payment_policy
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a l10n_mx_edi/models/account_move.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - hr.contract.salary.offer
+  - display_name
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a hr_contract_salary/models/hr_contract_salary_offer.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - hr.payslip.employee.depature.holiday.attests
+  - payslip_n1_ids
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a l10n_be_hr_payroll/wizard/hr_payroll_employee_departure_holiday_attest.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - hr.payslip.employee.depature.holiday.attests
+  - payslip_n_ids
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a l10n_be_hr_payroll/wizard/hr_payroll_employee_departure_holiday_attest.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - peppol.registration
+  - smp_registration
+  - store
+  - 'True'
+  - 'False'
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/account_peppol/wizard/peppol_registration.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - peppol.registration
+  - use_parent_connection_selection
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/account_peppol/wizard/peppol_registration.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - purchase.order
+  - receipt_reminder_email
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/purchase/models/purchase_order.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - stock.picking
+  - l10n_mx_edi_gross_vehicle_weight
+  - store
+  - 'True'
+  - 'False'
+  source: enterprise.git b97e91d70c71a66a771c534115469ea304b5461a l10n_mx_edi_stock/models/stock_picking.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - stock.picking
+  - shipping_weight
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/stock/models/stock_picking.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_180_190
+  kind: field_property
+  candidate:
+  - website.seo.metadata
+  - is_seo_optimized
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 366459b0ece9b577e27b26df963ec2188e5190f9 addons/website/models/mixins.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - account.move
+  - reimbursement_totals
+  - Binary
+  - Json
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 l10n_ec_edi/models/account_move.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - account.payment.register
+  - batches
+  - Binary
+  - Json
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/account/wizard/account_payment_register.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - account.tax.repartition.line
+  - tag_ids_domain
+  - Binary
+  - Json
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/account/models/account_tax.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - data_cleaning.record
+  - res_id
+  - Integer
+  - Many2oneReference
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 data_cleaning/models/data_cleaning_record.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - data_recycle.record
+  - res_id
+  - Integer
+  - Many2oneReference
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/data_recycle/models/data_recycle_record.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - hr.employee
+  - car_atn
+  - Float
+  - Monetary
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 l10n_be_hr_payroll/models/hr_employee.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - hr.employee
+  - company_car_total_depreciated_cost
+  - Float
+  - Monetary
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 l10n_be_hr_payroll/models/hr_employee.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - hr.version
+  - car_atn
+  - Float
+  - Monetary
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 l10n_be_hr_payroll/models/hr_version.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - hr.version
+  - company_car_total_depreciated_cost
+  - Float
+  - Monetary
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 l10n_be_hr_payroll/models/hr_version.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - ir.module.module
+  - account_templates
+  - Binary
+  - Json
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/account/models/ir_module.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - l10n_ar.earnings.scale.line
+  - percentage
+  - Monetary
+  - Float
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/l10n_ar_withholding/models/l10n_ar_earnings_scale_line.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - l10n_es_reports.real.estate
+  - cadastral_reference
+  - Selection
+  - Char
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 l10n_es_real_estates/models/real_estate.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - payment.provider
+  - payment_method_ids
+  - Many2many
+  - One2many
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/payment/models/payment_provider.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - res.company
+  - days_to_purchase
+  - Float
+  - Integer
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/purchase_stock/models/res_company.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - res.company
+  - l10n_sa_edi_additional_identification_scheme
+  - Selection
+  - Char
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/l10n_sa_edi/models/res_company.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - res.company
+  - security_lead
+  - Float
+  - Integer
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/sale_stock/models/res_company.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - res.config.settings
+  - default_l10n_hk_internet
+  - Float
+  - Monetary
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 l10n_hk_hr_payroll/models/res_config_settings.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - res.config.settings
+  - security_lead
+  - Float
+  - Integer
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/sale_stock/models/res_config_settings.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - res.partner
+  - l10n_sa_edi_additional_identification_scheme
+  - Selection
+  - Char
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/l10n_sa_edi/models/res_partner.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - res.partner
+  - shopee_buyer_identifier
+  - Integer
+  - Char
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 sale_shopee/models/res_partner.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - sale.report
+  - margin
+  - Float
+  - Monetary
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/sale_margin/report/sale_report.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - stock.scrap.reason.tag
+  - color
+  - Char
+  - Integer
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/stock/models/stock_scrap_reason_tag.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - test_orm.attachment
+  - res_id
+  - Integer
+  - Many2oneReference
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 odoo/addons/test_base/models/test_orm.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_190_200
+  kind: field_type
+  candidate:
+  - test_orm.creativework.edition
+  - res_id
+  - Integer
+  - Many2oneReference
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 odoo/addons/test_base/models/test_orm.py
+  reason: field definition is not present in the cited file at both branch tips
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - account.move
+  - release_to_pay_manual
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 account_3way_match/models/account_invoice.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - hr.payroll.alloc.paid.leave
+  - alloc_employee_ids
+  - store
+  - 'False'
+  - 'True'
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 l10n_be_hr_payroll/wizard/hr_payroll_allocating_paid_time_off.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - hr.payslip.worked_days
+  - name
+  - store
+  - 'True'
+  - 'False'
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 hr_payroll/models/hr_payslip_worked_days.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - mail.tracking.duration.mixin
+  - duration_tracking
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/mail/models/mail_tracking_duration_mixin.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - pdp.registration
+  - pdp_identifier
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/l10n_fr_pdp/wizard/pdp_registration.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - product.category
+  - complete_name
+  - store
+  - 'True'
+  - 'False'
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/product/models/product_category.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - product.pricelist.item
+  - price_markup
+  - store
+  - 'True'
+  - 'False'
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/product/models/product_pricelist_item.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - product.product
+  - lst_price
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/product/models/product_product.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - purchase.order.line
+  - price_unit_product_uom
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 addons/purchase/models/purchase_order_line.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - sale.order
+  - is_rental_order
+  - store
+  - 'True'
+  - 'False'
+  source: enterprise.git f0d0f70423817c382d61804638e9b7f31c97b306 sale_renting/models/sale_order.py
+  reason: no field-definition commit found in the migration range
+- step: migrate_190_200
+  kind: field_property
+  candidate:
+  - website
+  - domain_punycode
+  - store
+  - 'False'
+  - 'True'
+  source: odoo.git 57a4e5209ef744cd34c634bbfe16b4e99925bac4 odoo/addons/base/models/website.py
+  reason: field definition is not present in the cited file at both branch tips

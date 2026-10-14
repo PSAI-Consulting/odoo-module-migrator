@@ -1,0 +1,795 @@
+# Verified from both branch tips and the changing commit; generated candidates remain non-applicable.
+- schema_version: 2
+  kind: field_type
+  model: account.analytic.account
+  field: bom_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: f13d537a42ff
+    title: '[IMP] mrp: New analytic for MRP'
+    file: addons/mrp_account/models/analytic_account.py
+    lines: 16.0:13; 17.0:13
+    note: '16.0: bom_ids = fields.One2many(''mrp.bom'', ''analytic_account_id'', string=''Bills of Materials'') | 17.0: bom_ids
+      = fields.Many2many(''mrp.bom'')'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo f13d537a42ff: account.analytic.account.bom_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: account.analytic.account
+  field: workcenter_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: f13d537a42ff
+    title: '[IMP] mrp: New analytic for MRP'
+    file: addons/mrp_account/models/analytic_account.py
+    lines: 16.0:15; 17.0:15
+    note: '16.0: workcenter_ids = fields.One2many(''mrp.workcenter'', ''costs_hour_account_id'', string=''Workcenters'') |
+      17.0: workcenter_ids = fields.Many2many(''mrp.workcenter'')'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo f13d537a42ff: account.analytic.account.workcenter_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: account.move
+  field: quick_encoding_vals
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: f85a8d10e3bd
+    title: '[FIX] account: convert `quick_encoding_vals` to a Json field'
+    file: addons/account/models/account_move.py
+    lines: 16.0:489; 17.0:522
+    note: '16.0: quick_encoding_vals = fields.Binary(compute=''_compute_quick_encoding_vals'', exportable=False) | 17.0: quick_encoding_vals
+      = fields.Json(compute=''_compute_quick_encoding_vals'', exportable=False)'
+  old_type: Binary
+  new_type: Json
+  message: 'odoo f85a8d10e3bd: account.move.quick_encoding_vals changed from Binary to Json'
+- schema_version: 2
+  kind: field_type
+  model: account.payment
+  field: qr_code
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 12fc813b586c
+    title: '[FIX] account: display qr_code'
+    file: addons/account/models/account_payment.py
+    lines: 16.0:39; 17.0:41
+    note: '16.0: qr_code = fields.Char(string="QR Code URL", compute="_compute_qr_code") | 17.0: qr_code = fields.Html(string="QR
+      Code URL", compute="_compute_qr_code")'
+  old_type: Char
+  new_type: Html
+  message: 'odoo 12fc813b586c: account.payment.qr_code changed from Char to Html'
+- schema_version: 2
+  kind: field_type
+  model: account.payment.term
+  field: example_amount
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9c134ec37981
+    title: '[IMP] account: simplify payment term usability'
+    file: addons/account/models/account_payment_term.py
+    lines: 16.0:31; 17.0:33
+    note: '16.0: example_amount = fields.Float(default=_default_example_amount, store=False) | 17.0: example_amount = fields.Monetary(currency_field=''currency_id'',
+      default=1000, store=False, readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9c134ec37981: account.payment.term.example_amount changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: account.report
+  field: filter_account_type
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 01666d9c21c0
+    title: '[IMP] account_report: trade account rework'
+    file: addons/account/models/account_report.py
+    lines: 16.0:108; 17.0:127
+    note: '16.0: filter_account_type = fields.Boolean( string="Account Types", compute=lambda x: x._compute_report_option_filter(''filter_account_type''),
+      readonly=False, store=True, depends=[''root_report_id''], ) | 17.0: filter_account_type = fields.Selection( string="Account
+      Types", selection=[(''both'', "Payable and receivable"), (''payable'', "Payable"), (''receivable'', "Receivable"), (''disabled'',
+      ''Disabled'')], compute=lambda x: x._compute_report_option_filter(''filter_account_type'', ''disabled''), readonly=False,
+      store=True, depends=[''root_report_id'', ''section_main_report_ids''], )'
+  old_type: Boolean
+  new_type: Selection
+  message: 'odoo 01666d9c21c0: account.report.filter_account_type changed from Boolean to Selection'
+- schema_version: 2
+  kind: field_type
+  model: bank.rec.widget
+  field: todo_command
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: e1f0f66a7237
+    title: '[REF] account_accountant: Bank reco form as owl component'
+    file: account_accountant/models/bank_rec_widget.py
+    lines: 16.0:114; 17.0:117
+    note: '16.0: todo_command = fields.Char( store=False, ) | 17.0: todo_command = fields.Json( store=False, )'
+  old_type: Char
+  new_type: Json
+  message: 'enterprise e1f0f66a7237: bank.rec.widget.todo_command changed from Char to Json'
+- schema_version: 2
+  kind: field_type
+  model: delivery.carrier
+  field: sendcloud_shipping_rules
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 7657e0e5be30
+    title: '[IMP] {website_}delivery_sendcloud: Set Delivery By Product'
+    file: delivery_sendcloud/models/delivery_carrier.py
+    lines: 16.0:21; 17.0:25
+    note: '16.0: sendcloud_shipping_rules = fields.Selection([(''ship'', ''Shipping''), (''return'', ''Returns''), (''both'',
+      ''Both'')], string="Use Sendcloud shipping rules", help="Depending your Sendcloud account type, through rules you can
+      define the shipping method to use depending on different conditions like destination, weight, value, etc. \n \ Rules
+      can override shipping product selected in odoo") | 17.0: sendcloud_shipping_rules = fields.Boolean(string="Use Sendcloud
+      shipping rules", help="Depending your Sendcloud account type, through rules you can define the shipping method to use
+      depending on different conditions like destination, weight, value, etc.\nRules can override shipping product selected
+      in Odoo")'
+  old_type: Selection
+  new_type: Boolean
+  message: 'enterprise 7657e0e5be30: delivery.carrier.sendcloud_shipping_rules changed from Selection to Boolean'
+- schema_version: 2
+  kind: field_type
+  model: expense.sample.register
+  field: amount
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 84dd23c2b129
+    title: '[REF] *expense*: Technical hr_expense refactor'
+    file: hr_expense_extract/wizard/expense_sample_register.py
+    lines: 16.0:12; 17.0:11
+    note: '16.0: amount = fields.Float(string=''Amount'') | 17.0: amount = fields.Monetary(string=''Amount'', currency_field=''currency_id'')'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise 84dd23c2b129: expense.sample.register.amount changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: hr.employee
+  field: salary_attachment_ids
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 942ff4914c62
+    title: '[IMP] hr_payroll: Make possible to create multi employees attachments'
+    file: hr_payroll/models/hr_employee.py
+    lines: 16.0:14; 17.0:18
+    note: '16.0: salary_attachment_ids = fields.One2many( ''hr.salary.attachment'', ''employee_id'', string=''Salary Attachments'',
+      groups="hr_payroll.group_hr_payroll_user") | 17.0: salary_attachment_ids = fields.Many2many( ''hr.salary.attachment'',
+      string=''Salary Attachments'', groups="hr_payroll.group_hr_payroll_user")'
+  old_type: One2many
+  new_type: Many2many
+  message: 'enterprise 942ff4914c62: hr.employee.salary_attachment_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: iot.device
+  field: report_ids
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: bae94d79dbdf
+    title: '[IMP] iot: convert report <=> printer relation to m2m'
+    file: iot/models/iot.py
+    lines: 16.0:65; 17.0:80
+    note: '16.0: report_ids = fields.One2many(''ir.actions.report'', ''device_id'', string=''Reports'') | 17.0: report_ids
+      = fields.Many2many(''ir.actions.report'', string=''Reports'')'
+  old_type: One2many
+  new_type: Many2many
+  message: 'enterprise bae94d79dbdf: iot.device.report_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: l10n.be.eco.vouchers.wizard
+  field: reference_period
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 0904af6864c2
+    title: '[IMP] l10n_be_hr_payroll: fix eco voucher flow'
+    file: l10n_be_hr_payroll/wizard/l10n_be_eco_vouchers_wizard.py
+    lines: 16.0:25; 17.0:29
+    note: '16.0: reference_period = fields.Char(compute=''_compute_reference_period'') | 17.0: reference_period = fields.Html(compute=''_compute_reference_period'')'
+  old_type: Char
+  new_type: Html
+  message: 'enterprise 0904af6864c2: l10n.be.eco.vouchers.wizard.reference_period changed from Char to Html'
+- schema_version: 2
+  kind: field_type
+  model: mailing.mailing
+  field: bounced_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/mailing.py
+    lines: 16.0:218; 17.0:225
+    note: '16.0: bounced_ratio = fields.Integer(compute="_compute_statistics", string=''Bounced Ratio'') | 17.0: bounced_ratio
+      = fields.Float(compute="_compute_statistics", string=''Bounced Ratio'')'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: mailing.mailing.bounced_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: mailing.mailing
+  field: clicks_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/mailing.py
+    lines: 16.0:219; 17.0:226
+    note: '16.0: clicks_ratio = fields.Integer(compute="_compute_clicks_ratio", string="Number of Clicks") | 17.0: clicks_ratio
+      = fields.Float(compute="_compute_clicks_ratio", string="Number of Clicks")'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: mailing.mailing.clicks_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: mailing.mailing
+  field: opened_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/mailing.py
+    lines: 16.0:216; 17.0:223
+    note: '16.0: opened_ratio = fields.Integer(compute="_compute_statistics", string=''Opened Ratio'') | 17.0: opened_ratio
+      = fields.Float(compute="_compute_statistics", string=''Opened Ratio'')'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: mailing.mailing.opened_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: mailing.mailing
+  field: received_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/mailing.py
+    lines: 16.0:215; 17.0:222
+    note: '16.0: received_ratio = fields.Integer(compute="_compute_statistics", string=''Received Ratio'') | 17.0: received_ratio
+      = fields.Float(compute="_compute_statistics", string=''Received Ratio'')'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: mailing.mailing.received_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: mailing.mailing
+  field: replied_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/mailing.py
+    lines: 16.0:217; 17.0:224
+    note: '16.0: replied_ratio = fields.Integer(compute="_compute_statistics", string=''Replied Ratio'') | 17.0: replied_ratio
+      = fields.Float(compute="_compute_statistics", string=''Replied Ratio'')'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: mailing.mailing.replied_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: onboarding.onboarding
+  field: step_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 518a4e4c4308
+    title: '[IMP] onboarding: prepare all onboardings migration'
+    file: addons/onboarding/models/onboarding_onboarding.py
+    lines: 16.0:16; 17.0:16
+    note: '16.0: step_ids = fields.One2many(''onboarding.onboarding.step'', ''onboarding_id'', ''Onboarding steps'') | 17.0:
+      step_ids = fields.Many2many(''onboarding.onboarding.step'', string=''Onboarding steps'')'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo 518a4e4c4308: onboarding.onboarding.step_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: onboarding.progress
+  field: progress_step_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 518a4e4c4308
+    title: '[IMP] onboarding: prepare all onboardings migration'
+    file: addons/onboarding/models/onboarding_progress.py
+    lines: 16.0:25; 17.0:25
+    note: '16.0: progress_step_ids = fields.One2many(''onboarding.progress.step'', ''progress_id'', ''Progress Steps Trackers'')
+      | 17.0: progress_step_ids = fields.Many2many(''onboarding.progress.step'', string=''Progress Steps Trackers'')'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo 518a4e4c4308: onboarding.progress.progress_step_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: payment.provider
+  field: support_manual_capture
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 7f2ae9ed5b98
+    title: '[IMP] payment(_adyen): allow partial capture'
+    file: addons/payment/models/payment_provider.py
+    lines: 16.0:149; 17.0:155
+    note: '16.0: support_manual_capture = fields.Boolean( string="Manual Capture Supported", compute=''_compute_feature_support_fields''
+      ) | 17.0: support_manual_capture = fields.Selection( string="Manual Capture Supported", selection=[(''full_only'', "Full
+      Only"), (''partial'', "Partial")], compute=''_compute_feature_support_fields'', )'
+  old_type: Boolean
+  new_type: Selection
+  message: 'odoo 7f2ae9ed5b98: payment.provider.support_manual_capture changed from Boolean to Selection'
+- schema_version: 2
+  kind: field_type
+  model: pos.config
+  field: floor_ids
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 53f9e5845f34
+    title: '[IMP] point_of_sale, pos_restaurant: Add cross-orders feature for point_of_sale and pos_restaurant'
+    file: addons/pos_restaurant/models/pos_config.py
+    lines: 16.0:13; 17.0:15
+    note: '16.0: floor_ids = fields.One2many(''restaurant.floor'', ''pos_config_id'', string=''Restaurant Floors'', help=''The
+      restaurant floors served by this point of sale.'') | 17.0: floor_ids = fields.Many2many(''restaurant.floor'', string=''Restaurant
+      Floors'', help=''The restaurant floors served by this point of sale.'')'
+  old_type: One2many
+  new_type: Many2many
+  message: 'odoo 53f9e5845f34: pos.config.floor_ids changed from One2many to Many2many'
+- schema_version: 2
+  kind: field_type
+  model: product.tag
+  field: color
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: bc3026e2b27f
+    title: '[IMP] product, website_sale(comparison): enable product tags and ribbons'
+    file: addons/product/models/product_tag.py
+    lines: 16.0:16; 17.0:18
+    note: '16.0: color = fields.Integer(''Color'', default=_get_default_color) | 17.0: color = fields.Char(string="Color",
+      default=''#3C3C3C'')'
+  old_type: Integer
+  new_type: Char
+  message: 'odoo bc3026e2b27f: product.tag.color changed from Integer to Char'
+- schema_version: 2
+  kind: field_type
+  model: product.template
+  field: sale_delay
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 812af372757f
+    title: '[IMP] mrp: make fields float to Integer'
+    file: addons/stock/models/product.py
+    lines: 16.0:657; 17.0:687
+    note: '16.0: sale_delay = fields.Float( ''Customer Lead Time'', default=0, help="Delivery lead time, in days. It''s the
+      number of days, promised to the customer, between the confirmation of the sales order and the delivery.") | 17.0: sale_delay
+      = fields.Integer( ''Customer Lead Time'', default=0, help="Delivery lead time, in days. It''s the number of days, promised
+      to the customer, between the confirmation of the sales order and the delivery.")'
+  old_type: Float
+  new_type: Integer
+  message: 'odoo 812af372757f: product.template.sale_delay changed from Float to Integer'
+- schema_version: 2
+  kind: field_type
+  model: project.task
+  field: planning_overlap
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: bb48abf0dbe2
+    title: '[FIX] project: improve tasks in conflict warning'
+    file: project_enterprise/models/project_task.py
+    lines: 16.0:32; 17.0:37
+    note: '16.0: planning_overlap = fields.Integer(compute=''_compute_planning_overlap'', search=''_search_planning_overlap'')
+      | 17.0: planning_overlap = fields.Html(compute=''_compute_planning_overlap'', search=''_search_planning_overlap'')'
+  old_type: Integer
+  new_type: Html
+  message: 'enterprise bb48abf0dbe2: project.task.planning_overlap changed from Integer to Html'
+- schema_version: 2
+  kind: field_type
+  model: repair.order
+  field: schedule_date
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: eaa6e1a08c3d
+    title: '[REF] repair, *_repair: Separate Repair from Sales/Invoicing scopes'
+    file: addons/repair/models/repair.py
+    lines: 16.0:69; 17.0:65
+    note: '16.0: schedule_date = fields.Date("Scheduled Date") | 17.0: schedule_date = fields.Datetime("Scheduled Date", default=fields.Datetime.now,
+      index=True, required=True, copy=False)'
+  old_type: Date
+  new_type: Datetime
+  message: 'odoo eaa6e1a08c3d: repair.order.schedule_date changed from Date to Datetime'
+- schema_version: 2
+  kind: field_type
+  model: report.project.task.user
+  field: date_deadline
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 56073896a69d
+    title: '[IMP] project: merge date_deadline and planned_date_end'
+    file: addons/project/report/project_report.py
+    lines: 16.0:20; 17.0:20
+    note: '16.0: date_deadline = fields.Date(string=''Deadline'', readonly=True) | 17.0: date_deadline = fields.Datetime(string=''Deadline'',
+      readonly=True)'
+  old_type: Date
+  new_type: Datetime
+  message: 'odoo 56073896a69d: report.project.task.user.date_deadline changed from Date to Datetime'
+- schema_version: 2
+  kind: field_type
+  model: res.company
+  field: l10n_mx_edi_certificate_ids
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: f54b601cf16a
+    title: '[IMP] l10n_mx_edi: simplify company rule on the certificate'
+    file: l10n_mx_edi/models/res_company.py
+    lines: 16.0:55; 17.0:56
+    note: '16.0: l10n_mx_edi_certificate_ids = fields.Many2many(''l10n_mx_edi.certificate'', string=''Certificates (MX)'')
+      | 17.0: l10n_mx_edi_certificate_ids = fields.One2many( comodel_name=''l10n_mx_edi.certificate'', inverse_name=''company_id'',
+      string=''Certificates (MX)'', )'
+  old_type: Many2many
+  new_type: One2many
+  message: 'enterprise f54b601cf16a: res.company.l10n_mx_edi_certificate_ids changed from Many2many to One2many'
+- schema_version: 2
+  kind: field_type
+  model: res.config.settings
+  field: l10n_mx_edi_certificate_ids
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: f54b601cf16a
+    title: '[IMP] l10n_mx_edi: simplify company rule on the certificate'
+    file: l10n_mx_edi/models/res_config_settings.py
+    lines: 16.0:22; 17.0:13
+    note: '16.0: l10n_mx_edi_certificate_ids = fields.Many2many( related=''company_id.l10n_mx_edi_certificate_ids'', readonly=False,
+      string=''MX Certificates*'') | 17.0: l10n_mx_edi_certificate_ids = fields.One2many(related=''company_id.l10n_mx_edi_certificate_ids'',
+      readonly=False)'
+  old_type: Many2many
+  new_type: One2many
+  message: 'enterprise f54b601cf16a: res.config.settings.l10n_mx_edi_certificate_ids changed from Many2many to One2many'
+- schema_version: 2
+  kind: field_type
+  model: sale.report
+  field: discount_amount
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 2a24e7ae525c
+    title: '[IMP] sale, spreadsheet_dashboard_sale: display amount currency'
+    file: addons/sale/report/sale_report.py
+    lines: 16.0:53; 17.0:76
+    note: '16.0: discount_amount = fields.Float(''Discount Amount'', readonly=True) | 17.0: discount_amount = fields.Monetary(string="Discount
+      Amount", readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 2a24e7ae525c: sale.report.discount_amount changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sale.report
+  field: price_subtotal
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 2a24e7ae525c
+    title: '[IMP] sale, spreadsheet_dashboard_sale: display amount currency'
+    file: addons/sale/report/sale_report.py
+    lines: 16.0:30; 17.0:67
+    note: '16.0: price_subtotal = fields.Float(''Untaxed Total'', readonly=True) | 17.0: price_subtotal = fields.Monetary(string="Untaxed
+      Total", readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 2a24e7ae525c: sale.report.price_subtotal changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sale.report
+  field: price_total
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 2a24e7ae525c
+    title: '[IMP] sale, spreadsheet_dashboard_sale: display amount currency'
+    file: addons/sale/report/sale_report.py
+    lines: 16.0:29; 17.0:68
+    note: '16.0: price_total = fields.Float(''Total'', readonly=True) | 17.0: price_total = fields.Monetary(string="Total",
+      readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 2a24e7ae525c: sale.report.price_total changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sale.report
+  field: untaxed_amount_invoiced
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 2a24e7ae525c
+    title: '[IMP] sale, spreadsheet_dashboard_sale: display amount currency'
+    file: addons/sale/report/sale_report.py
+    lines: 16.0:32; 17.0:70
+    note: '16.0: untaxed_amount_invoiced = fields.Float(''Untaxed Amount Invoiced'', readonly=True) | 17.0: untaxed_amount_invoiced
+      = fields.Monetary(string="Untaxed Amount Invoiced", readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 2a24e7ae525c: sale.report.untaxed_amount_invoiced changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sale.report
+  field: untaxed_amount_to_invoice
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 2a24e7ae525c
+    title: '[IMP] sale, spreadsheet_dashboard_sale: display amount currency'
+    file: addons/sale/report/sale_report.py
+    lines: 16.0:31; 17.0:69
+    note: '16.0: untaxed_amount_to_invoice = fields.Float(''Untaxed Amount To Invoice'', readonly=True) | 17.0: untaxed_amount_to_invoice
+      = fields.Monetary(string="Untaxed Amount To Invoice", readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 2a24e7ae525c: sale.report.untaxed_amount_to_invoice changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sale.subscription.report
+  field: recurring_monthly
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: c6399f6d0fb2
+    title: '[ADD] spreadsheet_dashboard_sale_subscription: add subscriptions dashboard'
+    file: sale_subscription/report/sale_subscription_report.py
+    lines: 16.0:18; 17.0:17
+    note: '16.0: recurring_monthly = fields.Float(''Monthly Recurring Revenue'', readonly=True) | 17.0: recurring_monthly
+      = fields.Monetary(''Monthly Recurring'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise c6399f6d0fb2: sale.subscription.report.recurring_monthly changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sale.subscription.report
+  field: recurring_total
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: c6399f6d0fb2
+    title: '[ADD] spreadsheet_dashboard_sale_subscription: add subscriptions dashboard'
+    file: sale_subscription/report/sale_subscription_report.py
+    lines: 16.0:20; 17.0:19
+    note: '16.0: recurring_total = fields.Float(''Recurring Amount'', readonly=True) | 17.0: recurring_total = fields.Monetary(''Recurring
+      Revenue'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise c6399f6d0fb2: sale.subscription.report.recurring_total changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sale.subscription.report
+  field: recurring_yearly
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: c6399f6d0fb2
+    title: '[ADD] spreadsheet_dashboard_sale_subscription: add subscriptions dashboard'
+    file: sale_subscription/report/sale_subscription_report.py
+    lines: 16.0:19; 17.0:18
+    note: '16.0: recurring_yearly = fields.Float(''Yearly Recurring Revenue'', readonly=True) | 17.0: recurring_yearly = fields.Monetary(''Yearly
+      Recurring'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'enterprise c6399f6d0fb2: sale.subscription.report.recurring_yearly changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: sendcloud.shipping.product
+  field: max_weight
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 7657e0e5be30
+    title: '[IMP] {website_}delivery_sendcloud: Set Delivery By Product'
+    file: delivery_sendcloud/models/sendcloud_shipping_product.py
+    lines: 16.0:14; 17.0:16
+    note: '16.0: max_weight = fields.Float(string="Maximum Weight") | 17.0: max_weight = fields.Integer(string="Maximum Weight",
+      readonly=True)'
+  old_type: Float
+  new_type: Integer
+  message: 'enterprise 7657e0e5be30: sendcloud.shipping.product.max_weight changed from Float to Integer'
+- schema_version: 2
+  kind: field_type
+  model: sendcloud.shipping.product
+  field: min_weight
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 7657e0e5be30
+    title: '[IMP] {website_}delivery_sendcloud: Set Delivery By Product'
+    file: delivery_sendcloud/models/sendcloud_shipping_product.py
+    lines: 16.0:13; 17.0:15
+    note: '16.0: min_weight = fields.Float(string="Minimum Weight") | 17.0: min_weight = fields.Integer(string="Minimum Weight",
+      readonly=True)'
+  old_type: Float
+  new_type: Integer
+  message: 'enterprise 7657e0e5be30: sendcloud.shipping.product.min_weight changed from Float to Integer'
+- schema_version: 2
+  kind: field_type
+  model: stock.package.type
+  field: height
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: fdcde098fbb8
+    title: '[IMP] stock: stock_package_type uom values from int to float'
+    file: addons/stock/models/stock_package_type.py
+    lines: 16.0:19; 17.0:20
+    note: '16.0: height = fields.Integer(''Height'', help="Packaging Height") | 17.0: height = fields.Float(''Height'', help="Packaging
+      Height")'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo fdcde098fbb8: stock.package.type.height changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: stock.package.type
+  field: packaging_length
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: fdcde098fbb8
+    title: '[IMP] stock: stock_package_type uom values from int to float'
+    file: addons/stock/models/stock_package_type.py
+    lines: 16.0:21; 17.0:22
+    note: '16.0: packaging_length = fields.Integer(''Length'', help="Packaging Length") | 17.0: packaging_length = fields.Float(''Length'',
+      help="Packaging Length")'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo fdcde098fbb8: stock.package.type.packaging_length changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: stock.package.type
+  field: width
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: fdcde098fbb8
+    title: '[IMP] stock: stock_package_type uom values from int to float'
+    file: addons/stock/models/stock_package_type.py
+    lines: 16.0:20; 17.0:21
+    note: '16.0: width = fields.Integer(''Width'', help="Packaging Width") | 17.0: width = fields.Float(''Width'', help="Packaging
+      Width")'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo fdcde098fbb8: stock.package.type.width changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: stock.picking
+  field: sendcloud_return_parcel_ref
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 7657e0e5be30
+    title: '[IMP] {website_}delivery_sendcloud: Set Delivery By Product'
+    file: delivery_sendcloud/models/stock_picking.py
+    lines: 16.0:9; 17.0:9
+    note: '16.0: sendcloud_return_parcel_ref = fields.Char("Sendcloud Return Parcel Ref", copy=False) | 17.0: sendcloud_return_parcel_ref
+      = fields.Json("Sendcloud Return Parcel Ref", copy=False)'
+  old_type: Char
+  new_type: Json
+  message: 'enterprise 7657e0e5be30: stock.picking.sendcloud_return_parcel_ref changed from Char to Json'
+- schema_version: 2
+  kind: field_type
+  model: stock.valuation.layer
+  field: unit_cost
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 7e0e711e310d
+    title: '[FIX] stock_account: SVL unit price precision'
+    file: addons/stock_account/models/stock_valuation_layer.py
+    lines: 16.0:28; 17.0:27
+    note: '16.0: unit_cost = fields.Monetary(''Unit Value'', readonly=True) | 17.0: unit_cost = fields.Float(''Unit Value'',
+      digits=''Product Price'', readonly=True, group_operator=None)'
+  old_type: Monetary
+  new_type: Float
+  message: 'odoo 7e0e711e310d: stock.valuation.layer.unit_cost changed from Monetary to Float'
+- schema_version: 2
+  kind: field_type
+  model: utm.campaign
+  field: bounced_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/utm_campaign.py
+    lines: 16.0:41; 17.0:44
+    note: '16.0: bounced_ratio = fields.Integer(compute="_compute_statistics", string=''Bounced Ratio'') | 17.0: bounced_ratio
+      = fields.Float(compute="_compute_statistics", string=''Bounced Ratio'')'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: utm.campaign.bounced_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: utm.campaign
+  field: opened_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/utm_campaign.py
+    lines: 16.0:39; 17.0:42
+    note: '16.0: opened_ratio = fields.Integer(compute="_compute_statistics", string=''Opened Ratio'') | 17.0: opened_ratio
+      = fields.Float(compute="_compute_statistics", string=''Opened Ratio'')'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: utm.campaign.opened_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: utm.campaign
+  field: received_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/utm_campaign.py
+    lines: 16.0:38; 17.0:41
+    note: '16.0: received_ratio = fields.Integer(compute="_compute_statistics", string=''Received Ratio'') | 17.0: received_ratio
+      = fields.Float(compute="_compute_statistics", string=''Received Ratio'')'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: utm.campaign.received_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: utm.campaign
+  field: replied_ratio
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 35bb9ffd52a8
+    title: '[IMP] various: add minor UI improvements'
+    file: addons/mass_mailing/models/utm_campaign.py
+    lines: 16.0:40; 17.0:43
+    note: '16.0: replied_ratio = fields.Integer(compute="_compute_statistics", string=''Replied Ratio'') | 17.0: replied_ratio
+      = fields.Float(compute="_compute_statistics", string=''Replied Ratio'')'
+  old_type: Integer
+  new_type: Float
+  message: 'odoo 35bb9ffd52a8: utm.campaign.replied_ratio changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: web.cohort.simple.model
+  field: date_start
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: da147af83e51
+    title: '[FIX] web_cohort: raise traceback with date fields'
+    file: test_web_cohort/models/test_web_cohort.py
+    lines: 16.0:14; 17.0:16
+    note: '16.0: date_start = fields.Datetime() | 17.0: date_start = fields.Date()'
+  old_type: Datetime
+  new_type: Date
+  message: 'enterprise da147af83e51: web.cohort.simple.model.date_start changed from Datetime to Date'
+- schema_version: 2
+  kind: field_type
+  model: web.cohort.simple.model
+  field: date_stop
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: da147af83e51
+    title: '[FIX] web_cohort: raise traceback with date fields'
+    file: test_web_cohort/models/test_web_cohort.py
+    lines: 16.0:15; 17.0:17
+    note: '16.0: date_stop = fields.Datetime() | 17.0: date_stop = fields.Date()'
+  old_type: Datetime
+  new_type: Date
+  message: 'enterprise da147af83e51: web.cohort.simple.model.date_stop changed from Datetime to Date'

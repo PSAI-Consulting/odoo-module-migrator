@@ -1,0 +1,424 @@
+# Verified from both branch tips and the changing commit; generated candidates remain non-applicable.
+- schema_version: 2
+  kind: field_type
+  model: account.tax
+  field: description
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 112c68a07b81
+    title: '[IMP] *: Better invoicing, taxes and company/report config'
+    file: addons/account/models/account_tax.py
+    lines: 17.0:122; 18.0:124
+    note: '17.0: description = fields.Char(string=''Description'', translate=True) | 18.0: description = fields.Html(string=''Description'',
+      translate=html_translate)'
+  old_type: Char
+  new_type: Html
+  message: 'odoo 112c68a07b81: account.tax.description changed from Char to Html'
+- schema_version: 2
+  kind: field_type
+  model: helpdesk.ticket
+  field: assign_hours
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 1050389b1c7c
+    title: '[IMP] helpdesk: Convert some time metrics from integer to float type'
+    file: helpdesk/models/helpdesk_ticket.py
+    lines: 17.0:117; 18.0:116
+    note: '17.0: assign_hours = fields.Integer("Time to first assignment (hours)", compute=''_compute_assign_hours'', store=True)
+      | 18.0: assign_hours = fields.Float("Time to first assignment (hours)", compute=''_compute_assign_hours'', store=True,
+      aggregator="avg")'
+  old_type: Integer
+  new_type: Float
+  message: 'enterprise 1050389b1c7c: helpdesk.ticket.assign_hours changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: helpdesk.ticket
+  field: close_hours
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 1050389b1c7c
+    title: '[IMP] helpdesk: Convert some time metrics from integer to float type'
+    file: helpdesk/models/helpdesk_ticket.py
+    lines: 17.0:119; 18.0:118
+    note: '17.0: close_hours = fields.Integer("Time to close (hours)", compute=''_compute_close_hours'', store=True) | 18.0:
+      close_hours = fields.Float("Time to close (hours)", compute=''_compute_close_hours'', store=True, aggregator="avg")'
+  old_type: Integer
+  new_type: Float
+  message: 'enterprise 1050389b1c7c: helpdesk.ticket.close_hours changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: hr.employee
+  field: l10n_au_medicare_reduction
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: ed9e7ef58813
+    title: '[IMP] l10n_au_hr_payroll: Employee, Contract and Schedule Revamp'
+    file: l10n_au_hr_payroll/models/hr_employee.py
+    lines: 17.0:87; 18.0:77
+    note: '17.0: l10n_au_medicare_reduction = fields.Char( string="Medicare levy reduction", compute="_compute_l10n_au_medicare_reduction",
+      store=True, groups="hr.group_hr_user", help="Medicare levy reduction, dependent on marital status and number of children")
+      | 18.0: l10n_au_medicare_reduction = fields.Selection( selection=[ ("X", "Not Applicable"), ("0", "Spouse Only"), ("1",
+      "1 Child"), ("2", "2 Children"), ("3", "3 Children"), ("4", "4 Children"), ("5", "5 Children"), ("6", "6 Children"),
+      ("7", "7 Children"), ("8", "8 Children"), ("9", "9 Children"), ("A", "10+ Children"), ], string="Medicare levy reduction",
+      compute="_compute_l10n_au_medicare_reduction", store=True, readonly=False, required=True, default="X", groups="hr.group_hr_user",
+      help="Medicare levy reduction, dependent on marital status and number of children")'
+  old_type: Char
+  new_type: Selection
+  message: 'enterprise ed9e7ef58813: hr.employee.l10n_au_medicare_reduction changed from Char to Selection'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave
+  field: request_hour_from
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: bb34169dca36
+    title: '[IMP] *: improve the custom hour fields in time off'
+    file: addons/hr_holidays/models/hr_leave.py
+    lines: 17.0:244; 18.0:207
+    note: '17.0: request_hour_from = fields.Selection([ (''0'', ''12:00 AM''), (''0.5'', ''12:30 AM''), (''1'', ''1:00 AM''),
+      (''1.5'', ''1:30 AM''), (''2'', ''2:00 AM''), (''2.5'', ''2:30 AM''), (''3'', ''3:00 AM''), (''3.5'', ''3:30 AM''),
+      (''4'', ''4:00 AM''), (''4.5'', ''4:30 AM''), (''5'', ''5:00 AM''), (''5.5'', ''5:30 AM''), (''6'', ''6:00 AM''), (''6.5'',
+      ''6:30 AM''), (''7'', ''7:00 AM''), (''7.5'', ''7:30 AM''), (''8'', ''8:00 AM''), (''8.5'', ''8:30 AM''), (''9'', ''9:00
+      AM''), (''9.5'', ''9:30 AM''), (''10'', ''10:00 AM''), (''10.5'', ''10:30 AM''), (''11'', ''11:00 AM''), (''11.5'',
+      ''11:30 AM''), (''12'', ''12:00 PM''), (''12.5'', ''12:30 PM''), (''13'', ''1:00 PM''), (''13.5'', ''1:30 PM''), (''14'',
+      ''2:00 PM''), (''14.5'', ''2:30 PM''), (''15'', ''3:00 PM''), (''15.5'', ''3:30 PM''), (''16'', ''4:00 PM''), (''16.5'',
+      ''4:30 PM''), (''17'', ''5:00 PM''), (''17.5'', ''5:30 PM''), (''18'', ''6:00 PM''), (''18.5'', ''6:30 PM''), (''19'',
+      ''7:00 PM''), (''19.5'', ''7:30 PM''), (''20'', ''8:00 PM''), (''20.5'', ''8:30 PM''), (''21'', ''9:00 PM''), (''21.5'',
+      ''9:30 PM''), (''22'', ''10:00 PM''), (''22.5'', ''10:30 PM''), (''23'', ''11:00 PM''), (''23.5'', ''11:30 PM'')], string=''Hour
+      from'') | 18.0: request_hour_from = fields.Float(string=''Hour from'')'
+  old_type: Selection
+  new_type: Float
+  message: 'odoo bb34169dca36: hr.leave.request_hour_from changed from Selection to Float'
+- schema_version: 2
+  kind: field_type
+  model: hr.leave
+  field: request_hour_to
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: bb34169dca36
+    title: '[IMP] *: improve the custom hour fields in time off'
+    file: addons/hr_holidays/models/hr_leave.py
+    lines: 17.0:269; 18.0:208
+    note: '17.0: request_hour_to = fields.Selection([ (''0'', ''12:00 AM''), (''0.5'', ''12:30 AM''), (''1'', ''1:00 AM''),
+      (''1.5'', ''1:30 AM''), (''2'', ''2:00 AM''), (''2.5'', ''2:30 AM''), (''3'', ''3:00 AM''), (''3.5'', ''3:30 AM''),
+      (''4'', ''4:00 AM''), (''4.5'', ''4:30 AM''), (''5'', ''5:00 AM''), (''5.5'', ''5:30 AM''), (''6'', ''6:00 AM''), (''6.5'',
+      ''6:30 AM''), (''7'', ''7:00 AM''), (''7.5'', ''7:30 AM''), (''8'', ''8:00 AM''), (''8.5'', ''8:30 AM''), (''9'', ''9:00
+      AM''), (''9.5'', ''9:30 AM''), (''10'', ''10:00 AM''), (''10.5'', ''10:30 AM''), (''11'', ''11:00 AM''), (''11.5'',
+      ''11:30 AM''), (''12'', ''12:00 PM''), (''12.5'', ''12:30 PM''), (''13'', ''1:00 PM''), (''13.5'', ''1:30 PM''), (''14'',
+      ''2:00 PM''), (''14.5'', ''2:30 PM''), (''15'', ''3:00 PM''), (''15.5'', ''3:30 PM''), (''16'', ''4:00 PM''), (''16.5'',
+      ''4:30 PM''), (''17'', ''5:00 PM''), (''17.5'', ''5:30 PM''), (''18'', ''6:00 PM''), (''18.5'', ''6:30 PM''), (''19'',
+      ''7:00 PM''), (''19.5'', ''7:30 PM''), (''20'', ''8:00 PM''), (''20.5'', ''8:30 PM''), (''21'', ''9:00 PM''), (''21.5'',
+      ''9:30 PM''), (''22'', ''10:00 PM''), (''22.5'', ''10:30 PM''), (''23'', ''11:00 PM''), (''23.5'', ''11:30 PM'')], string=''Hour
+      to'') | 18.0: request_hour_to = fields.Float(string=''Hour to'')'
+  old_type: Selection
+  new_type: Float
+  message: 'odoo bb34169dca36: hr.leave.request_hour_to changed from Selection to Float'
+- schema_version: 2
+  kind: field_type
+  model: hr.resume.line
+  field: description
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: c93afc71d944
+    title: '[IMP] hr_skills: improve employee profile resume line'
+    file: addons/hr_skills/models/hr_resume_line.py
+    lines: 17.0:16; 18.0:16
+    note: '17.0: description = fields.Text(string="Description", translate=True) | 18.0: description = fields.Html(string="Description",
+      translate=True)'
+  old_type: Text
+  new_type: Html
+  message: 'odoo c93afc71d944: hr.resume.line.description changed from Text to Html'
+- schema_version: 2
+  kind: field_type
+  model: ir.filters
+  field: sort
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 5b95abb81084
+    title: '[FIX] base: ir.filters.sort is a JSON field'
+    file: odoo/addons/base/models/ir_filters.py
+    lines: 17.0:23; 18.0:23
+    note: '17.0: sort = fields.Text(default=''[]'', required=True) | 18.0: sort = fields.Char(default=''[]'', required=True)'
+  old_type: Text
+  new_type: Char
+  message: 'odoo 5b95abb81084: ir.filters.sort changed from Text to Char'
+- schema_version: 2
+  kind: field_type
+  model: pos.order
+  field: amount_paid
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9fb56aa00762
+    title: '[IMP] point_of_sale: change amount fields to monetary'
+    file: addons/point_of_sale/models/pos_order.py
+    lines: 17.0:300; 18.0:332
+    note: '17.0: amount_paid = fields.Float(string=''Paid'', digits=0, required=True) | 18.0: amount_paid = fields.Monetary(string=''Paid'',
+      required=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9fb56aa00762: pos.order.amount_paid changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: pos.order
+  field: amount_return
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9fb56aa00762
+    title: '[IMP] point_of_sale: change amount fields to monetary'
+    file: addons/point_of_sale/models/pos_order.py
+    lines: 17.0:301; 18.0:333
+    note: '17.0: amount_return = fields.Float(string=''Returned'', digits=0, required=True, readonly=True) | 18.0: amount_return
+      = fields.Monetary(string=''Returned'', required=True, readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9fb56aa00762: pos.order.amount_return changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: pos.order
+  field: amount_tax
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9fb56aa00762
+    title: '[IMP] point_of_sale: change amount fields to monetary'
+    file: addons/point_of_sale/models/pos_order.py
+    lines: 17.0:298; 18.0:330
+    note: '17.0: amount_tax = fields.Float(string=''Taxes'', digits=0, readonly=True, required=True) | 18.0: amount_tax =
+      fields.Monetary(string=''Taxes'', readonly=True, required=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9fb56aa00762: pos.order.amount_tax changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: pos.order
+  field: amount_total
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9fb56aa00762
+    title: '[IMP] point_of_sale: change amount fields to monetary'
+    file: addons/point_of_sale/models/pos_order.py
+    lines: 17.0:299; 18.0:331
+    note: '17.0: amount_total = fields.Float(string=''Total'', digits=0, readonly=True, required=True) | 18.0: amount_total
+      = fields.Monetary(string=''Total'', readonly=True, required=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9fb56aa00762: pos.order.amount_total changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: pos.order
+  field: tip_amount
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9fb56aa00762
+    title: '[IMP] point_of_sale: change amount fields to monetary'
+    file: addons/point_of_sale/models/pos_order.py
+    lines: 17.0:346; 18.0:379
+    note: '17.0: tip_amount = fields.Float(string=''Tip Amount'', digits=0, readonly=True) | 18.0: tip_amount = fields.Monetary(string=''Tip
+      Amount'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9fb56aa00762: pos.order.tip_amount changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: pos.order.line
+  field: price_subtotal
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9fb56aa00762
+    title: '[IMP] point_of_sale: change amount fields to monetary'
+    file: addons/point_of_sale/models/pos_order.py
+    lines: 17.0:1299; 18.0:1475
+    note: '17.0: price_subtotal = fields.Float(string=''Subtotal w/o Tax'', digits=0, readonly=True, required=True) | 18.0:
+      price_subtotal = fields.Monetary(string=''Tax Excl.'', readonly=True, required=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9fb56aa00762: pos.order.line.price_subtotal changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: pos.order.line
+  field: price_subtotal_incl
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 9fb56aa00762
+    title: '[IMP] point_of_sale: change amount fields to monetary'
+    file: addons/point_of_sale/models/pos_order.py
+    lines: 17.0:1301; 18.0:1477
+    note: '17.0: price_subtotal_incl = fields.Float(string=''Subtotal'', digits=0, readonly=True, required=True) | 18.0: price_subtotal_incl
+      = fields.Monetary(string=''Tax Incl.'', readonly=True, required=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 9fb56aa00762: pos.order.line.price_subtotal_incl changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: pos_preparation_display.orderline
+  field: product_cancelled
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 286e5bb01dbe
+    title: '[IMP] pos_preparation_display: allow float qty in kitchen display'
+    file: pos_preparation_display/models/preparation_display_orderline.py
+    lines: 17.0:13; 18.0:13
+    note: '17.0: product_cancelled = fields.Integer("Quantity of cancelled product") | 18.0: product_cancelled = fields.Float("Quantity
+      of cancelled product")'
+  old_type: Integer
+  new_type: Float
+  message: 'enterprise 286e5bb01dbe: pos_preparation_display.orderline.product_cancelled changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: pos_preparation_display.orderline
+  field: product_quantity
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 286e5bb01dbe
+    title: '[IMP] pos_preparation_display: allow float qty in kitchen display'
+    file: pos_preparation_display/models/preparation_display_orderline.py
+    lines: 17.0:12; 18.0:12
+    note: '17.0: product_quantity = fields.Integer("Quantity of ordered product") | 18.0: product_quantity = fields.Float("Quantity
+      of ordered product")'
+  old_type: Integer
+  new_type: Float
+  message: 'enterprise 286e5bb01dbe: pos_preparation_display.orderline.product_quantity changed from Integer to Float'
+- schema_version: 2
+  kind: field_type
+  model: project.project
+  field: total_budget_progress
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 14eb7afe3f65
+    title: '[IMP] project(_account_budget): budget counting using analytical accounts only'
+    file: project_account_budget/models/project.py
+    lines: 17.0:14; 18.0:14
+    note: '17.0: total_budget_progress = fields.Monetary(compute="_compute_total_budget_progress") | 18.0: total_budget_progress
+      = fields.Float("Budget Spent", compute="_compute_budget", export_string_translation=False)'
+  old_type: Monetary
+  new_type: Float
+  message: 'enterprise 14eb7afe3f65: project.project.total_budget_progress changed from Monetary to Float'
+- schema_version: 2
+  kind: field_type
+  model: purchase.report
+  field: price_average
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 908c643d3a88
+    title: '[IMP] purchase: add improvements on dashboard and reporting'
+    file: addons/purchase/report/purchase_report.py
+    lines: 17.0:37; 18.0:39
+    note: '17.0: price_average = fields.Float(''Average Cost'', readonly=True, group_operator="avg", digits=''Product Price'')
+      | 18.0: price_average = fields.Monetary(''Average Cost'', readonly=True, aggregator="avg")'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 908c643d3a88: purchase.report.price_average changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: purchase.report
+  field: price_total
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 908c643d3a88
+    title: '[IMP] purchase: add improvements on dashboard and reporting'
+    file: addons/purchase/report/purchase_report.py
+    lines: 17.0:36; 18.0:38
+    note: '17.0: price_total = fields.Float(''Total'', readonly=True) | 18.0: price_total = fields.Monetary(''Total'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 908c643d3a88: purchase.report.price_total changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: purchase.report
+  field: untaxed_total
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 908c643d3a88
+    title: '[IMP] purchase: add improvements on dashboard and reporting'
+    file: addons/purchase/report/purchase_report.py
+    lines: 17.0:47; 18.0:49
+    note: '17.0: untaxed_total = fields.Float(''Untaxed Total'', readonly=True) | 18.0: untaxed_total = fields.Monetary(''Untaxed
+      Total'', readonly=True)'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 908c643d3a88: purchase.report.untaxed_total changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: purchase.requisition
+  field: date_end
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: c344f8e36cef
+    title: '[IMP] purchase{_requisition}: add new purchase template agreement type'
+    file: addons/purchase_requisition/models/purchase_requisition.py
+    lines: 17.0:56; 18.0:25
+    note: '17.0: date_end = fields.Datetime(string=''Agreement Deadline'', tracking=True) | 18.0: date_end = fields.Date(string=''End
+      Date'', tracking=True)'
+  old_type: Datetime
+  new_type: Date
+  message: 'odoo c344f8e36cef: purchase.requisition.date_end changed from Datetime to Date'
+- schema_version: 2
+  kind: field_type
+  model: spreadsheet.revision
+  field: parent_revision_id
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: c5152903a111
+    title: '[IMP] spreadsheet_edition: ensure safer concurrent history updates'
+    file: spreadsheet_edition/models/spreadsheet_revision.py
+    lines: 17.0:22; 18.0:23
+    note: '17.0: parent_revision_id = fields.Char(required=True) | 18.0: parent_revision_id = fields.Many2one("spreadsheet.revision",
+      copy=False)'
+  old_type: Char
+  new_type: Many2one
+  message: 'enterprise c5152903a111: spreadsheet.revision.parent_revision_id changed from Char to Many2one'
+- schema_version: 2
+  kind: field_type
+  model: timesheets.analysis.report
+  field: margin
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0e64e0df124f
+    title: '[IMP] {hr,sale}_timesheet: allow to open the list in pivot/graph timesheets analysis report'
+    file: addons/sale_timesheet/report/timesheets_analysis_report.py
+    lines: 17.0:17; 18.0:17
+    note: '17.0: margin = fields.Float("Margin", readonly=True, help="Timesheets revenues minus the costs") | 18.0: margin
+      = fields.Monetary("Margin", currency_field="currency_id", readonly=True, help="Timesheets revenues minus the costs")'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 0e64e0df124f: timesheets.analysis.report.margin changed from Float to Monetary'
+- schema_version: 2
+  kind: field_type
+  model: timesheets.analysis.report
+  field: timesheet_revenues
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 0e64e0df124f
+    title: '[IMP] {hr,sale}_timesheet: allow to open the list in pivot/graph timesheets analysis report'
+    file: addons/sale_timesheet/report/timesheets_analysis_report.py
+    lines: 17.0:16; 18.0:16
+    note: '17.0: timesheet_revenues = fields.Float("Timesheet Revenues", readonly=True, help="Number of hours spent multiplied
+      by the unit price per hour/day.") | 18.0: timesheet_revenues = fields.Monetary("Timesheet Revenues", currency_field="currency_id",
+      readonly=True, help="Number of hours spent multiplied by the unit price per hour/day.")'
+  old_type: Float
+  new_type: Monetary
+  message: 'odoo 0e64e0df124f: timesheets.analysis.report.timesheet_revenues changed from Float to Monetary'

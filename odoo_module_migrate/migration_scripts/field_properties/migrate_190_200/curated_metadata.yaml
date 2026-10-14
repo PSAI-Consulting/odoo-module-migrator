@@ -1,0 +1,281 @@
+# Verified from both branch tips and the changing commit; generated candidates remain non-applicable.
+- schema_version: 2
+  kind: field_property
+  model: event.registration
+  field: event_begin_date
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 7ba5eb89638b
+    title: '[FIX] event: fix portal ''event_begin_date'' order by'
+    file: addons/event/models/event_registration.py
+    lines: 19.0:61; 20.0:62
+    note: '19.0: event_begin_date = fields.Datetime("Event Start Date", compute="_compute_event_begin_date", search="_search_event_begin_date")
+      | 20.0: event_begin_date = fields.Datetime( "Event Start Date", compute="_compute_event_begin_date", store=True)  #
+      Stored for the cohort view and portal ''order_by'''
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 7ba5eb89638b: event.registration.event_begin_date store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: hr.applicant
+  field: matching_score
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 3d5e283033d0
+    title: '[IMP] hr_recruitment_skills: store matching score and add filter in applicant search'
+    file: addons/hr_recruitment_skills/models/hr_applicant.py
+    lines: 19.0:31; 20.0:31
+    note: '19.0: matching_score = fields.Integer(string="Matching Score", compute="_compute_matching_skill_ids") | 20.0: matching_score
+      = fields.Integer(string="Matching Score", compute="_compute_matching_score", store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 3d5e283033d0: hr.applicant.matching_score store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: hr.leave
+  field: duration_display
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: b5f809f3060a
+    title: '[IMP] hr_holidays: make duration_display non-stored'
+    file: addons/hr_holidays/models/hr_leave.py
+    lines: 19.0:183; 20.0:217
+    note: '19.0: duration_display = fields.Char(''Requested'', compute=''_compute_duration_display'', store=True)    # details
+      | 20.0: duration_display = fields.Char(''Requested'', compute=''_compute_duration_display'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo b5f809f3060a: hr.leave.duration_display store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: hr.payslip
+  field: has_wrong_data
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 9b975a34d2bc
+    title: '[IMP] hr_payroll: unstore is_wrong_version, has_wrong_data'
+    file: hr_payroll/models/hr_payslip.py
+    lines: 19.0:143; 20.0:165
+    note: '19.0: has_wrong_data = fields.Boolean(compute=''_compute_is_wrong_version'', store=True) | 20.0: has_wrong_data
+      = fields.Boolean(compute=''_compute_has_wrong_data'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'enterprise 9b975a34d2bc: hr.payslip.has_wrong_data store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: hr.payslip
+  field: is_wrong_version
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 9b975a34d2bc
+    title: '[IMP] hr_payroll: unstore is_wrong_version, has_wrong_data'
+    file: hr_payroll/models/hr_payslip.py
+    lines: 19.0:142; 20.0:164
+    note: '19.0: is_wrong_version = fields.Boolean(compute=''_compute_is_wrong_version'', store=True) | 20.0: is_wrong_version
+      = fields.Boolean(compute=''_compute_is_wrong_version'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'enterprise 9b975a34d2bc: hr.payslip.is_wrong_version store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: hr.payslip
+  field: l10n_mx_integration_factor
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: cfbfb7ad16d6
+    title: '[ADD] l10n_mx_hr_payroll: make MX salary fields visible and editable'
+    file: l10n_mx_hr_payroll/models/hr_payslip.py
+    lines: 19.0:16; 20.0:17
+    note: '19.0: l10n_mx_integration_factor = fields.Float(''MX: Integration Factor'', compute=''_compute_integration_factor'')
+      | 20.0: l10n_mx_integration_factor = fields.Float( string=''MX: Integration Factor'', readonly=False, store=True, compute=''_compute_l10n_mx_integration_factor'',
+      inverse=''_inverse_l10n_mx_integration_factor'', )'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'enterprise cfbfb7ad16d6: hr.payslip.l10n_mx_integration_factor store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: hr.payslip
+  field: name
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 845ffde810c1
+    title: '[IMP] hr_payroll: fix and improve translation on payslips by refactoring names'
+    file: hr_payroll/models/hr_payslip.py
+    lines: 19.0:48; 20.0:53
+    note: '19.0: name = fields.Char( string=''Payslip Name'', required=True, compute=''_compute_name'', store=True, readonly=False)
+      | 20.0: name = fields.Char(string=''Payslip Name'', compute=''_compute_name'', store=False, recursive=True)'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'enterprise 845ffde810c1: hr.payslip.name store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: hr.version
+  field: train_transport_reimbursed_amount
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 107aeead58a8
+    title: '[IMP] * : Transportation allowance'
+    file: l10n_be_hr_payroll/models/hr_version.py
+    lines: 19.0:65; 20.0:902
+    note: '19.0: train_transport_reimbursed_amount = fields.Monetary( string=''Train Transport Reimbursed amount'', groups="hr_payroll.group_hr_payroll_user",
+      compute=''_compute_train_transport_reimbursed_amount'', readonly=False, store=True) | 20.0: train_transport_reimbursed_amount
+      = fields.Monetary( string=''Train Transport Reimbursed amount'', groups="hr_payroll.group_hr_payroll_user", compute=''_compute_train_transport_reimbursed_amount'')'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'enterprise 107aeead58a8: hr.version.train_transport_reimbursed_amount store changed from True to False'
+- schema_version: 2
+  kind: field_property
+  model: l10n_be.dmfa
+  field: quarter_end
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 0734696a59be
+    title: '[IMP] l10n_be_hr_payroll: improve dmfa ux'
+    file: l10n_be_hr_payroll/models/hr_dmfa.py
+    lines: 19.0:887; 20.0:1301
+    note: '19.0: quarter_end = fields.Date(compute=''_compute_dates'') | 20.0: quarter_end = fields.Date(compute=''_compute_dates'',
+      store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'enterprise 0734696a59be: l10n_be.dmfa.quarter_end store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: l10n_be.dmfa
+  field: quarter_start
+  confidence: verified
+  evidence:
+  - repository: enterprise
+    commit: 0734696a59be
+    title: '[IMP] l10n_be_hr_payroll: improve dmfa ux'
+    file: l10n_be_hr_payroll/models/hr_dmfa.py
+    lines: 19.0:886; 20.0:1300
+    note: '19.0: quarter_start = fields.Date(compute=''_compute_dates'') | 20.0: quarter_start = fields.Date(compute=''_compute_dates'',
+      store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'enterprise 0734696a59be: l10n_be.dmfa.quarter_start store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: mrp.production
+  field: duration
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 8161c1f8b480
+    title: '[IMP] mrp: change measures in wo and mo pivot views'
+    file: addons/mrp/models/mrp_production.py
+    lines: 19.0:158; 20.0:163
+    note: '19.0: duration = fields.Float("Real Duration", help="Total real duration (in minutes)", compute=''_compute_duration'')
+      | 20.0: duration = fields.Float("Real Duration", help="Total real duration (in minutes)", compute=''_compute_duration'',
+      store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 8161c1f8b480: mrp.production.duration store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: mrp.production
+  field: duration_expected
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 8161c1f8b480
+    title: '[IMP] mrp: change measures in wo and mo pivot views'
+    file: addons/mrp/models/mrp_production.py
+    lines: 19.0:157; 20.0:162
+    note: '19.0: duration_expected = fields.Float("Expected Duration", help="Total expected duration (in minutes)", compute=''_compute_duration_expected'')
+      | 20.0: duration_expected = fields.Float("Expected Duration", help="Total expected duration (in minutes)", compute=''_compute_duration_expected'',
+      store=True)'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 8161c1f8b480: mrp.production.duration_expected store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: peppol.registration
+  field: peppol_eas
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 6f8c2526a00d
+    title: '[REF] base,*: multi ID for UBL + remove company_registry'
+    file: addons/account_peppol/wizard/peppol_registration.py
+    lines: 19.0:80; 20.0:83
+    note: '19.0: peppol_eas = fields.Selection( selection=''_get_peppol_eas_selection'', compute="_compute_peppol_eas", inverse="_inverse_peppol_eas",
+      readonly=False, required=True, store=False, ) | 20.0: peppol_eas = fields.Selection( selection=''_get_peppol_eas_selection'',
+      compute=''_compute_peppol_eas_endpoint'', store=True, readonly=False, )'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 6f8c2526a00d: peppol.registration.peppol_eas store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: product.template
+  field: barcode
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: f7e8abf0fdda
+    title: '[IMP] product,website_sale: support barcode search for products'
+    file: addons/product/models/product_template.py
+    lines: 19.0:152; 20.0:192
+    note: '19.0: barcode = fields.Char(''Barcode'', compute=''_compute_barcode'', inverse=''_set_barcode'', search=''_search_barcode'')
+      | 20.0: barcode = fields.Char( string="Barcode", compute="_compute_barcode", inverse="_set_barcode", store=True, )'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo f7e8abf0fdda: product.template.barcode store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: resource.calendar
+  field: work_time_rate
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 38bad967a5ff
+    title: '[IMP] hr_payroll,resource: Sync the work time rate'
+    file: addons/resource/models/resource_calendar.py
+    lines: 19.0:116; 20.0:76
+    note: '19.0: work_time_rate = fields.Float(string=''Work Time Rate'', compute=''_compute_work_time_rate'', search=''_search_work_time_rate'',
+      help=''Work time rate versus full time working schedule, should be between 0 and 100 %.'') | 20.0: work_time_rate =
+      fields.Float(string=''Work Time Rate'', compute=''_compute_work_time_rate'', store=True, help=''Work time rate versus
+      full time working schedule, should be between 0 and 100 %.'')'
+  property: store
+  old_value: 'False'
+  new_value: 'True'
+  message: 'odoo 38bad967a5ff: resource.calendar.work_time_rate store changed from False to True'
+- schema_version: 2
+  kind: field_property
+  model: website.menu
+  field: url
+  confidence: verified
+  evidence:
+  - repository: odoo
+    commit: 009c1d472355
+    title: '[IMP] website: enable to translate static page url'
+    file: addons/website/models/website_menu.py
+    lines: 19.0:42; 20.0:28
+    note: '19.0: url = fields.Char("Url", compute="_compute_url", store=True, required=True, readonly=False, default="#",
+      copy=True) | 20.0: url = fields.Char("Url", compute="_compute_url", compute_sudo=True, inverse="_inverse_url", search="_search_url")'
+  property: store
+  old_value: 'True'
+  new_value: 'False'
+  message: 'odoo 009c1d472355: website.menu.url store changed from True to False'
