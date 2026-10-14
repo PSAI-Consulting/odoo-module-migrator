@@ -2,7 +2,6 @@
 # Do not edit: write corrections in another file of this folder.
 # Rename CANDIDATES found in the sources (field removed in the commit
 # that adds a field of the same type): check them, then uncomment.
-# - ["hr.expense", "total_amount", "total_amount_currency", "OpenUpgrade 17.0 openupgrade_scripts/scripts/hr_expense/17.0.2.0/pre-migration.py (old field still defined in 17.0)"]  # non : non confirmé (sens, type ou comodel différents en 17.0)
 # - ["account.analytic.line", "ancestor_task_id", "parent_task_id", "odoo a424cf481c67 '[IMP] project: delete useless fields'"]  # non : sens différent (ancêtre racine -> parent direct)
 # - ["account.analytic.line", "plan_id", "auto_account_id", "odoo dc696c8ed485 '[IMP] analytic: allow cross analytics'"]  # non : analytique croisée : plus de plan unique par ligne
 # - ["account.move", "asset_asset_type", "deferred_entry_type", "enterprise f622d837119 '[IMP] account_{accountant,asset,reports},sale_subscription,*: deferred management'"]  # non : sens différent (écritures différées)
@@ -15,6 +14,7 @@
 # - ["account.payment.term.line", "months", "nb_days", "odoo 9c134ec37981 '[IMP] account: simplify payment term usability'"]  # non : conditions de paiement refondues (nb_days + delay_type)
 # - ["account.report.footnote", "line", "line_id", "enterprise d2d4f5e0404 '[REF] account_reports: conversion to owl'"]  # non : format d'identifiant de ligne changé (conversion OWL)
 # - ["account.report.footnote", "manager_id", "report_id", "enterprise d2d4f5e0404 '[REF] account_reports: conversion to owl'"]  # non : comodel différent
+# - ["crm.lead", "date_action_last", "date_automation_last", "odoo 0a744accc2aa '[IMP] base_automation,*: simpler edition workflow'"]  # non : candidat heuristique nouveau, identité sémantique non démontrée
 # - ["hr.appraisal", "is_appraisal_manager", "is_manager", "enterprise a6ae53fb655 '[FIX] hr_appraisal,hr_appraisal_skills,hr_appraisal_survey: show publication warning, correct computation for implicit_manager, light refactor'"]  # non : deux champs fusionnés
 # - ["hr.appraisal", "is_implicit_manager", "is_manager", "enterprise a6ae53fb655 '[FIX] hr_appraisal,hr_appraisal_skills,hr_appraisal_survey: show publication warning, correct computation for implicit_manager, light refactor'"]  # non : deux champs fusionnés
 # - ["hr.contract", "driver_salay", "l10n_in_driver_salay", "enterprise 52a5d166873 '[IMP] l10n_in_hr_payroll: polish indian localization'"]  # oui : curated.yaml
@@ -26,9 +26,11 @@
 # - ["hr.expense", "reference", "label_currency_rate", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : champ supprimé (OCR), pas de remplaçant
 # - ["hr.expense", "same_currency", "is_multiple_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : logique inversée (is_multiple_currency == not same_currency)
 # - ["hr.expense", "sheet_is_editable", "is_multiple_currency", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # oui : curated.yaml
+# - ["hr.expense", "unit_amount", "price_unit", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : candidat heuristique nouveau, identité sémantique non démontrée
 # - ["hr.expense", "unit_amount_display", "price_unit", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : champ d'affichage supprimé
 # - ["hr.expense.refuse.wizard", "hr_expense_ids", "sheet_ids", "odoo f79ff3fb3746 '[IMP] hr_expense: do not create purchase.receipt'"]  # non : comodel différent (hr.expense -> hr.expense.sheet)
 # - ["hr.expense.sheet", "account_move_id", "company_currency_id", "odoo 81fe11fabb60 '[IMP] hr_expense: Split company payments per expense'"]  # non : sens différent (une écriture par dépense)
+# - ["hr.expense.sheet", "total_amount_taxes", "total_tax_amount", "odoo 68fbdc964038 '[REF] *expense*: Technical hr_expense refactor'"]  # non : candidat heuristique nouveau, identité sémantique non démontrée
 # - ["hr.leave", "has_stress_day", "has_mandatory_day", "odoo 1b512efdac4b '[IMP] holiday: improve UX holiday timeoff'"]  # oui : curated.yaml
 # - ["hr.payroll.structure.type", "salary_advantage_ids", "salary_benefits_ids", "enterprise f4837b8b505 '[IMP] l10n_be_, (hr_contract_salary): improve terms'"]  # oui : curated.yaml
 # - ["hr.timesheet.attendance.report", "user_id", "employee_id", "odoo 9e0277eeec80 '[FIX] hr_timesheet_attendance: base report on employees, not users'"]  # non : comodel différent (res.users -> hr.employee)
@@ -38,8 +40,11 @@
 # - ["mrp.workorder", "allow_employee", "all_employees_allowed", "enterprise dd5c3133180 '[IMP] mrp_workorder*: add MES'"]  # non : sens différent
 # - ["payment.provider", "adyen_checkout_api_url", "adyen_api_url_prefix", "odoo 428a2cda6737 '[IMP] payment_adyen: replace API URLs with an account-specific URL prefix'"]  # non : format différent (préfixe de compte)
 # - ["payment.provider", "adyen_recurring_api_url", "adyen_api_url_prefix", "odoo 428a2cda6737 '[IMP] payment_adyen: replace API URLs with an account-specific URL prefix'"]  # non : format différent (préfixe de compte)
+# - ["payment.provider", "payment_icon_ids", "payment_method_ids", "odoo 5cc86c3bb107 '[IMP] payment: Rename Payment Icon to Payment Method.'"]  # non : candidat heuristique nouveau, identité sémantique non démontrée
 # - ["pos.config", "number_of_opened_session", "number_of_rescue_session", "odoo 9644ca52fff9 '[IMP] point_of_sale: display rescue session'"]  # non : sens différent (sessions de secours)
 # - ["pos.order", "blackbox_device", "sweden_blackbox_device", "enterprise 807420a33e0 '[IMP] pos_l10n_se: Update module'"]  # non : non vérifié
+# - ["pos.order", "multiprint_resume", "last_order_preparation_change", "odoo 73aae73f1ba4 '[IMP] point_of_sale,*: move kitchen printer logic to point_of_sale'"]  # non : candidat heuristique nouveau, identité sémantique non démontrée
+# - ["pos.order.line", "mp_skip", "skip_change", "odoo 73aae73f1ba4 '[IMP] point_of_sale,*: move kitchen printer logic to point_of_sale'"]  # non : candidat heuristique nouveau, identité sémantique non démontrée
 # - ["product.label.layout", "move_line_ids", "move_ids", "odoo b159190c7e16 '[IMP] stock: display right number of labels in a ready pickings'"]  # non : comodel différent (stock.move.line -> stock.move)
 # - ["product.label.layout", "picking_quantity", "move_quantity", "odoo 28d238b578ec '[IMP] stock: product label layout base on move'"]  # non : valeurs de sélection différentes ('picking' -> 'move')
 # - ["project.task", "child_text", "display_name", "odoo 335579325f71 '[MOV] project: create a separate file per model (views and models)'"]  # non : sens différent
